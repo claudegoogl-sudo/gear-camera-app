@@ -156,6 +156,16 @@ export default function CameraScreen({ navigation }) {
         <Animated.View style={[styles.aimCircle, isStable && styles.aimCircleStable, aimStyle]} />
       </View>
 
+      {/* Processing overlay — shown while algorithm runs */}
+      {isProcessing && (
+        <View style={styles.processingOverlay}>
+          <View style={styles.processingCard}>
+            <Text style={styles.processingTitle}>Counting teeth…</Text>
+            <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
+          </View>
+        </View>
+      )}
+
       {/* Bottom controls */}
       <View style={styles.bottomBar}>
         <Text style={styles.hint}>
@@ -256,4 +266,23 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.45)',
     fontSize: 12,
   },
+
+  processingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  processingCard: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: 36,
+    paddingVertical: 24,
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  processingTitle: { color: '#fff',              fontSize: 20, fontWeight: '700' },
+  processingHint:  { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
 });

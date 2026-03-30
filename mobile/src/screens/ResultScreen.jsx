@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,17 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
 
-/** Cross-platform brief notification */
 function showToast(message) {
   if (Platform.OS === 'android') {
     ToastAndroid.show(message, ToastAndroid.LONG);
@@ -24,36 +31,82 @@ function showToast(message) {
 }
 
 /**
- * Phase 4: displays real tooth count + confidence from the algorithm,
- * with the gear-contour SVG overlay positioned using normalised coordinates.
+ * Counts up from 0 to target over ~700ms once target is set.
+ */
+function useCountUp(target) {
+  const [displayed, setDisplayed] = useState(0);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    if (target == null) { setDisplayed(0); return; }
+    const start = performance.now();
+    const duration = 700;
+
+    const step = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayed(Math.round(eased * target));
+      if (t < 1) raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [target]);
+
+  return displayed;
+}
+
+/**
+ * Phase 5: polished result UI.
+ *
+ *   • Count-up animation on the tooth number
+ *   • Gear contour overlay fades in with tick marks at each tooth
+ *   • Confidence badge colour-codes green / orange
+ *   • Out-of-range and low-confidence toasts
+ *   • Reset button slides up on mount
  */
 export default function ResultScreen({ navigation, route }) {
   const { photoPath } = route.params ?? {};
   const { toothCount, confidence, gearContour, isProcessing, error, reset } = useGearStore();
   const { width } = useWindowDimensions();
-  const imageHeight = width;   // 1:1 square display crop
+  const imageHeight = width;
 
-  // Low-confidence toast (spec §5c)
+  const displayedCount = useCountUp(toothCount);
+
+  const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
+  const lowConf       = confidence != null && confidence < 0.85;
+  const outOfRange    = toothCount != null && (toothCount < 10 || toothCount > 65);
+
+  // Mount animations
+  const panelY    = useSharedValue(60);
+  const panelOpac = useSharedValue(0);
+
   useEffect(() => {
-    if (confidence != null && confidence < 0.85) {
-      showToast('Low confidence — try better lighting or a straighter angle');
-    }
-  }, [confidence]);
+    panelY.value    = withDelay(200, withSpring(0,   { damping: 16 }));
+    panelOpac.value = withDelay(200, withTiming(1.0, { duration: 350, easing: Easing.out(Easing.quad) }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Low-confidence + out-of-range toasts
+  useEffect(() => {
+    if (lowConf)     showToast('Low confidence — try better lighting or a straighter angle');
+    else if (outOfRange) showToast('Tooth count outside expected range (10–65T) — verify manually');
+  }, [lowConf, outOfRange]);
+
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: panelY.value }],
+    opacity: panelOpac.value,
+  }));
 
   const handleReset = () => {
     reset();
     navigation.navigate('Camera');
   };
 
-  const confidencePct   = confidence != null ? Math.round(confidence * 100) : null;
-  const lowConfidence   = confidence != null && confidence < 0.85;
-  const outOfRange      = toothCount != null && (toothCount < 10 || toothCount > 65);
-
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* Captured image + overlay */}
-      <View style={[styles.imageContainer, { width, height: imageHeight }]}>
+      {/* ── Photo + overlay ───────────────────────────────────────── */}
+      <View style={[styles.imageWrap, { width, height: imageHeight }]}>
         {photoPath ? (
           <Image
             source={{ uri: `file://${photoPath}` }}
@@ -61,8 +114,8 @@ export default function ResultScreen({ navigation, route }) {
             resizeMode="cover"
           />
         ) : (
-          <View style={[styles.imagePlaceholder, { width, height: imageHeight }]}>
-            <Text style={styles.placeholderText}>Photo not available</Text>
+          <View style={[styles.placeholder, { width, height: imageHeight }]}>
+            <Text style={styles.placeholderText}>Photo unavailable</Text>
           </View>
         )}
 
@@ -85,97 +138,114 @@ export default function ResultScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* Result panel */}
-      <View style={styles.resultPanel}>
+      {/* ── Result panel ──────────────────────────────────────────── */}
+      <Animated.View style={[styles.panel, panelStyle]}>
+
         {error ? (
-          <>
-            <Text style={styles.errorText}>{error}</Text>
-            <Text style={styles.errorSub}>Position the gear in the centre and try again</Text>
-          </>
+          <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>Detection failed</Text>
+            <Text style={styles.errorBody}>{error}</Text>
+            <Text style={styles.errorHint}>Centre the gear and try again in good lighting.</Text>
+          </View>
+
         ) : toothCount != null ? (
           <>
-            <Text style={styles.toothCount}>{toothCount}</Text>
-            <Text style={styles.toothLabel}>teeth detected</Text>
+            {/* Big number */}
+            <View style={styles.countRow}>
+              <Text style={styles.countNumber}>{displayedCount}</Text>
+              <Text style={styles.countUnit}>T</Text>
+            </View>
+            <Text style={styles.countLabel}>teeth detected</Text>
 
+            {/* Confidence badge */}
             {confidencePct != null && (
-              <Text style={[styles.confidence, lowConfidence && styles.confidenceLow]}>
-                {lowConfidence
-                  ? `Low confidence (${confidencePct}%)`
-                  : `Confidence ${confidencePct}%`}
-              </Text>
+              <View style={[styles.badge, lowConf ? styles.badgeLow : styles.badgeGood]}>
+                <Text style={styles.badgeText}>
+                  {lowConf ? `Low confidence  ${confidencePct}%` : `Confidence  ${confidencePct}%`}
+                </Text>
+              </View>
             )}
 
             {outOfRange && (
-              <Text style={styles.outOfRange}>
-                Outside expected range (10–65T) — verify manually
-              </Text>
+              <Text style={styles.outOfRange}>Outside expected range — verify manually</Text>
             )}
           </>
+
         ) : (
-          <Text style={styles.waitingText}>
-            {isProcessing ? 'Processing…' : 'No result yet'}
+          <Text style={styles.waiting}>
+            {isProcessing ? 'Processing…' : 'No result'}
           </Text>
         )}
 
-        <TouchableOpacity style={styles.resetButton} onPress={handleReset} activeOpacity={0.8}>
-          <Text style={styles.resetButtonText}>Reset</Text>
+        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
+          <Text style={styles.resetText}>Reset</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111' },
+  container: { flex: 1, backgroundColor: '#0e0e0e' },
 
-  imageContainer: { position: 'relative', backgroundColor: '#000' },
+  imageWrap: { position: 'relative', backgroundColor: '#000' },
 
-  imagePlaceholder: {
-    backgroundColor: '#222',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: { color: '#666', fontSize: 14 },
+  placeholder: { backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' },
+  placeholderText: { color: '#555', fontSize: 14 },
 
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  processingText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  processingText: { color: '#fff', fontSize: 18, fontWeight: '600', letterSpacing: 0.3 },
 
-  resultPanel: {
+  panel: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    gap: 6,
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    gap: 8,
   },
 
-  toothCount: {
-    fontSize: 80,
+  countRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
+  countNumber: {
+    fontSize: 88,
     fontWeight: '800',
     color: '#fff',
-    lineHeight: 88,
+    lineHeight: 96,
+    letterSpacing: -2,
   },
-  toothLabel: { fontSize: 20, color: '#aaa', fontWeight: '500' },
+  countUnit: { fontSize: 28, fontWeight: '700', color: '#aaa', marginBottom: 12 },
+  countLabel: { fontSize: 16, color: '#666', fontWeight: '500', marginTop: -4 },
 
-  confidence:    { fontSize: 14, color: '#4CAF50', marginTop: 4 },
-  confidenceLow: { color: '#FF9800' },
+  badge: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeGood: { backgroundColor: 'rgba(76,175,80,0.18)' },
+  badgeLow:  { backgroundColor: 'rgba(255,152,0,0.18)' },
+  badgeText: { fontSize: 13, fontWeight: '600', color: '#ccc' },
 
-  outOfRange: { fontSize: 13, color: '#FF5722', textAlign: 'center', marginTop: 4 },
+  outOfRange: { fontSize: 12, color: '#FF5722', textAlign: 'center' },
 
-  errorText:  { fontSize: 15, color: '#f44336', textAlign: 'center' },
-  errorSub:   { fontSize: 13, color: '#888',    textAlign: 'center' },
-  waitingText:{ fontSize: 16, color: '#666' },
+  errorBox:  { alignItems: 'center', gap: 6 },
+  errorTitle:{ fontSize: 17, fontWeight: '700', color: '#f44336' },
+  errorBody: { fontSize: 14, color: '#bbb', textAlign: 'center' },
+  errorHint: { fontSize: 12, color: '#666', textAlign: 'center' },
 
-  resetButton: {
-    marginTop: 20,
+  waiting: { fontSize: 16, color: '#555' },
+
+  resetBtn: {
+    marginTop: 18,
     backgroundColor: '#fff',
-    paddingHorizontal: 48,
-    paddingVertical: 14,
-    borderRadius: 32,
+    paddingHorizontal: 52,
+    paddingVertical: 15,
+    borderRadius: 34,
   },
-  resetButtonText: { fontSize: 17, fontWeight: '700', color: '#111' },
+  resetText: { fontSize: 17, fontWeight: '700', color: '#0e0e0e' },
 });
