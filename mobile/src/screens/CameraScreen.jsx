@@ -19,6 +19,7 @@ import Animated, {
 import MotionIndicator from '../components/MotionIndicator';
 import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
+import { countTeeth } from '../algorithm/gearCounter';
 
 /**
  * Phase 3: live camera feed with real motion detection.
@@ -36,7 +37,7 @@ export default function CameraScreen({ navigation }) {
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
 
-  const { setProcessing, setError, isProcessing, reset: resetStore } = useGearStore();
+  const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
 
   // Animated pulse on the aim circle when stable
   const pulseScale = useSharedValue(1);
@@ -46,7 +47,7 @@ export default function CameraScreen({ navigation }) {
   const handleCapture = useCallback(async () => {
     if (!camera.current || isProcessing) return;
 
-    motionReset();   // stop motion detection while we process
+    motionReset();       // pause motion detection while we process
     setProcessing(true);
 
     try {
@@ -55,14 +56,26 @@ export default function CameraScreen({ navigation }) {
         qualityPrioritization: 'quality',
       });
 
-      // Phase 4 will call the tooth-counting algorithm here before navigating.
+      // Run the tooth-counting algorithm on the captured photo.
+      const result = await countTeeth(`file://${photo.path}`);
+
+      setResult({
+        toothCount:  result.toothCount,
+        confidence:  result.confidence,
+        gearContour: {
+          centerX: result.gearCenter.x,
+          centerY: result.gearCenter.y,
+          radius:  result.gearRadius,
+        },
+      });
+
       navigation.navigate('Result', { photoPath: photo.path });
     } catch (e) {
       setError(e.message);
-      Alert.alert('Capture failed', e.message);
+      Alert.alert('Processing failed', e.message);
       motionReset();
     }
-  }, [isProcessing, navigation, setError, setProcessing]); // motionReset added below
+  }, [isProcessing, navigation, setError, setProcessing, setResult]); // motionReset added below
 
   // ── Motion detection ───────────────────────────────────────────────────
   const { isStable, frameProcessor, reset: motionReset } = useMotionDetection({

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,33 +6,52 @@ import {
   TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
+  ToastAndroid,
+  Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
 
+/** Cross-platform brief notification */
+function showToast(message) {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(message, ToastAndroid.LONG);
+  } else {
+    Alert.alert('', message);
+  }
+}
+
 /**
- * Displays the captured photo with the gear contour overlay and tooth count.
- *
- * Phase 4 will populate toothCount/confidence/gearContour from the algorithm.
- * Phase 5 will refine the overlay with actual contour points.
+ * Phase 4: displays real tooth count + confidence from the algorithm,
+ * with the gear-contour SVG overlay positioned using normalised coordinates.
  */
 export default function ResultScreen({ navigation, route }) {
   const { photoPath } = route.params ?? {};
   const { toothCount, confidence, gearContour, isProcessing, error, reset } = useGearStore();
   const { width } = useWindowDimensions();
-  const imageHeight = width * 1.0;   // 1:1 square crop for display
+  const imageHeight = width;   // 1:1 square display crop
+
+  // Low-confidence toast (spec §5c)
+  useEffect(() => {
+    if (confidence != null && confidence < 0.85) {
+      showToast('Low confidence — try better lighting or a straighter angle');
+    }
+  }, [confidence]);
 
   const handleReset = () => {
     reset();
     navigation.navigate('Camera');
   };
 
-  const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
-  const lowConfidence = confidence != null && confidence < 0.85;
+  const confidencePct   = confidence != null ? Math.round(confidence * 100) : null;
+  const lowConfidence   = confidence != null && confidence < 0.85;
+  const outOfRange      = toothCount != null && (toothCount < 10 || toothCount > 65);
 
   return (
     <SafeAreaView style={styles.container}>
+
       {/* Captured image + overlay */}
       <View style={[styles.imageContainer, { width, height: imageHeight }]}>
         {photoPath ? (
@@ -47,20 +66,18 @@ export default function ResultScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Gear contour overlay — only shown when we have a result */}
-        {toothCount != null && (
+        {toothCount != null && gearContour && (
           <GearContourOverlay
             width={width}
             height={imageHeight}
-            centerX={gearContour?.centerX ?? 0.5}
-            centerY={gearContour?.centerY ?? 0.5}
-            radius={gearContour?.radius ?? 0.35}
+            centerX={gearContour.centerX}
+            centerY={gearContour.centerY}
+            radius={gearContour.radius}
             toothCount={toothCount}
             confidence={confidence ?? 0}
           />
         )}
 
-        {/* Processing spinner placeholder */}
         {isProcessing && (
           <View style={styles.processingOverlay}>
             <Text style={styles.processingText}>Counting teeth…</Text>
@@ -71,16 +88,26 @@ export default function ResultScreen({ navigation, route }) {
       {/* Result panel */}
       <View style={styles.resultPanel}>
         {error ? (
-          <Text style={styles.errorText}>{error}</Text>
+          <>
+            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorSub}>Position the gear in the centre and try again</Text>
+          </>
         ) : toothCount != null ? (
           <>
             <Text style={styles.toothCount}>{toothCount}</Text>
             <Text style={styles.toothLabel}>teeth detected</Text>
+
             {confidencePct != null && (
               <Text style={[styles.confidence, lowConfidence && styles.confidenceLow]}>
                 {lowConfidence
-                  ? `Low confidence (${confidencePct}%) — try better lighting`
-                  : `Confidence: ${confidencePct}%`}
+                  ? `Low confidence (${confidencePct}%)`
+                  : `Confidence ${confidencePct}%`}
+              </Text>
+            )}
+
+            {outOfRange && (
+              <Text style={styles.outOfRange}>
+                Outside expected range (10–65T) — verify manually
               </Text>
             )}
           </>
@@ -123,7 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    gap: 8,
+    gap: 6,
   },
 
   toothCount: {
@@ -134,14 +161,17 @@ const styles = StyleSheet.create({
   },
   toothLabel: { fontSize: 20, color: '#aaa', fontWeight: '500' },
 
-  confidence: { fontSize: 14, color: '#4CAF50', marginTop: 4 },
+  confidence:    { fontSize: 14, color: '#4CAF50', marginTop: 4 },
   confidenceLow: { color: '#FF9800' },
 
-  errorText: { fontSize: 15, color: '#f44336', textAlign: 'center' },
-  waitingText: { fontSize: 16, color: '#666' },
+  outOfRange: { fontSize: 13, color: '#FF5722', textAlign: 'center', marginTop: 4 },
+
+  errorText:  { fontSize: 15, color: '#f44336', textAlign: 'center' },
+  errorSub:   { fontSize: 13, color: '#888',    textAlign: 'center' },
+  waitingText:{ fontSize: 16, color: '#666' },
 
   resetButton: {
-    marginTop: 24,
+    marginTop: 20,
     backgroundColor: '#fff',
     paddingHorizontal: 48,
     paddingVertical: 14,
