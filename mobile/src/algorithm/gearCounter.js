@@ -254,17 +254,29 @@ function pickToothCount(dft) {
  *                    gearRadius: number}>}
  */
 export async function countTeeth(photoUri) {
+  const t0 = Date.now();
+
   const { width, height, rgba } = await loadAndDecodeImage(photoUri);
+  const t1 = Date.now();
+
   const gray  = toGrayscale(rgba, width, height);
   const blur  = gaussianBlur(gray, width, height);
   const edges = sobelEdges(blur, width, height);
+  const t2 = Date.now();
 
   const { cx, cy } = findGearCenter(edges, width, height);
   const r           = findGearRadius(edges, cx, cy, width, height);
+  const t3 = Date.now();
 
   const ring        = sampleIntensityRing(gray, cx, cy, r, width, height, N_ANGLES);
   const dft         = computeDFT(ring);
   const { toothCount, confidence } = pickToothCount(dft);
+  const t4 = Date.now();
+
+  console.log(
+    `[GearCounter] ${width}×${height}px | ` +
+    `load=${t1-t0}ms blur+edges=${t2-t1}ms radius=${t3-t2}ms fft=${t4-t3}ms total=${t4-t0}ms`
+  );
 
   return {
     toothCount,

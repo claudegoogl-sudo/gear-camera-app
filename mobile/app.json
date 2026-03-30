@@ -1,32 +1,52 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "GearCounter",
+    "slug": "gear-counter",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0e0e0e"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.gearcounter.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to photograph bicycle gears for tooth counting.",
+        "NSPhotoLibraryUsageDescription": "Not used — photos are processed in memory only."
+      }
     },
     "android": {
+      "package": "com.gearcounter.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0e0e0e"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "react-native-vision-camera"
-    ]
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "GearCounter needs camera access to photograph gears.",
+          "enableLocation": false
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "gear-counter"
+      }
+    }
   }
 }
