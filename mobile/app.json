@@ -16,7 +16,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.gearcounter.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Used to photograph bicycle gears for tooth counting.",
+        "NSCameraUsageDescription": "GearCounter needs camera access to photograph gears.",
         "NSPhotoLibraryUsageDescription": "Not used — photos are processed in memory only."
       }
     },
@@ -45,8 +45,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "gear-counter"
+        "projectId": "ac25aadf-c65d-4f3e-b663-90d03466273d"
       }
-    }
+    },
+    "owner": "claude.googl"
   }
 }
