@@ -8,7 +8,7 @@ import { useFrameProcessor } from 'react-native-vision-camera';
 const MOTION_THRESHOLD = 8;
 
 // How long the gear must be still (ms) before onStable fires.
-const STABILITY_MS = 1500;
+const STABILITY_MS = 500;
 
 // Number of evenly-spaced pixel samples taken per frame.
 // Fewer = faster but less accurate; 300 is a good balance.
