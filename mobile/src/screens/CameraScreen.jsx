@@ -1,52 +1,116 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useCameraDevice, Camera } from 'react-native-vision-camera';
+import React, { useRef, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
+import { useCameraDevice, Camera, useCameraPermission } from 'react-native-vision-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withRepeat,
+  withTiming,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import MotionIndicator from '../components/MotionIndicator';
+import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
 
 /**
- * Phase 2 scaffold — live camera feed with UI chrome.
+ * Phase 3: live camera feed with real motion detection.
  *
- * Phase 3 will add frame-by-frame motion detection.
- * Phase 4 will add auto-capture + algorithm processing.
+ * Flow:
+ *   1. Live feed displayed continuously.
+ *   2. Frame processor measures per-frame pixel diff (~10 fps).
+ *   3. When diff < threshold for 1.5 s → gear is "stable" → auto-capture.
+ *   4. Photo + path passed to ResultScreen (algorithm called in Phase 4).
  *
- * For now the "Capture" button is manual so the algorithm can be tested
- * end-to-end before motion detection is wired in.
+ * Manual capture button remains for override / testing.
  */
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
   const device = useCameraDevice('back');
-  const { setProcessing, setResult, setError, isProcessing } = useGearStore();
+  const { hasPermission, requestPermission } = useCameraPermission();
 
-  // Phase 3 will compute this from frame diffs
-  const [isStable, setIsStable] = useState(false);
+  const { setProcessing, setError, isProcessing, reset: resetStore } = useGearStore();
 
+  // Animated pulse on the aim circle when stable
+  const pulseScale = useSharedValue(1);
+  const aimOpacity = useSharedValue(0.5);
+
+  // ── Capture handler (shared by auto and manual) ────────────────────────
   const handleCapture = useCallback(async () => {
     if (!camera.current || isProcessing) return;
 
-    try {
-      setProcessing(true);
+    motionReset();   // stop motion detection while we process
+    setProcessing(true);
 
+    try {
       const photo = await camera.current.takePhoto({
         flash: 'on',
         qualityPrioritization: 'quality',
       });
 
-      // Phase 4: pass photo.path to the tooth-counting algorithm.
-      // For now, navigate to ResultScreen with a placeholder result.
-      setResult({
-        toothCount: null,   // replaced in Phase 4
-        confidence: null,
-        gearContour: null,
-      });
-
+      // Phase 4 will call the tooth-counting algorithm here before navigating.
       navigation.navigate('Result', { photoPath: photo.path });
     } catch (e) {
       setError(e.message);
       Alert.alert('Capture failed', e.message);
+      motionReset();
     }
-  }, [isProcessing, navigation, setError, setProcessing, setResult]);
+  }, [isProcessing, navigation, setError, setProcessing]); // motionReset added below
+
+  // ── Motion detection ───────────────────────────────────────────────────
+  const { isStable, frameProcessor, reset: motionReset } = useMotionDetection({
+    onStable: handleCapture,
+    enabled: !isProcessing && hasPermission,
+  });
+
+  // Pulse aim circle when stable
+  useEffect(() => {
+    if (isStable) {
+      pulseScale.value = withRepeat(withSpring(1.08, { damping: 4 }), -1, true);
+      aimOpacity.value = withTiming(1.0, { duration: 300 });
+    } else {
+      cancelAnimation(pulseScale);
+      pulseScale.value = withSpring(1.0);
+      aimOpacity.value = withTiming(0.5, { duration: 300 });
+    }
+  }, [isStable, aimOpacity, pulseScale]);
+
+  // Reset store when screen comes back into focus after a result
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => {
+      resetStore();
+      motionReset();
+    });
+    return unsub;
+  }, [navigation, resetStore, motionReset]);
+
+  // ── Permission gate ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!hasPermission) requestPermission();
+  }, [hasPermission, requestPermission]);
+
+  const aimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+    opacity: aimOpacity.value,
+  }));
+
+  if (!hasPermission) {
+    return (
+      <View style={styles.noCamera}>
+        <Text style={styles.noCameraText}>Camera permission required</Text>
+        <TouchableOpacity style={styles.permButton} onPress={requestPermission}>
+          <Text style={styles.permButtonText}>Grant Permission</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (!device) {
     return (
@@ -63,28 +127,33 @@ export default function CameraScreen({ navigation }) {
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
-        isActive={true}
+        isActive={!isProcessing}
         photo={true}
+        frameProcessor={frameProcessor}
+        fps={30}
       />
 
-      {/* Top bar — motion indicator */}
+      {/* Top bar — motion status */}
       <View style={styles.topBar}>
         <MotionIndicator stable={isStable} />
       </View>
 
-      {/* Aim guide — helps user centre the gear */}
+      {/* Aim guide — pulses green when stable */}
       <View style={styles.aimGuide} pointerEvents="none">
-        <View style={styles.aimCircle} />
+        <Animated.View style={[styles.aimCircle, isStable && styles.aimCircleStable, aimStyle]} />
       </View>
 
       {/* Bottom controls */}
       <View style={styles.bottomBar}>
         <Text style={styles.hint}>
-          {isStable
-            ? 'Gear stable — capturing…'
-            : 'Hold camera steady over gear'}
+          {isProcessing
+            ? 'Processing…'
+            : isStable
+            ? 'Stable — capturing automatically…'
+            : 'Hold camera steady over the gear'}
         </Text>
 
+        {/* Manual capture — always available as fallback */}
         <TouchableOpacity
           style={[styles.captureButton, isProcessing && styles.captureButtonDisabled]}
           onPress={handleCapture}
@@ -93,6 +162,8 @@ export default function CameraScreen({ navigation }) {
         >
           <View style={styles.captureButtonInner} />
         </TouchableOpacity>
+
+        <Text style={styles.manualLabel}>tap to capture manually</Text>
       </View>
     </SafeAreaView>
   );
@@ -103,8 +174,10 @@ const AIM_SIZE = 240;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
 
-  noCamera: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
+  noCamera: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000', gap: 16 },
   noCameraText: { color: '#fff', fontSize: 16 },
+  permButton: { backgroundColor: '#fff', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
+  permButtonText: { fontSize: 15, fontWeight: '600', color: '#111' },
 
   topBar: {
     position: 'absolute',
@@ -125,7 +198,10 @@ const styles = StyleSheet.create({
     borderRadius: AIM_SIZE / 2,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.5)',
-    borderStyle: 'dashed',
+  },
+  aimCircleStable: {
+    borderColor: '#4CAF50',
+    borderWidth: 3,
   },
 
   bottomBar: {
@@ -133,15 +209,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: 40,
+    paddingBottom: 36,
     paddingHorizontal: 24,
     alignItems: 'center',
-    gap: 20,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    gap: 16,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
 
   hint: {
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 15,
     textAlign: 'center',
   },
@@ -155,11 +231,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  captureButtonDisabled: { opacity: 0.4 },
+  captureButtonDisabled: { opacity: 0.35 },
   captureButtonInner: {
     width: 54,
     height: 54,
     borderRadius: 27,
     backgroundColor: '#fff',
+  },
+
+  manualLabel: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
   },
 });
