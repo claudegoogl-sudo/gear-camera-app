@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,21 +21,13 @@ import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
 import { countTeeth } from '../algorithm/gearCounter';
 
-/**
- * Phase 3: live camera feed with real motion detection.
- *
- * Flow:
- *   1. Live feed displayed continuously.
- *   2. Frame processor measures per-frame pixel diff (~10 fps).
- *   3. When diff < threshold for 1.5 s → gear is "stable" → auto-capture.
- *   4. Photo + path passed to ResultScreen (algorithm called in Phase 4).
- *
- * Manual capture button remains for override / testing.
- */
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
+
+  // Track whether the camera has finished initializing
+  const [isCameraReady, setIsCameraReady] = useState(false);
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
 
@@ -43,11 +35,15 @@ export default function CameraScreen({ navigation }) {
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
 
+  // Use a ref for motionReset so handleCapture can call it without a
+  // circular hook dependency.
+  const motionResetRef = useRef(null);
+
   // ── Capture handler (shared by auto and manual) ────────────────────────
   const handleCapture = useCallback(async () => {
-    if (!camera.current || isProcessing) return;
+    if (!camera.current || isProcessing || !isCameraReady) return;
 
-    motionReset();       // pause motion detection while we process
+    motionResetRef.current?.();   // pause motion detection while processing
     setProcessing(true);
 
     try {
@@ -73,15 +69,22 @@ export default function CameraScreen({ navigation }) {
     } catch (e) {
       setError(e.message);
       Alert.alert('Processing failed', e.message);
-      motionReset();
+      setProcessing(false);
+      motionResetRef.current?.();
     }
-  }, [isProcessing, navigation, setError, setProcessing, setResult]); // motionReset added below
+  }, [isCameraReady, isProcessing, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
+  // Only enable after camera is initialized, not before.
   const { isStable, frameProcessor, reset: motionReset } = useMotionDetection({
     onStable: handleCapture,
-    enabled: !isProcessing && hasPermission,
+    enabled: isCameraReady && !isProcessing && hasPermission,
   });
+
+  // Keep ref in sync so handleCapture can call motionReset safely.
+  useEffect(() => {
+    motionResetRef.current = motionReset;
+  }, [motionReset]);
 
   // Pulse aim circle when stable
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function CameraScreen({ navigation }) {
     const unsub = navigation.addListener('focus', () => {
       resetStore();
       motionReset();
+      setIsCameraReady(false); // camera will re-init
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
@@ -133,6 +137,8 @@ export default function CameraScreen({ navigation }) {
     );
   }
 
+  const captureDisabled = isProcessing || !isCameraReady;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Full-screen live feed */}
@@ -140,15 +146,20 @@ export default function CameraScreen({ navigation }) {
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
-        isActive={!isProcessing}
+        isActive={true}
         photo={true}
         frameProcessor={frameProcessor}
         fps={30}
+        onInitialized={() => setIsCameraReady(true)}
+        onError={(e) => console.warn('Camera error:', e.message)}
       />
 
       {/* Top bar — motion status */}
       <View style={styles.topBar}>
-        <MotionIndicator stable={isStable} />
+        {isCameraReady
+          ? <MotionIndicator stable={isStable} />
+          : <Text style={styles.initText}>Initializing camera…</Text>
+        }
       </View>
 
       {/* Aim guide — pulses green when stable */}
@@ -169,7 +180,9 @@ export default function CameraScreen({ navigation }) {
       {/* Bottom controls */}
       <View style={styles.bottomBar}>
         <Text style={styles.hint}>
-          {isProcessing
+          {!isCameraReady
+            ? 'Starting camera…'
+            : isProcessing
             ? 'Processing…'
             : isStable
             ? 'Stable — capturing automatically…'
@@ -178,9 +191,9 @@ export default function CameraScreen({ navigation }) {
 
         {/* Manual capture — always available as fallback */}
         <TouchableOpacity
-          style={[styles.captureButton, isProcessing && styles.captureButtonDisabled]}
+          style={[styles.captureButton, captureDisabled && styles.captureButtonDisabled]}
           onPress={handleCapture}
-          disabled={isProcessing}
+          disabled={captureDisabled}
           activeOpacity={0.8}
         >
           <View style={styles.captureButtonInner} />
@@ -208,6 +221,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+
+  initText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
   },
 
   aimGuide: {
