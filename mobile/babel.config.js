@@ -4,6 +4,6 @@ module.exports = function (api) {
     presets: ['babel-preset-expo'],
     plugins: process.env.NODE_ENV === 'test'
       ? []
-      : ['react-native-worklets-core/plugin', 'react-native-reanimated/plugin'],
+      : ['react-native-worklets/plugin', 'react-native-reanimated/plugin'],
   };
 };

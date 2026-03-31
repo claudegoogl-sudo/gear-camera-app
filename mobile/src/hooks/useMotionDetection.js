@@ -3,7 +3,7 @@ import { useSharedValue, runOnJS } from 'react-native-reanimated';
 
 let useFrameProcessor;
 try {
-  useFrameProcessor = require('react-native-vision-camera').useFrameProcessor;
+  ({ useFrameProcessor } = require('react-native-vision-camera'));
 } catch {
   useFrameProcessor = null;
 }
