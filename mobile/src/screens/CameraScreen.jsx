@@ -26,24 +26,19 @@ export default function CameraScreen({ navigation }) {
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
 
-  // Track whether the camera has finished initializing
   const [isCameraReady, setIsCameraReady] = useState(false);
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
 
-  // Animated pulse on the aim circle when stable
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
-
-  // Use a ref for motionReset so handleCapture can call it without a
-  // circular hook dependency.
   const motionResetRef = useRef(null);
 
-  // ── Capture handler (shared by auto and manual) ────────────────────────
+  // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
     if (!camera.current || isProcessing || !isCameraReady) return;
 
-    motionResetRef.current?.();   // pause motion detection while processing
+    motionResetRef.current?.();
     setProcessing(true);
 
     try {
@@ -52,7 +47,6 @@ export default function CameraScreen({ navigation }) {
         qualityPrioritization: 'quality',
       });
 
-      // Run the tooth-counting algorithm on the captured photo.
       const result = await countTeeth(`file://${photo.path}`);
 
       setResult({
@@ -75,16 +69,12 @@ export default function CameraScreen({ navigation }) {
   }, [isCameraReady, isProcessing, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
-  // Only enable after camera is initialized, not before.
   const { isStable, frameProcessor, reset: motionReset } = useMotionDetection({
     onStable: handleCapture,
     enabled: isCameraReady && !isProcessing && hasPermission,
   });
 
-  // Keep ref in sync so handleCapture can call motionReset safely.
-  useEffect(() => {
-    motionResetRef.current = motionReset;
-  }, [motionReset]);
+  useEffect(() => { motionResetRef.current = motionReset; }, [motionReset]);
 
   // Pulse aim circle when stable
   useEffect(() => {
@@ -98,12 +88,12 @@ export default function CameraScreen({ navigation }) {
     }
   }, [isStable, aimOpacity, pulseScale]);
 
-  // Reset store when screen comes back into focus after a result
+  // Reset on focus
   useEffect(() => {
     const unsub = navigation.addListener('focus', () => {
       resetStore();
       motionReset();
-      setIsCameraReady(false); // camera will re-init
+      setIsCameraReady(false);
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
@@ -140,68 +130,74 @@ export default function CameraScreen({ navigation }) {
   const captureDisabled = isProcessing || !isCameraReady;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Full-screen live feed */}
+    <View style={styles.container}>
+      {/* Full-screen camera preview — no frame processor until camera is ready */}
       <Camera
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
         isActive={true}
         photo={true}
-        frameProcessor={frameProcessor}
-        fps={30}
+        frameProcessor={isCameraReady ? frameProcessor : undefined}
         onInitialized={() => setIsCameraReady(true)}
-        onError={(e) => console.warn('Camera error:', e.message)}
+        onError={(e) => {
+          console.warn('Camera error:', e.message);
+          setIsCameraReady(true); // unblock UI even on error
+        }}
       />
 
-      {/* Top bar — motion status */}
-      <View style={styles.topBar}>
-        {isCameraReady
-          ? <MotionIndicator stable={isStable} />
-          : <Text style={styles.initText}>Initializing camera…</Text>
-        }
-      </View>
+      {/* Overlay UI — separate from camera so layout can't affect preview */}
+      <SafeAreaView style={StyleSheet.absoluteFill} edges={['top', 'bottom']} pointerEvents="box-none">
 
-      {/* Aim guide — pulses green when stable */}
-      <View style={styles.aimGuide} pointerEvents="none">
-        <Animated.View style={[styles.aimCircle, isStable && styles.aimCircleStable, aimStyle]} />
-      </View>
-
-      {/* Processing overlay — shown while algorithm runs */}
-      {isProcessing && (
-        <View style={styles.processingOverlay}>
-          <View style={styles.processingCard}>
-            <Text style={styles.processingTitle}>Counting teeth…</Text>
-            <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
-          </View>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          {isCameraReady
+            ? <MotionIndicator stable={isStable} />
+            : <Text style={styles.initText}>Starting camera…</Text>
+          }
         </View>
-      )}
 
-      {/* Bottom controls */}
-      <View style={styles.bottomBar}>
-        <Text style={styles.hint}>
-          {!isCameraReady
-            ? 'Starting camera…'
-            : isProcessing
-            ? 'Processing…'
-            : isStable
-            ? 'Stable — capturing automatically…'
-            : 'Hold camera steady over the gear'}
-        </Text>
+        {/* Aim circle */}
+        <View style={styles.aimGuide} pointerEvents="none">
+          <Animated.View style={[styles.aimCircle, isStable && styles.aimCircleStable, aimStyle]} />
+        </View>
 
-        {/* Manual capture — always available as fallback */}
-        <TouchableOpacity
-          style={[styles.captureButton, captureDisabled && styles.captureButtonDisabled]}
-          onPress={handleCapture}
-          disabled={captureDisabled}
-          activeOpacity={0.8}
-        >
-          <View style={styles.captureButtonInner} />
-        </TouchableOpacity>
+        {/* Processing overlay */}
+        {isProcessing && (
+          <View style={styles.processingOverlay}>
+            <View style={styles.processingCard}>
+              <Text style={styles.processingTitle}>Counting teeth…</Text>
+              <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
+            </View>
+          </View>
+        )}
 
-        <Text style={styles.manualLabel}>tap to capture manually</Text>
-      </View>
-    </SafeAreaView>
+        {/* Bottom controls */}
+        <View style={styles.bottomBar}>
+          <Text style={styles.hint}>
+            {!isCameraReady
+              ? 'Starting camera…'
+              : isProcessing
+              ? 'Processing…'
+              : isStable
+              ? 'Stable — capturing automatically…'
+              : 'Hold camera steady over the gear'}
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.captureButton, captureDisabled && styles.captureButtonDisabled]}
+            onPress={handleCapture}
+            disabled={captureDisabled}
+            activeOpacity={0.8}
+          >
+            <View style={styles.captureButtonInner} />
+          </TouchableOpacity>
+
+          <Text style={styles.manualLabel}>tap to capture manually</Text>
+        </View>
+
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -216,20 +212,17 @@ const styles = StyleSheet.create({
   permButtonText: { fontSize: 15, fontWeight: '600', color: '#111' },
 
   topBar: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
     alignItems: 'center',
+    paddingTop: 12,
   },
 
   initText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 13,
   },
 
   aimGuide: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -246,11 +239,7 @@ const styles = StyleSheet.create({
   },
 
   bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: 36,
+    paddingBottom: 12,
     paddingHorizontal: 24,
     alignItems: 'center',
     gap: 16,
@@ -301,6 +290,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
-  processingTitle: { color: '#fff',              fontSize: 20, fontWeight: '700' },
+  processingTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
   processingHint:  { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
 });
