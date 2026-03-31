@@ -68,7 +68,12 @@ export function useMotionDetection({ onStable, enabled = true }) {
           frameCounter.value += 1;
           if (frameCounter.value % FRAME_SKIP !== 0) return;
 
-          const buffer = frame.toArrayBuffer();
+          let buffer;
+          try {
+            buffer = frame.toArrayBuffer();
+          } catch {
+            return; // toArrayBuffer unavailable on this device/SDK version
+          }
           const pixels = new Uint8Array(buffer);
           const total = pixels.length;
           if (total === 0) return;
