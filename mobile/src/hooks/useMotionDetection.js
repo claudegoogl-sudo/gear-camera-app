@@ -139,7 +139,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
           if (total === 0) return;
 
           const step = Math.floor(total / NUM_SAMPLES);
-          const samples = new Array(NUM_SAMPLES);
+          const samples = new Float32Array(NUM_SAMPLES);
           for (let i = 0; i < NUM_SAMPLES; i++) {
             samples[i] = pixels[i * step] ?? 0;
           }
