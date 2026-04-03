@@ -74,7 +74,7 @@ export default function ResultScreen({ navigation, route }) {
   const displayedCount = useCountUp(toothCount);
 
   const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
-  const lowConf       = confidence != null && confidence < 0.85;
+  const lowConf       = confidence != null && confidence < 0.90;
   const outOfRange    = toothCount != null && (toothCount < 10 || toothCount > 65);
 
   // Mount animations

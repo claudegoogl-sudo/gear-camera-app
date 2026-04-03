@@ -45,7 +45,7 @@ export default function GearContourOverlay({
   const cy = centerY * height;
   const r  = radius  * width;
 
-  const highConf  = confidence >= 0.85;
+  const highConf  = confidence >= 0.90;
   const color     = highConf ? '#4CAF50' : '#FF9800';
   const innerR    = r * 0.78;       // approximate root circle
   const tickOuter = r + 10;

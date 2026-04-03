@@ -10,7 +10,7 @@ try {
 
 // ── Tuning constants ────────────────────────────────────────────────────────
 const MOTION_THRESHOLD = 8;
-const STABILITY_MS = 500;
+const STABILITY_MS = 1000;
 const NUM_SAMPLES = 300;
 const FRAME_SKIP = 3;
 // ───────────────────────────────────────────────────────────────────────────
