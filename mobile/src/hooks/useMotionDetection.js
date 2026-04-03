@@ -70,8 +70,10 @@ export function useMotionDetection({ onStable, enabled = true }) {
   }, []);
 
   // Called from worklet when toArrayBuffer() threw — logged once.
-  const reportFrameError = useCallback((msg) => {
-    console.warn('[MotionDetection] Frame processor inactive:', msg);
+  // No arguments: passing strings through runOnJS triggers the broken
+  // makeShareableCloneOnUIRecursiveLEGACY → _createSerializableString path.
+  const reportFrameError = useCallback(() => {
+    console.warn('[MotionDetection] Frame processor inactive: toArrayBuffer unavailable');
   }, []);
 
   // ── Fallback detection ─────────────────────────────────────────────────
@@ -127,7 +129,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
           try {
             buffer = frame.toArrayBuffer();
           } catch (e) {
-            runOnJS(reportFrameError)(e?.message ?? 'toArrayBuffer unavailable');
+            runOnJS(reportFrameError)();
             return;
           }
 
@@ -139,7 +141,10 @@ export function useMotionDetection({ onStable, enabled = true }) {
           if (total === 0) return;
 
           const step = Math.floor(total / NUM_SAMPLES);
-          const samples = new Float32Array(NUM_SAMPLES);
+          // Use a plain Array — Float32Array triggers the broken legacy
+          // makeShareableCloneOnUIRecursiveLEGACY serialization path when
+          // assigned to a shared value.
+          const samples = new Array(NUM_SAMPLES);
           for (let i = 0; i < NUM_SAMPLES; i++) {
             samples[i] = pixels[i * step] ?? 0;
           }
