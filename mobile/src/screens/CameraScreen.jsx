@@ -20,6 +20,7 @@ import MotionIndicator from '../components/MotionIndicator';
 import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
 import { countTeeth } from '../algorithm/gearCounter';
+import { BUILD_LABEL } from '../buildInfo';
 
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
@@ -196,6 +197,7 @@ export default function CameraScreen({ navigation }) {
           </TouchableOpacity>
 
           <Text style={styles.manualLabel}>tap to capture manually</Text>
+          <Text style={styles.buildLabel}>{BUILD_LABEL}</Text>
         </View>
 
       </SafeAreaView>
@@ -274,6 +276,12 @@ const styles = StyleSheet.create({
   manualLabel: {
     color: 'rgba(255,255,255,0.45)',
     fontSize: 12,
+  },
+
+  buildLabel: {
+    color: 'rgba(255,255,255,0.2)',
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
 
   processingOverlay: {

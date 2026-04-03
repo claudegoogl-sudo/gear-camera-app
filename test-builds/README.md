@@ -1,15 +1,26 @@
 # Test Builds
 
-Debug APK builds are uploaded as GitHub Release assets due to the 100MB file size limit.
+Debug APK builds are versioned and timestamped. Filename format: `gear-camera-debug-YYYY-MM-DD-b<build>.apk`.
+Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are committed directly.
 
-| Date | File | Download |
-|------|------|----------|
-| 2026-04-03 | gear-camera-debug-2026-04-03.apk (184MB) — JS bundled, no Metro needed | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/debug-build-2026-04-03/gear-camera-debug-2026-04-03.apk) |
+| Timestamp | File | Build | Download |
+|-----------|------|-------|----------|
+| 2026-04-03 | gear-camera-debug-2026-04-03.apk (184MB) — JS bundled | b0 (pre-versioning) | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/debug-build-2026-04-03/gear-camera-debug-2026-04-03.apk) |
 
-## Release Page
+## Build Script
 
-[debug-build-2026-04-03](https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/debug-build-2026-04-03)
+Run from the repo root:
+
+```bash
+./scripts/build-debug.sh
+```
+
+This will:
+1. Increment the build number in `mobile/src/buildInfo.js`
+2. Run `./gradlew assembleDebug`
+3. Copy the APK to `test-builds/` with a timestamped + build-numbered filename
+4. Append a row to this table
 
 ## Build Method
 
-Built with `./gradlew assembleDebug` (bare Gradle, Option C) using Android SDK at `/home/paperclip/android-sdk`.
+Built with `./gradlew assembleDebug` (bare Gradle) using Android SDK at `/home/paperclip/android-sdk`.

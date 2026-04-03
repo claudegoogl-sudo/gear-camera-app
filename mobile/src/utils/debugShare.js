@@ -7,6 +7,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 import { GITHUB_TOKEN } from '../config';
+import { BUILD_LABEL } from '../buildInfo';
 
 /**
  * Upload a debug report to GitHub Gist.
@@ -25,6 +26,7 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
   const report = {
     timestamp,
     app: 'gear-camera',
+    build: BUILD_LABEL,
     result: {
       toothCount,
       confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
