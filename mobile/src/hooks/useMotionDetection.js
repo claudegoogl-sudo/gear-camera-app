@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSharedValue, runOnJS } from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
+import { useRunOnJS } from 'react-native-worklets-core';
 
 let useFrameProcessor;
 try {
@@ -76,6 +77,13 @@ export function useMotionDetection({ onStable, enabled = true }) {
     console.warn('[MotionDetection] Frame processor inactive: toArrayBuffer unavailable');
   }, []);
 
+  // Worklet-safe JS callbacks for use inside the VisionCamera frame processor.
+  // useRunOnJS (worklets-core) schedules via the worklets-core runtime;
+  // reanimated's runOnJS calls scheduleOnJS which is not defined in that context.
+  const handleMotionUpdateJS = useRunOnJS(handleMotionUpdate, [handleMotionUpdate]);
+  const markFrameProcessorActiveJS = useRunOnJS(markFrameProcessorActive, [markFrameProcessorActive]);
+  const reportFrameErrorJS = useRunOnJS(reportFrameError, [reportFrameError]);
+
   // ── Fallback detection ─────────────────────────────────────────────────
   // If enabled for FALLBACK_CHECK_MS without receiving any pixel data from
   // the worklet, assume toArrayBuffer() is broken on this device and switch
@@ -129,12 +137,12 @@ export function useMotionDetection({ onStable, enabled = true }) {
           try {
             buffer = frame.toArrayBuffer();
           } catch (e) {
-            runOnJS(reportFrameError)();
+            reportFrameErrorJS();
             return;
           }
 
           // Signal to JS side that the frame processor is working.
-          runOnJS(markFrameProcessorActive)();
+          markFrameProcessorActiveJS();
 
           const pixels = new Uint8Array(buffer);
           const total = pixels.length;
@@ -154,12 +162,12 @@ export function useMotionDetection({ onStable, enabled = true }) {
             for (let i = 0; i < NUM_SAMPLES; i++) {
               diff += Math.abs(samples[i] - prevSamples.value[i]);
             }
-            runOnJS(handleMotionUpdate)(diff / NUM_SAMPLES);
+            handleMotionUpdateJS(diff / NUM_SAMPLES);
           }
 
           prevSamples.value = samples;
         },
-        [enabled, handleMotionUpdate, markFrameProcessorActive, reportFrameError],
+        [enabled, handleMotionUpdateJS, markFrameProcessorActiveJS, reportFrameErrorJS],
       );
     } catch {
       // Worklets runtime unavailable at this point — fall back to manual capture.
