@@ -32,6 +32,10 @@ function showToast(message) {
   }
 }
 
+function showError(message) {
+  Alert.alert('Error', message);
+}
+
 /**
  * Counts up from 0 to target over ~700ms once target is set.
  */
@@ -107,7 +111,7 @@ export default function ResultScreen({ navigation, route }) {
       const url = await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
       await Share.share({ message: `Gear Camera debug report: ${url}`, url });
     } catch (e) {
-      showToast(`Upload failed: ${e.message}`);
+      showError(`Upload failed: ${e.message}`);
     } finally {
       setSharing(false);
     }

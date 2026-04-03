@@ -66,19 +66,22 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
     headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
   }
 
+  // Anonymous (no token) gists must be public; authenticated gists are kept private.
+  const isPublic = !GITHUB_TOKEN;
+
   const response = await fetch('https://api.github.com/gists', {
     method: 'POST',
     headers,
     body: JSON.stringify({
       description: `Gear Camera Debug — ${toothCount ?? '?'}T @ ${timestamp}`,
-      public: false,
+      public: isPublic,
       files,
     }),
   });
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`GitHub ${response.status}: ${body.slice(0, 200)}`);
+    throw new Error(`GitHub ${response.status}: ${body}`);
   }
 
   const data = await response.json();
