@@ -9,7 +9,6 @@ import {
   ToastAndroid,
   Platform,
   Alert,
-  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -108,10 +107,8 @@ export default function ResultScreen({ navigation, route }) {
   const handleShareDebug = async () => {
     setSharing(true);
     try {
-      const url = await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
-      if (url !== null) {
-        await Share.share({ message: `Gear Camera debug report: ${url}`, url });
-      }
+      await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
+      showToast('Debug report uploaded to GitHub');
     } catch (e) {
       showError(`Upload failed: ${e.message}`);
     } finally {
