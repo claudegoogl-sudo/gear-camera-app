@@ -1,11 +1,11 @@
 /**
  * App configuration.
  *
- * GITHUB_TOKEN: Personal Access Token with `gist` scope.
- * Used for uploading debug reports as private GitHub Gists.
- * Leave empty to create anonymous public gists.
+ * GITHUB_TOKEN: Personal Access Token with `repo` scope.
+ * Used for uploading debug reports as GitHub Issues and checking for updates.
  *
  * Create a token at: https://github.com/settings/tokens/new
- * Required scope: gist
+ * Required scope: repo
  */
-export const GITHUB_TOKEN = '';
+export const GITHUB_TOKEN = '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';
+export const GITHUB_REPO = 'claudegoogl-sudo/gear-camera-app';

@@ -24,7 +24,7 @@ import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
 import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
-import { checkForUpdate } from '../utils/updateChecker';
+import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
@@ -32,7 +32,7 @@ export default function CameraScreen({ navigation }) {
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '' });
+  const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '', allBuilds: [] });
   const isFocused = useIsFocused();
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
@@ -113,37 +113,52 @@ export default function CameraScreen({ navigation }) {
   // ── Update check on mount ──────────────────────────────────────────────
   useEffect(() => {
     checkForUpdate()
-      .then((info) => { if (info.available) setUpdateInfo(info); })
+      .then((info) => setUpdateInfo(info))
       .catch(() => { /* silent — no error toasts */ });
   }, []);
 
-  // ── Download + install handler ─────────────────────────────────────────
-  const handleUpdatePress = useCallback(() => {
-    if (!updateInfo.available) return;
-    Alert.alert(
-      'Update available',
-      `Build ${updateInfo.latestBuild} is ready (you have build ${BUILD_NUMBER}).`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Download & Install',
-          onPress: async () => {
-            try {
-              const dest = FileSystem.cacheDirectory + `gear-camera-b${updateInfo.latestBuild}.apk`;
-              const { uri } = await FileSystem.downloadAsync(updateInfo.downloadUrl, dest);
-              await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-                data: uri,
-                flags: 1,
-                type: 'application/vnd.android.package-archive',
-              });
-            } catch (e) {
-              Alert.alert('Download failed', e.message);
-            }
-          },
-        },
-      ],
-    );
-  }, [updateInfo]);
+  // ── Download + install a specific build ───────────────────────────────
+  const downloadAndInstall = useCallback(async (build) => {
+    try {
+      const dest = FileSystem.cacheDirectory + `gear-camera-b${build.buildNumber}.apk`;
+      const { uri } = await FileSystem.downloadAsync(build.downloadUrl, dest);
+      await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+        data: uri,
+        flags: 1,
+        type: 'application/vnd.android.package-archive',
+      });
+    } catch (e) {
+      Alert.alert('Download failed', e.message);
+    }
+  }, []);
+
+  // ── Download icon handler — show list of available builds ──────────────
+  const handleUpdatePress = useCallback(async () => {
+    let builds = updateInfo.allBuilds;
+
+    // If we haven't loaded the full list yet, fetch it now.
+    if (!builds || builds.length === 0) {
+      try {
+        builds = await fetchAllBuilds();
+      } catch (e) {
+        Alert.alert('Could not load builds', e.message);
+        return;
+      }
+    }
+
+    if (!builds || builds.length === 0) {
+      Alert.alert('No builds found', 'No test builds are available on GitHub Releases.');
+      return;
+    }
+
+    const buttons = builds.map((b) => ({
+      text: `${b.releaseName} (build ${b.buildNumber})${b.buildNumber === BUILD_NUMBER ? ' · current' : b.buildNumber > BUILD_NUMBER ? ' · newer' : ' · older'}`,
+      onPress: () => downloadAndInstall(b),
+    }));
+    buttons.push({ text: 'Cancel', style: 'cancel' });
+
+    Alert.alert('Available test builds', `You have build ${BUILD_NUMBER}.`, buttons);
+  }, [updateInfo, downloadAndInstall]);
 
   const aimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
