@@ -4,7 +4,7 @@ Debug APK builds are uploaded as GitHub Release assets due to the 100MB file siz
 
 | Date | File | Download |
 |------|------|----------|
-| 2026-04-03 | gear-camera-debug-2026-04-03.apk (180MB) | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/debug-build-2026-04-03/gear-camera-debug-2026-04-03.apk) |
+| 2026-04-03 | gear-camera-debug-2026-04-03.apk (184MB) — JS bundled, no Metro needed | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/debug-build-2026-04-03/gear-camera-debug-2026-04-03.apk) |
 
 ## Release Page
 
