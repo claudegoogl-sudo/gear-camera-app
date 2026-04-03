@@ -5,6 +5,7 @@
  * the team can review detection failures asynchronously.
  */
 
+import { Share } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { GITHUB_TOKEN } from '../config';
 import { BUILD_LABEL } from '../buildInfo';
@@ -34,6 +35,15 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
     },
   };
 
+  // No GitHub token — fall back to native share sheet with the JSON text.
+  if (!GITHUB_TOKEN) {
+    await Share.share({
+      message: JSON.stringify(report, null, 2),
+      title: 'Gear Camera Debug Report',
+    });
+    return null;
+  }
+
   const files = {
     'gear_debug_report.json': {
       content: JSON.stringify(report, null, 2),
@@ -60,21 +70,15 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
     'Content-Type': 'application/json',
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
+    Authorization: `Bearer ${GITHUB_TOKEN}`,
   };
-
-  if (GITHUB_TOKEN) {
-    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
-  }
-
-  // Anonymous (no token) gists must be public; authenticated gists are kept private.
-  const isPublic = !GITHUB_TOKEN;
 
   const response = await fetch('https://api.github.com/gists', {
     method: 'POST',
     headers,
     body: JSON.stringify({
       description: `Gear Camera Debug — ${toothCount ?? '?'}T @ ${timestamp}`,
-      public: isPublic,
+      public: false,
       files,
     }),
   });

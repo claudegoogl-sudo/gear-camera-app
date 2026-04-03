@@ -109,7 +109,9 @@ export default function ResultScreen({ navigation, route }) {
     setSharing(true);
     try {
       const url = await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
-      await Share.share({ message: `Gear Camera debug report: ${url}`, url });
+      if (url !== null) {
+        await Share.share({ message: `Gear Camera debug report: ${url}`, url });
+      }
     } catch (e) {
       showError(`Upload failed: ${e.message}`);
     } finally {
@@ -208,7 +210,7 @@ export default function ResultScreen({ navigation, route }) {
             disabled={sharing}
             activeOpacity={0.8}
           >
-            <Text style={styles.shareText}>{sharing ? 'Uploading…' : 'Share Debug'}</Text>
+            <Text style={styles.shareText}>{sharing ? 'Sharing…' : 'Share Debug'}</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
