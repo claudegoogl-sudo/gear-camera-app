@@ -9,6 +9,7 @@ import {
   ToastAndroid,
   Platform,
   Alert,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -21,6 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
+import { shareDebugReport } from '../utils/debugShare';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -96,6 +98,20 @@ export default function ResultScreen({ navigation, route }) {
     transform: [{ translateY: panelY.value }],
     opacity: panelOpac.value,
   }));
+
+  const [sharing, setSharing] = useState(false);
+
+  const handleShareDebug = async () => {
+    setSharing(true);
+    try {
+      const url = await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
+      await Share.share({ message: `Gear Camera debug report: ${url}`, url });
+    } catch (e) {
+      showToast(`Upload failed: ${e.message}`);
+    } finally {
+      setSharing(false);
+    }
+  };
 
   const handleReset = () => {
     reset();
@@ -177,9 +193,20 @@ export default function ResultScreen({ navigation, route }) {
           </Text>
         )}
 
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
-          <Text style={styles.resetText}>Reset</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
+            <Text style={styles.resetText}>Reset</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.shareBtn, sharing && styles.shareBtnDisabled]}
+            onPress={handleShareDebug}
+            disabled={sharing}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.shareText}>{sharing ? 'Uploading…' : 'Share Debug'}</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
 
     </SafeAreaView>
@@ -240,12 +267,29 @@ const styles = StyleSheet.create({
 
   waiting: { fontSize: 16, color: '#555' },
 
-  resetBtn: {
+  buttonRow: {
     marginTop: 18,
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+
+  resetBtn: {
     backgroundColor: '#fff',
-    paddingHorizontal: 52,
+    paddingHorizontal: 36,
     paddingVertical: 15,
     borderRadius: 34,
   },
   resetText: { fontSize: 17, fontWeight: '700', color: '#0e0e0e' },
+
+  shareBtn: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 22,
+    paddingVertical: 15,
+    borderRadius: 34,
+  },
+  shareBtnDisabled: { opacity: 0.45 },
+  shareText: { fontSize: 15, fontWeight: '600', color: '#ddd' },
 });

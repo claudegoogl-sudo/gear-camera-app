@@ -69,7 +69,7 @@ export default function CameraScreen({ navigation }) {
   }, [isCameraReady, isProcessing, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
-  const { isStable, frameProcessor, reset: motionReset } = useMotionDetection({
+  const { isStable, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
     enabled: isCameraReady && !isProcessing && hasPermission,
   });
@@ -181,6 +181,8 @@ export default function CameraScreen({ navigation }) {
               ? 'Processing…'
               : isStable
               ? 'Stable — capturing automatically…'
+              : usingFallback
+              ? 'Auto-capture in a moment…'
               : 'Hold camera steady over the gear'}
           </Text>
 
