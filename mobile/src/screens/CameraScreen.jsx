@@ -17,11 +17,14 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from 'react-native-reanimated';
+import * as FileSystem from 'expo-file-system';
+import * as IntentLauncher from 'expo-intent-launcher';
 import MotionIndicator from '../components/MotionIndicator';
 import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
 import { countTeeth } from '../algorithm/gearCounter';
-import { BUILD_LABEL } from '../buildInfo';
+import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
+import { checkForUpdate } from '../utils/updateChecker';
 
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
@@ -29,6 +32,7 @@ export default function CameraScreen({ navigation }) {
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '' });
   const isFocused = useIsFocused();
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
@@ -106,6 +110,41 @@ export default function CameraScreen({ navigation }) {
     if (!hasPermission) requestPermission();
   }, [hasPermission, requestPermission]);
 
+  // ── Update check on mount ──────────────────────────────────────────────
+  useEffect(() => {
+    checkForUpdate()
+      .then((info) => { if (info.available) setUpdateInfo(info); })
+      .catch(() => { /* silent — no error toasts */ });
+  }, []);
+
+  // ── Download + install handler ─────────────────────────────────────────
+  const handleUpdatePress = useCallback(() => {
+    if (!updateInfo.available) return;
+    Alert.alert(
+      'Update available',
+      `Build ${updateInfo.latestBuild} is ready (you have build ${BUILD_NUMBER}).`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Download & Install',
+          onPress: async () => {
+            try {
+              const dest = FileSystem.cacheDirectory + `gear-camera-b${updateInfo.latestBuild}.apk`;
+              const { uri } = await FileSystem.downloadAsync(updateInfo.downloadUrl, dest);
+              await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+                data: uri,
+                flags: 1,
+                type: 'application/vnd.android.package-archive',
+              });
+            } catch (e) {
+              Alert.alert('Download failed', e.message);
+            }
+          },
+        },
+      ],
+    );
+  }, [updateInfo]);
+
   const aimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
     opacity: aimOpacity.value,
@@ -158,6 +197,13 @@ export default function CameraScreen({ navigation }) {
             ? <MotionIndicator stable={isStable} />
             : <Text style={styles.initText}>Starting camera…</Text>
           }
+          <TouchableOpacity
+            style={[styles.updateIcon, updateInfo.available && styles.updateIconActive]}
+            onPress={handleUpdatePress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.updateIconText, updateInfo.available && styles.updateIconTextActive]}>⬇</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Aim circle */}
@@ -218,8 +264,33 @@ const styles = StyleSheet.create({
   permButtonText: { fontSize: 15, fontWeight: '600', color: '#111' },
 
   topBar: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: 12,
+    paddingHorizontal: 16,
+  },
+
+  updateIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  updateIconActive: {
+    backgroundColor: '#4CAF50',
+  },
+  updateIconText: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.45)',
+  },
+  updateIconTextActive: {
+    color: '#fff',
   },
 
   initText: {
