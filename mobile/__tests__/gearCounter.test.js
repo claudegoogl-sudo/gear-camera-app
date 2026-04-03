@@ -123,13 +123,18 @@ function computeDFT(signal) {
 
 function pickToothCount(dft) {
   const scores=new Float32Array(66);
-  for (let f=10;f<=65;f++){if(f>=dft.length)break;scores[f]=dft[f];if(2*f<dft.length)scores[f]+=0.5*dft[2*f];}
+  for (let f=10;f<=65;f++){
+    if(f>=dft.length)break;
+    scores[f]=dft[f];
+    if(2*f<dft.length)scores[f]+=0.5*dft[2*f];
+    if(3*f<dft.length)scores[f]+=0.25*dft[3*f];
+  }
   let best=10;
   for (let f=11;f<=65;f++) if(scores[f]>scores[best])best=f;
-  let sec=0;
-  for (let f=10;f<=65;f++) if(f!==best&&scores[f]>sec)sec=scores[f];
-  const ratio=sec>0?scores[best]/sec:10;
-  return {toothCount:best,confidence:Math.min(1,(ratio-1)/9)};
+  let total=0;
+  for (let f=10;f<=65;f++) total+=scores[f];
+  const rel=total>0?scores[best]/total:0;
+  return {toothCount:best,confidence:Math.min(1,Math.max(0,(rel-0.05)/0.15))};
 }
 
 // ────────────────────────────────────────────────────────────────────────────

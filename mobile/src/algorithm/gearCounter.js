@@ -32,10 +32,16 @@ const MAX_TEETH        = 65;
 // ── 1. Image loading ─────────────────────────────────────────────────────────
 
 async function loadAndDecodeImage(photoUri) {
-  // Resize to max 1000px wide — keeps processing time predictable.
+  // Resize so the longest edge is at most 1000 px — keeps processing time
+  // predictable on both landscape and portrait photos.
+  const info    = await ImageManipulator.manipulateAsync(photoUri, [], {});
+  const maxDim  = Math.max(info.width, info.height);
+  const resizeOp = maxDim > 1000
+    ? [{ resize: info.width >= info.height ? { width: Math.round(1000 * info.width / maxDim) } : { height: Math.round(1000 * info.height / maxDim) } }]
+    : [];
   const resized = await ImageManipulator.manipulateAsync(
     photoUri,
-    [{ resize: { width: 1000 } }],
+    resizeOp,
     { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
   );
 
@@ -224,6 +230,7 @@ function pickToothCount(dft) {
     if (f >= dft.length) break;
     scores[f] = dft[f];
     if (2 * f < dft.length) scores[f] += 0.5 * dft[2 * f];
+    if (3 * f < dft.length) scores[f] += 0.25 * dft[3 * f];
   }
 
   // Find best in valid range
@@ -232,13 +239,12 @@ function pickToothCount(dft) {
     if (scores[f] > scores[best]) best = f;
   }
 
-  // Confidence: ratio of best to second-best, normalised to [0,1]
-  let secondBest = 0;
-  for (let f = MIN_TEETH; f <= MAX_TEETH; f++) {
-    if (f !== best && scores[f] > secondBest) secondBest = scores[f];
-  }
-  const ratio      = secondBest > 0 ? scores[best] / secondBest : 10;
-  const confidence = Math.min(1.0, (ratio - 1.0) / 9.0);
+  // Confidence: relative spectral purity mapped to [0,1].
+  // rel=0.05 → 0%,  rel=0.20 → 100%  (matches Python algorithm).
+  let total = 0;
+  for (let f = MIN_TEETH; f <= MAX_TEETH; f++) total += scores[f];
+  const rel        = total > 0 ? scores[best] / total : 0;
+  const confidence = Math.min(1.0, Math.max(0.0, (rel - 0.05) / 0.15));
 
   return { toothCount: best, confidence };
 }
