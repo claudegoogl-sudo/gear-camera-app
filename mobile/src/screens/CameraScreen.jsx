@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { useCameraDevice, Camera, useCameraPermission } from 'react-native-vision-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -28,6 +29,7 @@ export default function CameraScreen({ navigation }) {
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const isFocused = useIsFocused();
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
 
@@ -72,7 +74,7 @@ export default function CameraScreen({ navigation }) {
   // ── Motion detection ───────────────────────────────────────────────────
   const { isStable, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
-    enabled: isCameraReady && !isProcessing && hasPermission,
+    enabled: isFocused && isCameraReady && !isProcessing && hasPermission,
   });
 
   useEffect(() => { motionResetRef.current = motionReset; }, [motionReset]);
