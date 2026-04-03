@@ -16,6 +16,22 @@ function makeSlug(timestamp) {
 }
 
 /**
+ * Verify that a file exists on GitHub after upload.
+ * Fetches the file via the Contents API and checks for a 200 response.
+ */
+async function verifyUpload(gitPath, headers) {
+  const verifyRes = await fetch(`${CONTENTS_URL}/${gitPath}`, {
+    method: 'GET',
+    headers,
+  });
+  if (!verifyRes.ok) {
+    throw new Error(
+      `Upload verification failed for ${gitPath}: GitHub returned ${verifyRes.status}`,
+    );
+  }
+}
+
+/**
  * Upload a debug report to the `debug-reports/` folder in the GitHub repo.
  *
  * @param {{
@@ -73,9 +89,11 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
         const body = await photoRes.text();
         console.warn(`[DebugShare] Photo upload failed: ${photoRes.status} ${body}`);
         photoGitPath = null;
+      } else {
+        await verifyUpload(photoGitPath, headers);
       }
     } catch (e) {
-      console.warn('[DebugShare] Could not read/upload photo:', e.message);
+      console.warn('[DebugShare] Could not read/upload/verify photo:', e.message);
       photoGitPath = null;
     }
   }
@@ -101,6 +119,9 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
     const body = await reportRes.text();
     throw new Error(`GitHub ${reportRes.status}: ${body}`);
   }
+
+  // Verify report file is available after upload.
+  await verifyUpload(reportPath, headers);
 
   const data = await reportRes.json();
   return data.content.html_url;
