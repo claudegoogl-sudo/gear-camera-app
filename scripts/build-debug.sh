@@ -15,7 +15,7 @@ README="$TEST_BUILDS_DIR/README.md"
 
 # ── Derive version + build number ────────────────────────────────────────────
 VERSION=$(node -p "require('$MOBILE_DIR/package.json').version")
-BUILD_DATE=$(date +%Y-%m-%d)
+BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
 BUILD_TS=$(date +%Y%m%d-%H%M%S)
 
 # Increment build number from current buildInfo.js
@@ -24,7 +24,7 @@ BUILD_NUMBER=$(( ${PREV_BUILD:-0} + 1 ))
 
 BUILD_LABEL="v${VERSION} (${BUILD_NUMBER}) · ${BUILD_DATE}"
 
-echo "[build] Version: $VERSION  Build: $BUILD_NUMBER  Date: $BUILD_DATE"
+echo "[build] Version: $VERSION  Build: $BUILD_NUMBER  Timestamp: $BUILD_DATE"
 
 # ── Stamp buildInfo.js ────────────────────────────────────────────────────────
 cat > "$BUILD_INFO" <<EOF
@@ -34,7 +34,7 @@ cat > "$BUILD_INFO" <<EOF
  */
 export const BUILD_VERSION = '$VERSION';
 export const BUILD_NUMBER  = $BUILD_NUMBER;
-export const BUILD_DATE    = '$BUILD_DATE';
+export const BUILD_DATE    = '$BUILD_DATE';  // YYYY-MM-DD HH:MM
 export const BUILD_LABEL   = '$BUILD_LABEL';
 EOF
 
