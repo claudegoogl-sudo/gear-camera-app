@@ -35,6 +35,18 @@ const HEADERS = {
 export async function uploadTrainingData({ photoPath, toothCount, confidence, gearContour }) {
   if (!GITHUB_TOKEN || !photoPath) return;
 
+  // Quick auth check — skip upload entirely if token is expired.
+  const authCheck = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+    },
+  });
+  if (authCheck.status === 401 || authCheck.status === 403) {
+    console.warn('[TrainingData] GitHub token expired/revoked — skipping upload');
+    return;
+  }
+
   const timestamp = new Date().toISOString();
   const slug = makeSlug(timestamp);
 

@@ -44,6 +44,19 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
     throw new Error('GitHub token not configured — cannot upload debug report.');
   }
 
+  // Pre-flight: verify the token is still valid before uploading.
+  const authCheck = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+    },
+  });
+  if (authCheck.status === 401 || authCheck.status === 403) {
+    throw new Error(
+      'GitHub token is expired or revoked — ask the team to update the token in config.js.',
+    );
+  }
+
   const timestamp = new Date().toISOString();
   const slug = makeSlug(timestamp);
 
@@ -123,6 +136,9 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
 
   if (!reportRes.ok) {
     const body = await reportRes.text();
+    if (reportRes.status === 401 || reportRes.status === 403) {
+      throw new Error('GitHub token expired or revoked — update the token in config.js.');
+    }
     throw new Error(`GitHub ${reportRes.status}: ${body}`);
   }
 

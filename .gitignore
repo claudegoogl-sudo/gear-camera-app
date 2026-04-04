@@ -4,3 +4,6 @@ __pycache__/
 debug/
 .claude/
 test-builds/*.apk
+.env
+.env.local
+.env.*.local
