@@ -22,6 +22,7 @@ import Animated, {
 import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
 import { shareDebugReport } from '../utils/debugShare';
+import { uploadTrainingData } from '../utils/trainingDataUpload';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -108,6 +109,10 @@ export default function ResultScreen({ navigation, route }) {
     setSharing(true);
     try {
       await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
+
+      // Upload training data alongside debug share (fire-and-forget).
+      uploadTrainingData({ photoPath, toothCount, confidence, gearContour }).catch(() => {});
+
       showToast('Debug report uploaded to GitHub');
     } catch (e) {
       showError(`Upload failed: ${e.message}`);
