@@ -93,9 +93,15 @@ export default function ResultScreen({ navigation, route }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Low-confidence + out-of-range toasts
+  const [briefToast, setBriefToast] = useState(null);
   useEffect(() => {
-    if (lowConf)     showToast('Low confidence — try better lighting or a straighter angle');
-    else if (outOfRange) showToast('Tooth count outside expected range (10–65T) — verify manually');
+    if (lowConf) {
+      setBriefToast('Low confidence — try better lighting or a straighter angle');
+      const t = setTimeout(() => setBriefToast(null), 1000);
+      return () => clearTimeout(t);
+    } else if (outOfRange) {
+      showToast('Tooth count outside expected range (10–65T) — verify manually');
+    }
   }, [lowConf, outOfRange]);
 
   const panelStyle = useAnimatedStyle(() => ({
@@ -217,6 +223,13 @@ export default function ResultScreen({ navigation, route }) {
         </View>
       </Animated.View>
 
+      {/* ── Brief toast (1 s) ────────────────────────────────────── */}
+      {briefToast && (
+        <View style={styles.briefToast}>
+          <Text style={styles.briefToastText}>{briefToast}</Text>
+        </View>
+      )}
+
     </SafeAreaView>
   );
 }
@@ -300,4 +313,17 @@ const styles = StyleSheet.create({
   },
   shareBtnDisabled: { opacity: 0.45 },
   shareText: { fontSize: 15, fontWeight: '600', color: '#ddd' },
+
+  briefToast: {
+    position: 'absolute',
+    bottom: 48,
+    left: 24,
+    right: 24,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  briefToastText: { color: '#fff', fontSize: 13, fontWeight: '500', textAlign: 'center' },
 });
