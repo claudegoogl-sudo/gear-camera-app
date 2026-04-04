@@ -25,6 +25,7 @@ import useGearStore from '../store/useGearStore';
 import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
+import { uploadTrainingData } from '../utils/trainingDataUpload';
 
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
@@ -65,6 +66,18 @@ export default function CameraScreen({ navigation }) {
           radius:  result.gearRadius,
         },
       });
+
+      // Fire-and-forget: upload photo + metadata as training data.
+      uploadTrainingData({
+        photoPath: photo.path,
+        toothCount: result.toothCount,
+        confidence: result.confidence,
+        gearContour: {
+          centerX: result.gearCenter.x,
+          centerY: result.gearCenter.y,
+          radius: result.gearRadius,
+        },
+      }).catch(() => {}); // swallow — never block UI
 
       navigation.navigate('Result', { photoPath: photo.path });
     } catch (e) {
