@@ -24,7 +24,7 @@ import { decode as jpegDecode } from 'jpeg-js';
 const GAUSS_SIGMA      = 1.5;
 const EDGE_PERCENTILE  = 0.85;   // keep top 15% of Sobel magnitudes as edges
 const DENSITY_PEAK_CAP = 0.90;   // ignore density peaks in outer 10% (frame edges)
-const N_ANGLES         = 360;
+const N_ANGLES         = 720;
 const MIN_TEETH        = 10;
 const MAX_TEETH        = 65;
 // ────────────────────────────────────────────────────────────────────────────
@@ -440,14 +440,23 @@ function sampleIntensityRing(gray, cx, cy, r, width, height, nAngles) {
   return samples;
 }
 
-// ── 8. DFT (O(N²) — fine for N=360) ──────────────────────────────────────────
+// ── 8. DFT (sparse — only compute bins needed for tooth scoring) ─────────────
 
 function computeDFT(signal) {
   const N   = signal.length;
   const out = new Float32Array(Math.floor(N / 2) + 1);
   const mean = signal.reduce((a, b) => a + b, 0) / N;
 
-  for (let k = 0; k <= Math.floor(N / 2); k++) {
+  // Only compute bins we actually use: fundamentals MIN_TEETH..MAX_TEETH
+  // plus their 2nd and 3rd harmonics (for harmonic-weighted scoring).
+  const binsNeeded = new Set();
+  for (let f = MIN_TEETH; f <= MAX_TEETH && f < out.length; f++) {
+    binsNeeded.add(f);
+    if (2 * f < out.length) binsNeeded.add(2 * f);
+    if (3 * f < out.length) binsNeeded.add(3 * f);
+  }
+
+  for (const k of binsNeeded) {
     let re = 0, im = 0;
     for (let n = 0; n < N; n++) {
       const angle = (2 * Math.PI * k * n) / N;
@@ -523,15 +532,19 @@ export async function countTeeth(photoUri) {
   const t3 = Date.now();
 
   // ── Multi-radius FFT scan ──────────────────────────────────────────
-  // Scan radii from 0.60× to 1.10× of the detected gear radius and
+  // Scan radii from 0.50× to 1.15× of the detected gear radius and
   // keep the result with the highest spectral purity (confidence).
+  // Also accumulate per-tooth-count votes for small-gear refinement.
   let bestToothCount = 0;
   let bestConfidence = 0;
   let bestR          = r;
 
   const maxSafe = Math.min(cx, width - cx, cy, height - cy) - 1;
 
-  for (let pct = 60; pct <= 110; pct += 5) {
+  // Collect all (radius, toothCount, confidence) results for voting
+  const scanResults = [];
+
+  for (let pct = 50; pct <= 115; pct += 4) {
     const rTest = Math.round(r * pct / 100);
     if (rTest < 20 || rTest >= maxSafe) continue;
 
@@ -539,10 +552,45 @@ export async function countTeeth(photoUri) {
     const dft  = computeDFT(ring);
     const { toothCount: tc, confidence: conf } = pickToothCount(dft);
 
+    scanResults.push({ rTest, tc, conf });
+
     if (conf > bestConfidence) {
       bestConfidence = conf;
       bestToothCount = tc;
       bestR          = rTest;
+    }
+  }
+
+  // Small-gear refinement: when best result is in 10-20 range, inner
+  // spline features can dominate.  Check if a nearby count (±3) has
+  // stronger total support across outer-half radii.
+  if (bestToothCount > 0 && bestToothCount <= 20) {
+    const outerMin = r * 0.45;
+    const tcVotes = {};
+    for (const { rTest: rr, tc, conf } of scanResults) {
+      if (rr >= outerMin && conf > 0) {
+        tcVotes[tc] = (tcVotes[tc] || 0) + conf;
+      }
+    }
+    let topVoteTc = bestToothCount;
+    let topVote = tcVotes[bestToothCount] || 0;
+    for (const [tcStr, vote] of Object.entries(tcVotes)) {
+      const tcNum = Number(tcStr);
+      if (Math.abs(tcNum - bestToothCount) <= 3 && vote > topVote) {
+        topVote = vote;
+        topVoteTc = tcNum;
+      }
+    }
+    if (topVoteTc !== bestToothCount) {
+      // Switch to the better-voted count; find its best confidence result
+      for (const { rTest: rr, tc, conf } of scanResults) {
+        if (tc === topVoteTc && rr >= outerMin && conf >= bestConfidence * 0.5) {
+          bestToothCount = tc;
+          bestR = rr;
+          // Keep original bestConfidence as floor
+          break;
+        }
+      }
     }
   }
 

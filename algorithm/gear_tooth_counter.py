@@ -263,15 +263,17 @@ class GearToothCounter:
         else:
             cand_set = {int(p) for p in peaks} if len(peaks) > 0 else {max_r // 2}
 
-        # Evenly-spaced outer radii with ~4% step (65–95% of max_r)
-        for pct in range(65, 96, 4):
+        # Evenly-spaced outer radii: coarse 4% step (65-84%) + fine 2% step (85-97%)
+        for pct in range(65, 85, 4):
+            cand_set.add(int(max_r * pct / 100))
+        for pct in range(85, 98, 2):
             cand_set.add(int(max_r * pct / 100))
 
         candidates = sorted(cand_set)
 
         # ── FFT tooth count at a single radius ───────────────────────────
         def _fft_count(r_val):
-            n_a = 360
+            n_a = 720
             angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
             px = np.clip((cx + r_val * np.cos(angles)).astype(int), 0, w - 1)
             py = np.clip((cy + r_val * np.sin(angles)).astype(int), 0, h - 1)
@@ -297,7 +299,7 @@ class GearToothCounter:
             total = scores.sum()
             return int(cf[best]), float(scores[best] / total) if total > 0 else 0.0
 
-        # ── Evaluate all candidates; pick outermost with rel >= 0.12 ─────
+        # ── Evaluate all candidates; outermost primary + small-gear vote ──
         cand_results = [
             (r_val, *_fft_count(r_val))
             for r_val in candidates
@@ -306,10 +308,35 @@ class GearToothCounter:
 
         MIN_REL = 0.12
         peak_tc, peak_rel, peak_r = 0, 0.0, 0
+
+        # Primary: outermost candidate with rel >= threshold
         for r_val, tc, rel in sorted(cand_results, key=lambda x: -x[0]):
             if rel >= MIN_REL:
                 peak_tc, peak_rel, peak_r = tc, rel, r_val
                 break
+
+        # Small-gear refinement: when the outermost pick is in the 10-20
+        # range, inner spline features can dominate.  Check if a nearby
+        # tooth count (±2) has stronger total support across all radii in
+        # the outer half of the candidate range.
+        if 0 < peak_tc <= 20 and cand_results:
+            outer_half_min = max_r * 0.45
+            from collections import defaultdict
+            tc_votes = defaultdict(float)
+            for r_val, tc, rel in cand_results:
+                if r_val >= outer_half_min and rel >= 0.04:
+                    tc_votes[tc] += rel
+            if tc_votes:
+                best_vote_tc = max(tc_votes, key=tc_votes.get)
+                if (best_vote_tc != peak_tc
+                        and abs(best_vote_tc - peak_tc) <= 3
+                        and tc_votes[best_vote_tc] > tc_votes.get(peak_tc, 0)):
+                    # Switch to the better-voted nearby count; find its best r
+                    for r_val, tc, rel in sorted(cand_results, key=lambda x: -x[2]):
+                        if tc == best_vote_tc and r_val >= outer_half_min:
+                            peak_tc, peak_rel, peak_r = tc, rel, r_val
+                            break
+
         if peak_tc == 0 and cand_results:
             r_val, tc, rel = max(cand_results, key=lambda x: x[2])
             peak_tc, peak_rel, peak_r = tc, rel, r_val
@@ -359,7 +386,7 @@ class GearToothCounter:
             op_tc, op_rel = 0, 0.0
 
         # ── Decision rule ────────────────────────────────────────────────
-        if peak_rel >= 0.15 and peak_tc >= 15:
+        if peak_rel >= 0.15 and peak_tc >= self.MIN_TEETH:
             # Strong density-peak signal with a plausible tooth count
             final_tc = peak_tc
             final_rel = peak_rel
