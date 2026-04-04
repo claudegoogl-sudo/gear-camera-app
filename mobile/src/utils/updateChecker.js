@@ -12,13 +12,14 @@ const RELEASES_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 
 /**
  * Extract the integer build number from a release tag.
- * Tags follow the pattern: debug-build-YYYY-MM-DD-bN
+ * Tags follow patterns: "b17", "debug-build-YYYY-MM-DD-bN", or "v1.0.0-b3"
  *
- * @param {string} tag  e.g. "debug-build-2026-04-03-b6"
+ * @param {string} tag  e.g. "b17" or "debug-build-2026-04-03-b6"
  * @returns {number|null}
  */
 function parseBuildNumber(tag) {
-  const match = tag.match(/-b(\d+)$/);
+  // Match tags like "b17", "debug-build-2026-04-03-b6", or "v1.0.0-b3"
+  const match = tag.match(/\bb(\d+)$/);
   return match ? parseInt(match[1], 10) : null;
 }
 

@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from 'react-native-reanimated';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as IntentLauncher from 'expo-intent-launcher';
 import MotionIndicator from '../components/MotionIndicator';
 import { useMotionDetection } from '../hooks/useMotionDetection';
@@ -121,10 +121,10 @@ export default function CameraScreen({ navigation }) {
   // ── Download + install a specific build ───────────────────────────────
   const downloadAndInstall = useCallback(async (build) => {
     try {
-      const dest = FileSystem.cacheDirectory + `gear-camera-b${build.buildNumber}.apk`;
-      const { uri } = await FileSystem.downloadAsync(build.downloadUrl, dest);
+      const dest = new File(Paths.cache, `gear-camera-b${build.buildNumber}.apk`);
+      const file = await File.downloadFileAsync(build.downloadUrl, dest, { idempotent: true });
       await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-        data: uri,
+        data: file.uri,
         flags: 1,
         type: 'application/vnd.android.package-archive',
       });
