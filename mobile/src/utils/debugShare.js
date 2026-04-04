@@ -53,7 +53,7 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
   });
   if (authCheck.status === 401 || authCheck.status === 403) {
     throw new Error(
-      'GitHub token is expired or revoked — ask the team to update the token in config.js.',
+      'GitHub token is expired or revoked — update EXPO_PUBLIC_GITHUB_TOKEN in .env.',
     );
   }
 
@@ -137,7 +137,7 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
   if (!reportRes.ok) {
     const body = await reportRes.text();
     if (reportRes.status === 401 || reportRes.status === 403) {
-      throw new Error('GitHub token expired or revoked — update the token in config.js.');
+      throw new Error('GitHub token expired or revoked — update EXPO_PUBLIC_GITHUB_TOKEN in .env.');
     }
     throw new Error(`GitHub ${reportRes.status}: ${body}`);
   }
