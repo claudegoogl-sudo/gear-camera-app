@@ -77,13 +77,33 @@ class GearToothCounter:
 
     def find_gear_region(self):
         """
-        Detect gear center via Hough Circle Transform, then refine the radius
+        Detect gear center via center-weighted edge centroid (primary) with
+        Hough Circle Transform as a secondary signal, then refine the radius
         by finding the outermost significant ring in the radial edge-density
-        profile.  Using dp=2 and max_dim=1000 keeps processing under 1.5 s
-        even for 3000x4000 portrait images.
+        profile.
+
+        The center-weighted centroid applies a 2-D Gaussian weight so that
+        edge pixels near the image borders (paper-towel texture, table
+        clutter) have much less influence than edges near the middle of the
+        photo where the gear is expected.
         """
         h, w = self.edges.shape
 
+        # ── Primary: iterative centre refinement ─────────────────────────
+        # Pass 1 — coarse: start from the IMAGE CENTRE (user is expected
+        #   to roughly centre the gear in the viewfinder) and compute a
+        #   preliminary radial density profile to find an approximate gear
+        #   radius.
+        # Pass 2 — refined: recompute the centroid using only edges within
+        #   [0.3r, 1.4r] of the image centre, which isolates the gear ring
+        #   from far-away clutter.
+        cx, cy = w // 2, h // 2
+
+        y_all, x_all = np.where(self.edges > 0)
+        if len(x_all) == 0:
+            cx, cy = w // 2, h // 2
+
+        # ── Secondary: Hough circles (nudge toward if close) ────────────
         circles = cv2.HoughCircles(
             self.edges,
             cv2.HOUGH_GRADIENT,
@@ -97,9 +117,11 @@ class GearToothCounter:
 
         if circles is not None:
             circles = np.uint16(np.around(circles))
-            cx, cy = int(circles[0][0][0]), int(circles[0][0][1])
-        else:
-            cx, cy = w // 2, h // 2
+            hx, hy = int(circles[0][0][0]), int(circles[0][0][1])
+            # Blend towards Hough centre only if it is reasonably close
+            if abs(hx - cx) < w * 0.15 and abs(hy - cy) < h * 0.15:
+                cx = (cx + hx) // 2
+                cy = (cy + hy) // 2
 
         cx = int(np.clip(cx, 0, w - 1))
         cy = int(np.clip(cy, 0, h - 1))
@@ -127,6 +149,33 @@ class GearToothCounter:
             outer_r = int(peaks[-1])
         else:
             outer_r = max_r // 2
+
+        # ── Pass 2: refine centre using only edges near gear ring ────────
+        # Keep edges within [0.3·r, 1.4·r] to exclude far-away clutter.
+        ring_lo = int(outer_r * 0.3)
+        ring_hi = int(outer_r * 1.4)
+        ring_mask = (dists >= ring_lo) & (dists <= ring_hi) & valid
+        if ring_mask.sum() > 20:
+            rx, ry = x_idx[ring_mask], y_idx[ring_mask]
+            cx = int(np.round(rx.mean()))
+            cy = int(np.round(ry.mean()))
+            cx = int(np.clip(cx, 0, w - 1))
+            cy = int(np.clip(cy, 0, h - 1))
+
+            # Recompute density from refined centre
+            dists2 = np.sqrt((x_idx - cx) ** 2 + (y_idx - cy) ** 2).astype(int)
+            max_r2 = int(min(cx, w - cx, cy, h - cy)) - 1
+            if max_r2 >= 30:
+                valid2 = dists2 < max_r2
+                density2 = np.bincount(dists2[valid2], minlength=max_r2).astype(float)
+                win2 = max(5, (max_r2 // 8) | 1)
+                ds2 = signal.savgol_filter(density2, win2, 3)
+                sl2 = int(max_r2 * 0.90)
+                p2, _ = signal.find_peaks(
+                    ds2[:sl2], height=ds2[:sl2].max() * 0.12, distance=8
+                )
+                if len(p2) > 0:
+                    outer_r = int(p2[-1])
 
         self.gear_center = (cx, cy)
         self.gear_radius = outer_r

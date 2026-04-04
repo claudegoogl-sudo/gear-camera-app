@@ -125,19 +125,35 @@ function sobelEdges(gray, width, height) {
   return edges;
 }
 
-// ── 5. Gear centre (centroid of edge pixels) ──────────────────────────────────
+// ── 5. Gear centre (center-weighted centroid of edge pixels) ─────────────────
+//
+// Weights edge pixels by a Gaussian centered on the image so that edges
+// near the frame borders (paper-towel hearts, table clutter, etc.) have
+// much less influence on the detected centre than edges near the middle
+// of the photo where the gear is expected.
 
 function findGearCenter(edges, width, height) {
-  let sx = 0, sy = 0, count = 0;
+  const cx0 = width  / 2;
+  const cy0 = height / 2;
+  const sigX = width  * 0.25;
+  const sigY = height * 0.25;
+
+  let wsx = 0, wsy = 0, wsum = 0;
   for (let y = 0; y < height; y++) {
+    const dy = (y - cy0) / sigY;
+    const wy = Math.exp(-dy * dy);           // pre-compute row weight
     for (let x = 0; x < width; x++) {
       if (edges[y * width + x] > 0) {
-        sx += x; sy += y; count++;
+        const dx = (x - cx0) / sigX;
+        const w  = wy * Math.exp(-dx * dx);  // 2-D Gaussian weight
+        wsx  += x * w;
+        wsy  += y * w;
+        wsum += w;
       }
     }
   }
-  if (count === 0) return { cx: Math.floor(width / 2), cy: Math.floor(height / 2) };
-  return { cx: Math.round(sx / count), cy: Math.round(sy / count) };
+  if (wsum === 0) return { cx: Math.floor(cx0), cy: Math.floor(cy0) };
+  return { cx: Math.round(wsx / wsum), cy: Math.round(wsy / wsum) };
 }
 
 // ── 6. Radial edge-density → outer gear radius ────────────────────────────────
@@ -274,20 +290,44 @@ export async function countTeeth(photoUri) {
   const r           = findGearRadius(edges, cx, cy, width, height);
   const t3 = Date.now();
 
-  const ring        = sampleIntensityRing(gray, cx, cy, r, width, height, N_ANGLES);
-  const dft         = computeDFT(ring);
-  const { toothCount, confidence } = pickToothCount(dft);
+  // ── Multi-radius FFT scan ──────────────────────────────────────────
+  // Instead of a single radius, scan multiple radii from 0.60× to 1.10×
+  // of the detected gear radius and keep the result with the highest
+  // spectral purity (confidence).  This avoids locking on to an inner
+  // hub ring or a radius where background texture dominates.
+  let bestToothCount = 0;
+  let bestConfidence = 0;
+  let bestR          = r;
+
+  const maxSafe = Math.min(cx, width - cx, cy, height - cy) - 1;
+
+  for (let pct = 60; pct <= 110; pct += 5) {
+    const rTest = Math.round(r * pct / 100);
+    if (rTest < 20 || rTest >= maxSafe) continue;
+
+    const ring = sampleIntensityRing(gray, cx, cy, rTest, width, height, N_ANGLES);
+    const dft  = computeDFT(ring);
+    const { toothCount: tc, confidence: conf } = pickToothCount(dft);
+
+    if (conf > bestConfidence) {
+      bestConfidence = conf;
+      bestToothCount = tc;
+      bestR          = rTest;
+    }
+  }
+
   const t4 = Date.now();
 
   console.log(
     `[GearCounter] ${width}×${height}px | ` +
-    `load=${t1-t0}ms blur+edges=${t2-t1}ms radius=${t3-t2}ms fft=${t4-t3}ms total=${t4-t0}ms`
+    `load=${t1-t0}ms blur+edges=${t2-t1}ms radius=${t3-t2}ms fft=${t4-t3}ms total=${t4-t0}ms | ` +
+    `center=(${cx},${cy}) baseR=${r} bestR=${bestR} teeth=${bestToothCount} conf=${bestConfidence.toFixed(3)}`
   );
 
   return {
-    toothCount,
-    confidence,
-    gearCenter: { x: cx / width, y: cy / height },   // normalised 0-1 for overlay
-    gearRadius: r / width,                            // normalised relative to width
+    toothCount: bestToothCount,
+    confidence: bestConfidence,
+    gearCenter: { x: cx / width, y: cy / height },
+    gearRadius: bestR / width,
   };
 }
