@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSharedValue } from 'react-native-reanimated';
 import { useRunOnJS } from 'react-native-worklets-core';
+import { Accelerometer } from 'expo-sensors';
 
 let useFrameProcessor;
 try {
@@ -16,8 +17,10 @@ const NUM_SAMPLES = 300;
 const FRAME_SKIP = 3;
 // How long to wait after `enabled` before deciding the frame processor is broken.
 const FALLBACK_CHECK_MS = 4000;
-// How long to wait in fallback mode before auto-triggering.
-const FALLBACK_STABLE_MS = 1500;
+// Accelerometer-based fallback: magnitude change threshold to detect motion.
+const ACCEL_MOTION_THRESHOLD = 0.05;
+// Accelerometer update interval in ms.
+const ACCEL_UPDATE_MS = 100;
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
@@ -106,18 +109,50 @@ export function useMotionDetection({ onStable, enabled = true }) {
     return () => clearTimeout(check);
   }, [enabled]);
 
-  // ── Fallback auto-trigger ──────────────────────────────────────────────
+  // ── Fallback auto-trigger (accelerometer-based) ────────────────────────
+  // Instead of blindly firing after a timer, subscribe to the accelerometer
+  // and only trigger when the device has been physically stable for STABILITY_MS.
+  const accelTimer = useRef(null);
+  const lastMagnitude = useRef(null);
+
   useEffect(() => {
     if (!usingFallback || !enabled) return;
 
-    const trigger = setTimeout(() => {
-      if (enabled) {
-        setIsStable(true);
-        onStable?.();
-      }
-    }, FALLBACK_STABLE_MS);
+    Accelerometer.setUpdateInterval(ACCEL_UPDATE_MS);
+    const subscription = Accelerometer.addListener(({ x, y, z }) => {
+      const mag = Math.sqrt(x * x + y * y + z * z);
 
-    return () => clearTimeout(trigger);
+      if (lastMagnitude.current !== null) {
+        const delta = Math.abs(mag - lastMagnitude.current);
+
+        if (delta > ACCEL_MOTION_THRESHOLD) {
+          // Device is moving — cancel any pending stability trigger.
+          if (accelTimer.current) {
+            clearTimeout(accelTimer.current);
+            accelTimer.current = null;
+          }
+          setIsStable(false);
+        } else if (!accelTimer.current) {
+          // Device is still — start stability countdown.
+          accelTimer.current = setTimeout(() => {
+            accelTimer.current = null;
+            setIsStable(true);
+            onStable?.();
+          }, STABILITY_MS);
+        }
+      }
+
+      lastMagnitude.current = mag;
+    });
+
+    return () => {
+      subscription.remove();
+      if (accelTimer.current) {
+        clearTimeout(accelTimer.current);
+        accelTimer.current = null;
+      }
+      lastMagnitude.current = null;
+    };
   }, [usingFallback, enabled, onStable]);
 
   // ── Build frame processor ──────────────────────────────────────────────
@@ -177,6 +212,11 @@ export function useMotionDetection({ onStable, enabled = true }) {
 
   const reset = useCallback(() => {
     clearTimer();
+    if (accelTimer.current) {
+      clearTimeout(accelTimer.current);
+      accelTimer.current = null;
+    }
+    lastMagnitude.current = null;
     setIsStable(false);
     prevSamples.value = null;
     frameCounter.value = 0;
