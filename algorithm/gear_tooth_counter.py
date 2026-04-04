@@ -77,105 +77,82 @@ class GearToothCounter:
 
     def find_gear_region(self):
         """
-        Detect gear center via center-weighted edge centroid (primary) with
-        Hough Circle Transform as a secondary signal, then refine the radius
-        by finding the outermost significant ring in the radial edge-density
-        profile.
+        Detect gear center via contour analysis on thresholded dark regions.
 
-        The center-weighted centroid applies a 2-D Gaussian weight so that
-        edge pixels near the image borders (paper-towel texture, table
-        clutter) have much less influence than edges near the middle of the
-        photo where the gear is expected.
+        Pipeline:
+        1. Otsu threshold to isolate dark pixels (gear = dark metal)
+        2. Morphological close to fill small gaps
+        3. Find contours with hierarchy (parent-child)
+        4. Pick the most circular "donut" contour (dark blob with interior
+           hole = bore) that doesn't touch the image border
+        5. Use its centroid as gear center and equivalent radius
+
+        Falls back to Hough circles + edge centroid if no contour found.
         """
         h, w = self.edges.shape
 
-        # ── Primary: iterative centre refinement ─────────────────────────
-        # Pass 1 — coarse: start from the IMAGE CENTRE (user is expected
-        #   to roughly centre the gear in the viewfinder) and compute a
-        #   preliminary radial density profile to find an approximate gear
-        #   radius.
-        # Pass 2 — refined: recompute the centroid using only edges within
-        #   [0.3r, 1.4r] of the image centre, which isolates the gear ring
-        #   from far-away clutter.
-        cx, cy = w // 2, h // 2
+        # ── Primary: contour-based detection ─────────────────────────────
+        _, binary = cv2.threshold(self.gray, 0, 255,
+                                  cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
 
-        y_all, x_all = np.where(self.edges > 0)
-        if len(x_all) == 0:
-            cx, cy = w // 2, h // 2
-
-        # ── Secondary: Hough circles (nudge toward if close) ────────────
-        circles = cv2.HoughCircles(
-            self.edges,
-            cv2.HOUGH_GRADIENT,
-            dp=2,
-            minDist=50,
-            param1=50,
-            param2=30,
-            minRadius=30,
-            maxRadius=min(h, w) // 2,
+        contours, hierarchy = cv2.findContours(
+            binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
         )
 
-        if circles is not None:
-            circles = np.uint16(np.around(circles))
-            hx, hy = int(circles[0][0][0]), int(circles[0][0][1])
-            # Blend towards Hough centre only if it is reasonably close
-            if abs(hx - cx) < w * 0.15 and abs(hy - cy) < h * 0.15:
-                cx = (cx + hx) // 2
-                cy = (cy + hy) // 2
+        best_cnt = None
+        best_score = -1
+        cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
+
+        if contours and hierarchy is not None:
+            for i, cnt in enumerate(contours):
+                area = cv2.contourArea(cnt)
+                peri = cv2.arcLength(cnt, True)
+                if area < 300 or peri < 40 or area > 0.5 * w * h:
+                    continue
+
+                circ = 4 * np.pi * area / (peri ** 2) if peri > 0 else 0
+
+                x, y, bw, bh = cv2.boundingRect(cnt)
+                margin = 2
+                if (x <= margin or y <= margin or
+                        x + bw >= w - margin or y + bh >= h - margin):
+                    continue
+
+                is_child = hierarchy[0][i][3] >= 0
+                if is_child:
+                    continue
+
+                has_child = hierarchy[0][i][2] >= 0
+                score = circ * (1.5 if has_child else 1.0)
+
+                if score > best_score:
+                    best_score = score
+                    best_cnt = cnt
+                    M = cv2.moments(cnt)
+                    if M["m00"] > 0:
+                        cx = int(round(M["m10"] / M["m00"]))
+                        cy = int(round(M["m01"] / M["m00"]))
+                    else:
+                        cx, cy = x + bw // 2, y + bh // 2
+                    outer_r = int(round(np.sqrt(area / np.pi)))
+
+        # ── Fallback: Hough circles ──────────────────────────────────────
+        if best_cnt is None:
+            circles = cv2.HoughCircles(
+                self.edges, cv2.HOUGH_GRADIENT,
+                dp=2, minDist=50, param1=50, param2=30,
+                minRadius=30, maxRadius=min(h, w) // 2,
+            )
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+                cx = int(circles[0][0][0])
+                cy = int(circles[0][0][1])
+                outer_r = int(circles[0][0][2])
 
         cx = int(np.clip(cx, 0, w - 1))
         cy = int(np.clip(cy, 0, h - 1))
-
-        # Radial edge-density profile → pick outermost significant peak as radius
-        y_idx, x_idx = np.where(self.edges > 0)
-        dists = np.sqrt((x_idx - cx) ** 2 + (y_idx - cy) ** 2).astype(int)
-        max_r = int(min(cx, w - cx, cy, h - cy)) - 1
-        if max_r < 20:
-            max_r = min(h, w) // 3
-
-        valid = dists < max_r
-        density = np.bincount(dists[valid], minlength=max_r).astype(float)
-        win = max(5, (max_r // 8) | 1)
-        density_smooth = signal.savgol_filter(density, win, 3)
-
-        search_limit = int(max_r * 0.90)
-        peaks, _ = signal.find_peaks(
-            density_smooth[:search_limit],
-            height=density_smooth[:search_limit].max() * 0.12,
-            distance=8,
-        )
-
-        if len(peaks) > 0:
-            outer_r = int(peaks[-1])
-        else:
-            outer_r = max_r // 2
-
-        # ── Pass 2: refine centre using only edges near gear ring ────────
-        # Keep edges within [0.3·r, 1.4·r] to exclude far-away clutter.
-        ring_lo = int(outer_r * 0.3)
-        ring_hi = int(outer_r * 1.4)
-        ring_mask = (dists >= ring_lo) & (dists <= ring_hi) & valid
-        if ring_mask.sum() > 20:
-            rx, ry = x_idx[ring_mask], y_idx[ring_mask]
-            cx = int(np.round(rx.mean()))
-            cy = int(np.round(ry.mean()))
-            cx = int(np.clip(cx, 0, w - 1))
-            cy = int(np.clip(cy, 0, h - 1))
-
-            # Recompute density from refined centre
-            dists2 = np.sqrt((x_idx - cx) ** 2 + (y_idx - cy) ** 2).astype(int)
-            max_r2 = int(min(cx, w - cx, cy, h - cy)) - 1
-            if max_r2 >= 30:
-                valid2 = dists2 < max_r2
-                density2 = np.bincount(dists2[valid2], minlength=max_r2).astype(float)
-                win2 = max(5, (max_r2 // 8) | 1)
-                ds2 = signal.savgol_filter(density2, win2, 3)
-                sl2 = int(max_r2 * 0.90)
-                p2, _ = signal.find_peaks(
-                    ds2[:sl2], height=ds2[:sl2].max() * 0.12, distance=8
-                )
-                if len(p2) > 0:
-                    outer_r = int(p2[-1])
 
         self.gear_center = (cx, cy)
         self.gear_radius = outer_r

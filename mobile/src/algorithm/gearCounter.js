@@ -125,35 +125,257 @@ function sobelEdges(gray, width, height) {
   return edges;
 }
 
-// ── 5. Gear centre (center-weighted centroid of edge pixels) ─────────────────
+// ── 5. Gear centre via contour detection ─────────────────────────────────────
 //
-// Weights edge pixels by a Gaussian centered on the image so that edges
-// near the frame borders (paper-towel hearts, table clutter, etc.) have
-// much less influence on the detected centre than edges near the middle
-// of the photo where the gear is expected.
+// Finds the gear by thresholding the grayscale image to isolate dark regions
+// (gear = dark metal), then uses connected-component labelling to find the
+// most circular "donut" shape (dark blob with an interior hole = bore).
+// This is far more robust against background clutter than edge centroids.
 
-function findGearCenter(edges, width, height) {
-  const cx0 = width  / 2;
-  const cy0 = height / 2;
-  const sigX = width  * 0.25;
-  const sigY = height * 0.25;
+// 5a. Otsu threshold — automatic dark/light separation
+function otsuThreshold(gray, width, height) {
+  // Build histogram (256 bins)
+  const hist = new Int32Array(256);
+  const n = width * height;
+  for (let i = 0; i < n; i++) {
+    hist[Math.min(255, Math.max(0, Math.round(gray[i])))]++;
+  }
 
-  let wsx = 0, wsy = 0, wsum = 0;
-  for (let y = 0; y < height; y++) {
-    const dy = (y - cy0) / sigY;
-    const wy = Math.exp(-dy * dy);           // pre-compute row weight
-    for (let x = 0; x < width; x++) {
-      if (edges[y * width + x] > 0) {
-        const dx = (x - cx0) / sigX;
-        const w  = wy * Math.exp(-dx * dx);  // 2-D Gaussian weight
-        wsx  += x * w;
-        wsy  += y * w;
-        wsum += w;
-      }
+  // Find threshold that minimises intra-class variance
+  let sumAll = 0;
+  for (let t = 0; t < 256; t++) sumAll += t * hist[t];
+
+  let sumB = 0, wB = 0, best = 0, bestVar = -1;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (wB === 0) continue;
+    const wF = n - wB;
+    if (wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB;
+    const mF = (sumAll - sumB) / wF;
+    const between = wB * wF * (mB - mF) * (mB - mF);
+    if (between > bestVar) { bestVar = between; best = t; }
+  }
+
+  // Binary mask: 1 = dark (below threshold), 0 = light
+  const mask = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    mask[i] = gray[i] <= best ? 1 : 0;
+  }
+  return mask;
+}
+
+// 5b. Morphological close (dilate then erode) with a circular structuring element
+function morphClose(mask, width, height, radius) {
+  const n = width * height;
+  const tmp = new Uint8Array(n);
+  const out = new Uint8Array(n);
+
+  // Build circular kernel offsets
+  const offsets = [];
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (dx * dx + dy * dy <= radius * radius) offsets.push({ dx, dy });
     }
   }
-  if (wsum === 0) return { cx: Math.floor(cx0), cy: Math.floor(cy0) };
-  return { cx: Math.round(wsx / wsum), cy: Math.round(wsy / wsum) };
+
+  // Dilate: output pixel = 1 if any neighbour in kernel is 1
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let val = 0;
+      for (const { dx, dy } of offsets) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+          if (mask[ny * width + nx]) { val = 1; break; }
+        }
+      }
+      tmp[y * width + x] = val;
+    }
+  }
+
+  // Erode: output pixel = 1 only if all neighbours in kernel are 1
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let val = 1;
+      for (const { dx, dy } of offsets) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+          if (!tmp[ny * width + nx]) { val = 0; break; }
+        } else {
+          val = 0; break;
+        }
+      }
+      out[y * width + x] = val;
+    }
+  }
+  return out;
+}
+
+// 5c. Connected-component labelling (BFS flood-fill)
+function labelComponents(mask, width, height, targetVal) {
+  const n = width * height;
+  const labels = new Int32Array(n);    // 0 = unlabelled
+  let nextLabel = 1;
+  const components = [];               // {id, area, sx, sy, minX, minY, maxX, maxY, touchesBorder}
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      if (mask[idx] !== targetVal || labels[idx] !== 0) continue;
+
+      // BFS
+      const id = nextLabel++;
+      const queue = [idx];
+      labels[idx] = id;
+      let area = 0, sx = 0, sy = 0;
+      let minX = x, minY = y, maxX = x, maxY = y;
+      let touchesBorder = false;
+      let head = 0;
+
+      while (head < queue.length) {
+        const ci = queue[head++];
+        const cx = ci % width;
+        const cy = (ci - cx) / width;
+        area++;
+        sx += cx;
+        sy += cy;
+        if (cx < minX) minX = cx;
+        if (cx > maxX) maxX = cx;
+        if (cy < minY) minY = cy;
+        if (cy > maxY) maxY = cy;
+        if (cx <= 1 || cy <= 1 || cx >= width - 2 || cy >= height - 2) {
+          touchesBorder = true;
+        }
+
+        // 4-connected neighbours
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = cx + dx, ny = cy + dy;
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const ni = ny * width + nx;
+            if (mask[ni] === targetVal && labels[ni] === 0) {
+              labels[ni] = id;
+              queue.push(ni);
+            }
+          }
+        }
+      }
+
+      components.push({ id, area, sx, sy, minX, minY, maxX, maxY, touchesBorder });
+    }
+  }
+
+  return { labels, components };
+}
+
+// 5d. Compute perimeter of a labelled component (count boundary pixels)
+function componentPerimeter(labels, width, height, compId) {
+  let peri = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (labels[y * width + x] !== compId) continue;
+      // Is boundary pixel? (has at least one 4-neighbour that's different)
+      let isBoundary = false;
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height ||
+            labels[ny * width + nx] !== compId) {
+          isBoundary = true;
+          break;
+        }
+      }
+      if (isBoundary) peri++;
+    }
+  }
+  return peri;
+}
+
+// 5e. Main contour-based center detection
+function findGearCenter(edges, width, height, gray) {
+  // Step 1: Otsu threshold on grayscale to find dark regions
+  const darkMask = otsuThreshold(gray, width, height);
+
+  // Step 2: Morphological close to fill small gaps in gear body
+  const closed = morphClose(darkMask, width, height, 2);
+
+  // Step 3: Label dark components
+  const { labels: darkLabels, components: darkComps } =
+    labelComponents(closed, width, height, 1);
+
+  // Step 4: Label light components (for hole/donut detection)
+  const { labels: lightLabels, components: lightComps } =
+    labelComponents(closed, width, height, 0);
+
+  // Step 5: Find which dark components contain interior holes (donuts)
+  // A light component is a "hole" if it doesn't touch the image border.
+  // Its parent dark component is determined by checking the dark label
+  // adjacent to the hole.
+  const darkHasHole = new Set();
+  for (const lc of lightComps) {
+    if (lc.touchesBorder || lc.area < 50) continue;
+    // Find which dark component surrounds this hole:
+    // check the dark label just outside the hole's bounding box
+    const checkX = Math.max(0, lc.minX - 1);
+    const checkY = Math.max(0, lc.minY - 1);
+    const parentId = darkLabels[checkY * width + checkX];
+    if (parentId > 0) {
+      darkHasHole.add(parentId);
+    }
+  }
+
+  // Step 6: Score each dark component
+  const n = width * height;
+  let bestComp = null;
+  let bestScore = -1;
+
+  for (const dc of darkComps) {
+    if (dc.area < 300 || dc.area > 0.5 * n) continue;
+    if (dc.touchesBorder) continue;
+
+    const peri = componentPerimeter(darkLabels, width, height, dc.id);
+    const circ = peri > 0 ? (4 * Math.PI * dc.area) / (peri * peri) : 0;
+    const hasHole = darkHasHole.has(dc.id);
+
+    // Score: circularity × donut bonus
+    const score = circ * (hasHole ? 1.5 : 1.0);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestComp = {
+        cx: Math.round(dc.sx / dc.area),
+        cy: Math.round(dc.sy / dc.area),
+        radius: Math.round(Math.sqrt(dc.area / Math.PI)),
+        circularity: circ,
+        hasHole,
+      };
+    }
+  }
+
+  // Fallback: center-weighted edge centroid (original approach)
+  if (bestComp === null) {
+    const cx0 = width / 2;
+    const cy0 = height / 2;
+    const sigX = width * 0.25;
+    const sigY = height * 0.25;
+    let wsx = 0, wsy = 0, wsum = 0;
+    for (let y = 0; y < height; y++) {
+      const dy = (y - cy0) / sigY;
+      const wy = Math.exp(-dy * dy);
+      for (let x = 0; x < width; x++) {
+        if (edges[y * width + x] > 0) {
+          const dx = (x - cx0) / sigX;
+          const w = wy * Math.exp(-dx * dx);
+          wsx += x * w;
+          wsy += y * w;
+          wsum += w;
+        }
+      }
+    }
+    if (wsum === 0) return { cx: Math.floor(cx0), cy: Math.floor(cy0) };
+    return { cx: Math.round(wsx / wsum), cy: Math.round(wsy / wsum) };
+  }
+
+  return bestComp;
 }
 
 // ── 6. Radial edge-density → outer gear radius ────────────────────────────────
@@ -286,15 +508,23 @@ export async function countTeeth(photoUri) {
   const edges = sobelEdges(blur, width, height);
   const t2 = Date.now();
 
-  const { cx, cy } = findGearCenter(edges, width, height);
-  const r           = findGearRadius(edges, cx, cy, width, height);
+  // Contour-based center detection uses grayscale directly; also provides
+  // an approximate radius from the contour area.  Falls back to edge
+  // centroid if no suitable contour is found.
+  const centerResult = findGearCenter(edges, width, height, gray);
+  const cx = centerResult.cx;
+  const cy = centerResult.cy;
+  const contourRadius = centerResult.radius || 0;
+
+  // Use contour radius if available, otherwise fall back to edge-density
+  const r = contourRadius > 20
+    ? contourRadius
+    : findGearRadius(edges, cx, cy, width, height);
   const t3 = Date.now();
 
   // ── Multi-radius FFT scan ──────────────────────────────────────────
-  // Instead of a single radius, scan multiple radii from 0.60× to 1.10×
-  // of the detected gear radius and keep the result with the highest
-  // spectral purity (confidence).  This avoids locking on to an inner
-  // hub ring or a radius where background texture dominates.
+  // Scan radii from 0.60× to 1.10× of the detected gear radius and
+  // keep the result with the highest spectral purity (confidence).
   let bestToothCount = 0;
   let bestConfidence = 0;
   let bestR          = r;
