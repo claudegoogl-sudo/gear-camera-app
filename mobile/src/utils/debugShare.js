@@ -8,12 +8,9 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { GITHUB_TOKEN, GITHUB_REPO } from '../config';
 import { BUILD_LABEL } from '../buildInfo';
+import { makeSlug } from './timestamp';
 
 const CONTENTS_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents`;
-
-function makeSlug(timestamp) {
-  return timestamp.replace(/[:.]/g, '-').replace('T', '_');
-}
 
 /**
  * Verify that a file exists on GitHub after upload.

@@ -596,10 +596,16 @@ export async function countTeeth(photoUri) {
 
   const t4 = Date.now();
 
+  const centerMethod = centerResult.circularity != null ? 'contour' : 'edge-centroid';
+  const radiusMethod = contourRadius > 20 ? 'contour' : 'edge-density';
+
   console.log(
     `[GearCounter] ${width}×${height}px | ` +
-    `load=${t1-t0}ms blur+edges=${t2-t1}ms radius=${t3-t2}ms fft=${t4-t3}ms total=${t4-t0}ms | ` +
-    `center=(${cx},${cy}) baseR=${r} bestR=${bestR} teeth=${bestToothCount} conf=${bestConfidence.toFixed(3)}`
+    `load=${t1-t0}ms preprocess=${t2-t1}ms detect=${t3-t2}ms fft=${t4-t3}ms total=${t4-t0}ms\n` +
+    `  center=(${cx},${cy}) method=${centerMethod}` +
+    (centerResult.circularity != null ? ` circ=${centerResult.circularity.toFixed(2)} donut=${centerResult.hasHole}` : '') + '\n' +
+    `  radius=${r} method=${radiusMethod} scanBestR=${bestR}\n` +
+    `  result=${bestToothCount}T conf=${(bestConfidence * 100).toFixed(1)}%`
   );
 
   return {

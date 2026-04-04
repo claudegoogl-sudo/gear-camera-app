@@ -63,7 +63,7 @@ function useCountUp(target) {
 }
 
 /**
- * Phase 5: polished result UI.
+ * Result screen — shows the detected tooth count with animated overlays.
  *
  *   • Count-up animation on the tooth number
  *   • Gear contour overlay fades in with tick marks at each tooth

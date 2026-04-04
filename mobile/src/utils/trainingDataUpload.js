@@ -11,6 +11,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { GITHUB_TOKEN, GITHUB_REPO } from '../config';
 import { BUILD_LABEL } from '../buildInfo';
+import { makeSlug } from './timestamp';
 
 const CONTENTS_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents`;
 
@@ -20,10 +21,6 @@ const HEADERS = {
   'X-GitHub-Api-Version': '2022-11-28',
   Authorization: `Bearer ${GITHUB_TOKEN}`,
 };
-
-function makeSlug(timestamp) {
-  return timestamp.replace(/[:.]/g, '-').replace('T', '_');
-}
 
 /**
  * Upload a captured photo and its detection metadata to `training-data/`.

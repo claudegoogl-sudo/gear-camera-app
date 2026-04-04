@@ -46,10 +46,10 @@ export default function GearContourOverlay({
   const r  = radius  * width;
 
   const highConf  = confidence >= 0.90;
-  const color     = highConf ? '#4CAF50' : '#FF9800';
-  const innerR    = r * 0.78;       // approximate root circle
-  const tickOuter = r + 10;
-  const tickInner = r - 6;
+  const color     = highConf ? '#4CAF50' : '#FF9800'; // green ≥90%, orange <90%
+  const innerR    = r * 0.78;       // root circle — tooth valleys sit at ~78% of tip radius
+  const tickOuter = r + 10;         // tick extends 10px outside gear circle
+  const tickInner = r - 6;          // tick extends 6px inside gear circle
 
   // Fade-in animation on mount
   const opacity     = useSharedValue(0);
