@@ -113,17 +113,21 @@ export function useMotionDetection({ onStable, enabled = true }) {
   // Instead of blindly firing after a timer, subscribe to the accelerometer
   // and only trigger when the device has been physically stable for STABILITY_MS.
   const accelTimer = useRef(null);
-  const lastMagnitude = useRef(null);
+  const lastAccel = useRef(null);
 
   useEffect(() => {
     if (!usingFallback || !enabled) return;
 
     Accelerometer.setUpdateInterval(ACCEL_UPDATE_MS);
     const subscription = Accelerometer.addListener(({ x, y, z }) => {
-      const mag = Math.sqrt(x * x + y * y + z * z);
-
-      if (lastMagnitude.current !== null) {
-        const delta = Math.abs(mag - lastMagnitude.current);
+      if (lastAccel.current !== null) {
+        // Compare per-axis vector distance, not just magnitude delta.
+        // Total magnitude (sqrt(x²+y²+z²)) stays near 1g even during motion,
+        // so magnitude-only comparison misses tilts and lateral movement.
+        const dx = x - lastAccel.current.x;
+        const dy = y - lastAccel.current.y;
+        const dz = z - lastAccel.current.z;
+        const delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         if (delta > ACCEL_MOTION_THRESHOLD) {
           // Device is moving — cancel any pending stability trigger.
@@ -142,7 +146,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
         }
       }
 
-      lastMagnitude.current = mag;
+      lastAccel.current = { x, y, z };
     });
 
     return () => {
@@ -151,7 +155,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
         clearTimeout(accelTimer.current);
         accelTimer.current = null;
       }
-      lastMagnitude.current = null;
+      lastAccel.current = null;
     };
   }, [usingFallback, enabled, onStable]);
 
@@ -216,7 +220,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
       clearTimeout(accelTimer.current);
       accelTimer.current = null;
     }
-    lastMagnitude.current = null;
+    lastAccel.current = null;
     setIsStable(false);
     prevSamples.value = null;
     frameCounter.value = 0;
