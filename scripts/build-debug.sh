@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# build-debug.sh — Stamp build metadata, run Gradle debug build, archive APK.
+# build-debug.sh — Stamp build metadata, run Gradle debug build, archive APK,
+#                   and upload to GitHub Releases.
 #
 # Usage: ./scripts/build-debug.sh
 # Run from the repo root.
+#
+# Env: GITHUB_PAT or EXPO_PUBLIC_GITHUB_TOKEN — GitHub personal access token
+#      for release uploads. Loaded from .env if present. If unset, the build
+#      succeeds locally but the release upload is skipped.
 
 set -euo pipefail
 
@@ -12,6 +17,17 @@ ANDROID_DIR="$MOBILE_DIR/android"
 BUILD_INFO="$MOBILE_DIR/src/buildInfo.js"
 TEST_BUILDS_DIR="$REPO_ROOT/test-builds"
 README="$TEST_BUILDS_DIR/README.md"
+GH_REPO="claudegoogl-sudo/gear-camera-app"
+
+# ── Load .env if present ─────────────────────────────────────────────────────
+if [[ -f "$REPO_ROOT/.env" ]]; then
+  set -a
+  source "$REPO_ROOT/.env"
+  set +a
+fi
+
+# Resolve GitHub token (GITHUB_PAT takes precedence)
+GH_TOKEN="${GITHUB_PAT:-${EXPO_PUBLIC_GITHUB_TOKEN:-${GITHUB_TOKEN:-}}}"
 
 # ── Derive version + build number ────────────────────────────────────────────
 VERSION=$(node -p "require('$MOBILE_DIR/package.json').version")
@@ -59,10 +75,32 @@ APK_SIZE_MB=$(du -m "$APK_DEST" | cut -f1)
 
 echo "[build] APK → $APK_DEST (${APK_SIZE_MB}MB)"
 
+# ── Upload to GitHub Releases ────────────────────────────────────────────────
+DOWNLOAD_LINK="local"
+TAG="b${BUILD_NUMBER}"
+# Sanitize APK name for upload (replace spaces with dots)
+UPLOAD_APK_NAME="${APK_NAME// /.}"
+
+if [[ -n "$GH_TOKEN" ]]; then
+  echo "[build] Uploading to GitHub Releases as tag $TAG…"
+  if GITHUB_TOKEN="$GH_TOKEN" gh release create "$TAG" \
+       --repo "$GH_REPO" \
+       --title "Debug Build b${BUILD_NUMBER}" \
+       --notes "Build b${BUILD_NUMBER} — v${VERSION} — ${BUILD_DATE}" \
+       "$APK_DEST#$UPLOAD_APK_NAME" 2>&1; then
+    DOWNLOAD_LINK="[Download](https://github.com/$GH_REPO/releases/download/$TAG/$UPLOAD_APK_NAME)"
+    echo "[build] Release $TAG uploaded successfully."
+  else
+    echo "[build] WARNING: GitHub release upload failed. Build succeeded locally." >&2
+  fi
+else
+  echo "[build] WARNING: No GitHub token found (set GITHUB_PAT or EXPO_PUBLIC_GITHUB_TOKEN in .env). Skipping release upload." >&2
+fi
+
 # ── Update test-builds/README.md ──────────────────────────────────────────────
 # Append a new row to the table.
 TIMESTAMP_FULL=$(date +"%Y-%m-%d %H:%M")
-NEW_ROW="| $TIMESTAMP_FULL | $APK_NAME (${APK_SIZE_MB}MB) | b${BUILD_NUMBER} | local |"
+NEW_ROW="| $TIMESTAMP_FULL | $APK_NAME (${APK_SIZE_MB}MB) | b${BUILD_NUMBER} | $DOWNLOAD_LINK |"
 
 # Insert row after the table header line (the line starting with "| Date")
 python3 - "$README" "$NEW_ROW" <<'PYEOF'

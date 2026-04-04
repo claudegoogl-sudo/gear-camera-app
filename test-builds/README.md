@@ -5,8 +5,8 @@ Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are com
 
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
-| 2026-04-04 22:21 | gear-camera-debug-2026-04-04 22:20-b23.apk (188MB) | b23 | local |
-| 2026-04-04 21:07 | gear-camera-debug-2026-04-04 21:06-b22.apk (188MB) | b22 | local |
+| 2026-04-04 22:21 | gear-camera-debug-2026-04-04 22:20-b23.apk (188MB) | b23 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b23/gear-camera-debug-2026-04-04.22.20-b23.apk) |
+| 2026-04-04 21:07 | gear-camera-debug-2026-04-04 21:06-b22.apk (188MB) | b22 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b22/gear-camera-debug-2026-04-04.21.06-b22.apk) |
 | 2026-04-04 20:05 | gear-camera-debug-2026-04-04 20:04-b21.apk (188MB) | b21 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b21/gear-camera-debug-2026-04-04.20.04-b21.apk) |
 | 2026-04-04 18:35 | gear-camera-debug-2026-04-04 18:34-b20.apk (188MB) | b20 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b20/gear-camera-debug-2026-04-04.18.34-b20.apk) |
 | 2026-04-04 18:20 | gear-camera-debug-2026-04-04 18:19-b19.apk (190MB) | b19 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b19/gear-camera-debug-2026-04-04.18.19-b19.apk) |
@@ -40,7 +40,8 @@ This will:
 1. Increment the build number in `mobile/src/buildInfo.js`
 2. Run `./gradlew assembleDebug`
 3. Copy the APK to `test-builds/` with a timestamped + build-numbered filename
-4. Append a row to this table
+4. Upload the APK to GitHub Releases (requires `GITHUB_PAT` or `EXPO_PUBLIC_GITHUB_TOKEN` in `.env`)
+5. Append a row to this table with the download link
 
 ## Build Method
 
