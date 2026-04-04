@@ -77,35 +77,56 @@ class GearToothCounter:
 
     def find_gear_region(self):
         """
-        Detect gear center via contour analysis on thresholded dark regions.
+        Detect gear center via contour analysis with dual-polarity thresholding.
 
         Pipeline:
-        1. Otsu threshold to isolate dark pixels (gear = dark metal)
+        1. Try both Otsu BINARY_INV (dark gear) and BINARY (light gear)
         2. Morphological close to fill small gaps
         3. Find contours with hierarchy (parent-child)
-        4. Pick the most circular "donut" contour (dark blob with interior
-           hole = bore) that doesn't touch the image border
-        5. Use its centroid as gear center and equivalent radius
+        4. Score contours by circularity * area-weight * child bonus,
+           so large circular contours beat tiny mounting holes
+        5. Pick the best contour across both polarities
 
-        Falls back to Hough circles + edge centroid if no contour found.
+        Falls back to Hough circles if no contour found.
         """
         h, w = self.edges.shape
-
-        # ── Primary: contour-based detection ─────────────────────────────
-        _, binary = cv2.threshold(self.gray, 0, 255,
-                                  cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-
-        contours, hierarchy = cv2.findContours(
-            binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
-        )
 
         best_cnt = None
         best_score = -1
         cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
 
-        if contours and hierarchy is not None:
+        # Try both threshold polarities to handle light and dark gears
+        for thresh_flag in [cv2.THRESH_BINARY_INV, cv2.THRESH_BINARY]:
+            _, binary = cv2.threshold(self.gray, 0, 255,
+                                      thresh_flag + cv2.THRESH_OTSU)
+            binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+
+            contours, hierarchy = cv2.findContours(
+                binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
+            )
+
+            if not contours or hierarchy is None:
+                continue
+
+            # Find the max area among non-border, non-child contours
+            max_area = 0
+            for i, cnt in enumerate(contours):
+                area = cv2.contourArea(cnt)
+                is_child = hierarchy[0][i][3] >= 0
+                if is_child:
+                    continue
+                x, y, bw, bh = cv2.boundingRect(cnt)
+                margin = 2
+                if (x <= margin or y <= margin or
+                        x + bw >= w - margin or y + bh >= h - margin):
+                    continue
+                if area > max_area:
+                    max_area = area
+
+            if max_area < 300:
+                continue
+
             for i, cnt in enumerate(contours):
                 area = cv2.contourArea(cnt)
                 peri = cv2.arcLength(cnt, True)
@@ -125,7 +146,12 @@ class GearToothCounter:
                     continue
 
                 has_child = hierarchy[0][i][2] >= 0
-                score = circ * (1.5 if has_child else 1.0)
+                child_bonus = 1.5 if has_child else 1.0
+
+                # Area weight: large contours dominate over tiny holes
+                area_weight = (area / max_area) ** 0.3
+
+                score = circ * child_bonus * area_weight
 
                 if score > best_score:
                     best_score = score
@@ -136,6 +162,13 @@ class GearToothCounter:
                         cy = int(round(M["m01"] / M["m00"]))
                     else:
                         cx, cy = x + bw // 2, y + bh // 2
+                    # For small images, ellipse fit gives a more accurate
+                    # geometric center than the centroid (which is biased
+                    # by asymmetric tooth shapes)
+                    if len(cnt) >= 5 and w * h < 250000:
+                        ell = cv2.fitEllipse(cnt)
+                        cx = int(round(ell[0][0]))
+                        cy = int(round(ell[0][1]))
                     outer_r = int(round(np.sqrt(area / np.pi)))
 
         # ── Fallback: Hough circles ──────────────────────────────────────
@@ -230,9 +263,9 @@ class GearToothCounter:
         else:
             cand_set = {int(p) for p in peaks} if len(peaks) > 0 else {max_r // 2}
 
-        # Always include evenly-spaced outer radii (65–93 % of max_r)
-        for frac in [0.65, 0.72, 0.79, 0.86, 0.93]:
-            cand_set.add(int(max_r * frac))
+        # Evenly-spaced outer radii with ~4% step (65–95% of max_r)
+        for pct in range(65, 96, 4):
+            cand_set.add(int(max_r * pct / 100))
 
         candidates = sorted(cand_set)
 
