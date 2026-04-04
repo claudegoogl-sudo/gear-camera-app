@@ -42,9 +42,9 @@ export async function uploadTrainingData({ photoPath, toothCount, confidence, ge
   const slug = makeSlug(timestamp);
 
   try {
-    // Read the photo as base64.
-    const cleanPath = photoPath.replace(/^file:\/\//, '');
-    const base64 = await FileSystem.readAsStringAsync(cleanPath, {
+    // Ensure file:// URI — expo-file-system/legacy requires it.
+    const fileUri = photoPath.startsWith('file://') ? photoPath : `file://${photoPath}`;
+    const base64 = await FileSystem.readAsStringAsync(fileUri, {
       encoding: FileSystem.EncodingType.Base64,
     });
 

@@ -72,28 +72,37 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
   let photoGitPath = null;
   if (photoPath) {
     try {
-      const cleanPath = photoPath.replace(/^file:\/\//, '');
-      const base64 = await FileSystem.readAsStringAsync(cleanPath, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      photoGitPath = `debug-reports/${slug}_photo.jpg`;
-      const photoRes = await fetch(`${CONTENTS_URL}/${photoGitPath}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          message: `debug-report: photo ${slug}`,
-          content: base64,
-        }),
-      });
-      if (!photoRes.ok) {
-        const body = await photoRes.text();
-        console.warn(`[DebugShare] Photo upload failed: ${photoRes.status} ${body}`);
-        photoGitPath = null;
+      // Ensure file:// URI — expo-file-system/legacy requires it.
+      const fileUri = photoPath.startsWith('file://') ? photoPath : `file://${photoPath}`;
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        console.warn(`[DebugShare] Photo file not found at: ${fileUri}`);
       } else {
-        await verifyUpload(photoGitPath, headers);
+        console.log(`[DebugShare] Reading photo: ${fileUri} (${fileInfo.size} bytes)`);
+        const base64 = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        photoGitPath = `debug-reports/${slug}_photo.jpg`;
+        const photoRes = await fetch(`${CONTENTS_URL}/${photoGitPath}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            message: `debug-report: photo ${slug}`,
+            content: base64,
+          }),
+        });
+        if (!photoRes.ok) {
+          const body = await photoRes.text();
+          console.warn(
+            `[DebugShare] Photo upload failed (${photoRes.status}): path=${fileUri} size=${fileInfo.size} body=${body}`,
+          );
+          photoGitPath = null;
+        } else {
+          await verifyUpload(photoGitPath, headers);
+        }
       }
     } catch (e) {
-      console.warn('[DebugShare] Could not read/upload/verify photo:', e.message);
+      console.warn(`[DebugShare] Could not read/upload/verify photo (path=${photoPath}):`, e.message);
       photoGitPath = null;
     }
   }
