@@ -169,6 +169,30 @@ class GearToothCounter:
             if len(top_candidates) >= 5:
                 break
 
+        # ── Add Hough circle candidates ─────────────────────────────────
+        # Hough circles complement contour-based candidates, especially for
+        # large gears that fill the frame (where contour enc_r filter may
+        # reject the outer gear boundary).
+        circles = cv2.HoughCircles(
+            self.edges, cv2.HOUGH_GRADIENT,
+            dp=2, minDist=100, param1=50, param2=30,
+            minRadius=min(h, w) // 4, maxRadius=min(h, w) // 2,
+        )
+        if circles is not None:
+            circles = np.uint16(np.around(circles))
+            for c in circles[0][:3]:
+                hc_x, hc_y, hc_r = int(c[0]), int(c[1]), int(c[2])
+                margin = 5
+                if (margin < hc_x < w - margin and margin < hc_y < h - margin):
+                    duplicate = False
+                    for _, t_x, t_y, t_r, _ in top_candidates:
+                        if (abs(hc_x - t_x) < 30 and abs(hc_y - t_y) < 30
+                                and abs(hc_r - t_r) < 20):
+                            duplicate = True
+                            break
+                    if not duplicate:
+                        top_candidates.append((0, hc_x, hc_y, hc_r, None))
+
         # FFT purity check on each candidate
         best_cnt = None
         best_score = -1
@@ -186,18 +210,18 @@ class GearToothCounter:
 
             sc, cx, cy, outer_r, best_cnt = top_candidates[best_purity_idx]
 
-        # ── Fallback: Hough circles ──────────────────────────────────────
-        if best_cnt is None:
-            circles = cv2.HoughCircles(
+        # ── Fallback: Hough circles (small radii) ────────────────────────
+        if best_cnt is None and outer_r <= min(h, w) // 4:
+            circles_fb = cv2.HoughCircles(
                 self.edges, cv2.HOUGH_GRADIENT,
                 dp=2, minDist=50, param1=50, param2=30,
                 minRadius=30, maxRadius=min(h, w) // 2,
             )
-            if circles is not None:
-                circles = np.uint16(np.around(circles))
-                cx = int(circles[0][0][0])
-                cy = int(circles[0][0][1])
-                outer_r = int(circles[0][0][2])
+            if circles_fb is not None:
+                circles_fb = np.uint16(np.around(circles_fb))
+                cx = int(circles_fb[0][0][0])
+                cy = int(circles_fb[0][0][1])
+                outer_r = int(circles_fb[0][0][2])
 
         cx = int(np.clip(cx, 0, w - 1))
         cy = int(np.clip(cy, 0, h - 1))
@@ -462,9 +486,12 @@ class GearToothCounter:
         # FFT-based confidence (linear ramp: rel 0.05→0%, 0.20→100%)
         fft_conf = float(min(1.0, max(0.0, (final_rel - 0.05) / 0.15)))
 
-        if fft_conf >= 0.70 and fft90_tc > 0:
-            # Existing FFT is highly confident — trust it
-            final_tc = fft90_tc
+        if fft_conf >= 0.70 and peak_tc > 0:
+            # Multi-radius outermost candidate is highly confident — trust it.
+            # Prefer peak_tc over fft90_tc because _fft_at_90pct accumulates
+            # votes across all radii and can be dominated by inner features
+            # (spider arms, mounting holes) in large gears.
+            final_tc = peak_tc
         elif bc_purity >= 0.20 and self.MIN_TEETH <= bc_tc <= self.MAX_TEETH:
             # Binary contour FFT has high purity — use it
             final_tc = bc_tc
