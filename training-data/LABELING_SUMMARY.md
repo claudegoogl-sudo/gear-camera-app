@@ -6,11 +6,11 @@
 
 ## Overview
 
-26 labeled training images of bicycle cassette sprockets (Shimano-style). All images photographed on paper towels or white paper. Four distinct sprocket sizes appear across the dataset.
+36 labeled training images of bicycle cassette sprockets (Shimano-style). All images photographed on paper towels or white paper. Four distinct sprocket sizes appear across the dataset.
 
 ## Correct Tooth Counts (chronological)
 
-15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 11, 11, 11, 15, 14, 15, 15, 14, 14, 13, 13, 11, 11
+15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 14, 13, 13, 13, 11, 11, 11, 14, 14, 15, 15, 14, 14, 13, 13, 11, 11
 
 ## Image-by-Image Labels
 
@@ -51,8 +51,8 @@
 | 08-26-06-796Z | 14 | 12 | -2 | |
 | 08-27-08-187Z | 14 | 14 | 0 | Correct! |
 | 08-27-44-023Z | 14 | 10 | -4 | |
-| 08-29-38-474Z | 14 | 10 | -4 | |
-| 08-30-34-676Z | 14 | 10 | -4 | |
+| 08-29-38-474Z | 15 | 10 | -5 | Board-verified 15T |
+| 08-30-34-676Z | 15 | 10 | -5 | Board-verified 15T |
 | 08-31-06-222Z | 13 | 10 | -3 | Smaller sprocket |
 | 08-31-34-725Z | 13 | 10 | -3 | |
 | 08-32-16-126Z | 13 | 13 | 0 | Correct! |
@@ -64,7 +64,7 @@
 
 | Training File | Actual Teeth | Algo Result | Error | Notes |
 |---|---|---|---|---|
-| 13-27-32-499Z | 15 | 18 | +3 | Large sprocket with lightening holes |
+| 13-27-32-499Z | 14 | 18 | +4 | Board-verified 14T |
 | 13-31-32-807Z | 14 | 13 | -1 | Medium sprocket |
 
 ### April 5 Session 3: 14:34-14:41 (8 images, build 26)
@@ -90,8 +90,8 @@
 
 ## Distinct Sprockets in Dataset
 
-1. **15T sprocket** — 4 images. Large, lightening holes.
-2. **14T sprocket** — 20 images (most common).
+1. **15T sprocket** — 5 images. Large, lightening holes.
+2. **14T sprocket** — 19 images (most common).
 3. **13T sprocket** — 6 images.
 4. **11T sprocket** — 6 images. Lockring-style cog.
 
