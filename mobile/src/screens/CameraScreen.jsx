@@ -244,7 +244,7 @@ export default function CameraScreen({ navigation }) {
               : isStable
               ? 'Stable — capturing automatically…'
               : usingFallback
-              ? 'Auto-capture in a moment…'
+              ? 'Hold steady — using motion sensor…'
               : 'Hold camera steady over the gear'}
           </Text>
 

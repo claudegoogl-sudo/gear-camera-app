@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSharedValue } from 'react-native-reanimated';
 import { useRunOnJS } from 'react-native-worklets-core';
-import { Accelerometer } from 'expo-sensors';
+import { Accelerometer, Gyroscope } from 'expo-sensors';
 
 let useFrameProcessor;
 try {
@@ -11,24 +11,28 @@ try {
 }
 
 // ── Tuning constants ────────────────────────────────────────────────────────
+// Frame-processor pixel-diff motion detection
 const MOTION_THRESHOLD = 8;
 const STABILITY_MS = 1000;
 const NUM_SAMPLES = 300;
 const FRAME_SKIP = 3;
-// How long to wait after `enabled` before deciding the frame processor is broken.
-const FALLBACK_CHECK_MS = 4000;
-// Accelerometer-based fallback: magnitude change threshold to detect motion.
+// IMU-based stillness detection (accelerometer + gyroscope)
 const ACCEL_MOTION_THRESHOLD = 0.05;
-// Accelerometer update interval in ms.
-const ACCEL_UPDATE_MS = 100;
+const GYRO_MOTION_THRESHOLD = 0.12; // rad/s — rotation rate indicating motion
+const IMU_UPDATE_MS = 100;
+const IMU_STILLNESS_MS = 800; // shorter than old 4s — capture when user stops moving
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
- * Hook that uses VisionCamera v4 frame processors to detect whether the
- * gear is moving or stationary.
+ * Hook that detects whether the device is stable enough for auto-capture.
  *
- * If frame processors are unavailable, OR if toArrayBuffer() fails silently
- * on this device, a timer-based fallback auto-triggers after a short delay.
+ * Two parallel detection paths run simultaneously:
+ *   1. VisionCamera frame processor — pixel-diff motion detection
+ *   2. IMU sensors (accelerometer + gyroscope) — physical stillness detection
+ *
+ * Either path detecting stability triggers the onStable callback.
+ * The IMU path starts immediately (no timer gate), so capture responds to
+ * physical stillness within ~800ms of the user holding the device still.
  */
 export function useMotionDetection({ onStable, enabled = true }) {
   const [isStable, setIsStable] = useState(false);
@@ -87,77 +91,89 @@ export function useMotionDetection({ onStable, enabled = true }) {
   const markFrameProcessorActiveJS = useRunOnJS(markFrameProcessorActive, [markFrameProcessorActive]);
   const reportFrameErrorJS = useRunOnJS(reportFrameError, [reportFrameError]);
 
-  // ── Fallback detection ─────────────────────────────────────────────────
-  // If enabled for FALLBACK_CHECK_MS without receiving any pixel data from
-  // the worklet, assume toArrayBuffer() is broken on this device and switch
-  // to a simple timer-based trigger.
+  // ── Frame-processor availability tracking ───────────────────────────────
+  // Track whether the frame processor is alive. If it never fires, set
+  // usingFallback for UI purposes (IMU always runs regardless).
   useEffect(() => {
     if (!enabled) {
-      setUsingFallback(false);
+      setUsingFallback(!useFrameProcessor);
       return;
     }
     frameProcessorActiveRef.current = false;
-    setUsingFallback(false);
+    setUsingFallback(!useFrameProcessor);
 
+    // Give the frame processor a brief window to prove it works.
     const check = setTimeout(() => {
       if (!frameProcessorActiveRef.current) {
-        console.warn('[MotionDetection] No frames processed — using timer fallback');
+        console.warn('[MotionDetection] No frames processed — IMU-only mode');
         setUsingFallback(true);
       }
-    }, FALLBACK_CHECK_MS);
+    }, 1500);
 
     return () => clearTimeout(check);
   }, [enabled]);
 
-  // ── Fallback auto-trigger (accelerometer-based) ────────────────────────
-  // Instead of blindly firing after a timer, subscribe to the accelerometer
-  // and only trigger when the device has been physically stable for STABILITY_MS.
-  const accelTimer = useRef(null);
+  // ── IMU-based capture trigger (accelerometer + gyroscope) ──────────────
+  // Runs in parallel with the frame processor from the start. Triggers
+  // capture when the device has been physically still for IMU_STILLNESS_MS.
+  // This replaces the old 4s timer gate — no blind waiting.
+  const imuTimer = useRef(null);
   const lastAccel = useRef(null);
+  const latestGyro = useRef({ x: 0, y: 0, z: 0 });
 
   useEffect(() => {
-    if (!usingFallback || !enabled) return;
+    if (!enabled) return;
 
-    Accelerometer.setUpdateInterval(ACCEL_UPDATE_MS);
-    const subscription = Accelerometer.addListener(({ x, y, z }) => {
+    Accelerometer.setUpdateInterval(IMU_UPDATE_MS);
+    Gyroscope.setUpdateInterval(IMU_UPDATE_MS);
+
+    const accelSub = Accelerometer.addListener(({ x, y, z }) => {
+      const gyro = latestGyro.current;
+      const gyroRate = Math.sqrt(gyro.x * gyro.x + gyro.y * gyro.y + gyro.z * gyro.z);
+
       if (lastAccel.current !== null) {
-        // Compare per-axis vector distance, not just magnitude delta.
-        // Total magnitude (sqrt(x²+y²+z²)) stays near 1g even during motion,
-        // so magnitude-only comparison misses tilts and lateral movement.
         const dx = x - lastAccel.current.x;
         const dy = y - lastAccel.current.y;
         const dz = z - lastAccel.current.z;
-        const delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const accelDelta = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        if (delta > ACCEL_MOTION_THRESHOLD) {
+        const isMoving = accelDelta > ACCEL_MOTION_THRESHOLD || gyroRate > GYRO_MOTION_THRESHOLD;
+
+        if (isMoving) {
           // Device is moving — cancel any pending stability trigger.
-          if (accelTimer.current) {
-            clearTimeout(accelTimer.current);
-            accelTimer.current = null;
+          if (imuTimer.current) {
+            clearTimeout(imuTimer.current);
+            imuTimer.current = null;
           }
           setIsStable(false);
-        } else if (!accelTimer.current) {
-          // Device is still — start stability countdown.
-          accelTimer.current = setTimeout(() => {
-            accelTimer.current = null;
+        } else if (!imuTimer.current) {
+          // Device is still — start stillness countdown.
+          imuTimer.current = setTimeout(() => {
+            imuTimer.current = null;
             setIsStable(true);
             onStable?.();
-          }, STABILITY_MS);
+          }, IMU_STILLNESS_MS);
         }
       }
 
       lastAccel.current = { x, y, z };
     });
 
+    const gyroSub = Gyroscope.addListener(({ x, y, z }) => {
+      latestGyro.current = { x, y, z };
+    });
+
     return () => {
-      subscription.remove();
-      if (accelTimer.current) {
-        clearTimeout(accelTimer.current);
-        accelTimer.current = null;
+      accelSub.remove();
+      gyroSub.remove();
+      if (imuTimer.current) {
+        clearTimeout(imuTimer.current);
+        imuTimer.current = null;
       }
       lastAccel.current = null;
+      latestGyro.current = { x: 0, y: 0, z: 0 };
     };
-  }, [usingFallback, enabled, onStable]);
+  }, [enabled, onStable]);
 
   // ── Build frame processor ──────────────────────────────────────────────
   let frameProcessor = undefined;
@@ -216,11 +232,12 @@ export function useMotionDetection({ onStable, enabled = true }) {
 
   const reset = useCallback(() => {
     clearTimer();
-    if (accelTimer.current) {
-      clearTimeout(accelTimer.current);
-      accelTimer.current = null;
+    if (imuTimer.current) {
+      clearTimeout(imuTimer.current);
+      imuTimer.current = null;
     }
     lastAccel.current = null;
+    latestGyro.current = { x: 0, y: 0, z: 0 };
     setIsStable(false);
     prevSamples.value = null;
     frameCounter.value = 0;
