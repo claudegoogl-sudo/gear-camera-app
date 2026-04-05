@@ -36,10 +36,11 @@ async function verifyUpload(gitPath, headers) {
  *   toothCount: number|null,
  *   confidence: number|null,
  *   gearContour: object|null,
+ *   actualTeethCount: number|null,
  * }} params
  * @returns {Promise<string>} URL of the uploaded report file on GitHub.
  */
-export async function shareDebugReport({ photoPath, toothCount, confidence, gearContour }) {
+export async function shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount }) {
   if (!GITHUB_TOKEN) {
     throw new Error('GitHub token not configured — cannot upload debug report.');
   }
@@ -70,6 +71,10 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
       gearContour,
     },
   };
+
+  if (actualTeethCount != null) {
+    report.actualTeethCount = actualTeethCount;
+  }
 
   const headers = {
     'Content-Type': 'application/json',

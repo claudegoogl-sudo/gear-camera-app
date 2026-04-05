@@ -4,6 +4,7 @@ import {
   Text,
   Image,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   useWindowDimensions,
   ToastAndroid,
@@ -110,11 +111,13 @@ export default function ResultScreen({ navigation, route }) {
   }));
 
   const [sharing, setSharing] = useState(false);
+  const [actualTeethCount, setActualTeethCount] = useState('');
 
   const handleShareDebug = async () => {
+    const parsedActual = actualTeethCount.trim() !== '' ? parseInt(actualTeethCount, 10) : null;
     setSharing(true);
     try {
-      await shareDebugReport({ photoPath, toothCount, confidence, gearContour });
+      await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount: parsedActual });
 
       // Upload training data alongside debug share (fire-and-forget).
       uploadTrainingData({ photoPath, toothCount, confidence, gearContour }).catch(() => {});
@@ -207,6 +210,21 @@ export default function ResultScreen({ navigation, route }) {
           </Text>
         )}
 
+        {toothCount != null && (
+          <View style={styles.actualCountRow}>
+            <Text style={styles.actualCountLabel}>Actual tooth count (optional)</Text>
+            <TextInput
+              style={styles.actualCountInput}
+              value={actualTeethCount}
+              onChangeText={setActualTeethCount}
+              keyboardType="number-pad"
+              placeholder="e.g. 24"
+              placeholderTextColor="#555"
+              maxLength={3}
+            />
+          </View>
+        )}
+
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
             <Text style={styles.resetText}>Reset</Text>
@@ -287,6 +305,27 @@ const styles = StyleSheet.create({
   errorHint: { fontSize: 12, color: '#666', textAlign: 'center' },
 
   waiting: { fontSize: 16, color: '#555' },
+
+  actualCountRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  actualCountLabel: { fontSize: 13, color: '#888', fontWeight: '500' },
+  actualCountInput: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    width: 72,
+    textAlign: 'center',
+  },
 
   buttonRow: {
     marginTop: 18,
