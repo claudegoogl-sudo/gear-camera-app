@@ -397,18 +397,28 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         if (comp.minX <= margin || comp.minY <= margin ||
             comp.maxX >= w - margin || comp.maxY >= h - margin) continue;
 
-        // Enclosing circle radius estimate (check early to skip perimeter calc)
+        // Radius estimate: use bounding-box radius for annular shapes,
+        // area-based encR for solid blobs, whichever is larger.
         const encR = Math.sqrt(comp.area / Math.PI);
-        if (encR / Math.min(h, w) < 0.08 || encR / Math.min(h, w) > 0.45) continue;
+        const bboxR = Math.max(bw, bh) / 2;
+        const effectiveR = Math.max(encR, bboxR * 0.7);
+        if (effectiveR / Math.min(h, w) < 0.05 || effectiveR / Math.min(h, w) > 0.45) continue;
 
         const peri = componentPerimeter(labels, w, h, comp.id, comp.minX, comp.minY, comp.maxX, comp.maxY);
         const circ = peri > 0 ? (4 * Math.PI * comp.area) / (peri * peri) : 0;
         const compact = comp.area / (bw * bh);
 
-        const score = circ * compact * Math.pow(comp.area, 0.3);
-        const cx = Math.round(comp.sx / comp.area);
-        const cy = Math.round(comp.sy / comp.area);
-        const r = Math.round(encR);
+        // Center-of-frame bias: prefer candidates near image center
+        const compCx = comp.sx / comp.area;
+        const compCy = comp.sy / comp.area;
+        const dx = (compCx - w / 2) / (w / 2);
+        const dy = (compCy - h / 2) / (h / 2);
+        const centerBias = Math.exp(-1.5 * (dx * dx + dy * dy));
+
+        const score = circ * compact * Math.pow(comp.area, 0.3) * centerBias;
+        const cx = Math.round(compCx);
+        const cy = Math.round(compCy);
+        const r = Math.round(effectiveR);
 
         allCandidates.push({ score, cx, cy, r });
       }
@@ -472,7 +482,13 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     const peri = componentPerimeter(darkLabels, w, h, dc.id, dc.minX, dc.minY, dc.maxX, dc.maxY);
     const circ = peri > 0 ? (4 * Math.PI * dc.area) / (peri * peri) : 0;
     const hasHole = darkHasHole.has(dc.id);
-    const score = circ * (hasHole ? 1.5 : 1.0);
+    // Center-of-frame bias for Otsu fallback too
+    const dcCx = dc.sx / dc.area;
+    const dcCy = dc.sy / dc.area;
+    const ddx = (dcCx - w / 2) / (w / 2);
+    const ddy = (dcCy - h / 2) / (h / 2);
+    const cBias = Math.exp(-1.5 * (ddx * ddx + ddy * ddy));
+    const score = circ * (hasHole ? 1.5 : 1.0) * cBias;
     if (score > bestScore) {
       bestScore = score;
       bestComp = dc;
@@ -480,17 +496,23 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   }
 
   if (bestComp) {
+    // Use bbox radius for annular shapes (area-based underestimates)
+    const dcBw = bestComp.maxX - bestComp.minX + 1;
+    const dcBh = bestComp.maxY - bestComp.minY + 1;
+    const areaR = Math.sqrt(bestComp.area / Math.PI);
+    const bboxR2 = Math.max(dcBw, dcBh) / 2;
     return {
       cx: Math.round(bestComp.sx / bestComp.area),
       cy: Math.round(bestComp.sy / bestComp.area),
-      radius: Math.round(Math.sqrt(bestComp.area / Math.PI)),
+      radius: Math.round(Math.max(areaR, bboxR2 * 0.7)),
       method: 'otsu-contour',
     };
   }
 
-  // Final fallback: center-weighted edge centroid
+  // Final fallback: center-weighted edge centroid with tight Gaussian
+  // Use a narrow sigma to strongly bias toward center and reject corner artifacts
   const cx0 = w / 2, cy0 = h / 2;
-  const sigX = w * 0.25, sigY = h * 0.25;
+  const sigX = w * 0.18, sigY = h * 0.18;
   let wsx = 0, wsy = 0, wsum = 0;
   for (let y = 0; y < h; y++) {
     const dyN = (y - cy0) / sigY;
@@ -504,7 +526,25 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     }
   }
   if (wsum === 0) return { cx: Math.floor(cx0), cy: Math.floor(cy0), radius: 0, method: 'fallback' };
-  return { cx: Math.round(wsx / wsum), cy: Math.round(wsy / wsum), radius: 0, method: 'edge-centroid' };
+
+  // Estimate radius from weighted edge spread around found center
+  const fcx = Math.round(wsx / wsum);
+  const fcy = Math.round(wsy / wsum);
+  let rSum = 0, rCnt = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (edges[y * w + x] > 0) {
+        const d = Math.sqrt((x - fcx) ** 2 + (y - fcy) ** 2);
+        const dxN = (x - cx0) / sigX;
+        const dyN = (y - cy0) / sigY;
+        const wt = Math.exp(-(dxN * dxN + dyN * dyN));
+        rSum += d * wt;
+        rCnt += wt;
+      }
+    }
+  }
+  const estR = rCnt > 0 ? Math.round(rSum / rCnt) : 0;
+  return { cx: fcx, cy: fcy, radius: estR, method: 'edge-centroid' };
 }
 
 // ── 11. Radial edge-density → gear radius ─────���─────────────────────────────
@@ -871,32 +911,43 @@ export async function countTeeth(photoUri) {
   if (fft90tc > 0) {
     finalTc = fft90tc;
     methodUsed = 'fft90';
-  } else {
-    // Method 2: Multi-radius FFT scan
-    ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
+  }
 
-    if (peakRel >= 0.15 && peakTc >= MIN_TEETH) {
+  // Always run multi-radius FFT scan (needed for cross-validation)
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
+
+  if (finalTc === 0 && peakRel >= 0.15 && peakTc >= MIN_TEETH) {
+    finalTc = peakTc;
+    methodUsed = 'multiR';
+  }
+
+  if (finalTc === 0) {
+    // Method 3: Outer-profile scan
+    const maxR = Math.min(cx, width - cx, cy, height - cy) - 1;
+    ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxR, width, height));
+
+    if (opTc > 0 && opRel >= 0.10) {
+      finalTc = opTc;
+      methodUsed = 'outer';
+    } else if (peakTc > 0) {
       finalTc = peakTc;
-      methodUsed = 'multiR';
+      methodUsed = 'multiR-fallback';
     } else {
-      // Method 3: Outer-profile scan
-      const maxR = Math.min(cx, width - cx, cy, height - cy) - 1;
-      ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxR, width, height));
-
-      if (opTc > 0 && opRel >= 0.10) {
-        finalTc = opTc;
-        methodUsed = 'outer';
-      } else if (peakTc > 0) {
-        finalTc = peakTc;
-        methodUsed = 'multiR-fallback';
-      } else {
-        // Method 4: CLAHE peak counting (last resort)
-        ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
-        if (claheTc > 0 && claheConf >= 0.5) {
-          finalTc = claheTc;
-          methodUsed = 'clahe';
-        }
+      // Method 4: CLAHE peak counting (last resort)
+      ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
+      if (claheTc > 0 && claheConf >= 0.5) {
+        finalTc = claheTc;
+        methodUsed = 'clahe';
       }
+    }
+  }
+
+  // Cross-validation for small gears (<=20T): if fft90 picked a result
+  // but multiR strongly disagrees, prefer multiR when its confidence is higher
+  if (finalTc > 0 && finalTc <= 20 && methodUsed === 'fft90' && peakTc > 0 && peakRel >= 0.15) {
+    if (Math.abs(fft90tc - peakTc) > 2 && peakRel > 0.20) {
+      finalTc = peakTc;
+      methodUsed = 'multiR-crossval';
     }
   }
 
