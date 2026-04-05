@@ -312,10 +312,12 @@ function fftCountAtRadius(gray, cx, cy, r, width, height) {
 
 // ── 9. FFT purity check for a candidate center/radius ───────────────────────
 //
-// Optimised: uses 360 angles (half resolution) and step 4 (was step 2)
-// for a ~4× speedup. This is a quick screening pass, not the final count.
+// Must match Python _fft_purity_check() fidelity: 720 angles, step 2,
+// halfWin 10 (≈21-sample Savitzky-Golay). The previous 360/step-4/win-3
+// settings were too coarse and allowed corner artifacts to score higher
+// purity than the actual gear, breaking center detection (PAP-103).
 
-const PURITY_ANGLES = 360;
+const PURITY_ANGLES = 720;
 
 function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   const lo = Math.floor(r * 0.85);
@@ -323,9 +325,9 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   if (lo >= hi || lo < 10) return 0.0;
 
   const fftVotes = {};
-  for (let rv = lo; rv <= hi; rv += 4) {
+  for (let rv = lo; rv <= hi; rv += 2) {
     const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, PURITY_ANGLES);
-    const halfWin = 3;
+    const halfWin = 10;
     const sm = smoothSignal(ring, halfWin, true);
 
     let smMin = Infinity, smMax = -Infinity;
@@ -366,8 +368,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
-  // Sweep thresholds 40–220 in steps of 20 (coarser sweep for speed)
-  for (let thresh = 40; thresh < 220; thresh += 20) {
+  // Sweep thresholds 40–220 in steps of 10 (finer than 20 for accuracy,
+  // coarser than Python's 5 for mobile speed — PAP-103)
+  for (let thresh = 40; thresh < 220; thresh += 10) {
     for (const invert of [true, false]) {
       // Binary mask
       const mask = new Uint8Array(n);
@@ -438,7 +441,7 @@ function findGearCenter(gray, enhanced, edges, width, height) {
       }
     }
     if (!duplicate) topCandidates.push(cand);
-    if (topCandidates.length >= 3) break;
+    if (topCandidates.length >= 5) break;
   }
 
   // FFT purity check on each candidate
@@ -597,11 +600,11 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
   if (thresholdR >= maxRScan || thresholdR < 10) return 0;
 
   const fftVotes = {};
-  for (let rv = thresholdR; rv <= maxRScan; rv += 3) {
+  for (let rv = thresholdR; rv <= maxRScan; rv += 2) {
     if (rv < 10) continue;
 
     const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, N_ANGLES);
-    const halfWin = 5;
+    const halfWin = 10;
     const sm = smoothSignal(ring, halfWin, true);
 
     let smMin = Infinity, smMax = -Infinity;
