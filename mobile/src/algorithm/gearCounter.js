@@ -35,17 +35,22 @@ const MIN_TEETH       = 10;
 const MIN_TEETH_CLAHE = 8;
 const MAX_TEETH       = 65;
 const N_ANGLES        = 720;
+// Small-gear retry: if detected gear is small and confidence is low, re-run
+// at higher resolution to give the FFT more pixels per tooth.
+const SMALL_GEAR_RADIUS_FRAC = 0.10;   // gear radius / image width
+const SMALL_GEAR_CONF        = 0.50;
+const RETRY_MAX_DIM          = 1500;
 // ────���─────────────────────────────────────────��─────────────────────────────
 
 // ── 1. Image loading ───────────��─────────────────────────────────────────────
 
-async function loadAndDecodeImage(photoUri) {
+async function loadAndDecodeImage(photoUri, targetMaxDim = 1000) {
   const info    = await ImageManipulator.manipulateAsync(photoUri, [], {});
   const maxDim  = Math.max(info.width, info.height);
-  const resizeOp = maxDim > 1000
+  const resizeOp = maxDim > targetMaxDim
     ? [{ resize: info.width >= info.height
-        ? { width: Math.round(1000 * info.width / maxDim) }
-        : { height: Math.round(1000 * info.height / maxDim) } }]
+        ? { width: Math.round(targetMaxDim * info.width / maxDim) }
+        : { height: Math.round(targetMaxDim * info.height / maxDim) } }]
     : [];
   const resized = await ImageManipulator.manipulateAsync(
     photoUri,
@@ -870,20 +875,11 @@ function clahePeakCounting(enhanced, cx, cy, gearRadius, width, height) {
  *                    gearCenter: {x: number, y: number},
  *                    gearRadius: number}>}
  */
-export async function countTeeth(photoUri) {
-  const t0 = Date.now();
-
-  // ── Image loading ──────────────────────────────────────────────────
-  const { width, height, rgba } = await loadAndDecodeImage(photoUri);
-  const t1 = Date.now();
-
-  // ── Preprocessing ──────────────────────────────────────────────────
-  const gray     = rgbaToGray(rgba, width, height);
-  const enhanced = clahe(gray, width, height, 3.0, 8, 8);
-  const blurred  = gaussianBlur5x5(enhanced, width, height);
-  const edges    = cannyEdges(blurred, width, height, 50, 150);
-  const t2 = Date.now();
-
+/**
+ * Core analysis pipeline — operates on already-loaded pixel buffers.
+ * Returns { toothCount, confidence, gearCenter, gearRadius } in pixel units.
+ */
+function analyzeImage(gray, enhanced, edges, width, height) {
   // ── Center detection (multi-candidate + FFT purity) ────────────────
   const centerResult = findGearCenter(gray, enhanced, edges, width, height);
   const cx = centerResult.cx;
@@ -894,7 +890,6 @@ export async function countTeeth(photoUri) {
   const gearR = contourRadius > 20
     ? contourRadius
     : findGearRadius(edges, cx, cy, width, height);
-  const t3 = Date.now();
 
   // ── Lazy method evaluation ──────────────────────────────────────────
   // Run methods in decision-rule priority order; skip remaining once
@@ -960,22 +955,71 @@ export async function countTeeth(photoUri) {
 
   const finalR = peakR > 0 ? peakR : gearR;
 
+  return {
+    toothCount: finalTc,
+    confidence,
+    cx, cy, gearR: finalR,
+    contourRadius,
+    centerResult,
+    fft90tc, peakTc, peakRel, opTc, opRel, claheTc, claheConf,
+    methodUsed,
+  };
+}
+
+export async function countTeeth(photoUri) {
+  const t0 = Date.now();
+
+  // ── Image loading ──────────────────────────────────────────────────
+  const { width, height, rgba } = await loadAndDecodeImage(photoUri);
+  const t1 = Date.now();
+
+  // ── Preprocessing ──────────────────────────────────────────────────
+  const gray     = rgbaToGray(rgba, width, height);
+  const enhanced = clahe(gray, width, height, 3.0, 8, 8);
+  const blurred  = gaussianBlur5x5(enhanced, width, height);
+  const edges    = cannyEdges(blurred, width, height, 50, 150);
+  const t2 = Date.now();
+
+  let r = analyzeImage(gray, enhanced, edges, width, height);
+  const t3 = Date.now();
+
+  // ── Small-gear retry at higher resolution ──────────────────────────
+  // When the gear is small in the frame and confidence is low, re-run
+  // at 1500 px to give the FFT more pixels per tooth.
+  if (r.confidence < SMALL_GEAR_CONF
+      && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
+      && r.toothCount > 0) {
+    const hi = await loadAndDecodeImage(photoUri, RETRY_MAX_DIM);
+    const hiGray     = rgbaToGray(hi.rgba, hi.width, hi.height);
+    const hiEnhanced = clahe(hiGray, hi.width, hi.height, 3.0, 8, 8);
+    const hiBlurred  = gaussianBlur5x5(hiEnhanced, hi.width, hi.height);
+    const hiEdges    = cannyEdges(hiBlurred, hi.width, hi.height, 50, 150);
+    const r2 = analyzeImage(hiGray, hiEnhanced, hiEdges, hi.width, hi.height);
+    if (r2.confidence > r.confidence) {
+      console.log(`[GearCounter] small-gear retry: ${width}→${hi.width}px, ` +
+        `${r.toothCount}T(${(r.confidence*100).toFixed(0)}%)→` +
+        `${r2.toothCount}T(${(r2.confidence*100).toFixed(0)}%)`);
+      r = r2;
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────
+
   const t4 = Date.now();
 
   console.log(
     `[GearCounter] ${width}×${height}px | ` +
     `load=${t1-t0}ms preprocess=${t2-t1}ms detect=${t3-t2}ms methods=${t4-t3}ms total=${t4-t0}ms\n` +
-    `  center=(${cx},${cy}) method=${centerResult.method}\n` +
-    `  contourR=${contourRadius} gearR=${gearR}\n` +
-    `  fft90=${fft90tc}T | multiR=${peakTc}T(rel=${peakRel.toFixed(3)}) | ` +
-    `outer=${opTc}T(rel=${opRel.toFixed(3)}) | clahe=${claheTc}T(conf=${claheConf.toFixed(2)})\n` +
-    `  → result=${finalTc}T conf=${(confidence * 100).toFixed(1)}% via=${methodUsed}`
+    `  center=(${r.cx},${r.cy}) method=${r.centerResult.method}\n` +
+    `  contourR=${r.contourRadius} gearR=${r.gearR}\n` +
+    `  fft90=${r.fft90tc}T | multiR=${r.peakTc}T(rel=${r.peakRel.toFixed(3)}) | ` +
+    `outer=${r.opTc}T(rel=${r.opRel.toFixed(3)}) | clahe=${r.claheTc}T(conf=${r.claheConf.toFixed(2)})\n` +
+    `  → result=${r.toothCount}T conf=${(r.confidence * 100).toFixed(1)}% via=${r.methodUsed}`
   );
 
   return {
-    toothCount: finalTc,
-    confidence,
-    gearCenter: { x: cx / width, y: cy / height },
-    gearRadius: finalR / width,
+    toothCount: r.toothCount,
+    confidence: r.confidence,
+    gearCenter: { x: r.cx / width, y: r.cy / height },
+    gearRadius: r.gearR / width,
   };
 }

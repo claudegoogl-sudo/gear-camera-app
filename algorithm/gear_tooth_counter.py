@@ -709,9 +709,19 @@ class GearToothCounter:
 
     # ── Public pipeline ──────────────────────────────────────────────────────
 
+    # Small gears (radius < this) with low confidence get a retry at higher
+    # resolution.  At 1000 px max dim, small sprockets (11-15 T) can end up
+    # with only ~80 px radius, which gives the FFT too few pixels per tooth.
+    _SMALL_GEAR_RADIUS = 100
+    _SMALL_GEAR_CONF = 0.50
+    _RETRY_MAX_DIM = 1500
+
     def count(self, image_path):
         """
         Complete pipeline: load → preprocess → find gear → detect teeth.
+
+        If the detected gear is small and confidence is low, retries at
+        higher resolution to give the FFT more pixels per tooth.
 
         Returns:
             dict with tooth_count, confidence, success, gear_center, gear_radius
@@ -722,6 +732,15 @@ class GearToothCounter:
             self.find_gear_region()
             self.extract_gear_roi()
             self.detect_teeth()
+
+            # Small-gear, low-confidence retry at higher resolution
+            if (self.confidence < self._SMALL_GEAR_CONF
+                    and self.gear_radius <= self._SMALL_GEAR_RADIUS
+                    and self.tooth_count is not None
+                    and self.tooth_count > 0):
+                retry = self._retry_higher_res(image_path)
+                if retry is not None and retry["confidence"] > self.confidence:
+                    return retry
 
             return {
                 "tooth_count": self.tooth_count,
@@ -738,6 +757,36 @@ class GearToothCounter:
                 "success": False,
                 "error": str(e),
             }
+
+    def _retry_higher_res(self, image_path):
+        """Re-run the pipeline at higher resolution for small gears."""
+        try:
+            hi = GearToothCounter(debug=False)
+            hi.image = cv2.imread(image_path)
+            if hi.image is None:
+                return None
+            h0, w0 = hi.image.shape[:2]
+            max_dim = max(h0, w0)
+            if max_dim > self._RETRY_MAX_DIM:
+                scale = self._RETRY_MAX_DIM / max_dim
+                hi.image = cv2.resize(
+                    hi.image,
+                    (max(1, int(w0 * scale)), max(1, int(h0 * scale))),
+                )
+            hi.gray = cv2.cvtColor(hi.image, cv2.COLOR_BGR2GRAY)
+            hi.preprocess()
+            hi.find_gear_region()
+            hi.extract_gear_roi()
+            hi.detect_teeth()
+            return {
+                "tooth_count": hi.tooth_count,
+                "confidence": float(hi.confidence),
+                "success": True,
+                "gear_center": hi.gear_center,
+                "gear_radius": hi.gear_radius,
+            }
+        except Exception:
+            return None
 
     # ── Debug helpers ────────────────────────────────────────────────────────
 
