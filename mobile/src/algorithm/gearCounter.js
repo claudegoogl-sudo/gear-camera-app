@@ -1,7 +1,7 @@
 /**
  * Gear Tooth Counter — JavaScript port of algorithm/gear_tooth_counter.py
  *
- * Pipeline (mirrors the Python implementation — commit 0d43382):
+ * Pipeline (mirrors the Python implementation — commit 1288b1f):
  *   1. Decode JPEG → RGBA pixel buffer
  *   2. Convert to grayscale
  *   3. CLAHE contrast enhancement + Gaussian blur + Canny edge detection
@@ -361,6 +361,76 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   return total > 0 ? best / total : 0.0;
 }
 
+// ── 9b. Hough-like circle candidate detection ──────────────────────────────
+//
+// Simplified Hough circle detection for JS (no OpenCV available).
+// Uses edge-ring accumulation: for a coarse grid of candidate centers,
+// builds a distance histogram from edge pixels and finds the radius with
+// the most edge support (normalized by circumference).
+// Only called when contour FFT purity is weak (< 0.10).
+
+function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
+  const w = width, h = height;
+
+  // Pre-collect edge pixel coordinates (subsample if too many for speed)
+  const edgeX = [], edgeY = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (edges[y * w + x] > 0) { edgeX.push(x); edgeY.push(y); }
+    }
+  }
+  const maxEdgePx = 4000;
+  let step = 1;
+  if (edgeX.length > maxEdgePx) step = Math.ceil(edgeX.length / maxEdgePx);
+
+  // Coarse grid search for candidate centers
+  const gridStep = Math.max(15, Math.floor(Math.min(w, h) / 20));
+  const raw = [];
+
+  for (let cy = gridStep; cy < h - gridStep; cy += gridStep) {
+    for (let cx = gridStep; cx < w - gridStep; cx += gridStep) {
+      const rBins = new Int32Array(maxRadius + 1);
+      for (let i = 0; i < edgeX.length; i += step) {
+        const dx = edgeX[i] - cx;
+        const dy = edgeY[i] - cy;
+        const d = Math.round(Math.sqrt(dx * dx + dy * dy));
+        if (d >= minRadius && d <= maxRadius) rBins[d]++;
+      }
+
+      // Smooth bins and find peak radius
+      let bestR = 0, bestScore = 0;
+      for (let r = minRadius; r <= maxRadius; r++) {
+        let sum = 0, cnt = 0;
+        for (let dr = -2; dr <= 2; dr++) {
+          const rr = r + dr;
+          if (rr >= minRadius && rr <= maxRadius) { sum += rBins[rr]; cnt++; }
+        }
+        const norm = (sum / cnt) / (2 * Math.PI * r);
+        if (norm > bestScore) { bestScore = norm; bestR = r; }
+      }
+
+      if (bestScore > 0.03) {
+        raw.push({ cx, cy, r: bestR, score: bestScore });
+      }
+    }
+  }
+
+  // Sort by score, non-maximum suppression with minDist=100
+  raw.sort((a, b) => b.score - a.score);
+  const result = [];
+  for (const c of raw) {
+    let tooClose = false;
+    for (const r of result) {
+      const dist = Math.sqrt((c.cx - r.cx) ** 2 + (c.cy - r.cy) ** 2);
+      if (dist < 100) { tooClose = true; break; }
+    }
+    if (!tooClose) result.push(c);
+    if (result.length >= 3) break;
+  }
+
+  return result;
+}
+
 // ── 10. Multi-candidate center detection (multi-threshold contour sweep) ────
 //
 // Mirrors Python find_gear_region(): sweeps thresholds in both polarities,
@@ -449,7 +519,7 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     if (topCandidates.length >= 5) break;
   }
 
-  // FFT purity check on each candidate
+  // FFT purity check on contour candidates
   if (topCandidates.length > 0) {
     let bestPurity = -1;
     let bestIdx = 0;
@@ -461,6 +531,48 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         bestIdx = i;
       }
     }
+
+    // ── Hough-like circle candidates (only when contour purity is weak) ──
+    // Only run when contour candidates don't produce a clear tooth signal.
+    // This handles large gears that fill the frame and are missed by the
+    // contour enc_r filter (> 0.45).
+    if (bestPurity < 0.10) {
+      const maxContourR = Math.max(...topCandidates.map(c => c.r), 0);
+      const houghCands = findHoughCircleCandidates(
+        edges, w, h,
+        Math.floor(Math.min(h, w) / 4),
+        Math.floor(Math.min(h, w) / 2),
+      );
+      for (const hc of houghCands) {
+        const margin = 5;
+        if (!(margin < hc.cx && hc.cx < w - margin
+              && margin < hc.cy && hc.cy < h - margin)) continue;
+        // Skip if center is too close to any edge relative to radius
+        const edgeDist = Math.min(hc.cx, w - hc.cx, hc.cy, h - hc.cy);
+        if (edgeDist < hc.r * 0.92) continue;
+        // Skip if Hough radius is more than 2x larger than best contour
+        if (maxContourR > 0 && hc.r > maxContourR * 2) continue;
+        // Dedup against existing candidates
+        let duplicate = false;
+        for (const t of topCandidates) {
+          if (Math.abs(hc.cx - t.cx) < 30 && Math.abs(hc.cy - t.cy) < 30
+              && Math.abs(hc.r - t.r) < 20) {
+            duplicate = true;
+            break;
+          }
+        }
+        if (!duplicate) {
+          topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
+          const idx = topCandidates.length - 1;
+          const purity = fftPurityCheck(enhanced, hc.cx, hc.cy, hc.r, w, h);
+          if (purity > bestPurity) {
+            bestPurity = purity;
+            bestIdx = idx;
+          }
+        }
+      }
+    }
+
     const winner = topCandidates[bestIdx];
     return { cx: winner.cx, cy: winner.cy, radius: winner.r, method: 'multi-threshold' };
   }
@@ -1076,10 +1188,13 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   let finalTc = 0;
   let methodUsed = 'none';
 
-  if (fftConf >= 0.70 && fft90tc > 0) {
-    // 1. Existing FFT is highly confident — trust it
-    finalTc = fft90tc;
-    methodUsed = 'fft90';
+  if (fftConf >= 0.70 && peakTc > 0) {
+    // 1. Multi-radius outermost candidate is highly confident — trust it.
+    // Prefer peakTc over fft90tc because fftAtOuterRadii accumulates
+    // votes across all radii and can be dominated by inner features
+    // (spider arms, mounting holes) in large gears.
+    finalTc = peakTc;
+    methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
     // 2. Binary contour FFT has high purity — use it
     finalTc = bcTc;
