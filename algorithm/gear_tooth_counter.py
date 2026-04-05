@@ -172,7 +172,10 @@ class GearToothCounter:
         # ── Add Hough circle candidates ─────────────────────────────────
         # Hough circles complement contour-based candidates, especially for
         # large gears that fill the frame (where contour enc_r filter may
-        # reject the outer gear boundary).
+        # reject the outer gear boundary).  Only add when the Hough radius
+        # is plausible relative to existing contour candidates (within 2×)
+        # to avoid false background circles dominating small gears.
+        max_contour_r = max((c[3] for c in top_candidates), default=0)
         circles = cv2.HoughCircles(
             self.edges, cv2.HOUGH_GRADIENT,
             dp=2, minDist=100, param1=50, param2=30,
@@ -183,15 +186,26 @@ class GearToothCounter:
             for c in circles[0][:3]:
                 hc_x, hc_y, hc_r = int(c[0]), int(c[1]), int(c[2])
                 margin = 5
-                if (margin < hc_x < w - margin and margin < hc_y < h - margin):
-                    duplicate = False
-                    for _, t_x, t_y, t_r, _ in top_candidates:
-                        if (abs(hc_x - t_x) < 30 and abs(hc_y - t_y) < 30
-                                and abs(hc_r - t_r) < 20):
-                            duplicate = True
-                            break
-                    if not duplicate:
-                        top_candidates.append((0, hc_x, hc_y, hc_r, None))
+                if not (margin < hc_x < w - margin
+                        and margin < hc_y < h - margin):
+                    continue
+                # Skip if center is too close to any edge relative to the
+                # radius — the gear would be mostly outside the frame.
+                edge_dist = min(hc_x, w - hc_x, hc_y, h - hc_y)
+                if edge_dist < hc_r * 0.92:
+                    continue
+                # Skip if Hough radius is more than 2× larger than the
+                # best contour — likely a false background circle.
+                if max_contour_r > 0 and hc_r > max_contour_r * 2:
+                    continue
+                duplicate = False
+                for _, t_x, t_y, t_r, _ in top_candidates:
+                    if (abs(hc_x - t_x) < 30 and abs(hc_y - t_y) < 30
+                            and abs(hc_r - t_r) < 20):
+                        duplicate = True
+                        break
+                if not duplicate:
+                    top_candidates.append((0, hc_x, hc_y, hc_r, None))
 
         # FFT purity check on each candidate
         best_cnt = None
