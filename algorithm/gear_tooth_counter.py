@@ -3,15 +3,16 @@ Bicycle Gear Tooth Counter - Phase 1 Algorithm Prototype
 Desktop Python implementation for tooth counting algorithm validation
 
 Core approach:
-1. Load gear image
+1. Load gear image and resize
 2. Convert to grayscale + CLAHE enhancement
 3. Apply edge detection (Canny)
-4. Find gear center via Hough Circle Transform
+4. Find gear center via contour analysis (Otsu dual-polarity)
 5. Build candidate radii from radial edge-density peaks + evenly-spaced outer band
 6. At each candidate radius, sample intensity and run FFT to score tooth count
 7. Pick outermost candidate with rel-purity >= threshold (avoids inner hub bias)
 8. Cross-check with outer-profile scan (outermost edge per angle) using sub-harmonic doubling
-9. Apply decision rule and return count + confidence
+9. CLAHE peak-counting fallback for small gears with weak FFT signal
+10. Apply decision rule and return count + confidence
 """
 
 import cv2
@@ -20,6 +21,7 @@ import matplotlib.pyplot as plt
 from scipy import signal
 import os
 from pathlib import Path
+from collections import defaultdict
 
 
 class GearToothCounter:
@@ -27,15 +29,11 @@ class GearToothCounter:
 
     # Gear tooth count search range
     MIN_TEETH = 10
+    # Lower bound for CLAHE peak counting (small cassette cogs)
+    MIN_TEETH_CLAHE = 8
     MAX_TEETH = 65
 
     def __init__(self, debug=True):
-        """
-        Initialize the counter
-
-        Args:
-            debug (bool): If True, display intermediate processing steps
-        """
         self.debug = debug
         self.image = None
         self.gray = None
@@ -192,7 +190,8 @@ class GearToothCounter:
 
         if self.debug:
             debug_img = self.image.copy()
-            cv2.circle(debug_img, self.gear_center, self.gear_radius, (0, 255, 0), 2)
+            cv2.circle(debug_img, self.gear_center, self.gear_radius,
+                       (0, 255, 0), 2)
             self._show_image("Detected Gear Circle", debug_img)
 
         return self
@@ -213,26 +212,28 @@ class GearToothCounter:
 
     def detect_teeth(self):
         """
-        Tooth detection via two complementary methods:
+        Tooth detection via three complementary methods:
 
         1. Multi-radius FFT scan: evaluate intensity-based FFT at each
            candidate radius (radial edge-density peaks + evenly-spaced outer
            band).  The outermost candidate with spectral purity >= 0.12 is
-           chosen to avoid being fooled by the inner hub ring, which often has
-           higher absolute contrast but a lower tooth count.
+           chosen to avoid being fooled by the inner hub ring.
 
         2. Outer-profile scan: for each angle sample outward from the gear
            center to find the outermost edge pixel.  FFT on this radial profile
-           gives a tooth count that is independent of which radial slice is
-           sampled.  A sub-harmonic doubling rule corrects the case where a
-           symmetric tooth geometry produces a dominant half-frequency.
+           gives a tooth count independent of radius selection.  Sub-harmonic
+           doubling corrects half-frequency artifacts.
+
+        3. CLAHE peak counting: at radii near the detected gear radius,
+           count intensity peaks on CLAHE-enhanced image using Savitzky-Golay
+           smoothing + find_peaks.  Helps small gears (8-20T) where FFT
+           spectral purity is low.
 
         Decision:
-        - Use multi-radius result if rel-purity >= 0.15 and tooth count >= 15.
-        - Otherwise fall back to outer-profile result if its rel-purity >= 0.10.
+        - Use multi-radius FFT if rel-purity >= 0.15 and count >= MIN_TEETH.
+        - Else outer-profile if rel-purity >= 0.10.
+        - Else CLAHE peak voting if confident (>= 50 % agreement).
         - Final fallback: highest-purity multi-radius candidate.
-
-        Confidence is a linear ramp: 0 % at rel = 0.05, 100 % at rel = 0.20.
         """
         cx, cy = self.gear_center
         h, w = self.gray.shape
@@ -256,14 +257,13 @@ class GearToothCounter:
             distance=8,
         )
 
-        # Keep only the top-10 peaks by height (avoids many noisy small peaks)
         if len(peaks) > 10:
             top_idx = np.argsort(props["peak_heights"])[-10:]
             cand_set = {int(peaks[i]) for i in top_idx}
         else:
             cand_set = {int(p) for p in peaks} if len(peaks) > 0 else {max_r // 2}
 
-        # Evenly-spaced outer radii: coarse 4% step (65-84%) + fine 2% step (85-97%)
+        # Evenly-spaced outer radii
         for pct in range(65, 85, 4):
             cand_set.add(int(max_r * pct / 100))
         for pct in range(85, 98, 2):
@@ -299,7 +299,7 @@ class GearToothCounter:
             total = scores.sum()
             return int(cf[best]), float(scores[best] / total) if total > 0 else 0.0
 
-        # ── Evaluate all candidates; outermost primary + small-gear vote ──
+        # ── Evaluate all candidates ──────────────────────────────────────
         cand_results = [
             (r_val, *_fft_count(r_val))
             for r_val in candidates
@@ -315,13 +315,9 @@ class GearToothCounter:
                 peak_tc, peak_rel, peak_r = tc, rel, r_val
                 break
 
-        # Small-gear refinement: when the outermost pick is in the 10-20
-        # range, inner spline features can dominate.  Check if a nearby
-        # tooth count (±2) has stronger total support across all radii in
-        # the outer half of the candidate range.
+        # Small-gear refinement: nearby count with stronger total support
         if 0 < peak_tc <= 20 and cand_results:
             outer_half_min = max_r * 0.45
-            from collections import defaultdict
             tc_votes = defaultdict(float)
             for r_val, tc, rel in cand_results:
                 if r_val >= outer_half_min and rel >= 0.04:
@@ -331,7 +327,6 @@ class GearToothCounter:
                 if (best_vote_tc != peak_tc
                         and abs(best_vote_tc - peak_tc) <= 3
                         and tc_votes[best_vote_tc] > tc_votes.get(peak_tc, 0)):
-                    # Switch to the better-voted nearby count; find its best r
                     for r_val, tc, rel in sorted(cand_results, key=lambda x: -x[2]):
                         if tc == best_vote_tc and r_val >= outer_half_min:
                             peak_tc, peak_rel, peak_r = tc, rel, r_val
@@ -353,7 +348,7 @@ class GearToothCounter:
             py = np.clip((cy + r_scan * sin_op).astype(int), 0, h - 1)
             hit = self.edges[py, px] > 0
             outer_radii[hit & (outer_radii == 0)] = r_scan
-        outer_radii[outer_radii == 0] = 10.0  # fill misses with minimum
+        outer_radii[outer_radii == 0] = 10.0
 
         win3 = max(5, (n_op // 45) | 1)
         op_ac = signal.savgol_filter(outer_radii, win3, 3)
@@ -375,7 +370,7 @@ class GearToothCounter:
             total_op = sc_op.sum()
             op_rel = float(sc_op[best_op] / total_op) if total_op > 0 else 0.0
 
-            # Sub-harmonic doubling: if 2f is nearly as strong as f, use 2f
+            # Sub-harmonic doubling
             if op_tc <= self.MAX_TEETH // 2 and 2 * op_tc <= self.MAX_TEETH:
                 f1, f2 = op_tc, 2 * op_tc
                 s1 = op_fft[f1] + (0.5 * op_fft[min(2 * f1, len(op_fft) - 1)])
@@ -385,25 +380,65 @@ class GearToothCounter:
         else:
             op_tc, op_rel = 0, 0.0
 
+        # ── CLAHE peak counting for small gears ──────────────────────────
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(self.gray)
+        n_a = 720
+        angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
+        cos_a = np.cos(angles)
+        sin_a = np.sin(angles)
+        min_dist = max(10, n_a // (self.MAX_TEETH + 5))
+
+        clahe_votes = defaultdict(float)
+        for pct in range(90, 116, 2):
+            r_val = int(self.gear_radius * pct / 100)
+            if r_val < 10 or r_val >= max_r:
+                continue
+            px = np.clip((cx + r_val * cos_a).astype(int), 0, w - 1)
+            py = np.clip((cy + r_val * sin_a).astype(int), 0, h - 1)
+            intensity = enhanced[py, px].astype(float)
+            sm = signal.savgol_filter(intensity, 21, 3)
+            amp = sm.max() - sm.min()
+            if amp < 8:
+                continue
+            pk, _ = signal.find_peaks(sm, distance=min_dist, prominence=amp * 0.10)
+            tc_pk = len(pk)
+            if self.MIN_TEETH_CLAHE <= tc_pk <= self.MAX_TEETH:
+                clahe_votes[tc_pk] += amp
+
+        clahe_tc, clahe_conf = 0, 0.0
+        if clahe_votes:
+            clahe_scores = {}
+            for tc in clahe_votes:
+                clahe_scores[tc] = (clahe_votes[tc]
+                                    + 0.5 * clahe_votes.get(tc - 1, 0)
+                                    + 0.5 * clahe_votes.get(tc + 1, 0))
+            clahe_tc = max(clahe_scores, key=clahe_scores.get)
+            total_w = sum(clahe_votes.values())
+            agreeing_w = sum(clahe_votes.get(tc, 0) for tc in clahe_votes
+                             if abs(tc - clahe_tc) <= 1)
+            clahe_conf = float(min(1.0, agreeing_w / (total_w * 0.4)))
+
         # ── Decision rule ────────────────────────────────────────────────
         if peak_rel >= 0.15 and peak_tc >= self.MIN_TEETH:
-            # Strong density-peak signal with a plausible tooth count
             final_tc = peak_tc
             final_rel = peak_rel
         elif op_tc > 0 and op_rel >= 0.10:
-            # Outer profile has a decent signal
             final_tc = op_tc
             final_rel = op_rel
         elif peak_tc > 0:
-            # Fallback: best density-peak candidate
             final_tc = peak_tc
             final_rel = peak_rel
+        elif clahe_tc > 0 and clahe_conf >= 0.5:
+            # CLAHE peak counting: last resort when FFT finds nothing
+            final_tc = clahe_tc
+            final_rel = clahe_conf * 0.15 + 0.05
         else:
             final_tc = 0
             final_rel = 0.0
 
         self.tooth_count = final_tc
-        self.gear_radius = peak_r  # update with the winning radius
+        self.gear_radius = peak_r if peak_r > 0 else self.gear_radius
 
         # Confidence: linear ramp  rel=0.05 → 0 %,  rel=0.20 → 100 %
         self.confidence = float(min(1.0, max(0.0, (final_rel - 0.05) / 0.15)))
@@ -419,15 +454,8 @@ class GearToothCounter:
         """
         Complete pipeline: load → preprocess → find gear → detect teeth.
 
-        Args:
-            image_path (str): Path to gear image
-
         Returns:
-            dict: {
-                'tooth_count': int,
-                'confidence': float (0.0–1.0),
-                'success': bool
-            }
+            dict with tooth_count, confidence, success, gear_center, gear_radius
         """
         try:
             self.load_image(image_path)
