@@ -70,11 +70,8 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
       confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
       gearContour,
     },
+    actualTeethCount: actualTeethCount ?? toothCount,
   };
-
-  if (actualTeethCount != null) {
-    report.actualTeethCount = actualTeethCount;
-  }
 
   const headers = {
     'Content-Type': 'application/json',

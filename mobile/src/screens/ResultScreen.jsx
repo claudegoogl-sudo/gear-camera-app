@@ -125,7 +125,7 @@ export default function ResultScreen({ navigation, route }) {
 
   const handleConfirmShare = async () => {
     setShowConfirmModal(false);
-    const actualTeethCount = confirmedCount !== toothCount ? confirmedCount : null;
+    const actualTeethCount = confirmedCount;
     setSharing(true);
     try {
       await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount });
