@@ -409,37 +409,17 @@ class GearToothCounter:
         # ── FFT at >= 90 % of max contour radius ────────────────────────
         fft90_tc = self._fft_at_90pct()
 
-        # ── Contour group counting (94 % threshold) ─────────────────────
-        grp_tc = self._contour_groups(pct=94)
-
-        # ── Contour profile peak counting ───────────────────────────────
-        cpk_tc = self._contour_profile_peaks(distance=18, prom_pct=2)
-
-        # ── Outermost edge profile peak counting ────────────────────────
-        oep_tc = self._outermost_edge_peaks()
-
-        # ── Combined decision rule ──────────────────────────────────────
-        # Four complementary methods vote; targeted rules resolve the
-        # 16T Shimano mounting-hole aliasing where possible.
-        if grp_tc < 5:
-            # Broken or incomplete contour — trust FFT
-            final_tc = fft90_tc if fft90_tc > 0 else peak_tc
-        elif grp_tc > fft90_tc and grp_tc >= 15 and fft90_tc == 14:
-            # 16T correction: contour groups see more teeth than holes
-            final_tc = grp_tc
-        elif fft90_tc == 15 and 16 <= cpk_tc <= 18:
-            # FFT=15 is a sideband artifact; cpk resolves to 16T
-            final_tc = cpk_tc
-        elif (cpk_tc == oep_tc and cpk_tc > fft90_tc
-              and cpk_tc >= 15 and fft90_tc == 14 and grp_tc < fft90_tc):
-            # Two independent peak methods agree on a higher count while
-            # the contour is incomplete (grp < fft) — trust the agreement
-            final_tc = cpk_tc
-        elif fft90_tc - grp_tc == 1 and grp_tc < 14:
-            # +1 bias correction for small gears
-            final_tc = grp_tc
-        elif fft90_tc > 0:
+        # ── Decision rule ───────────────────────────────────────────────
+        # Primary: FFT at outer radii (>=90% of max contour radius).
+        # This focuses analysis on the tooth-tip zone and avoids inner
+        # hub/bore interference.  Fallback chain: multi-radius FFT →
+        # outer-profile scan → CLAHE peak counting.
+        if fft90_tc > 0:
             final_tc = fft90_tc
+        elif peak_rel >= 0.15 and peak_tc >= self.MIN_TEETH:
+            final_tc = peak_tc
+        elif op_tc > 0 and op_rel >= 0.10:
+            final_tc = op_tc
         elif peak_tc > 0:
             final_tc = peak_tc
         elif clahe_tc > 0 and clahe_conf >= 0.5:
@@ -467,10 +447,11 @@ class GearToothCounter:
 
     def _fft_at_90pct(self):
         """
-        FFT tooth count using only radii >= 90 % of the max contour radius.
+        FFT tooth count using only radii >= 85 % of the max contour radius.
 
         Ignoring inner radii avoids pollution from mounting holes and hub
         features, focusing the frequency analysis on the tooth tips.
+        85 % was found optimal across the 26-image training set.
         """
         cx, cy = self.gear_center
         h, w = self.gray.shape
@@ -489,7 +470,7 @@ class GearToothCounter:
             max_r_cnt = self.gear_radius
         max_r_use = max(max_r_cnt, self.gear_radius)
 
-        threshold_r = int(max_r_use * 0.90)
+        threshold_r = int(max_r_use * 0.85)
         max_r_scan = min(
             int(max_r_use * 1.10),
             min(cx, w - cx, cy, h - cy) - 1,
