@@ -822,7 +822,8 @@ function clahePeakCounting(enhanced, cx, cy, gearRadius, width, height) {
     if (rVal < 10 || rVal >= maxR) continue;
 
     const ring = sampleIntensityRing(enhanced, cx, cy, rVal, width, height, N_ANGLES);
-    const sm = smoothSignal(ring, 5, true);
+    // halfWin=10 → window=21, matching Python savgol_filter(intensity, 21, 3)
+    const sm = smoothSignal(ring, 10, true);
 
     let smMin = Infinity, smMax = -Infinity;
     for (let i = 0; i < sm.length; i++) {
@@ -865,7 +866,160 @@ function clahePeakCounting(enhanced, cx, cy, gearRadius, width, height) {
   return { claheTc, claheConf };
 }
 
-// ── Public entry point ──────���─────────────────────────────────────────────────
+// ── 16. Binary contour tooth count (Otsu silhouette) ────────────────────────
+//
+// Port of Python _binary_contour_count(): Otsu-threshold in both polarities,
+// find external contours, resample radius profile, and detect teeth via FFT +
+// peak counting.  Added in commit 4243213 — the method that brought accuracy
+// from 29% to 86%.
+
+function binaryContourCount(gray, cx, cy, width, height) {
+  const n = width * height;
+  const BC_ANGLES = 3600;
+  const results = [];
+
+  const otsuT = otsuThreshold(gray, width, height);
+
+  for (const invert of [false, true]) {
+    // Binary mask via Otsu
+    const mask = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      mask[i] = invert ? (gray[i] <= otsuT ? 1 : 0) : (gray[i] > otsuT ? 1 : 0);
+    }
+
+    // Find connected components (external contours)
+    const { labels, components } = labelComponents(mask, width, height, 1);
+
+    for (const comp of components) {
+      if (comp.touchesBorder) continue;
+
+      // Extract boundary pixels for this component
+      const bx = [], by = [];
+      const y0 = Math.max(0, comp.minY);
+      const y1 = Math.min(height - 1, comp.maxY);
+      const x0 = Math.max(0, comp.minX);
+      const x1 = Math.min(width - 1, comp.maxX);
+      for (let y = y0; y <= y1; y++) {
+        const row = y * width;
+        for (let x = x0; x <= x1; x++) {
+          if (labels[row + x] !== comp.id) continue;
+          // Boundary pixel: has at least one 4-connected neighbour outside
+          if (x === 0 || x === width - 1 || y === 0 || y === height - 1 ||
+              labels[row + x + 1] !== comp.id || labels[row + x - 1] !== comp.id ||
+              labels[(y + 1) * width + x] !== comp.id || labels[(y - 1) * width + x] !== comp.id) {
+            bx.push(x);
+            by.push(y);
+          }
+        }
+      }
+
+      if (bx.length < 100) continue;
+
+      // Compute angles and radii from gear center
+      const angles = new Float64Array(bx.length);
+      const radii = new Float64Array(bx.length);
+      for (let i = 0; i < bx.length; i++) {
+        const dx = bx[i] - cx;
+        const dy = by[i] - cy;
+        angles[i] = Math.atan2(dy, dx);
+        radii[i] = Math.sqrt(dx * dx + dy * dy);
+      }
+
+      // Sort by angle
+      const order = Array.from({ length: bx.length }, (_, i) => i);
+      order.sort((a, b) => angles[a] - angles[b]);
+      const aSorted = new Float64Array(bx.length);
+      const rSorted = new Float64Array(bx.length);
+      for (let i = 0; i < order.length; i++) {
+        aSorted[i] = angles[order[i]];
+        rSorted[i] = radii[order[i]];
+      }
+
+      // Check angular coverage (need >= 4 radians, ~229°)
+      if (aSorted[aSorted.length - 1] - aSorted[0] < 4.0) continue;
+
+      // Resample to uniform angular grid
+      const uniform = new Float64Array(BC_ANGLES);
+      for (let i = 0; i < BC_ANGLES; i++) {
+        uniform[i] = -Math.PI + (2 * Math.PI * i) / BC_ANGLES;
+      }
+
+      // Linear interpolation (like np.interp)
+      const rInterp = new Float64Array(BC_ANGLES);
+      for (let i = 0; i < BC_ANGLES; i++) {
+        const a = uniform[i];
+        // Binary search for insertion point
+        let lo = 0, hi = aSorted.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (aSorted[mid] < a) lo = mid + 1; else hi = mid;
+        }
+        if (lo === 0) {
+          rInterp[i] = rSorted[0];
+        } else if (lo >= aSorted.length) {
+          rInterp[i] = rSorted[aSorted.length - 1];
+        } else {
+          const t = (a - aSorted[lo - 1]) / (aSorted[lo] - aSorted[lo - 1]);
+          rInterp[i] = rSorted[lo - 1] + t * (rSorted[lo] - rSorted[lo - 1]);
+        }
+      }
+
+      // Smooth (halfWin=25 → window=51, matching Python savgol_filter window=51)
+      const sm = smoothSignal(rInterp, 25, true);
+
+      let smMin = Infinity, smMax = -Infinity;
+      for (let i = 0; i < sm.length; i++) {
+        if (sm[i] < smMin) smMin = sm[i];
+        if (sm[i] > smMax) smMax = sm[i];
+      }
+      const amp = smMax - smMin;
+      if (amp < 2) continue;
+
+      // Peak counting (min_d = 3600/80 = 45)
+      const minD = Math.floor(BC_ANGLES / 80);
+      const pks = findPeaks(sm, { distance: minD, prominence: amp * 0.10 });
+      const nPeaks = pks.length;
+
+      // FFT on centred signal
+      let mean = 0;
+      for (let i = 0; i < sm.length; i++) mean += sm[i];
+      mean /= sm.length;
+      const centred = new Array(sm.length);
+      for (let i = 0; i < sm.length; i++) centred[i] = sm[i] - mean;
+
+      const mag = fftMagnitude(centred);
+
+      // Score in tooth-count range
+      let total = 0;
+      let bestVal = 0, bestFreq = 0;
+      for (let f = MIN_TEETH; f <= MAX_TEETH && f < mag.length; f++) {
+        total += mag[f];
+        if (mag[f] > bestVal) { bestVal = mag[f]; bestFreq = f; }
+      }
+      if (total <= 0) continue;
+
+      const fftPurity = bestVal / total;
+      results.push({ fftTc: bestFreq, fftPurity, nPeaks });
+    }
+  }
+
+  if (results.length === 0) return { bcTc: 0, bcPurity: 0, bcPeaks: 0 };
+
+  // Prefer results where peak count is in valid tooth range
+  const valid = results.filter(r => r.nPeaks >= MIN_TEETH && r.nPeaks <= MAX_TEETH);
+  if (valid.length > 0) {
+    // Among valid, prefer where FFT and peaks agree closely
+    const agreeing = valid.filter(r => Math.abs(r.fftTc - r.nPeaks) <= 2);
+    const best = (agreeing.length > 0 ? agreeing : valid)
+      .reduce((a, b) => b.fftPurity > a.fftPurity ? b : a);
+    return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks };
+  }
+
+  const best = results.reduce((a, b) => b.fftPurity > a.fftPurity ? b : a);
+  return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks };
+}
+
+// ── Public entry point ──────────────────────────────────────────────────────
 
 /**
  * Count the teeth on a gear from a photo.
@@ -891,66 +1045,73 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     ? contourRadius
     : findGearRadius(edges, cx, cy, width, height);
 
-  // ── Lazy method evaluation ──────────────────────────────────────────
-  // Run methods in decision-rule priority order; skip remaining once
-  // a confident result is found.  This is the single biggest perf win
-  // on device — avoids 3 expensive fallback passes in the common case.
+  // ── Method evaluation (matches Python decision rule from commit 4243213) ──
 
-  // Method 1: FFT at ≥85% of max contour radius (primary)
+  // Method 1: FFT at ≥85% of max contour radius
   const fft90tc = fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearR, edges, width, height);
 
+  // Always run multi-radius FFT scan (needed for confidence + cross-validation)
   let peakTc = 0, peakRel = 0, peakR = 0;
-  let opTc = 0, opRel = 0;
-  let claheTc = 0, claheConf = 0;
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
 
+  // Outer-profile scan
+  let opTc = 0, opRel = 0;
+  const maxRop = Math.min(cx, width - cx, cy, height - cy) - 1;
+  ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height));
+
+  // Binary contour method (commit 4243213 — accuracy 29%→86%)
+  const { bcTc, bcPurity, bcPeaks } = binaryContourCount(gray, cx, cy, width, height);
+
+  // CLAHE peak counting
+  let claheTc = 0, claheConf = 0;
+  ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
+
+  // Best available purity for confidence calculation
+  let finalRel = peakRel > 0 ? peakRel : (opRel > 0 ? opRel : 0);
+
+  // FFT-based confidence (linear ramp: rel 0.05→0%, 0.20→100%)
+  const fftConf = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
+
+  // ── Decision rule (matches Python detect_teeth exactly) ────────────
   let finalTc = 0;
   let methodUsed = 'none';
 
-  if (fft90tc > 0) {
+  if (fftConf >= 0.70 && fft90tc > 0) {
+    // 1. Existing FFT is highly confident — trust it
     finalTc = fft90tc;
     methodUsed = 'fft90';
-  }
-
-  // Always run multi-radius FFT scan (needed for cross-validation)
-  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
-
-  if (finalTc === 0 && peakRel >= 0.15 && peakTc >= MIN_TEETH) {
+  } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
+    // 2. Binary contour FFT has high purity — use it
+    finalTc = bcTc;
+    finalRel = Math.max(finalRel, bcPurity * 0.30);
+    methodUsed = 'bc-fft';
+  } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
+    // 3. Binary contour peak count is in valid range
+    finalTc = bcPeaks;
+    finalRel = Math.max(finalRel, bcPurity * 0.25);
+    methodUsed = 'bc-peaks';
+  } else if (fft90tc > 0) {
+    // 4. fft90 available but not highly confident
+    finalTc = fft90tc;
+    methodUsed = 'fft90-fallback';
+  } else if (peakRel >= 0.15 && peakTc >= MIN_TEETH) {
+    // 5. Multi-radius FFT
     finalTc = peakTc;
     methodUsed = 'multiR';
+  } else if (opTc > 0 && opRel >= 0.10) {
+    // 6. Outer-profile scan
+    finalTc = opTc;
+    methodUsed = 'outer';
+  } else if (peakTc > 0) {
+    // 7. Any multi-radius result
+    finalTc = peakTc;
+    methodUsed = 'multiR-fallback';
+  } else if (claheTc > 0 && claheConf >= 0.5) {
+    // 8. CLAHE peak counting (last resort)
+    finalTc = claheTc;
+    methodUsed = 'clahe';
   }
 
-  if (finalTc === 0) {
-    // Method 3: Outer-profile scan
-    const maxR = Math.min(cx, width - cx, cy, height - cy) - 1;
-    ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxR, width, height));
-
-    if (opTc > 0 && opRel >= 0.10) {
-      finalTc = opTc;
-      methodUsed = 'outer';
-    } else if (peakTc > 0) {
-      finalTc = peakTc;
-      methodUsed = 'multiR-fallback';
-    } else {
-      // Method 4: CLAHE peak counting (last resort)
-      ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
-      if (claheTc > 0 && claheConf >= 0.5) {
-        finalTc = claheTc;
-        methodUsed = 'clahe';
-      }
-    }
-  }
-
-  // Cross-validation for small gears (<=20T): if fft90 picked a result
-  // but multiR strongly disagrees, prefer multiR when its confidence is higher
-  if (finalTc > 0 && finalTc <= 20 && methodUsed === 'fft90' && peakTc > 0 && peakRel >= 0.15) {
-    if (Math.abs(fft90tc - peakTc) > 2 && peakRel > 0.20) {
-      finalTc = peakTc;
-      methodUsed = 'multiR-crossval';
-    }
-  }
-
-  // Best available purity for confidence
-  const finalRel = peakRel > 0 ? peakRel : (opRel > 0 ? opRel : 0);
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
 
   const finalR = peakR > 0 ? peakR : gearR;
@@ -961,7 +1122,9 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     cx, cy, gearR: finalR,
     contourRadius,
     centerResult,
-    fft90tc, peakTc, peakRel, opTc, opRel, claheTc, claheConf,
+    fft90tc, peakTc, peakRel, opTc, opRel,
+    bcTc, bcPurity, bcPeaks,
+    claheTc, claheConf,
     methodUsed,
   };
 }
@@ -1012,7 +1175,9 @@ export async function countTeeth(photoUri) {
     `  center=(${r.cx},${r.cy}) method=${r.centerResult.method}\n` +
     `  contourR=${r.contourRadius} gearR=${r.gearR}\n` +
     `  fft90=${r.fft90tc}T | multiR=${r.peakTc}T(rel=${r.peakRel.toFixed(3)}) | ` +
-    `outer=${r.opTc}T(rel=${r.opRel.toFixed(3)}) | clahe=${r.claheTc}T(conf=${r.claheConf.toFixed(2)})\n` +
+    `outer=${r.opTc}T(rel=${r.opRel.toFixed(3)}) | ` +
+    `bc=${r.bcTc}T(pur=${r.bcPurity.toFixed(3)},peaks=${r.bcPeaks}) | ` +
+    `clahe=${r.claheTc}T(conf=${r.claheConf.toFixed(2)})\n` +
     `  → result=${r.toothCount}T conf=${(r.confidence * 100).toFixed(1)}% via=${r.methodUsed}`
   );
 
