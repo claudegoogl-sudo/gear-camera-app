@@ -77,7 +77,8 @@ class GearToothCounter:
 
     def find_gear_region(self):
         """
-        Detect gear center via multi-threshold contour sweep.
+        Detect gear center via multi-threshold contour sweep with
+        multi-candidate FFT validation.
 
         Pipeline:
         1. Sweep thresholds 40–220 in both polarities (BINARY / BINARY_INV)
@@ -85,17 +86,19 @@ class GearToothCounter:
         3. Find external contours and score by circularity × compactness ×
            area^0.3, filtering by aspect ratio, border distance, and
            enclosing-circle size relative to image
-        4. Pick the highest-scoring contour across all thresholds
-        5. Refine center with ellipse fit when contour has enough points
+        4. Keep top candidates (by score, deduplicated by center proximity)
+        5. Run a quick FFT spectral-purity check at each candidate
+        6. Pick the candidate with the best FFT purity; fall back to the
+           highest contour score if no candidate yields a usable spectrum
+        7. Refine center with ellipse fit when contour has enough points
 
         Falls back to Hough circles if no contour found.
         """
         h, w = self.gray.shape
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 
-        best_cnt = None
-        best_score = -1
-        cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
+        # Collect all viable candidates: (score, cx, cy, r, cnt)
+        all_candidates = []
 
         for thresh in range(40, 220, 5):
             for flag in [cv2.THRESH_BINARY_INV, cv2.THRESH_BINARY]:
@@ -135,19 +138,53 @@ class GearToothCounter:
 
                     score = circ * compact * (area ** 0.3)
 
-                    if score > best_score:
-                        best_score = score
-                        best_cnt = cnt
-                        M = cv2.moments(cnt)
-                        if M["m00"] > 0:
-                            cx = int(round(M["m10"] / M["m00"]))
-                            cy = int(round(M["m01"] / M["m00"]))
-                        _, enc_r = cv2.minEnclosingCircle(cnt)
-                        outer_r = int(round(enc_r))
-                        if len(cnt) >= 5:
-                            ell = cv2.fitEllipse(cnt)
-                            cx = int(round(ell[0][0]))
-                            cy = int(round(ell[0][1]))
+                    M = cv2.moments(cnt)
+                    if M["m00"] > 0:
+                        c_x = int(round(M["m10"] / M["m00"]))
+                        c_y = int(round(M["m01"] / M["m00"]))
+                    else:
+                        c_x, c_y = x + bw // 2, y + bh // 2
+                    c_r = int(round(enc_r))
+
+                    if len(cnt) >= 5:
+                        ell = cv2.fitEllipse(cnt)
+                        c_x = int(round(ell[0][0]))
+                        c_y = int(round(ell[0][1]))
+
+                    all_candidates.append((score, c_x, c_y, c_r, cnt))
+
+        # Deduplicate: keep highest score per (center, radius) neighborhood
+        all_candidates.sort(key=lambda c: -c[0])
+        top_candidates = []
+        for cand in all_candidates:
+            sc, c_x, c_y, c_r, cnt = cand
+            duplicate = False
+            for _, t_x, t_y, t_r, _ in top_candidates:
+                if (abs(c_x - t_x) < 30 and abs(c_y - t_y) < 30
+                        and abs(c_r - t_r) < 20):
+                    duplicate = True
+                    break
+            if not duplicate:
+                top_candidates.append(cand)
+            if len(top_candidates) >= 5:
+                break
+
+        # FFT purity check on each candidate
+        best_cnt = None
+        best_score = -1
+        cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
+
+        if top_candidates:
+            best_purity = -1.0
+            best_purity_idx = 0
+
+            for idx, (sc, c_x, c_y, c_r, cnt) in enumerate(top_candidates):
+                purity = self._fft_purity_check(c_x, c_y, c_r)
+                if purity > best_purity:
+                    best_purity = purity
+                    best_purity_idx = idx
+
+            sc, cx, cy, outer_r, best_cnt = top_candidates[best_purity_idx]
 
         # ── Fallback: Hough circles ──────────────────────────────────────
         if best_cnt is None:
@@ -499,6 +536,49 @@ class GearToothCounter:
         if not fft_votes:
             return 0
         return max(fft_votes, key=fft_votes.get)
+
+    def _fft_purity_check(self, cx, cy, r):
+        """
+        Quick FFT spectral-purity score for a candidate gear centre/radius.
+
+        Samples CLAHE-enhanced intensity at radii from 85 % to 110 % of *r*,
+        accumulates FFT votes per frequency in [MIN_TEETH, MAX_TEETH], and
+        returns the ratio of the winning frequency's total magnitude to the
+        sum across all candidate frequencies.  Higher = cleaner tooth signal.
+        """
+        h, w = self.gray.shape
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(self.gray)
+
+        lo = int(r * 0.85)
+        hi = min(int(r * 1.10), min(cx, w - cx, cy, h - cy) - 1)
+        if lo >= hi or lo < 10:
+            return 0.0
+
+        n_a = 720
+        angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
+        cos_a, sin_a = np.cos(angles), np.sin(angles)
+
+        fft_votes = defaultdict(float)
+        for rv in range(lo, hi + 1, 2):
+            px = np.clip((cx + rv * cos_a).astype(int), 0, w - 1)
+            py = np.clip((cy + rv * sin_a).astype(int), 0, h - 1)
+            intensity = enhanced[py, px].astype(float)
+            sm = signal.savgol_filter(intensity, 21, 3, mode='wrap')
+            amp = sm.max() - sm.min()
+            if amp < 5:
+                continue
+            fft_mag = np.abs(np.fft.rfft(sm - sm.mean()))
+            for freq in range(self.MIN_TEETH, self.MAX_TEETH + 1):
+                if freq < len(fft_mag):
+                    fft_votes[freq] += float(fft_mag[freq])
+
+        if not fft_votes:
+            return 0.0
+
+        total = sum(fft_votes.values())
+        best = max(fft_votes.values())
+        return best / total if total > 0 else 0.0
 
     def _contour_groups(self, pct=94):
         """
