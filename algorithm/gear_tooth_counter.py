@@ -443,14 +443,38 @@ class GearToothCounter:
                              if abs(tc - clahe_tc) <= 1)
             clahe_conf = float(min(1.0, agreeing_w / (total_w * 0.4)))
 
-        # ── FFT at >= 90 % of max contour radius (primary method) ───────
+        # ── FFT at >= 90 % of max contour radius ─────────────────────────
         fft90_tc = self._fft_at_90pct()
 
-        # ── Lazy decision rule ──────────────────────────────────────────
-        # Run methods in priority order; skip remaining once a confident
-        # result is found.  This avoids running 3 expensive fallback
-        # passes when the primary method succeeds.
-        if fft90_tc > 0:
+        # ── Binary contour tooth count (Otsu silhouette) ─────────────────
+        bc_tc, bc_purity, bc_peaks = self._binary_contour_count()
+
+        # ── Decision rule ────────────────────────────────────────────────
+        # 1. Multi-radius FFT with strong purity — use that directly.
+        # 2. Binary contour method when FFT-based purity is weak.
+        # 3. Fall through to remaining heuristics otherwise.
+
+        # Best available purity for confidence calculation
+        final_rel = peak_rel if peak_rel > 0 else (
+            op_rel if op_rel > 0 else 0.0
+        )
+
+        # FFT-based confidence (linear ramp: rel 0.05→0%, 0.20→100%)
+        fft_conf = float(min(1.0, max(0.0, (final_rel - 0.05) / 0.15)))
+
+        if fft_conf >= 0.70 and fft90_tc > 0:
+            # Existing FFT is highly confident — trust it
+            final_tc = fft90_tc
+        elif bc_purity >= 0.20 and self.MIN_TEETH <= bc_tc <= self.MAX_TEETH:
+            # Binary contour FFT has high purity — use it
+            final_tc = bc_tc
+            final_rel = max(final_rel, bc_purity * 0.30)
+        elif (bc_purity >= 0.05
+              and self.MIN_TEETH <= bc_peaks <= self.MAX_TEETH):
+            # Binary contour peak count is in valid range
+            final_tc = bc_peaks
+            final_rel = max(final_rel, bc_purity * 0.25)
+        elif fft90_tc > 0:
             final_tc = fft90_tc
         elif peak_rel >= 0.15 and peak_tc >= self.MIN_TEETH:
             final_tc = peak_tc
@@ -462,11 +486,6 @@ class GearToothCounter:
             final_tc = clahe_tc
         else:
             final_tc = 0
-
-        # Best available purity for confidence calculation
-        final_rel = peak_rel if peak_rel > 0 else (
-            op_rel if op_rel > 0 else 0.0
-        )
 
         self.tooth_count = final_tc
         self.gear_radius = peak_r if peak_r > 0 else self.gear_radius
@@ -651,6 +670,85 @@ class GearToothCounter:
         prom = amp * prom_pct / 100
         pks, _ = signal.find_peaks(sm, distance=distance, prominence=prom)
         return len(pks)
+
+    def _binary_contour_count(self):
+        """
+        Count teeth by analysing the outer contour of an Otsu-thresholded
+        binary silhouette.
+
+        Both polarities of Otsu (foreground dark / foreground bright) are
+        tried.  For each external contour with sufficient angular coverage
+        the radius profile is resampled onto a uniform angular grid and
+        teeth are detected via both FFT and peak counting.
+
+        Returns (fft_tc, fft_purity, peak_tc).  Caller should interpret
+        purity to decide whether the result is usable.
+        """
+        cx, cy = self.gear_center
+        gr = self.gear_radius
+        n_a = 3600
+        results = []
+
+        for invert in (False, True):
+            flag = (cv2.THRESH_BINARY_INV if invert else cv2.THRESH_BINARY)
+            flag |= cv2.THRESH_OTSU
+            _, binary = cv2.threshold(self.gray, 0, 255, flag)
+            contours, _ = cv2.findContours(
+                binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE,
+            )
+            for cnt in contours:
+                if len(cnt) < 100:
+                    continue
+                pts = cnt.reshape(-1, 2).astype(float)
+                dx = pts[:, 0] - cx
+                dy = pts[:, 1] - cy
+                radii = np.sqrt(dx ** 2 + dy ** 2)
+                angles_cnt = np.arctan2(dy, dx)
+
+                order = np.argsort(angles_cnt)
+                a_sorted = angles_cnt[order]
+                r_sorted = radii[order]
+                if a_sorted[-1] - a_sorted[0] < 4.0:
+                    continue
+
+                uniform = np.linspace(-np.pi, np.pi, n_a, endpoint=False)
+                r_interp = np.interp(uniform, a_sorted, r_sorted)
+                sm = signal.savgol_filter(r_interp, 51, 3, mode='wrap')
+                amp = sm.max() - sm.min()
+                if amp < 2:
+                    continue
+
+                # Peak counting
+                min_d = n_a // 80
+                peaks, _ = signal.find_peaks(
+                    sm, distance=min_d, prominence=amp * 0.10,
+                )
+                n_peaks = len(peaks)
+
+                # FFT
+                fft_mag = np.abs(np.fft.rfft(sm - sm.mean()))
+                tooth_fft = fft_mag[self.MIN_TEETH:self.MAX_TEETH + 1]
+                total = tooth_fft.sum()
+                if total <= 0:
+                    continue
+                fft_winner = int(np.argmax(tooth_fft) + self.MIN_TEETH)
+                fft_purity = float(tooth_fft.max() / total)
+
+                results.append((fft_winner, fft_purity, n_peaks))
+
+        if not results:
+            return 0, 0.0, 0
+
+        # Prefer results where peak count is in the valid tooth range
+        valid = [r for r in results
+                 if self.MIN_TEETH <= r[2] <= self.MAX_TEETH]
+        if valid:
+            # Among valid, prefer where FFT and peaks agree closely
+            agreeing = [r for r in valid if abs(r[0] - r[2]) <= 2]
+            if agreeing:
+                return max(agreeing, key=lambda r: r[1])
+            return max(valid, key=lambda r: r[1])
+        return max(results, key=lambda r: r[1])
 
     def _outermost_edge_peaks(self):
         """
