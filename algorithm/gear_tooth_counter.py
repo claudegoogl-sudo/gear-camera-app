@@ -412,16 +412,29 @@ class GearToothCounter:
         # ── Contour group counting (94 % threshold) ─────────────────────
         grp_tc = self._contour_groups(pct=94)
 
+        # ── Contour profile peak counting ───────────────────────────────
+        cpk_tc = self._contour_profile_peaks(distance=18, prom_pct=2)
+
+        # ── Outermost edge profile peak counting ────────────────────────
+        oep_tc = self._outermost_edge_peaks()
+
         # ── Combined decision rule ──────────────────────────────────────
-        # The two methods are complementary: FFT excels on clean images
-        # while contour-group counting resolves the 16T/14-hole aliasing
-        # on images where the contour captures every tooth tip.
+        # Four complementary methods vote; targeted rules resolve the
+        # 16T Shimano mounting-hole aliasing where possible.
         if grp_tc < 5:
             # Broken or incomplete contour — trust FFT
             final_tc = fft90_tc if fft90_tc > 0 else peak_tc
         elif grp_tc > fft90_tc and grp_tc >= 15 and fft90_tc == 14:
-            # 16T correction: contour sees more teeth than mounting holes
+            # 16T correction: contour groups see more teeth than holes
             final_tc = grp_tc
+        elif fft90_tc == 15 and 16 <= cpk_tc <= 18:
+            # FFT=15 is a sideband artifact; cpk resolves to 16T
+            final_tc = cpk_tc
+        elif (cpk_tc == oep_tc and cpk_tc > fft90_tc
+              and cpk_tc >= 15 and fft90_tc == 14 and grp_tc < fft90_tc):
+            # Two independent peak methods agree on a higher count while
+            # the contour is incomplete (grp < fft) — trust the agreement
+            final_tc = cpk_tc
         elif fft90_tc - grp_tc == 1 and grp_tc < 14:
             # +1 bias correction for small gears
             final_tc = grp_tc
@@ -543,6 +556,95 @@ class GearToothCounter:
         extended = np.concatenate([above, [above[0]]])
         transitions = np.diff(extended.astype(int))
         return int(np.sum(transitions == 1))
+
+    def _contour_profile_peaks(self, distance=18, prom_pct=2):
+        """
+        Count peaks in the contour's angular radius profile.
+
+        Unlike ``_contour_groups`` (which thresholds at a fixed percentage),
+        this method uses ``find_peaks`` with a prominence criterion, making
+        it sensitive to small-amplitude teeth that groups might merge.
+        """
+        cnt = self.gear_contour
+        if cnt is None or len(cnt) < 30:
+            return 0
+
+        cx, cy = self.gear_center
+        pts = cnt.reshape(-1, 2).astype(float)
+        angles = np.arctan2(pts[:, 1] - cy, pts[:, 0] - cx)
+        radii = np.sqrt((pts[:, 0] - cx) ** 2 + (pts[:, 1] - cy) ** 2)
+
+        order = np.argsort(angles)
+        angles_s, radii_s = angles[order], radii[order]
+
+        n_a = 720
+        even_a = np.linspace(-np.pi, np.pi, n_a, endpoint=False)
+        all_a = np.concatenate([
+            angles_s - 2 * np.pi, angles_s, angles_s + 2 * np.pi,
+        ])
+        all_r = np.concatenate([radii_s, radii_s, radii_s])
+        profile = np.interp(even_a, all_a, all_r)
+
+        sm = signal.savgol_filter(profile, 7, 3, mode='wrap')
+        amp = sm.max() - sm.min()
+        prom = amp * prom_pct / 100
+        pks, _ = signal.find_peaks(sm, distance=distance, prominence=prom)
+        return len(pks)
+
+    def _outermost_edge_peaks(self):
+        """
+        Build a radial profile from the outermost Canny edge per angle,
+        then count peaks.
+
+        For each of 720 angular samples, scan inward from 115 % to 80 % of
+        the detected gear radius and record the first edge hit.  Peak
+        counting on the smoothed profile gives a tooth count independent
+        of threshold-based contour extraction.
+        """
+        cx, cy = self.gear_center
+        h, w = self.gray.shape
+        cnt = self.gear_contour
+
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(self.gray)
+        blurred = cv2.GaussianBlur(enhanced, (3, 3), 1.0)
+        edges = cv2.Canny(blurred, 50, 150)
+
+        if cnt is not None and len(cnt) > 20:
+            pts = cnt.reshape(-1, 2).astype(float)
+            max_r_cnt = np.max(np.sqrt(
+                (pts[:, 0] - cx) ** 2 + (pts[:, 1] - cy) ** 2
+            ))
+        else:
+            max_r_cnt = self.gear_radius
+        max_r_use = max(max_r_cnt, self.gear_radius)
+
+        n_a = 720
+        angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
+        cos_a, sin_a = np.cos(angles), np.sin(angles)
+
+        outer_radii = np.zeros(n_a)
+        for rv_pct in range(115, 80, -1):
+            rv = int(max_r_use * rv_pct / 100)
+            if rv < 10 or rv >= min(cx, w - cx, cy, h - cy):
+                continue
+            px = np.clip((cx + rv * cos_a).astype(int), 0, w - 1)
+            py = np.clip((cy + rv * sin_a).astype(int), 0, h - 1)
+            hit = edges[py, px] > 0
+            outer_radii[hit & (outer_radii == 0)] = rv
+
+        if not np.any(outer_radii > 0):
+            return 0
+        med = np.median(outer_radii[outer_radii > 0])
+        outer_radii[outer_radii == 0] = med
+
+        sm = signal.savgol_filter(outer_radii, 11, 3, mode='wrap')
+        amp = sm.max() - sm.min()
+        if amp < 2:
+            return 0
+
+        pks, _ = signal.find_peaks(sm, distance=25, prominence=amp * 0.1)
+        return len(pks)
 
     # ── Public pipeline ──────────────────────────────────────────────────────
 
