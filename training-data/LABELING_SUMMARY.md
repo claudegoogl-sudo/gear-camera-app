@@ -2,15 +2,15 @@
 
 **Date:** 2026-04-05
 **Corrected by:** Algorithm Engineer per board audit (PAP-84, PAP-96)
-**Images:** 36 total (12 from April 4 + 24 from April 5)
+**Images:** 38 total (12 from April 4 + 26 from April 5)
 
 ## Overview
 
-36 labeled training images of bicycle cassette sprockets (Shimano-style). All images photographed on paper towels or white paper. Four distinct sprocket sizes appear across the dataset.
+38 labeled training images of bicycle cassette sprockets (Shimano-style). All images photographed on paper towels or white paper. Four distinct sprocket sizes appear across the dataset.
 
 ## Correct Tooth Counts (chronological)
 
-15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 14, 13, 13, 13, 11, 11, 11, 14, 14, 15, 15, 14, 14, 13, 13, 11, 11
+15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 14, 13, 13, 13, 11, 11, 11, 14, 14, 15, 15, 14, 14, 13, 13, 11, 11, 11, 11
 
 ## Image-by-Image Labels
 
@@ -80,10 +80,22 @@
 | 14-40-38-072Z | 11 | 17 | +6 | Lockring cog, 0 confidence |
 | 14-41-38-021Z | 11 | 10 | -1 | Lockring cog, 0 confidence |
 
+### April 5 Session 4: 16:50 (1 image, build 27)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 16-50-12-545Z | 11 | 11 | 0 | Lockring cog, board-verified 11T |
+
+### April 5 Session 5: 17:30 (1 image, build 27)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 17-30-18-613Z | 11 | 15 | +4 | Lockring cog, board-verified 11T |
+
 ## Algorithm Performance Summary
 
-- **Images analyzed:** 36
-- **Correct results:** 5/36 (13.9%) — images 08-27-08, 08-32-16, 14-38-39, 14-39-43, plus near-miss 09-10-20
+- **Images analyzed:** 38
+- **Correct results:** 6/38 (15.8%) — images 08-27-08, 08-32-16, 14-38-39, 14-39-43, 16-50-12, plus near-miss 09-10-20
 - **Complete failures (0 count):** 3 images
 - **Zero confidence (build 26):** 8 images (all from session 3)
 - **Wildly incorrect (>10 error):** 4 images
@@ -93,7 +105,7 @@
 1. **15T sprocket** — 5 images. Large, lightening holes.
 2. **14T sprocket** — 19 images (most common).
 3. **13T sprocket** — 6 images.
-4. **11T sprocket** — 6 images. Lockring-style cog.
+4. **11T sprocket** — 8 images. Lockring-style cog.
 
 ## Correction Log
 
