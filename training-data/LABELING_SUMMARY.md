@@ -1,8 +1,8 @@
 # Training Data Labeling Summary
 
 **Date:** 2026-04-05
-**Corrected by:** Algorithm Engineer per board audit (PAP-84)
-**Images:** 26 total (12 from April 4 + 14 from April 5)
+**Corrected by:** Algorithm Engineer per board audit (PAP-84, PAP-96)
+**Images:** 36 total (12 from April 4 + 24 from April 5)
 
 ## Overview
 
@@ -10,7 +10,7 @@
 
 ## Correct Tooth Counts (chronological)
 
-15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 11, 11, 11
+15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 13, 13, 13, 11, 11, 11, 15, 14, 15, 15, 14, 14, 13, 13, 11, 11
 
 ## Image-by-Image Labels
 
@@ -60,19 +60,40 @@
 | 08-33-27-869Z | 11 | 10 | -1 | |
 | 08-34-06-051Z | 11 | 10 | -1 | |
 
+### April 5 Session 2: 13:27-13:31 (2 images, build 25)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 13-27-32-499Z | 15 | 18 | +3 | Large sprocket with lightening holes |
+| 13-31-32-807Z | 14 | 13 | -1 | Medium sprocket |
+
+### April 5 Session 3: 14:34-14:41 (8 images, build 26)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 14-34-16-932Z | 15 | 20 | +5 | Large sprocket, 0 confidence |
+| 14-35-16-858Z | 15 | 21 | +6 | Same, different angle, 0 confidence |
+| 14-36-18-288Z | 14 | 20 | +6 | Medium sprocket, 0 confidence |
+| 14-37-17-240Z | 14 | 20 | +6 | Same, different angle, 0 confidence |
+| 14-38-39-916Z | 13 | 13 | 0 | Correct! 0 confidence though |
+| 14-39-43-491Z | 13 | 13 | 0 | Correct! 0 confidence though |
+| 14-40-38-072Z | 11 | 17 | +6 | Lockring cog, 0 confidence |
+| 14-41-38-021Z | 11 | 10 | -1 | Lockring cog, 0 confidence |
+
 ## Algorithm Performance Summary
 
-- **Images analyzed:** 26
-- **Correct results:** 3/26 (11.5%) — images 08-27-08, 08-32-16, plus near-miss 09-10-20
+- **Images analyzed:** 36
+- **Correct results:** 5/36 (13.9%) — images 08-27-08, 08-32-16, 14-38-39, 14-39-43, plus near-miss 09-10-20
 - **Complete failures (0 count):** 3 images
+- **Zero confidence (build 26):** 8 images (all from session 3)
 - **Wildly incorrect (>10 error):** 4 images
 
 ## Distinct Sprockets in Dataset
 
-1. **15T sprocket** — 1 image. Large, lightening holes.
-2. **14T sprocket** — 16 images (most common).
-3. **13T sprocket** — 4 images.
-4. **11T sprocket** — 5 images. Lockring-style cog.
+1. **15T sprocket** — 4 images. Large, lightening holes.
+2. **14T sprocket** — 20 images (most common).
+3. **13T sprocket** — 6 images.
+4. **11T sprocket** — 6 images. Lockring-style cog.
 
 ## Correction Log
 

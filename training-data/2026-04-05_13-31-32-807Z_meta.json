@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-04-05T13:31:32.807Z",
-  "build": "v1.0.0 (25) · 2026-04-05 13:03",
+  "build": "v1.0.0 (25) ï¿½ 2026-04-05 13:03",
   "photoFile": "training-data/2026-04-05_13-31-32-807Z_photo.jpg",
   "result": {
     "toothCount": 13,
@@ -10,5 +10,6 @@
       "centerY": 0.5146666666666667,
       "radius": 0.092
     }
-  }
+  },
+  "actual_tooth_count": 14
 }
