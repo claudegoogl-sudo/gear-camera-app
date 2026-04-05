@@ -4,7 +4,7 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  TextInput,
+  Modal,
   StyleSheet,
   useWindowDimensions,
   ToastAndroid,
@@ -111,13 +111,24 @@ export default function ResultScreen({ navigation, route }) {
   }));
 
   const [sharing, setSharing] = useState(false);
-  const [actualTeethCount, setActualTeethCount] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmedCount, setConfirmedCount] = useState(toothCount ?? 0);
 
-  const handleShareDebug = async () => {
-    const parsedActual = actualTeethCount.trim() !== '' ? parseInt(actualTeethCount, 10) : null;
+  // Sync confirmed count when toothCount changes (e.g. on first load).
+  useEffect(() => {
+    if (toothCount != null) setConfirmedCount(toothCount);
+  }, [toothCount]);
+
+  const handleShareDebug = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmShare = async () => {
+    setShowConfirmModal(false);
+    const actualTeethCount = confirmedCount !== toothCount ? confirmedCount : null;
     setSharing(true);
     try {
-      await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount: parsedActual });
+      await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount });
 
       // Upload training data alongside debug share (fire-and-forget).
       uploadTrainingData({ photoPath, toothCount, confidence, gearContour }).catch(() => {});
@@ -210,21 +221,6 @@ export default function ResultScreen({ navigation, route }) {
           </Text>
         )}
 
-        {toothCount != null && (
-          <View style={styles.actualCountRow}>
-            <Text style={styles.actualCountLabel}>Actual tooth count (optional)</Text>
-            <TextInput
-              style={styles.actualCountInput}
-              value={actualTeethCount}
-              onChangeText={setActualTeethCount}
-              keyboardType="number-pad"
-              placeholder="e.g. 24"
-              placeholderTextColor="#555"
-              maxLength={3}
-            />
-          </View>
-        )}
-
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
             <Text style={styles.resetText}>Reset</Text>
@@ -240,6 +236,65 @@ export default function ResultScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </Animated.View>
+
+      {/* ── Tooth count confirmation modal ──────────────────────── */}
+      <Modal
+        visible={showConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Confirm tooth count</Text>
+
+            <View style={styles.counterRow}>
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => setConfirmedCount(c => Math.max(1, c - 1))}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.counterBtnText}>−</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => setConfirmedCount(c => c + 1)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.counterBtnText}>+</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.counterValue}>{confirmedCount}</Text>
+              <Text style={styles.counterUnit}>T</Text>
+            </View>
+
+            {confirmedCount !== toothCount && (
+              <Text style={styles.modalHint}>
+                Detected {toothCount}T — corrected to {confirmedCount}T
+              </Text>
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowConfirmModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalCommitBtn}
+                onPress={handleConfirmShare}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCommitText}>Commit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Brief toast (1 s) ────────────────────────────────────── */}
       {briefToast && (
@@ -306,27 +361,6 @@ const styles = StyleSheet.create({
 
   waiting: { fontSize: 16, color: '#555' },
 
-  actualCountRow: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  actualCountLabel: { fontSize: 13, color: '#888', fontWeight: '500' },
-  actualCountInput: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    width: 72,
-    textAlign: 'center',
-  },
-
   buttonRow: {
     marginTop: 18,
     flexDirection: 'row',
@@ -352,6 +386,51 @@ const styles = StyleSheet.create({
   },
   shareBtnDisabled: { opacity: 0.45 },
   shareText: { fontSize: 15, fontWeight: '600', color: '#ddd' },
+
+  // Confirmation modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    backgroundColor: '#1c1c1e',
+    borderRadius: 18,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    width: 280,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '600', color: '#aaa', marginBottom: 20 },
+  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  counterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterBtnText: { fontSize: 24, fontWeight: '700', color: '#fff', lineHeight: 26 },
+  counterValue: { fontSize: 48, fontWeight: '800', color: '#fff', minWidth: 60, textAlign: 'center' },
+  counterUnit: { fontSize: 22, fontWeight: '700', color: '#888' },
+  modalHint: { fontSize: 12, color: '#FF9800', marginTop: 10, textAlign: 'center' },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  modalCancelBtn: {
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: '#888' },
+  modalCommitBtn: {
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: '#4CAF50',
+  },
+  modalCommitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
   briefToast: {
     position: 'absolute',
