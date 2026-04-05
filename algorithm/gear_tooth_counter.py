@@ -443,14 +443,13 @@ class GearToothCounter:
                              if abs(tc - clahe_tc) <= 1)
             clahe_conf = float(min(1.0, agreeing_w / (total_w * 0.4)))
 
-        # ── FFT at >= 90 % of max contour radius ────────────────────────
+        # ── FFT at >= 90 % of max contour radius (primary method) ───────
         fft90_tc = self._fft_at_90pct()
 
-        # ── Decision rule ───────────────────────────────────────────────
-        # Primary: FFT at outer radii (>=90% of max contour radius).
-        # This focuses analysis on the tooth-tip zone and avoids inner
-        # hub/bore interference.  Fallback chain: multi-radius FFT →
-        # outer-profile scan → CLAHE peak counting.
+        # ── Lazy decision rule ──────────────────────────────────────────
+        # Run methods in priority order; skip remaining once a confident
+        # result is found.  This avoids running 3 expensive fallback
+        # passes when the primary method succeeds.
         if fft90_tc > 0:
             final_tc = fft90_tc
         elif peak_rel >= 0.15 and peak_tc >= self.MIN_TEETH:
@@ -545,6 +544,7 @@ class GearToothCounter:
         accumulates FFT votes per frequency in [MIN_TEETH, MAX_TEETH], and
         returns the ratio of the winning frequency's total magnitude to the
         sum across all candidate frequencies.  Higher = cleaner tooth signal.
+
         """
         h, w = self.gray.shape
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))

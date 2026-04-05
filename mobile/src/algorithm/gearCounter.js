@@ -91,46 +91,59 @@ function otsuThreshold(gray, width, height) {
 }
 
 // ── 3. Morphological close (dilate then erode) ──────────────────────────────
+//
+// Optimised: pre-compute flattened offset table as Int32 row-offsets to avoid
+// per-pixel multiplication.  Short-circuit on first hit (dilate) or first
+// miss (erode) is preserved.
+
+function _buildOffsets(radius, width) {
+  const offsets = [];
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (dx * dx + dy * dy <= radius * radius) offsets.push(dy * width + dx);
+    }
+  }
+  return offsets;
+}
 
 function morphClose(mask, width, height, radius) {
   const n = width * height;
   const tmp = new Uint8Array(n);
   const out = new Uint8Array(n);
-
-  const offsets = [];
-  for (let dy = -radius; dy <= radius; dy++) {
-    for (let dx = -radius; dx <= radius; dx++) {
-      if (dx * dx + dy * dy <= radius * radius) offsets.push([dx, dy]);
-    }
-  }
+  const offsets = _buildOffsets(radius, width);
+  const nOff = offsets.length;
 
   // Dilate
+  for (let y = radius; y < height - radius; y++) {
+    const row = y * width;
+    for (let x = radius; x < width - radius; x++) {
+      const idx = row + x;
+      let val = 0;
+      for (let k = 0; k < nOff; k++) {
+        if (mask[idx + offsets[k]]) { val = 1; break; }
+      }
+      tmp[idx] = val;
+    }
+  }
+  // Handle border pixels conservatively (copy mask)
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let val = 0;
-      for (const [dx, dy] of offsets) {
-        const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-          if (mask[ny * width + nx]) { val = 1; break; }
-        }
+      if (y < radius || y >= height - radius || x < radius || x >= width - radius) {
+        tmp[y * width + x] = mask[y * width + x];
       }
-      tmp[y * width + x] = val;
     }
   }
 
   // Erode
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  for (let y = radius; y < height - radius; y++) {
+    const row = y * width;
+    for (let x = radius; x < width - radius; x++) {
+      const idx = row + x;
       let val = 1;
-      for (const [dx, dy] of offsets) {
-        const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-          if (!tmp[ny * width + nx]) { val = 0; break; }
-        } else {
-          val = 0; break;
-        }
+      for (let k = 0; k < nOff; k++) {
+        if (!tmp[idx + offsets[k]]) { val = 0; break; }
       }
-      out[y * width + x] = val;
+      out[idx] = val;
     }
   }
   return out;
@@ -142,41 +155,32 @@ function morphOpen(mask, width, height, radius) {
   const n = width * height;
   const tmp = new Uint8Array(n);
   const out = new Uint8Array(n);
-
-  const offsets = [];
-  for (let dy = -radius; dy <= radius; dy++) {
-    for (let dx = -radius; dx <= radius; dx++) {
-      if (dx * dx + dy * dy <= radius * radius) offsets.push([dx, dy]);
-    }
-  }
+  const offsets = _buildOffsets(radius, width);
+  const nOff = offsets.length;
 
   // Erode
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  for (let y = radius; y < height - radius; y++) {
+    const row = y * width;
+    for (let x = radius; x < width - radius; x++) {
+      const idx = row + x;
       let val = 1;
-      for (const [dx, dy] of offsets) {
-        const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-          if (!mask[ny * width + nx]) { val = 0; break; }
-        } else {
-          val = 0; break;
-        }
+      for (let k = 0; k < nOff; k++) {
+        if (!mask[idx + offsets[k]]) { val = 0; break; }
       }
-      tmp[y * width + x] = val;
+      tmp[idx] = val;
     }
   }
 
   // Dilate
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  for (let y = radius; y < height - radius; y++) {
+    const row = y * width;
+    for (let x = radius; x < width - radius; x++) {
+      const idx = row + x;
       let val = 0;
-      for (const [dx, dy] of offsets) {
-        const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-          if (tmp[ny * width + nx]) { val = 1; break; }
-        }
+      for (let k = 0; k < nOff; k++) {
+        if (tmp[idx + offsets[k]]) { val = 1; break; }
       }
-      out[y * width + x] = val;
+      out[idx] = val;
     }
   }
   return out;
@@ -237,20 +241,24 @@ function labelComponents(mask, width, height, targetVal) {
   return { labels, components };
 }
 
-// ── 6. Component perimeter ───────��──────────────────────────────────────────
+// ── 6. Component perimeter ──────────────────────────────────────────────────
+//
+// Optimised: only scan the component's bounding box instead of the full image.
 
-function componentPerimeter(labels, width, height, compId) {
+function componentPerimeter(labels, width, height, compId, minX, minY, maxX, maxY) {
   let peri = 0;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (labels[y * width + x] !== compId) continue;
-      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height ||
-            labels[ny * width + nx] !== compId) {
-          peri++;
-          break;
-        }
+  const y0 = Math.max(0, minY);
+  const y1 = Math.min(height - 1, maxY);
+  const x0 = Math.max(0, minX);
+  const x1 = Math.min(width - 1, maxX);
+  for (let y = y0; y <= y1; y++) {
+    const row = y * width;
+    for (let x = x0; x <= x1; x++) {
+      if (labels[row + x] !== compId) continue;
+      if (x === 0 || x === width - 1 || y === 0 || y === height - 1 ||
+          labels[row + x + 1] !== compId || labels[row + x - 1] !== compId ||
+          labels[(y + 1) * width + x] !== compId || labels[(y - 1) * width + x] !== compId) {
+        peri++;
       }
     }
   }
@@ -303,6 +311,11 @@ function fftCountAtRadius(gray, cx, cy, r, width, height) {
 }
 
 // ── 9. FFT purity check for a candidate center/radius ───────────────────────
+//
+// Optimised: uses 360 angles (half resolution) and step 4 (was step 2)
+// for a ~4× speedup. This is a quick screening pass, not the final count.
+
+const PURITY_ANGLES = 360;
 
 function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   const lo = Math.floor(r * 0.85);
@@ -310,9 +323,9 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   if (lo >= hi || lo < 10) return 0.0;
 
   const fftVotes = {};
-  for (let rv = lo; rv <= hi; rv += 2) {
-    const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, N_ANGLES);
-    const halfWin = 5;
+  for (let rv = lo; rv <= hi; rv += 4) {
+    const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, PURITY_ANGLES);
+    const halfWin = 3;
     const sm = smoothSignal(ring, halfWin, true);
 
     let smMin = Infinity, smMax = -Infinity;
@@ -353,8 +366,8 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
-  // Sweep thresholds 40–220 in steps of 10 (coarser than Python's 5 for speed)
-  for (let thresh = 40; thresh < 220; thresh += 10) {
+  // Sweep thresholds 40–220 in steps of 20 (coarser sweep for speed)
+  for (let thresh = 40; thresh < 220; thresh += 20) {
     for (const invert of [true, false]) {
       // Binary mask
       const mask = new Uint8Array(n);
@@ -384,13 +397,13 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         if (comp.minX <= margin || comp.minY <= margin ||
             comp.maxX >= w - margin || comp.maxY >= h - margin) continue;
 
-        const peri = componentPerimeter(labels, w, h, comp.id);
-        const circ = peri > 0 ? (4 * Math.PI * comp.area) / (peri * peri) : 0;
-        const compact = comp.area / (bw * bh);
-
-        // Enclosing circle radius estimate
+        // Enclosing circle radius estimate (check early to skip perimeter calc)
         const encR = Math.sqrt(comp.area / Math.PI);
         if (encR / Math.min(h, w) < 0.08 || encR / Math.min(h, w) > 0.45) continue;
+
+        const peri = componentPerimeter(labels, w, h, comp.id, comp.minX, comp.minY, comp.maxX, comp.maxY);
+        const circ = peri > 0 ? (4 * Math.PI * comp.area) / (peri * peri) : 0;
+        const compact = comp.area / (bw * bh);
 
         const score = circ * compact * Math.pow(comp.area, 0.3);
         const cx = Math.round(comp.sx / comp.area);
@@ -415,7 +428,7 @@ function findGearCenter(gray, enhanced, edges, width, height) {
       }
     }
     if (!duplicate) topCandidates.push(cand);
-    if (topCandidates.length >= 5) break;
+    if (topCandidates.length >= 3) break;
   }
 
   // FFT purity check on each candidate
@@ -456,7 +469,7 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   let bestComp = null, bestScore = -1;
   for (const dc of darkComps) {
     if (dc.area < 300 || dc.area > 0.5 * n || dc.touchesBorder) continue;
-    const peri = componentPerimeter(darkLabels, w, h, dc.id);
+    const peri = componentPerimeter(darkLabels, w, h, dc.id, dc.minX, dc.minY, dc.maxX, dc.maxY);
     const circ = peri > 0 ? (4 * Math.PI * dc.area) / (peri * peri) : 0;
     const hasHole = darkHasHole.has(dc.id);
     const score = circ * (hasHole ? 1.5 : 1.0);
@@ -544,7 +557,7 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
   if (thresholdR >= maxRScan || thresholdR < 10) return 0;
 
   const fftVotes = {};
-  for (let rv = thresholdR; rv <= maxRScan; rv += 2) {
+  for (let rv = thresholdR; rv <= maxRScan; rv += 3) {
     if (rv < 10) continue;
 
     const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, N_ANGLES);
@@ -693,13 +706,15 @@ function outerProfileScan(edges, cx, cy, maxR, width, height) {
   }
 
   const outerRadii = new Float64Array(nOp);
-  for (let rScan = Math.floor(maxR * 0.95); rScan > 10; rScan -= 3) {
+  let remaining = nOp;
+  for (let rScan = Math.floor(maxR * 0.95); rScan > 10 && remaining > 0; rScan -= 3) {
     for (let i = 0; i < nOp; i++) {
       if (outerRadii[i] > 0) continue;
       const px = Math.min(Math.max(Math.round(cx + rScan * cosA[i]), 0), width - 1);
       const py = Math.min(Math.max(Math.round(cy + rScan * sinA[i]), 0), height - 1);
       if (edges[py * width + px] > 0) {
         outerRadii[i] = rScan;
+        remaining--;
       }
     }
   }
@@ -838,37 +853,51 @@ export async function countTeeth(photoUri) {
     : findGearRadius(edges, cx, cy, width, height);
   const t3 = Date.now();
 
-  // ── Method 1: FFT at ≥85% of max contour radius (primary) ─────────
+  // ── Lazy method evaluation ──────────────────────────────────────────
+  // Run methods in decision-rule priority order; skip remaining once
+  // a confident result is found.  This is the single biggest perf win
+  // on device — avoids 3 expensive fallback passes in the common case.
+
+  // Method 1: FFT at ≥85% of max contour radius (primary)
   const fft90tc = fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearR, edges, width, height);
 
-  // ── Method 2: Multi-radius FFT scan ────────────────────────────────
-  const { peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height);
+  let peakTc = 0, peakRel = 0, peakR = 0;
+  let opTc = 0, opRel = 0;
+  let claheTc = 0, claheConf = 0;
 
-  // ── Method 3: Outer-profile scan ───────��───────────────────────────
-  const maxR = Math.min(cx, width - cx, cy, height - cy) - 1;
-  const { opTc, opRel } = outerProfileScan(edges, cx, cy, maxR, width, height);
+  let finalTc = 0;
+  let methodUsed = 'none';
 
-  // ── Method 4: CLAHE peak counting ──────────────────────────────────
-  const { claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height);
-
-  const t4 = Date.now();
-
-  // ── Decision rule (mirrors Python) ─────────────────────────────────
-  // Primary: FFT at outer radii (≥85% of max contour radius).
-  // Fallback chain: multi-radius FFT → outer-profile → CLAHE peaks.
-  let finalTc;
   if (fft90tc > 0) {
     finalTc = fft90tc;
-  } else if (peakRel >= 0.15 && peakTc >= MIN_TEETH) {
-    finalTc = peakTc;
-  } else if (opTc > 0 && opRel >= 0.10) {
-    finalTc = opTc;
-  } else if (peakTc > 0) {
-    finalTc = peakTc;
-  } else if (claheTc > 0 && claheConf >= 0.5) {
-    finalTc = claheTc;
+    methodUsed = 'fft90';
   } else {
-    finalTc = 0;
+    // Method 2: Multi-radius FFT scan
+    ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
+
+    if (peakRel >= 0.15 && peakTc >= MIN_TEETH) {
+      finalTc = peakTc;
+      methodUsed = 'multiR';
+    } else {
+      // Method 3: Outer-profile scan
+      const maxR = Math.min(cx, width - cx, cy, height - cy) - 1;
+      ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxR, width, height));
+
+      if (opTc > 0 && opRel >= 0.10) {
+        finalTc = opTc;
+        methodUsed = 'outer';
+      } else if (peakTc > 0) {
+        finalTc = peakTc;
+        methodUsed = 'multiR-fallback';
+      } else {
+        // Method 4: CLAHE peak counting (last resort)
+        ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
+        if (claheTc > 0 && claheConf >= 0.5) {
+          finalTc = claheTc;
+          methodUsed = 'clahe';
+        }
+      }
+    }
   }
 
   // Best available purity for confidence
@@ -877,6 +906,8 @@ export async function countTeeth(photoUri) {
 
   const finalR = peakR > 0 ? peakR : gearR;
 
+  const t4 = Date.now();
+
   console.log(
     `[GearCounter] ${width}×${height}px | ` +
     `load=${t1-t0}ms preprocess=${t2-t1}ms detect=${t3-t2}ms methods=${t4-t3}ms total=${t4-t0}ms\n` +
@@ -884,7 +915,7 @@ export async function countTeeth(photoUri) {
     `  contourR=${contourRadius} gearR=${gearR}\n` +
     `  fft90=${fft90tc}T | multiR=${peakTc}T(rel=${peakRel.toFixed(3)}) | ` +
     `outer=${opTc}T(rel=${opRel.toFixed(3)}) | clahe=${claheTc}T(conf=${claheConf.toFixed(2)})\n` +
-    `  → result=${finalTc}T conf=${(confidence * 100).toFixed(1)}%`
+    `  → result=${finalTc}T conf=${(confidence * 100).toFixed(1)}% via=${methodUsed}`
   );
 
   return {
