@@ -41,6 +41,7 @@ class GearToothCounter:
         self.edges = None
         self.gear_center = None
         self.gear_radius = None
+        self.gear_contour = None
         self.tooth_count = None
         self.confidence = None
 
@@ -166,6 +167,7 @@ class GearToothCounter:
 
         self.gear_center = (cx, cy)
         self.gear_radius = outer_r
+        self.gear_contour = best_cnt
 
         if self.debug:
             debug_img = self.image.copy()
@@ -404,23 +406,38 @@ class GearToothCounter:
                              if abs(tc - clahe_tc) <= 1)
             clahe_conf = float(min(1.0, agreeing_w / (total_w * 0.4)))
 
-        # ── Decision rule ────────────────────────────────────────────────
-        if peak_rel >= 0.15 and peak_tc >= self.MIN_TEETH:
-            final_tc = peak_tc
-            final_rel = peak_rel
-        elif op_tc > 0 and op_rel >= 0.10:
-            final_tc = op_tc
-            final_rel = op_rel
+        # ── FFT at >= 90 % of max contour radius ────────────────────────
+        fft90_tc = self._fft_at_90pct()
+
+        # ── Contour group counting (94 % threshold) ─────────────────────
+        grp_tc = self._contour_groups(pct=94)
+
+        # ── Combined decision rule ──────────────────────────────────────
+        # The two methods are complementary: FFT excels on clean images
+        # while contour-group counting resolves the 16T/14-hole aliasing
+        # on images where the contour captures every tooth tip.
+        if grp_tc < 5:
+            # Broken or incomplete contour — trust FFT
+            final_tc = fft90_tc if fft90_tc > 0 else peak_tc
+        elif grp_tc > fft90_tc and grp_tc >= 15 and fft90_tc == 14:
+            # 16T correction: contour sees more teeth than mounting holes
+            final_tc = grp_tc
+        elif fft90_tc - grp_tc == 1 and grp_tc < 14:
+            # +1 bias correction for small gears
+            final_tc = grp_tc
+        elif fft90_tc > 0:
+            final_tc = fft90_tc
         elif peak_tc > 0:
             final_tc = peak_tc
-            final_rel = peak_rel
         elif clahe_tc > 0 and clahe_conf >= 0.5:
-            # CLAHE peak counting: last resort when FFT finds nothing
             final_tc = clahe_tc
-            final_rel = clahe_conf * 0.15 + 0.05
         else:
             final_tc = 0
-            final_rel = 0.0
+
+        # Best available purity for confidence calculation
+        final_rel = peak_rel if peak_rel > 0 else (
+            op_rel if op_rel > 0 else 0.0
+        )
 
         self.tooth_count = final_tc
         self.gear_radius = peak_r if peak_r > 0 else self.gear_radius
@@ -432,6 +449,100 @@ class GearToothCounter:
             self._debug_plot(peak_tc, peak_rel, peak_r, op_tc, op_rel)
 
         return self
+
+    # ── Complementary tooth-counting methods ───────────────────────────────
+
+    def _fft_at_90pct(self):
+        """
+        FFT tooth count using only radii >= 90 % of the max contour radius.
+
+        Ignoring inner radii avoids pollution from mounting holes and hub
+        features, focusing the frequency analysis on the tooth tips.
+        """
+        cx, cy = self.gear_center
+        h, w = self.gray.shape
+        cnt = self.gear_contour
+
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        enhanced = clahe.apply(self.gray)
+
+        # Determine max radius from contour points
+        if cnt is not None and len(cnt) > 20:
+            pts = cnt.reshape(-1, 2).astype(float)
+            max_r_cnt = np.max(np.sqrt(
+                (pts[:, 0] - cx) ** 2 + (pts[:, 1] - cy) ** 2
+            ))
+        else:
+            max_r_cnt = self.gear_radius
+        max_r_use = max(max_r_cnt, self.gear_radius)
+
+        threshold_r = int(max_r_use * 0.90)
+        max_r_scan = min(
+            int(max_r_use * 1.10),
+            min(cx, w - cx, cy, h - cy) - 1,
+        )
+
+        n_a = 720
+        angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
+        cos_a, sin_a = np.cos(angles), np.sin(angles)
+
+        fft_votes = defaultdict(float)
+        for rv in range(threshold_r, max_r_scan + 1, 2):
+            if rv < 10:
+                continue
+            px = np.clip((cx + rv * cos_a).astype(int), 0, w - 1)
+            py = np.clip((cy + rv * sin_a).astype(int), 0, h - 1)
+            intensity = enhanced[py, px].astype(float)
+            sm = signal.savgol_filter(intensity, 21, 3, mode='wrap')
+            amp = sm.max() - sm.min()
+            if amp < 5:
+                continue
+            fft_mag = np.abs(np.fft.rfft(sm - sm.mean()))
+            for freq in range(self.MIN_TEETH, self.MAX_TEETH + 1):
+                if freq < len(fft_mag):
+                    fft_votes[freq] += float(fft_mag[freq])
+
+        if not fft_votes:
+            return 0
+        return max(fft_votes, key=fft_votes.get)
+
+    def _contour_groups(self, pct=94):
+        """
+        Count tooth tips by thresholding the contour's angular radius profile.
+
+        Resamples the contour radius as a function of angle, smooths it,
+        then counts groups of consecutive samples above *pct* % of max
+        radius.  Each group corresponds to one tooth tip.
+        """
+        cnt = self.gear_contour
+        if cnt is None or len(cnt) < 30:
+            return 0
+
+        cx, cy = self.gear_center
+        pts = cnt.reshape(-1, 2).astype(float)
+        angles = np.arctan2(pts[:, 1] - cy, pts[:, 0] - cx)
+        radii = np.sqrt((pts[:, 0] - cx) ** 2 + (pts[:, 1] - cy) ** 2)
+
+        order = np.argsort(angles)
+        angles_s, radii_s = angles[order], radii[order]
+
+        # Interpolate onto evenly-spaced angular grid
+        n_a = 720
+        even_a = np.linspace(-np.pi, np.pi, n_a, endpoint=False)
+        all_a = np.concatenate([
+            angles_s - 2 * np.pi, angles_s, angles_s + 2 * np.pi,
+        ])
+        all_r = np.concatenate([radii_s, radii_s, radii_s])
+        profile = np.interp(even_a, all_a, all_r)
+
+        sm = signal.savgol_filter(profile, 7, 3, mode='wrap')
+        threshold = sm.max() * pct / 100
+        above = sm >= threshold
+
+        # Count rising edges (transitions from below to above threshold)
+        extended = np.concatenate([above, [above[0]]])
+        transitions = np.diff(extended.astype(int))
+        return int(np.sum(transitions == 1))
 
     # ── Public pipeline ──────────────────────────────────────────────────────
 
