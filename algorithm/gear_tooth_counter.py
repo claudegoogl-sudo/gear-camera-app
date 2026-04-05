@@ -6,7 +6,8 @@ Core approach:
 1. Load gear image and resize
 2. Convert to grayscale + CLAHE enhancement
 3. Apply edge detection (Canny)
-4. Find gear center via contour analysis (Otsu dual-polarity)
+4. Find gear center via multi-threshold contour sweep (robust to varying
+   backgrounds and lighting — replaces original Otsu dual-polarity)
 5. Build candidate radii from radial edge-density peaks + evenly-spaced outer band
 6. At each candidate radius, sample intensity and run FFT to score tooth count
 7. Pick outermost candidate with rel-purity >= threshold (avoids inner hub bias)
@@ -75,99 +76,77 @@ class GearToothCounter:
 
     def find_gear_region(self):
         """
-        Detect gear center via contour analysis with dual-polarity thresholding.
+        Detect gear center via multi-threshold contour sweep.
 
         Pipeline:
-        1. Try both Otsu BINARY_INV (dark gear) and BINARY (light gear)
-        2. Morphological close to fill small gaps
-        3. Find contours with hierarchy (parent-child)
-        4. Score contours by circularity * area-weight * child bonus,
-           so large circular contours beat tiny mounting holes
-        5. Pick the best contour across both polarities
+        1. Sweep thresholds 40–220 in both polarities (BINARY / BINARY_INV)
+        2. For each threshold, morphological close + open to clean mask
+        3. Find external contours and score by circularity × compactness ×
+           area^0.3, filtering by aspect ratio, border distance, and
+           enclosing-circle size relative to image
+        4. Pick the highest-scoring contour across all thresholds
+        5. Refine center with ellipse fit when contour has enough points
 
         Falls back to Hough circles if no contour found.
         """
-        h, w = self.edges.shape
+        h, w = self.gray.shape
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 
         best_cnt = None
         best_score = -1
         cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
 
-        # Try both threshold polarities to handle light and dark gears
-        for thresh_flag in [cv2.THRESH_BINARY_INV, cv2.THRESH_BINARY]:
-            _, binary = cv2.threshold(self.gray, 0, 255,
-                                      thresh_flag + cv2.THRESH_OTSU)
-            binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+        for thresh in range(40, 220, 5):
+            for flag in [cv2.THRESH_BINARY_INV, cv2.THRESH_BINARY]:
+                _, binary = cv2.threshold(self.gray, thresh, 255, flag)
+                binary = cv2.morphologyEx(
+                    binary, cv2.MORPH_CLOSE, kernel, iterations=2
+                )
+                binary = cv2.morphologyEx(
+                    binary, cv2.MORPH_OPEN, kernel, iterations=1
+                )
 
-            contours, hierarchy = cv2.findContours(
-                binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
-            )
+                contours, _ = cv2.findContours(
+                    binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                )
 
-            if not contours or hierarchy is None:
-                continue
+                for cnt in contours:
+                    area = cv2.contourArea(cnt)
+                    peri = cv2.arcLength(cnt, True)
+                    if area < 1000 or peri < 100:
+                        continue
 
-            # Find the max area among non-border, non-child contours
-            max_area = 0
-            for i, cnt in enumerate(contours):
-                area = cv2.contourArea(cnt)
-                is_child = hierarchy[0][i][3] >= 0
-                if is_child:
-                    continue
-                x, y, bw, bh = cv2.boundingRect(cnt)
-                margin = 2
-                if (x <= margin or y <= margin or
-                        x + bw >= w - margin or y + bh >= h - margin):
-                    continue
-                if area > max_area:
-                    max_area = area
+                    x, y, bw, bh = cv2.boundingRect(cnt)
+                    margin = 5
+                    if (x <= margin or y <= margin or
+                            x + bw >= w - margin or y + bh >= h - margin):
+                        continue
 
-            if max_area < 300:
-                continue
+                    if min(bw, bh) / max(bw, bh) < 0.5:
+                        continue
 
-            for i, cnt in enumerate(contours):
-                area = cv2.contourArea(cnt)
-                peri = cv2.arcLength(cnt, True)
-                if area < 300 or peri < 40 or area > 0.5 * w * h:
-                    continue
+                    circ = 4 * np.pi * area / (peri ** 2)
+                    compact = area / (bw * bh)
 
-                circ = 4 * np.pi * area / (peri ** 2) if peri > 0 else 0
+                    _, enc_r = cv2.minEnclosingCircle(cnt)
+                    if enc_r / min(h, w) < 0.08 or enc_r / min(h, w) > 0.45:
+                        continue
 
-                x, y, bw, bh = cv2.boundingRect(cnt)
-                margin = 2
-                if (x <= margin or y <= margin or
-                        x + bw >= w - margin or y + bh >= h - margin):
-                    continue
+                    score = circ * compact * (area ** 0.3)
 
-                is_child = hierarchy[0][i][3] >= 0
-                if is_child:
-                    continue
-
-                has_child = hierarchy[0][i][2] >= 0
-                child_bonus = 1.5 if has_child else 1.0
-
-                # Area weight: large contours dominate over tiny holes
-                area_weight = (area / max_area) ** 0.3
-
-                score = circ * child_bonus * area_weight
-
-                if score > best_score:
-                    best_score = score
-                    best_cnt = cnt
-                    M = cv2.moments(cnt)
-                    if M["m00"] > 0:
-                        cx = int(round(M["m10"] / M["m00"]))
-                        cy = int(round(M["m01"] / M["m00"]))
-                    else:
-                        cx, cy = x + bw // 2, y + bh // 2
-                    # For small images, ellipse fit gives a more accurate
-                    # geometric center than the centroid (which is biased
-                    # by asymmetric tooth shapes)
-                    if len(cnt) >= 5 and w * h < 250000:
-                        ell = cv2.fitEllipse(cnt)
-                        cx = int(round(ell[0][0]))
-                        cy = int(round(ell[0][1]))
-                    outer_r = int(round(np.sqrt(area / np.pi)))
+                    if score > best_score:
+                        best_score = score
+                        best_cnt = cnt
+                        M = cv2.moments(cnt)
+                        if M["m00"] > 0:
+                            cx = int(round(M["m10"] / M["m00"]))
+                            cy = int(round(M["m01"] / M["m00"]))
+                        _, enc_r = cv2.minEnclosingCircle(cnt)
+                        outer_r = int(round(enc_r))
+                        if len(cnt) >= 5:
+                            ell = cv2.fitEllipse(cnt)
+                            cx = int(round(ell[0][0]))
+                            cy = int(round(ell[0][1]))
 
         # ── Fallback: Hough circles ──────────────────────────────────────
         if best_cnt is None:
@@ -245,6 +224,11 @@ class GearToothCounter:
         if max_r < 20:
             max_r = min(h, w) // 3
 
+        # Constrain search to within 120 % of detected gear radius so we
+        # do not waste FFT evaluations on background pixels far from the gear.
+        if self.gear_radius > 20:
+            max_r = min(max_r, int(self.gear_radius * 1.20))
+
         valid = dists < max_r
         density = np.bincount(dists[valid], minlength=max_r).astype(float)
         win = max(5, (max_r // 8) | 1)
@@ -263,11 +247,12 @@ class GearToothCounter:
         else:
             cand_set = {int(p) for p in peaks} if len(peaks) > 0 else {max_r // 2}
 
-        # Evenly-spaced outer radii
+        # Evenly-spaced outer radii (relative to detected gear radius)
+        gr = self.gear_radius if self.gear_radius > 20 else max_r
         for pct in range(65, 85, 4):
-            cand_set.add(int(max_r * pct / 100))
-        for pct in range(85, 98, 2):
-            cand_set.add(int(max_r * pct / 100))
+            cand_set.add(int(gr * pct / 100))
+        for pct in range(85, 108, 2):
+            cand_set.add(int(gr * pct / 100))
 
         candidates = sorted(cand_set)
 
