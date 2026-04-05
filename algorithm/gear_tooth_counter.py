@@ -39,6 +39,7 @@ class GearToothCounter:
         self.image = None
         self.gray = None
         self.edges = None
+        self._enhanced = None  # cached CLAHE-enhanced grayscale
         self.gear_center = None
         self.gear_radius = None
         self.gear_contour = None
@@ -63,10 +64,16 @@ class GearToothCounter:
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         return self
 
+    def _get_enhanced(self):
+        """Return CLAHE-enhanced grayscale, caching the result."""
+        if self._enhanced is None:
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            self._enhanced = clahe.apply(self.gray)
+        return self._enhanced
+
     def preprocess(self):
         """CLAHE contrast enhancement + Gaussian blur + Canny edge detection."""
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(self.gray)
+        enhanced = self._get_enhanced()
         blurred = cv2.GaussianBlur(enhanced, (5, 5), 1.5)
         self.edges = cv2.Canny(blurred, 50, 150)
 
@@ -169,45 +176,7 @@ class GearToothCounter:
             if len(top_candidates) >= 5:
                 break
 
-        # ── Add Hough circle candidates ─────────────────────────────────
-        # Hough circles complement contour-based candidates, especially for
-        # large gears that fill the frame (where contour enc_r filter may
-        # reject the outer gear boundary).  Only add when the Hough radius
-        # is plausible relative to existing contour candidates (within 2×)
-        # to avoid false background circles dominating small gears.
-        max_contour_r = max((c[3] for c in top_candidates), default=0)
-        circles = cv2.HoughCircles(
-            self.edges, cv2.HOUGH_GRADIENT,
-            dp=2, minDist=100, param1=50, param2=30,
-            minRadius=min(h, w) // 4, maxRadius=min(h, w) // 2,
-        )
-        if circles is not None:
-            circles = np.uint16(np.around(circles))
-            for c in circles[0][:3]:
-                hc_x, hc_y, hc_r = int(c[0]), int(c[1]), int(c[2])
-                margin = 5
-                if not (margin < hc_x < w - margin
-                        and margin < hc_y < h - margin):
-                    continue
-                # Skip if center is too close to any edge relative to the
-                # radius — the gear would be mostly outside the frame.
-                edge_dist = min(hc_x, w - hc_x, hc_y, h - hc_y)
-                if edge_dist < hc_r * 0.92:
-                    continue
-                # Skip if Hough radius is more than 2× larger than the
-                # best contour — likely a false background circle.
-                if max_contour_r > 0 and hc_r > max_contour_r * 2:
-                    continue
-                duplicate = False
-                for _, t_x, t_y, t_r, _ in top_candidates:
-                    if (abs(hc_x - t_x) < 30 and abs(hc_y - t_y) < 30
-                            and abs(hc_r - t_r) < 20):
-                        duplicate = True
-                        break
-                if not duplicate:
-                    top_candidates.append((0, hc_x, hc_y, hc_r, None))
-
-        # FFT purity check on each candidate
+        # FFT purity check on contour candidates
         best_cnt = None
         best_score = -1
         cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
@@ -221,6 +190,46 @@ class GearToothCounter:
                 if purity > best_purity:
                     best_purity = purity
                     best_purity_idx = idx
+
+            # ── Hough circle candidates (only when contour purity is weak) ──
+            # Hough is expensive (~1s) so only run when contour candidates
+            # don't produce a clear tooth signal.  This handles large gears
+            # that fill the frame and are missed by the contour enc_r filter.
+            if best_purity < 0.10:
+                max_contour_r = max((c[3] for c in top_candidates), default=0)
+                circles = cv2.HoughCircles(
+                    self.edges, cv2.HOUGH_GRADIENT,
+                    dp=2, minDist=100, param1=50, param2=30,
+                    minRadius=min(h, w) // 4, maxRadius=min(h, w) // 2,
+                )
+                if circles is not None:
+                    circles = np.uint16(np.around(circles))
+                    for c in circles[0][:3]:
+                        hc_x, hc_y, hc_r = int(c[0]), int(c[1]), int(c[2])
+                        margin = 5
+                        if not (margin < hc_x < w - margin
+                                and margin < hc_y < h - margin):
+                            continue
+                        edge_dist = min(hc_x, w - hc_x, hc_y, h - hc_y)
+                        if edge_dist < hc_r * 0.92:
+                            continue
+                        if max_contour_r > 0 and hc_r > max_contour_r * 2:
+                            continue
+                        duplicate = False
+                        for _, t_x, t_y, t_r, _ in top_candidates:
+                            if (abs(hc_x - t_x) < 30 and abs(hc_y - t_y) < 30
+                                    and abs(hc_r - t_r) < 20):
+                                duplicate = True
+                                break
+                        if not duplicate:
+                            top_candidates.append(
+                                (0, hc_x, hc_y, hc_r, None))
+                            idx = len(top_candidates) - 1
+                            purity = self._fft_purity_check(
+                                hc_x, hc_y, hc_r)
+                            if purity > best_purity:
+                                best_purity = purity
+                                best_purity_idx = idx
 
             sc, cx, cy, outer_r, best_cnt = top_candidates[best_purity_idx]
 
@@ -443,8 +452,7 @@ class GearToothCounter:
             op_tc, op_rel = 0, 0.0
 
         # ── CLAHE peak counting for small gears ──────────────────────────
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(self.gray)
+        enhanced = self._get_enhanced()
         n_a = 720
         angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
         cos_a = np.cos(angles)
@@ -552,9 +560,7 @@ class GearToothCounter:
         cx, cy = self.gear_center
         h, w = self.gray.shape
         cnt = self.gear_contour
-
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(self.gray)
+        enhanced = self._get_enhanced()
 
         # Determine max radius from contour points
         if cnt is not None and len(cnt) > 20:
@@ -607,8 +613,7 @@ class GearToothCounter:
 
         """
         h, w = self.gray.shape
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(self.gray)
+        enhanced = self._get_enhanced()
 
         lo = int(r * 0.85)
         hi = min(int(r * 1.10), min(cx, w - cx, cy, h - cy) - 1)
@@ -805,8 +810,7 @@ class GearToothCounter:
         h, w = self.gray.shape
         cnt = self.gear_contour
 
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(self.gray)
+        enhanced = self._get_enhanced()
         blurred = cv2.GaussianBlur(enhanced, (3, 3), 1.0)
         edges = cv2.Canny(blurred, 50, 150)
 
