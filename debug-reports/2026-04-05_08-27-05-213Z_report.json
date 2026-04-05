@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-04-05T08:27:05.213Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (24) · 2026-04-05 01:16",
+  "result": {
+    "toothCount": 14,
+    "confidence": 0.1322,
+    "gearContour": {
+      "centerX": 0.3546666666666667,
+      "centerY": 0.508,
+      "radius": 0.15066666666666667
+    }
+  },
+  "photoFile": "debug-reports/2026-04-05_08-27-05-213Z_photo.jpg"
+}
