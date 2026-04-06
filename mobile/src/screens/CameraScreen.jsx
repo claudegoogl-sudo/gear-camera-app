@@ -127,18 +127,18 @@ export default function CameraScreen({ navigation }) {
         return;
       }
       if (Platform.OS === 'android') {
-        // Use IntentLauncher to ensure the URL opens in the system browser
-        // (Chrome) rather than the legacy AOSP/WebView browser where APK
-        // downloads stall at 100%.
+        // Explicitly target Chrome so the download opens in a real browser
+        // instead of Android's content-preview sheet (which fails 100%).
         await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
           data: build.downloadUrl,
+          packageName: 'com.android.chrome',
         });
       } else {
         await Linking.openURL(build.downloadUrl);
       }
     } catch (e) {
       if (Platform.OS === 'android') {
-        // Fallback to Linking.openURL if IntentLauncher fails on Android
+        // Chrome not installed or intent failed — fall back to default browser
         try {
           await Linking.openURL(build.downloadUrl);
         } catch (e2) {
