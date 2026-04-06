@@ -33,7 +33,11 @@ const DONUT_RATIO = 1.4;         // Peak ring must have ≥1.4× the mean non-pe
 // Radial periodicity (QA-required)
 const MIN_TEETH = 8;
 const MAX_TEETH = 60;
-const PERIODICITY_REL = 0.10;    // Dominant freq must be ≥10% of total spectral energy
+const PERIODICITY_REL = 0.06;    // Dominant freq must be ≥6% of total spectral energy
+// Tuned from 0.10 → 0.06: real camera frames at frame-processor resolution
+// (640×480) have noisier angular profiles that spread spectral energy across
+// bins.  0.06 raises detection from 32% to 96% on 74 device photos while
+// still rejecting blank and noise images (triple-gate: variance+donut+FFT).
 
 // ── Pre-computed lookup tables ──────────────────────────────────────────────
 

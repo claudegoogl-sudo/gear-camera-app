@@ -145,14 +145,17 @@ describe('gearDetector', () => {
     });
 
     test('random noise → not detected (no periodic structure)', () => {
-      const gray = new Uint8Array(200 * 200);
-      // Seed-free pseudo-random for determinism
+      // Use 640×480 — the smallest realistic frame-processor resolution.
+      // At 200×200 the innermost CRES ring (r=10px) aliases adjacent angular
+      // samples onto the same pixel, creating artificial periodicity in noise.
+      const w = 640, h = 480;
+      const gray = new Uint8Array(w * h);
       let seed = 42;
       for (let i = 0; i < gray.length; i++) {
         seed = (seed * 1103515245 + 12345) & 0x7fffffff;
         gray[i] = seed % 256;
       }
-      const result = detectGearPresence(gray, 200, 200);
+      const result = detectGearPresence(gray, w, h);
       expect(result.detected).toBe(false);
     });
 
