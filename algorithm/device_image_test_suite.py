@@ -61,14 +61,11 @@ def load_labeled_images():
 
 
 def run_algorithm(photo_path):
-    """Run gear tooth detection on a single image."""
+    """Run gear tooth detection on a single image using the full pipeline
+    (includes high-res retry for small/low-confidence gears)."""
     counter = GearToothCounter(debug=False)
-    counter.load_image(str(photo_path))
-    counter.preprocess()
-    counter.find_gear_region()
-    counter.extract_gear_roi()
-    counter.detect_teeth()
-    return counter.tooth_count, counter.confidence
+    result = counter.count(str(photo_path))
+    return result["tooth_count"], result["confidence"]
 
 
 def run_suite():

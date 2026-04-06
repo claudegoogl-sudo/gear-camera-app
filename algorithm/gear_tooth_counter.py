@@ -621,7 +621,8 @@ class GearToothCounter:
     def _refine_center(self, cx, cy, r):
         """
         Refine gear center by finding the point that maximizes
-        rotational symmetry (FFT spectral purity).
+        rotational symmetry (FFT spectral purity), with a radial-symmetry
+        tie-breaker to avoid drifting toward artifact centers.
 
         Two-pass grid search: coarse (±15px, step 5) then fine (±5px, step 1).
         Uses the full-resolution _fft_purity_check for accurate scoring.
@@ -936,6 +937,24 @@ class GearToothCounter:
             self.extract_gear_roi()
             self.detect_teeth()
 
+            # Off-center, low-confidence retry: if the detected center is
+            # far from the image center (aim circle) and confidence is weak,
+            # the algorithm may have locked onto a background feature.
+            # Re-run with the center forced near the image center.
+            if (self.confidence < self._SMALL_GEAR_CONF
+                    and self.gear_center is not None):
+                h, w = self.gray.shape
+                img_cx, img_cy = w // 2, h // 2
+                cdist = np.sqrt(
+                    (self.gear_center[0] - img_cx) ** 2
+                    + (self.gear_center[1] - img_cy) ** 2
+                )
+                if cdist > min(h, w) * 0.15:
+                    retry_c = self._retry_near_center(img_cx, img_cy)
+                    if (retry_c is not None
+                            and retry_c["confidence"] > self.confidence):
+                        return retry_c
+
             # Small-gear, low-confidence retry at higher resolution
             if (self.confidence < self._SMALL_GEAR_CONF
                     and self.gear_radius <= self._SMALL_GEAR_RADIUS
@@ -960,6 +979,60 @@ class GearToothCounter:
                 "success": False,
                 "error": str(e),
             }
+
+    def _retry_near_center(self, img_cx, img_cy):
+        """Re-run tooth detection with the center forced near the image center.
+
+        When the main pipeline picks a center far from the aim circle and
+        confidence is low, this method searches for the best FFT purity
+        in a region around the image center.  If a better result is found,
+        it returns the improved result; otherwise returns None.
+        """
+        try:
+            h, w = self.gray.shape
+            best_purity = 0.0
+            best_cx, best_cy, best_r = img_cx, img_cy, min(h, w) // 4
+
+            # Search radii from 10% to 35% of image min dim
+            min_r = max(30, int(min(h, w) * 0.10))
+            max_r = int(min(h, w) * 0.35)
+
+            for r in range(min_r, max_r, 5):
+                for dx in range(-30, 31, 10):
+                    for dy in range(-30, 31, 10):
+                        tcx = int(np.clip(img_cx + dx, 10, w - 10))
+                        tcy = int(np.clip(img_cy + dy, 10, h - 10))
+                        p = self._fft_purity_check(tcx, tcy, r)
+                        if p > best_purity:
+                            best_purity = p
+                            best_cx, best_cy, best_r = tcx, tcy, r
+
+            if best_purity < 0.05:
+                return None
+
+            # Fine-tune center around best position
+            cx2, cy2 = self._refine_center(best_cx, best_cy, best_r)
+
+            # Re-run tooth detection at the new center
+            saved = (self.gear_center, self.gear_radius, self.gear_contour)
+            self.gear_center = (cx2, cy2)
+            self.gear_radius = best_r
+            self.gear_contour = None
+            self.extract_gear_roi()
+            self.detect_teeth()
+
+            result = {
+                "tooth_count": self.tooth_count,
+                "confidence": float(self.confidence),
+                "success": True,
+                "gear_center": self.gear_center,
+                "gear_radius": self.gear_radius,
+            }
+            # Restore original state (caller will use result dict)
+            self.gear_center, self.gear_radius, self.gear_contour = saved
+            return result
+        except Exception:
+            return None
 
     def _retry_higher_res(self, image_path):
         """Re-run the pipeline at higher resolution for small gears."""
