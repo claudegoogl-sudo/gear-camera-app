@@ -1,16 +1,16 @@
 # Training Data Labeling Summary
 
-**Date:** 2026-04-05
-**Corrected by:** Algorithm Engineer per board audit (PAP-84, PAP-96)
-**Images:** 38 total (12 from April 4 + 26 from April 5)
+**Date:** 2026-04-06
+**Corrected by:** Algorithm Engineer per board audit (PAP-84, PAP-96); QA Engineer labeled builds 28-30 (PAP-125)
+**Images:** 51 total (12 from April 4 + 35 from April 5 + 4 from April 6)
 
 ## Overview
 
-38 labeled training images of bicycle cassette sprockets (Shimano-style). All images photographed on paper towels or white paper. Four distinct sprocket sizes appear across the dataset.
+51 labeled training images of bicycle cassette sprockets (Shimano-style). All images photographed on paper towels or white paper. Four distinct sprocket sizes appear across the dataset.
 
 ## Correct Tooth Counts (chronological)
 
-15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 14, 13, 13, 13, 11, 11, 11, 14, 14, 15, 15, 14, 14, 13, 13, 11, 11, 11, 11
+15, 14, 13, 11, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 14, 13, 13, 13, 11, 11, 11, 14, 14, 15, 15, 14, 14, 13, 13, 11, 11, 11, 11, 11, 13, 14, 14, 15, 11, 13, 14, 15, 14, 15, 11, 13
 
 ## Image-by-Image Labels
 
@@ -92,20 +92,48 @@
 |---|---|---|---|---|
 | 17-30-18-613Z | 11 | 15 | +4 | Lockring cog, board-verified 11T |
 
+### April 5 Session 6: 17:37-17:45 (5 images, build 28)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 17-37-19-161Z | 11 | 11 | 0 | Lockring cog, correct! |
+| 17-39-11-112Z | 13 | 11 | -2 | Medium-small sprocket |
+| 17-42-01-194Z | 14 | 11 | -3 | Medium sprocket, lightening holes |
+| 17-42-25-166Z | 14 | 11 | -3 | Same sprocket, same angle |
+| 17-45-32-734Z | 15 | 12 | -3 | Large sprocket, lightening holes |
+
+### April 5 Session 7: 20:05-20:14 (4 images, build 29)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 20-05-36-867Z | 11 | 12 | +1 | Lockring cog |
+| 20-11-19-230Z | 13 | 10 | -3 | Medium-small sprocket |
+| 20-12-48-480Z | 14 | 10 | -4 | Medium sprocket, close-up |
+| 20-14-33-985Z | 15 | 10 | -5 | Large sprocket, lightening holes |
+
+### April 6 Session 1: 08:15-10:07 (4 images, build 30)
+
+| Training File | Actual Teeth | Algo Result | Error | Notes |
+|---|---|---|---|---|
+| 08-15-57-376Z | 14 | 13 | -1 | Medium sprocket, lightening holes |
+| 09-24-05-913Z | 15 | 10 | -5 | Large sprocket, lightening holes |
+| 10-01-25-781Z | 11 | 16 | +5 | Lockring cog |
+| 10-07-48-115Z | 13 | 12 | -1 | Medium-small sprocket |
+
 ## Algorithm Performance Summary
 
-- **Images analyzed:** 38
-- **Correct results:** 6/38 (15.8%) — images 08-27-08, 08-32-16, 14-38-39, 14-39-43, 16-50-12, plus near-miss 09-10-20
+- **Images analyzed:** 51
+- **Correct results:** 7/51 (13.7%) — images 08-27-08, 08-32-16, 14-38-39, 14-39-43, 16-50-12, 17-37-19, plus near-miss 09-10-20
 - **Complete failures (0 count):** 3 images
-- **Zero confidence (build 26):** 8 images (all from session 3)
+- **Zero confidence (build 26):** 8 images (all from April 5 session 3)
 - **Wildly incorrect (>10 error):** 4 images
 
 ## Distinct Sprockets in Dataset
 
-1. **15T sprocket** — 5 images. Large, lightening holes.
-2. **14T sprocket** — 19 images (most common).
-3. **13T sprocket** — 6 images.
-4. **11T sprocket** — 8 images. Lockring-style cog.
+1. **15T sprocket** — 8 images. Large, lightening holes.
+2. **14T sprocket** — 23 images (most common).
+3. **13T sprocket** — 9 images.
+4. **11T sprocket** — 11 images. Lockring-style cog.
 
 ## Correction Log
 

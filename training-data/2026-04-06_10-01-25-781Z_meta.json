@@ -1,7 +1,8 @@
 {
   "timestamp": "2026-04-06T10:01:25.781Z",
-  "build": "v1.0.0 (30) · 2026-04-05 21:18",
+  "build": "v1.0.0 (30) ï¿½ 2026-04-05 21:18",
   "photoFile": "training-data/2026-04-06_10-01-25-781Z_photo.jpg",
+  "actual_tooth_count": 11,
   "result": {
     "toothCount": 16,
     "confidence": 0.5167,
