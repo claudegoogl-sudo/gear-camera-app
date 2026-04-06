@@ -317,8 +317,8 @@ function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
 
 // ── 9. FFT purity check for a candidate center/radius ───────────────────────
 //
-// Must match Python _fft_purity_check() fidelity: 720 angles, step 2,
-// halfWin 10 (≈21-sample Savitzky-Golay). The previous 360/step-4/win-3
+// Must match Python _fft_purity_check() fidelity: 1024 angles (power of 2),
+// step 2, halfWin 10 (≈21-sample Savitzky-Golay). The previous 360/step-4/win-3
 // settings were too coarse and allowed corner artifacts to score higher
 // purity than the actual gear, breaking center detection (PAP-103).
 
