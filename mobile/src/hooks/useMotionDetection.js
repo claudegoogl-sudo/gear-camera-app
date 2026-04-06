@@ -104,7 +104,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
       // Diagnostic logging — first 5 results then every 30th
       cresLogCountRef.current += 1;
       const n = cresLogCountRef.current;
-      if (n <= 5 || n % 30 === 0) {
+      if (n <= 10 || n % 10 === 0) {
         const d = diag || {};
         console.log(
           `[CRES #${n}] detected=${detected} score=${score?.toFixed(3)} ` +

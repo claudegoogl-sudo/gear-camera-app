@@ -24,14 +24,16 @@ const N_SAMPLES = 64;          // Angular samples per ring (power of 2 for FFT)
 const MIN_RADIUS_FRAC = 0.10;  // Innermost ring: 10% of frame half-dimension
 const MAX_RADIUS_FRAC = 0.45;  // Outermost ring: 45% of frame half-dimension
 
-// Donut profile detection
-const VARIANCE_THRESHOLD = 200;  // Min angular variance to consider "high contrast"
-const DONUT_RATIO = 1.5;         // Peak ring must have ≥1.5× the mean non-peak variance
+// Donut profile detection — tuned for real camera frames (lower contrast than
+// synthetic test images).  The triple-gate (variance + donut + periodicity)
+// still rejects non-gear objects; false positives only waste one capture cycle.
+const VARIANCE_THRESHOLD = 50;   // Min angular variance to consider "high contrast"
+const DONUT_RATIO = 1.4;         // Peak ring must have ≥1.4× the mean non-peak variance
 
 // Radial periodicity (QA-required)
 const MIN_TEETH = 8;
 const MAX_TEETH = 60;
-const PERIODICITY_REL = 0.15;    // Dominant freq must be ≥15% of total spectral energy
+const PERIODICITY_REL = 0.10;    // Dominant freq must be ≥10% of total spectral energy
 
 // ── Pre-computed lookup tables ──────────────────────────────────────────────
 
