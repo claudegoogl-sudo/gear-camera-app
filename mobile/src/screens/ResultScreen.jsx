@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Image,
   TouchableOpacity,
   Modal,
@@ -113,10 +114,14 @@ export default function ResultScreen({ navigation, route }) {
   const [sharing, setSharing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmedCount, setConfirmedCount] = useState(toothCount ?? 0);
+  const [counterText, setCounterText] = useState(String(toothCount ?? 0));
 
   // Sync confirmed count when toothCount changes (e.g. on first load).
   useEffect(() => {
-    if (toothCount != null) setConfirmedCount(toothCount);
+    if (toothCount != null) {
+      setConfirmedCount(toothCount);
+      setCounterText(String(toothCount));
+    }
   }, [toothCount]);
 
   const handleShareDebug = () => {
@@ -251,21 +256,47 @@ export default function ResultScreen({ navigation, route }) {
             <View style={styles.counterRow}>
               <TouchableOpacity
                 style={styles.counterBtn}
-                onPress={() => setConfirmedCount(c => Math.max(1, c - 1))}
+                onPress={() => {
+                  const next = Math.max(1, confirmedCount - 1);
+                  setConfirmedCount(next);
+                  setCounterText(String(next));
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={styles.counterBtnText}>−</Text>
               </TouchableOpacity>
 
+              <TextInput
+                style={styles.counterValue}
+                value={counterText}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9]/g, '');
+                  setCounterText(cleaned);
+                  const num = parseInt(cleaned, 10);
+                  if (!isNaN(num) && num >= 1) setConfirmedCount(num);
+                }}
+                onBlur={() => {
+                  if (counterText === '' || parseInt(counterText, 10) < 1) {
+                    setConfirmedCount(1);
+                    setCounterText('1');
+                  }
+                }}
+                keyboardType="number-pad"
+                selectTextOnFocus
+                maxLength={3}
+              />
+
               <TouchableOpacity
                 style={styles.counterBtn}
-                onPress={() => setConfirmedCount(c => c + 1)}
+                onPress={() => {
+                  const next = confirmedCount + 1;
+                  setConfirmedCount(next);
+                  setCounterText(String(next));
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={styles.counterBtnText}>+</Text>
               </TouchableOpacity>
-
-              <Text style={styles.counterValue}>{confirmedCount}</Text>
               <Text style={styles.counterUnit}>T</Text>
             </View>
 
@@ -413,7 +444,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   counterBtnText: { fontSize: 24, fontWeight: '700', color: '#fff', lineHeight: 26 },
-  counterValue: { fontSize: 48, fontWeight: '800', color: '#fff', minWidth: 60, textAlign: 'center' },
+  counterValue: { fontSize: 48, fontWeight: '800', color: '#fff', minWidth: 60, textAlign: 'center', padding: 0, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.25)' },
   counterUnit: { fontSize: 22, fontWeight: '700', color: '#888' },
   modalHint: { fontSize: 12, color: '#FF9800', marginTop: 10, textAlign: 'center' },
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 24 },

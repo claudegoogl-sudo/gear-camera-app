@@ -6,7 +6,9 @@ import {
   StyleSheet,
   Alert,
   Linking,
+  Platform,
 } from 'react-native';
+import * as IntentLauncher from 'expo-intent-launcher';
 import { useIsFocused } from '@react-navigation/native';
 import { useCameraDevice, Camera, useCameraPermission } from 'react-native-vision-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -124,9 +126,27 @@ export default function CameraScreen({ navigation }) {
         Alert.alert('No APK available', 'This release has no downloadable APK.');
         return;
       }
-      await Linking.openURL(build.downloadUrl);
+      if (Platform.OS === 'android') {
+        // Use IntentLauncher to ensure the URL opens in the system browser
+        // (Chrome) rather than the legacy AOSP/WebView browser where APK
+        // downloads stall at 100%.
+        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+          data: build.downloadUrl,
+        });
+      } else {
+        await Linking.openURL(build.downloadUrl);
+      }
     } catch (e) {
-      Alert.alert('Download failed', e.message);
+      if (Platform.OS === 'android') {
+        // Fallback to Linking.openURL if IntentLauncher fails on Android
+        try {
+          await Linking.openURL(build.downloadUrl);
+        } catch (e2) {
+          Alert.alert('Download failed', e2.message);
+        }
+      } else {
+        Alert.alert('Download failed', e.message);
+      }
     }
   }, []);
 
