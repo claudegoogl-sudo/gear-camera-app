@@ -624,7 +624,7 @@ class GearToothCounter:
         rotational symmetry (FFT spectral purity), with a radial-symmetry
         tie-breaker to avoid drifting toward artifact centers.
 
-        Two-pass grid search: coarse (±15px, step 5) then fine (±5px, step 1).
+        Two-pass grid search: coarse (±25px, step 5) then fine (±5px, step 1).
         Uses the full-resolution _fft_purity_check for accurate scoring.
         Only accepts the refined center if purity improves by ≥15%.
         """
@@ -648,8 +648,8 @@ class GearToothCounter:
 
         orig_purity = self._fft_purity_check(cx, cy, r)
 
-        # Coarse pass
-        cx1, cy1, _ = _search(cx, cy, r, 15, 5)
+        # Coarse pass (±25px for broader coverage)
+        cx1, cy1, _ = _search(cx, cy, r, 25, 5)
         # Fine pass
         cx2, cy2, refined_purity = _search(cx1, cy1, r, 5, 1)
 
@@ -987,6 +987,10 @@ class GearToothCounter:
         confidence is low, this method searches for the best FFT purity
         in a region around the image center.  If a better result is found,
         it returns the improved result; otherwise returns None.
+
+        Uses a two-pass coarse-to-fine search:
+        1. Coarse: ±80px step 20 across radii 10%-35% of min dim (step 8)
+        2. Fine:   ±15px step 5 around the coarse-best position and radius
         """
         try:
             h, w = self.gray.shape
@@ -997,15 +1001,37 @@ class GearToothCounter:
             min_r = max(30, int(min(h, w) * 0.10))
             max_r = int(min(h, w) * 0.35)
 
-            for r in range(min_r, max_r, 5):
-                for dx in range(-30, 31, 10):
-                    for dy in range(-30, 31, 10):
+            # Coarse pass: wide center range, larger radius step
+            for r in range(min_r, max_r, 8):
+                for dx in range(-80, 81, 20):
+                    for dy in range(-80, 81, 20):
                         tcx = int(np.clip(img_cx + dx, 10, w - 10))
                         tcy = int(np.clip(img_cy + dy, 10, h - 10))
                         p = self._fft_purity_check(tcx, tcy, r)
                         if p > best_purity:
                             best_purity = p
                             best_cx, best_cy, best_r = tcx, tcy, r
+
+            if best_purity < 0.03:
+                return None
+
+            # Fine pass: refine around coarse-best position and radius
+            fine_cx, fine_cy, fine_r = best_cx, best_cy, best_r
+            fine_purity = best_purity
+            r_lo = max(min_r, best_r - 15)
+            r_hi = min(max_r, best_r + 16)
+            for r in range(r_lo, r_hi, 5):
+                for dx in range(-15, 16, 5):
+                    for dy in range(-15, 16, 5):
+                        tcx = int(np.clip(best_cx + dx, 10, w - 10))
+                        tcy = int(np.clip(best_cy + dy, 10, h - 10))
+                        p = self._fft_purity_check(tcx, tcy, r)
+                        if p > fine_purity:
+                            fine_purity = p
+                            fine_cx, fine_cy, fine_r = tcx, tcy, r
+
+            best_cx, best_cy, best_r = fine_cx, fine_cy, fine_r
+            best_purity = fine_purity
 
             if best_purity < 0.05:
                 return None
