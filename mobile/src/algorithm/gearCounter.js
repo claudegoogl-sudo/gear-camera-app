@@ -34,7 +34,7 @@ import {
 const MIN_TEETH       = 10;
 const MIN_TEETH_CLAHE = 8;
 const MAX_TEETH       = 65;
-const N_ANGLES        = 720;
+const N_ANGLES        = 1024;  // Must be power of 2 — avoids FFT zero-padding frequency shift
 // Small-gear retry: if detected gear is small and confidence is low, re-run
 // at higher resolution to give the FFT more pixels per tooth.
 const SMALL_GEAR_RADIUS_FRAC = 0.10;   // gear radius / image width
@@ -285,8 +285,8 @@ function sampleIntensityRing(gray, cx, cy, r, width, height, nAngles) {
 
 // ── 8. FFT tooth count at a single radius ───────────────────────────────────
 
-function fftCountAtRadius(gray, cx, cy, r, width, height) {
-  const ring = sampleIntensityRing(gray, cx, cy, r, width, height, N_ANGLES);
+function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
+  const ring = sampleIntensityRing(enhanced, cx, cy, r, width, height, N_ANGLES);
 
   // Smooth (window ~ N/45)
   const halfWin = Math.max(2, Math.floor(N_ANGLES / 90));
@@ -322,7 +322,7 @@ function fftCountAtRadius(gray, cx, cy, r, width, height) {
 // settings were too coarse and allowed corner artifacts to score higher
 // purity than the actual gear, breaking center detection (PAP-103).
 
-const PURITY_ANGLES = 720;
+const PURITY_ANGLES = 1024;  // Must be power of 2 — avoids FFT zero-padding frequency shift
 
 function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   const lo = Math.floor(r * 0.85);
@@ -806,7 +806,7 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
 // Returns: { tc, rel, r } for the outermost candidate with rel >= MIN_REL,
 // plus scanResults for small-gear refinement.
 
-function multiRadiusFftScan(gray, edges, cx, cy, contourRadius, width, height) {
+function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, height) {
   const maxR = Math.min(
     Math.floor(Math.min(cx, width - cx, cy, height - cy)) - 1,
     contourRadius > 20 ? Math.floor(contourRadius * 1.20) : Math.floor(Math.min(height, width) / 3),
@@ -845,7 +845,7 @@ function multiRadiusFftScan(gray, edges, cx, cy, contourRadius, width, height) {
   const candResults = [];
   for (const rVal of [...candSet].sort((a, b) => a - b)) {
     if (rVal < 10 || rVal >= maxR) continue;
-    const { tc, rel } = fftCountAtRadius(gray, cx, cy, rVal, width, height);
+    const { tc, rel } = fftCountAtRadius(enhanced, cx, cy, rVal, width, height);
     candResults.push({ r: rVal, tc, rel });
   }
 
@@ -1035,7 +1035,7 @@ function clahePeakCounting(enhanced, cx, cy, gearRadius, width, height) {
 
 function binaryContourCount(gray, cx, cy, width, height) {
   const n = width * height;
-  const BC_ANGLES = 3600;
+  const BC_ANGLES = 4096;  // Must be power of 2 — avoids FFT zero-padding frequency shift
   const results = [];
 
   const otsuT = otsuThreshold(gray, width, height);
@@ -1075,57 +1075,48 @@ function binaryContourCount(gray, cx, cy, width, height) {
 
       if (bx.length < 100) continue;
 
-      // Compute angles and radii from gear center
-      const angles = new Float64Array(bx.length);
-      const radii = new Float64Array(bx.length);
+      // Build outer-envelope radius profile: for each angular bin, take
+      // the maximum boundary radius.  This correctly handles ring-shaped
+      // gears (cassette cogs) where inner splines would otherwise corrupt
+      // the tooth signal.
+      const rInterp = new Float64Array(BC_ANGLES);
+      const binHit = new Uint8Array(BC_ANGLES);
       for (let i = 0; i < bx.length; i++) {
         const dx = bx[i] - cx;
         const dy = by[i] - cy;
-        angles[i] = Math.atan2(dy, dx);
-        radii[i] = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);                     // -π to π
+        const bin = ((Math.floor(((angle + Math.PI) / (2 * Math.PI)) * BC_ANGLES) % BC_ANGLES) + BC_ANGLES) % BC_ANGLES;
+        const r = Math.sqrt(dx * dx + dy * dy);
+        if (r > rInterp[bin]) { rInterp[bin] = r; binHit[bin] = 1; }
       }
 
-      // Sort by angle
-      const order = Array.from({ length: bx.length }, (_, i) => i);
-      order.sort((a, b) => angles[a] - angles[b]);
-      const aSorted = new Float64Array(bx.length);
-      const rSorted = new Float64Array(bx.length);
-      for (let i = 0; i < order.length; i++) {
-        aSorted[i] = angles[order[i]];
-        rSorted[i] = radii[order[i]];
-      }
+      // Check angular coverage: need ≥ 60% of bins populated
+      let hitCount = 0;
+      for (let i = 0; i < BC_ANGLES; i++) if (binHit[i]) hitCount++;
+      if (hitCount < BC_ANGLES * 0.6) continue;
 
-      // Check angular coverage (need >= 4 radians, ~229°)
-      if (aSorted[aSorted.length - 1] - aSorted[0] < 4.0) continue;
-
-      // Resample to uniform angular grid
-      const uniform = new Float64Array(BC_ANGLES);
+      // Fill empty bins via nearest-neighbor interpolation
       for (let i = 0; i < BC_ANGLES; i++) {
-        uniform[i] = -Math.PI + (2 * Math.PI * i) / BC_ANGLES;
-      }
-
-      // Linear interpolation (like np.interp)
-      const rInterp = new Float64Array(BC_ANGLES);
-      for (let i = 0; i < BC_ANGLES; i++) {
-        const a = uniform[i];
-        // Binary search for insertion point
-        let lo = 0, hi = aSorted.length;
-        while (lo < hi) {
-          const mid = (lo + hi) >> 1;
-          if (aSorted[mid] < a) lo = mid + 1; else hi = mid;
-        }
-        if (lo === 0) {
-          rInterp[i] = rSorted[0];
-        } else if (lo >= aSorted.length) {
-          rInterp[i] = rSorted[aSorted.length - 1];
-        } else {
-          const t = (a - aSorted[lo - 1]) / (aSorted[lo] - aSorted[lo - 1]);
-          rInterp[i] = rSorted[lo - 1] + t * (rSorted[lo] - rSorted[lo - 1]);
+        if (binHit[i]) continue;
+        // Search outward in both directions for nearest populated bin
+        for (let d = 1; d < BC_ANGLES / 2; d++) {
+          const prev = (i - d + BC_ANGLES) % BC_ANGLES;
+          const next = (i + d) % BC_ANGLES;
+          if (binHit[prev] && binHit[next]) {
+            rInterp[i] = (rInterp[prev] + rInterp[next]) / 2;
+            break;
+          } else if (binHit[prev]) {
+            rInterp[i] = rInterp[prev];
+            break;
+          } else if (binHit[next]) {
+            rInterp[i] = rInterp[next];
+            break;
+          }
         }
       }
 
-      // Smooth (halfWin=25 → window=51, matching Python savgol_filter window=51)
-      const sm = smoothSignal(rInterp, 25, true);
+      // Smooth (halfWin=28 → window=57, ~1.4% of 4096 ≈ Python savgol_filter window=51 on 3600)
+      const sm = smoothSignal(rInterp, 28, true);
 
       let smMin = Infinity, smMax = -Infinity;
       for (let i = 0; i < sm.length; i++) {
@@ -1135,7 +1126,7 @@ function binaryContourCount(gray, cx, cy, width, height) {
       const amp = smMax - smMin;
       if (amp < 2) continue;
 
-      // Peak counting (min_d = 3600/80 = 45)
+      // Peak counting (min_d = 4096/80 = 51)
       const minD = Math.floor(BC_ANGLES / 80);
       const pks = findPeaks(sm, { distance: minD, prominence: amp * 0.10 });
       const nPeaks = pks.length;
@@ -1212,7 +1203,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
 
   // Always run multi-radius FFT scan (needed for confidence + cross-validation)
   let peakTc = 0, peakRel = 0, peakR = 0;
-  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(enhanced, edges, cx, cy, gearR, width, height));
 
   // Outer-profile scan
   let opTc = 0, opRel = 0;
@@ -1394,7 +1385,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   const fft90tc = fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearR, edges, width, height);
 
   let peakTc = 0, peakRel = 0, peakR = 0;
-  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(enhanced, edges, cx, cy, gearR, width, height));
 
   const maxRop = Math.min(cx, width - cx, cy, height - cy) - 1;
   let opTc = 0, opRel = 0;
