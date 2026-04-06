@@ -213,6 +213,7 @@ export default function CameraScreen({ navigation }) {
         device={device}
         isActive={true}
         photo={true}
+        pixelFormat="rgb"
         frameProcessor={isCameraReady ? frameProcessor : undefined}
         onInitialized={() => setIsCameraReady(true)}
         onError={(e) => {
