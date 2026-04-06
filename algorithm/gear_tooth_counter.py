@@ -1014,7 +1014,8 @@ class GearToothCounter:
             cx2, cy2 = self._refine_center(best_cx, best_cy, best_r)
 
             # Re-run tooth detection at the new center
-            saved = (self.gear_center, self.gear_radius, self.gear_contour)
+            saved = (self.gear_center, self.gear_radius, self.gear_contour,
+                     self.tooth_count, self.confidence)
             self.gear_center = (cx2, cy2)
             self.gear_radius = best_r
             self.gear_contour = None
@@ -1029,7 +1030,8 @@ class GearToothCounter:
                 "gear_radius": self.gear_radius,
             }
             # Restore original state (caller will use result dict)
-            self.gear_center, self.gear_radius, self.gear_contour = saved
+            (self.gear_center, self.gear_radius, self.gear_contour,
+             self.tooth_count, self.confidence) = saved
             return result
         except Exception:
             return None
