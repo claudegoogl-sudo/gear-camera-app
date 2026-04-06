@@ -214,6 +214,7 @@ export default function CameraScreen({ navigation }) {
         isActive={true}
         photo={true}
         pixelFormat="rgb"
+        torch={isCameraReady && !isProcessing ? 'on' : 'off'}
         frameProcessor={isCameraReady ? frameProcessor : undefined}
         onInitialized={() => setIsCameraReady(true)}
         onError={(e) => {
