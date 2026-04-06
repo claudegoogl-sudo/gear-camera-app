@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSharedValue } from 'react-native-reanimated';
 import { useRunOnJS } from 'react-native-worklets-core';
 import { Accelerometer, Gyroscope } from 'expo-sensors';
+import { detectGearPresenceRGBA } from '../algorithm/gearDetector';
 
 let useFrameProcessor;
 try {
@@ -16,6 +17,8 @@ const MOTION_THRESHOLD = 8;
 const STABILITY_MS = 1000;
 const NUM_SAMPLES = 300;
 const FRAME_SKIP = 3;
+// Gear detection (CRES) — run every Nth frame (heavier than pixel-diff)
+const GEAR_DETECT_SKIP = 5;
 // IMU-based stillness detection (accelerometer + gyroscope)
 const ACCEL_MOTION_THRESHOLD = 0.05;
 const GYRO_MOTION_THRESHOLD = 0.12; // rad/s — rotation rate indicating motion
@@ -26,19 +29,29 @@ const IMU_STILLNESS_MS = 800; // shorter than old 4s — capture when user stops
 /**
  * Hook that detects whether the device is stable enough for auto-capture.
  *
- * Two parallel detection paths run simultaneously:
+ * Three parallel detection paths run simultaneously:
  *   1. VisionCamera frame processor — pixel-diff motion detection
  *   2. IMU sensors (accelerometer + gyroscope) — physical stillness detection
+ *   3. CRES gear shape pre-recognition — detects gear presence in frame
  *
- * Either path detecting stability triggers the onStable callback.
- * The IMU path starts immediately (no timer gate), so capture responds to
- * physical stillness within ~800ms of the user holding the device still.
+ * Trigger logic: gear must be detected AND (IMU stable OR pixel stable).
+ * If the gear disappears while stable, stability timers reset.
+ *
+ * Gear detection also produces approximate center/radius hints that
+ * can speed up the main tooth-counting algorithm.
  */
 export function useMotionDetection({ onStable, enabled = true }) {
   const [isStable, setIsStable] = useState(false);
+  const [gearDetected, setGearDetected] = useState(false);
+  const [gearHints, setGearHints] = useState(null);
   const prevSamples = useSharedValue(null);
   const frameCounter = useSharedValue(0);
+  const gearDetectCounter = useSharedValue(0);
   const stabilityTimer = useRef(null);
+  const gearWasDetectedRef = useRef(false);
+  const imuTimer = useRef(null);
+  const lastAccel = useRef(null);
+  const latestGyro = useRef({ x: 0, y: 0, z: 0 });
 
   // Tracks whether the worklet has ever successfully read pixel data.
   const frameProcessorActiveRef = useRef(false);
@@ -62,13 +75,41 @@ export function useMotionDetection({ onStable, enabled = true }) {
         if (!stabilityTimer.current) {
           stabilityTimer.current = setTimeout(() => {
             stabilityTimer.current = null;
-            setIsStable(true);
-            onStable?.();
+            // Only trigger capture if a gear is detected in frame
+            if (gearWasDetectedRef.current) {
+              setIsStable(true);
+              onStable?.();
+            }
           }, STABILITY_MS);
         }
       }
     },
     [clearTimer, onStable],
+  );
+
+  // Called from worklet with gear detection result
+  const handleGearDetection = useCallback(
+    (detected, score, approxCenterX, approxCenterY, approxRadius) => {
+      const wasDetected = gearWasDetectedRef.current;
+      gearWasDetectedRef.current = detected;
+      setGearDetected(detected);
+
+      if (detected) {
+        setGearHints({ centerX: approxCenterX, centerY: approxCenterY, radius: approxRadius, score });
+      } else {
+        setGearHints(null);
+        // Gear disappeared while phone was stable → reset stability
+        if (wasDetected) {
+          clearTimer();
+          if (imuTimer.current) {
+            clearTimeout(imuTimer.current);
+            imuTimer.current = null;
+          }
+          setIsStable(false);
+        }
+      }
+    },
+    [clearTimer],
   );
 
   // Called from worklet when a buffer was read successfully — proves the
@@ -88,6 +129,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
   // useRunOnJS (worklets-core) schedules via the worklets-core runtime;
   // reanimated's runOnJS calls scheduleOnJS which is not defined in that context.
   const handleMotionUpdateJS = useRunOnJS(handleMotionUpdate, [handleMotionUpdate]);
+  const handleGearDetectionJS = useRunOnJS(handleGearDetection, [handleGearDetection]);
   const markFrameProcessorActiveJS = useRunOnJS(markFrameProcessorActive, [markFrameProcessorActive]);
   const reportFrameErrorJS = useRunOnJS(reportFrameError, [reportFrameError]);
 
@@ -117,10 +159,6 @@ export function useMotionDetection({ onStable, enabled = true }) {
   // Runs in parallel with the frame processor from the start. Triggers
   // capture when the device has been physically still for IMU_STILLNESS_MS.
   // This replaces the old 4s timer gate — no blind waiting.
-  const imuTimer = useRef(null);
-  const lastAccel = useRef(null);
-  const latestGyro = useRef({ x: 0, y: 0, z: 0 });
-
   useEffect(() => {
     if (!enabled) return;
 
@@ -150,8 +188,11 @@ export function useMotionDetection({ onStable, enabled = true }) {
           // Device is still — start stillness countdown.
           imuTimer.current = setTimeout(() => {
             imuTimer.current = null;
-            setIsStable(true);
-            onStable?.();
+            // Only trigger capture if a gear is detected in frame
+            if (gearWasDetectedRef.current) {
+              setIsStable(true);
+              onStable?.();
+            }
           }, IMU_STILLNESS_MS);
         }
       }
@@ -203,6 +244,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
           const total = pixels.length;
           if (total === 0) return;
 
+          // ── Pixel-diff motion detection ─────────────────────────────────
           const step = Math.floor(total / NUM_SAMPLES);
           // Use a plain Array — Float32Array triggers the broken legacy
           // makeShareableCloneOnUIRecursiveLEGACY serialization path when
@@ -221,8 +263,23 @@ export function useMotionDetection({ onStable, enabled = true }) {
           }
 
           prevSamples.value = samples;
+
+          // ── CRES gear detection (every GEAR_DETECT_SKIP-th processed frame)
+          gearDetectCounter.value += 1;
+          if (gearDetectCounter.value % GEAR_DETECT_SKIP === 0) {
+            const w = frame.width;
+            const h = frame.height;
+            if (w > 0 && h > 0) {
+              const result = detectGearPresenceRGBA(pixels, w, h);
+              handleGearDetectionJS(
+                result.detected, result.score,
+                result.approxCenterX, result.approxCenterY,
+                result.approxRadius,
+              );
+            }
+          }
         },
-        [enabled, handleMotionUpdateJS, markFrameProcessorActiveJS, reportFrameErrorJS],
+        [enabled, handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, reportFrameErrorJS],
       );
     } catch {
       // Worklets runtime unavailable at this point — fall back to manual capture.
@@ -238,10 +295,14 @@ export function useMotionDetection({ onStable, enabled = true }) {
     }
     lastAccel.current = null;
     latestGyro.current = { x: 0, y: 0, z: 0 };
+    gearWasDetectedRef.current = false;
     setIsStable(false);
+    setGearDetected(false);
+    setGearHints(null);
     prevSamples.value = null;
     frameCounter.value = 0;
-  }, [clearTimer, prevSamples, frameCounter]);
+    gearDetectCounter.value = 0;
+  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter]);
 
-  return { isStable, frameProcessor, reset, usingFallback };
+  return { isStable, gearDetected, gearHints, frameProcessor, reset, usingFallback };
 }
