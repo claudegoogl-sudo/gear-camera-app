@@ -520,8 +520,21 @@ class GearToothCounter:
             final_rel = max(final_rel, bc_purity * 0.30)
         elif (bc_purity >= 0.05
               and self.MIN_TEETH <= bc_peaks <= self.MAX_TEETH):
-            # Binary contour peak count is in valid range
-            final_tc = bc_peaks
+            # Binary contour peak count is in valid range.
+            # Peak counting on Otsu silhouette can be off by ±1 for
+            # small gears (11-15T) due to merged/split teeth.  When
+            # FFT methods agree on a count that differs from bc_peaks
+            # by exactly 1, prefer the FFT result.
+            if (fft90_tc > 0 and bc_tc > 0
+                    and fft90_tc == bc_tc
+                    and abs(fft90_tc - bc_peaks) == 1):
+                final_tc = fft90_tc
+            elif (peak_tc > 0 and fft90_tc > 0
+                    and peak_tc == fft90_tc
+                    and abs(peak_tc - bc_peaks) == 1):
+                final_tc = peak_tc
+            else:
+                final_tc = bc_peaks
             final_rel = max(final_rel, bc_purity * 0.25)
         elif fft90_tc > 0:
             final_tc = fft90_tc
@@ -531,7 +544,7 @@ class GearToothCounter:
             final_tc = op_tc
         elif peak_tc > 0:
             final_tc = peak_tc
-        elif clahe_tc > 0 and clahe_conf >= 0.5:
+        elif clahe_tc > 0 and clahe_conf >= 0.50:
             final_tc = clahe_tc
         else:
             final_tc = 0

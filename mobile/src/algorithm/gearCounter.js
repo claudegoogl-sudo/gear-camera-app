@@ -1201,8 +1201,22 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     finalRel = Math.max(finalRel, bcPurity * 0.30);
     methodUsed = 'bc-fft';
   } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
-    // 3. Binary contour peak count is in valid range
-    finalTc = bcPeaks;
+    // 3. Binary contour peak count is in valid range.
+    // Peak counting on Otsu silhouette can be off by ±1 for
+    // small gears (11-15T) due to merged/split teeth.  When
+    // FFT methods agree on a count that differs from bcPeaks
+    // by exactly 1, prefer the FFT result.
+    if (fft90tc > 0 && bcTc > 0
+        && fft90tc === bcTc
+        && Math.abs(fft90tc - bcPeaks) === 1) {
+      finalTc = fft90tc;
+    } else if (peakTc > 0 && fft90tc > 0
+        && peakTc === fft90tc
+        && Math.abs(peakTc - bcPeaks) === 1) {
+      finalTc = peakTc;
+    } else {
+      finalTc = bcPeaks;
+    }
     finalRel = Math.max(finalRel, bcPurity * 0.25);
     methodUsed = 'bc-peaks';
   } else if (fft90tc > 0) {
