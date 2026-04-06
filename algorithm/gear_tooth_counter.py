@@ -249,6 +249,9 @@ class GearToothCounter:
         cx = int(np.clip(cx, 0, w - 1))
         cy = int(np.clip(cy, 0, h - 1))
 
+        # Refine center by maximizing rotational symmetry (FFT purity)
+        cx, cy = self._refine_center(cx, cy, outer_r)
+
         self.gear_center = (cx, cy)
         self.gear_radius = outer_r
         self.gear_contour = best_cnt
@@ -614,6 +617,50 @@ class GearToothCounter:
         if not fft_votes:
             return 0
         return max(fft_votes, key=fft_votes.get)
+
+    def _refine_center(self, cx, cy, r):
+        """
+        Refine gear center by finding the point that maximizes
+        rotational symmetry (FFT spectral purity).
+
+        Two-pass grid search: coarse (±15px, step 5) then fine (±5px, step 1).
+        Uses the full-resolution _fft_purity_check for accurate scoring.
+        Only accepts the refined center if purity improves by ≥15%.
+        """
+        h, w = self.gray.shape
+
+        def _search(cx0, cy0, radius, half_range, step):
+            best_cx, best_cy = cx0, cy0
+            best_p = self._fft_purity_check(cx0, cy0, radius)
+            for dx in range(-half_range, half_range + 1, step):
+                for dy in range(-half_range, half_range + 1, step):
+                    if dx == 0 and dy == 0:
+                        continue
+                    ncx, ncy = cx0 + dx, cy0 + dy
+                    if ncx < 10 or ncy < 10 or ncx >= w - 10 or ncy >= h - 10:
+                        continue
+                    p = self._fft_purity_check(ncx, ncy, radius)
+                    if p > best_p:
+                        best_p = p
+                        best_cx, best_cy = ncx, ncy
+            return best_cx, best_cy, best_p
+
+        orig_purity = self._fft_purity_check(cx, cy, r)
+
+        # Coarse pass
+        cx1, cy1, _ = _search(cx, cy, r, 15, 5)
+        # Fine pass
+        cx2, cy2, refined_purity = _search(cx1, cy1, r, 5, 1)
+
+        # Accept only when: meaningful shift, significant gain, and the
+        # refined center actually produces a clean tooth signal.
+        shift = np.sqrt((cx2 - cx) ** 2 + (cy2 - cy) ** 2)
+        if (shift >= 3
+                and orig_purity > 0
+                and refined_purity > orig_purity * 1.15
+                and refined_purity >= 0.14):
+            return cx2, cy2
+        return cx, cy
 
     def _fft_purity_check(self, cx, cy, r):
         """

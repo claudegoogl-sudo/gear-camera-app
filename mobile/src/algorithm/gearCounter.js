@@ -361,6 +361,50 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   return total > 0 ? best / total : 0.0;
 }
 
+// ── 9a. Center refinement via FFT purity maximisation ─────────────────────
+//
+// After initial center detection, refine by searching for the point that
+// maximises rotational symmetry (FFT spectral purity). Two-pass grid search:
+// coarse (±15px, step 5) then fine (±5px, step 1).
+// Only accepts the refined center when:
+//   - shift ≥ 3px (avoids noise),
+//   - purity gain > 15%, and
+//   - refined purity ≥ 0.14 (clean tooth signal required).
+
+function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
+  function search(cx0, cy0, halfRange, step) {
+    let bestCx = cx0, bestCy = cy0;
+    let bestP = fftPurityCheck(enhanced, cx0, cy0, r, width, height);
+    for (let dx = -halfRange; dx <= halfRange; dx += step) {
+      for (let dy = -halfRange; dy <= halfRange; dy += step) {
+        if (dx === 0 && dy === 0) continue;
+        const ncx = cx0 + dx, ncy = cy0 + dy;
+        if (ncx < 10 || ncy < 10 || ncx >= width - 10 || ncy >= height - 10) continue;
+        const p = fftPurityCheck(enhanced, ncx, ncy, r, width, height);
+        if (p > bestP) {
+          bestP = p;
+          bestCx = ncx;
+          bestCy = ncy;
+        }
+      }
+    }
+    return { cx: bestCx, cy: bestCy, purity: bestP };
+  }
+
+  const origPurity = fftPurityCheck(enhanced, cx, cy, r, width, height);
+
+  // Coarse pass
+  const coarse = search(cx, cy, 15, 5);
+  // Fine pass
+  const fine = search(coarse.cx, coarse.cy, 5, 1);
+
+  const shift = Math.sqrt((fine.cx - cx) ** 2 + (fine.cy - cy) ** 2);
+  if (shift >= 3 && origPurity > 0 && fine.purity > origPurity * 1.15 && fine.purity >= 0.14) {
+    return { cx: fine.cx, cy: fine.cy };
+  }
+  return { cx, cy };
+}
+
 // ── 9b. Hough-like circle candidate detection ──────────────────────────────
 //
 // Simplified Hough circle detection for JS (no OpenCV available).
@@ -574,7 +618,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     }
 
     const winner = topCandidates[bestIdx];
-    return { cx: winner.cx, cy: winner.cy, radius: winner.r, method: 'multi-threshold' };
+    // Refine center by maximizing rotational symmetry
+    const refined = refineCenterBySymmetry(enhanced, winner.cx, winner.cy, winner.r, w, h);
+    return { cx: refined.cx, cy: refined.cy, radius: winner.r, method: 'multi-threshold' };
   }
 
   // Fallback: single Otsu + donut detection (original JS approach)
