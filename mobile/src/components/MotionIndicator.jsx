@@ -7,15 +7,18 @@ import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated'
  * is moving or stable.  Phase 3 will connect this to real motion data;
  * for now it accepts a `stable` prop.
  */
-export default function MotionIndicator({ stable }) {
+export default function MotionIndicator({ stable, gearDetected }) {
   const dotStyle = useAnimatedStyle(() => ({
     transform: [{ scale: withSpring(stable ? 1.2 : 1.0) }],
   }));
 
+  const label = stable ? 'Stable' : gearDetected ? 'Gear found' : 'Scanning…';
+  const dotVariant = stable ? styles.dotStable : gearDetected ? styles.dotGear : styles.dotMoving;
+
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.dot, stable ? styles.dotStable : styles.dotMoving, dotStyle]} />
-      <Text style={styles.label}>{stable ? 'Stable' : 'Moving…'}</Text>
+      <Animated.View style={[styles.dot, dotVariant, dotStyle]} />
+      <Text style={styles.label}>{label}</Text>
     </View>
   );
 }
@@ -36,6 +39,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   dotMoving: { backgroundColor: '#FF6B35' },
+  dotGear:   { backgroundColor: '#FFD600' },
   dotStable: { backgroundColor: '#4CAF50' },
   label: {
     color: '#fff',

@@ -78,7 +78,7 @@ export default function CameraScreen({ navigation }) {
   }, [isCameraReady, isProcessing, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
-  const { isStable, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
+  const { isStable, gearDetected, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
     enabled: isFocused && isCameraReady && !isProcessing && hasPermission,
   });
@@ -228,7 +228,7 @@ export default function CameraScreen({ navigation }) {
         {/* Top bar */}
         <View style={styles.topBar}>
           {isCameraReady
-            ? <MotionIndicator stable={isStable} />
+            ? <MotionIndicator stable={isStable} gearDetected={gearDetected} />
             : <Text style={styles.initText}>Starting camera…</Text>
           }
           <TouchableOpacity
@@ -242,7 +242,7 @@ export default function CameraScreen({ navigation }) {
 
         {/* Aim circle */}
         <View style={styles.aimGuide} pointerEvents="none">
-          <Animated.View style={[styles.aimCircle, isStable && styles.aimCircleStable, aimStyle]} />
+          <Animated.View style={[styles.aimCircle, gearDetected && !isStable && styles.aimCircleGear, isStable && styles.aimCircleStable, aimStyle]} />
         </View>
 
         {/* Processing overlay */}
@@ -264,9 +264,9 @@ export default function CameraScreen({ navigation }) {
               ? 'Processing…'
               : isStable
               ? 'Stable — capturing automatically…'
-              : usingFallback
-              ? 'Hold steady — using motion sensor…'
-              : 'Hold camera steady over the gear'}
+              : !gearDetected
+              ? 'Center gear in the circle'
+              : 'Gear found — hold steady…'}
           </Text>
 
           <TouchableOpacity
@@ -343,6 +343,10 @@ const styles = StyleSheet.create({
     borderRadius: AIM_SIZE / 2,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.5)',
+  },
+  aimCircleGear: {
+    borderColor: '#FFD600',
+    borderWidth: 3,
   },
   aimCircleStable: {
     borderColor: '#4CAF50',

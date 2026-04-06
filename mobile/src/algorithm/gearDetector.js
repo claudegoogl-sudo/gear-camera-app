@@ -220,21 +220,26 @@ export function detectGearPresence(gray, width, height) {
 // ── RGBA convenience wrapper ────────────────────────────────────────────────
 
 /**
- * Detect gear presence from an RGBA pixel buffer (e.g., from frame.toArrayBuffer()).
+ * Detect gear presence from an RGB or RGBA pixel buffer (e.g., from frame.toArrayBuffer()).
  * Extracts grayscale on the fly by luminance weighting, subsampled for speed.
+ * Auto-detects bytes-per-pixel (3 for RGB, 4 for RGBA) from buffer length.
  *
- * @param {Uint8Array} rgba - RGBA pixel buffer
+ * @param {Uint8Array} rgba - RGB or RGBA pixel buffer
  * @param {number} width    - Frame width
  * @param {number} height   - Frame height
- * @returns {{ detected: boolean, score: number, approxCenterX: number, approxCenterY: number, approxRadius: number }}
+ * @returns {{ detected: boolean, score: number, approxCenterX: number, approxCenterY: number, approxRadius: number, _diag: {bpp: number, peakVariance: number, donutRatio: number, periodicityRel: number, peakFreq: number} }}
  */
 export function detectGearPresenceRGBA(rgba, width, height) {
   // Instead of converting the entire frame to grayscale, we only need
   // brightness at the ~640 sample points (N_RINGS × N_SAMPLES).
-  // Build a lightweight gray lookup that samples directly from RGBA.
+  // Build a lightweight gray lookup that samples directly from RGB(A).
   const cx = width >>> 1;
   const cy = height >>> 1;
   const halfDim = Math.min(cx, cy);
+
+  // Auto-detect bytes per pixel: pixelFormat="rgb" may deliver 3 (RGB) or 4 (RGBA)
+  const totalPixels = width * height;
+  const bpp = totalPixels > 0 ? Math.round(rgba.length / totalPixels) : 4;
 
   const rMin = Math.floor(halfDim * MIN_RADIUS_FRAC);
   const rMax = Math.floor(halfDim * MAX_RADIUS_FRAC);
@@ -258,7 +263,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
       const py = Math.round(cy + r * SIN_TABLE[si]);
       const x = px < 0 ? 0 : (px >= width ? width - 1 : px);
       const y = py < 0 ? 0 : (py >= height ? height - 1 : py);
-      const idx = (y * width + x) * 4;
+      const idx = (y * width + x) * bpp;
       // Fast luminance: (R + R + G + G + G + B) / 6 ≈ perceptual gray
       const val = (rgba[idx] * 2 + rgba[idx + 1] * 3 + rgba[idx + 2]) / 6;
       ringSamples[si] = val;
@@ -279,7 +284,8 @@ export function detectGearPresenceRGBA(rgba, width, height) {
 
   // Donut profile check
   if (peakVariance < VARIANCE_THRESHOLD) {
-    return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0 };
+    return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0,
+      _diag: { bpp, peakVariance, donutRatio: 0, periodicityRel: 0, peakFreq: 0 } };
   }
 
   let nonPeakSum = 0;
@@ -294,7 +300,8 @@ export function detectGearPresenceRGBA(rgba, width, height) {
   const donutRatio = nonPeakMean > 0 ? peakVariance / nonPeakMean : 0;
 
   if (donutRatio < DONUT_RATIO) {
-    return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0 };
+    return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0,
+      _diag: { bpp, peakVariance, donutRatio, periodicityRel: 0, peakFreq: 0 } };
   }
 
   // Radial periodicity check
@@ -312,7 +319,8 @@ export function detectGearPresenceRGBA(rgba, width, height) {
 
   const periodicityRel = totalEnergy > 0 ? peakEnergy / totalEnergy : 0;
   if (periodicityRel < PERIODICITY_REL || peakFreq < MIN_TEETH) {
-    return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0 };
+    return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0,
+      _diag: { bpp, peakVariance, donutRatio, periodicityRel, peakFreq } };
   }
 
   const donutScore = Math.min(donutRatio / 4.0, 1.0);
@@ -325,6 +333,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
     approxCenterX: cx,
     approxCenterY: cy,
     approxRadius: Math.round(ringRadius[peakRingIdx]),
+    _diag: { bpp, peakVariance, donutRatio, periodicityRel, peakFreq },
   };
 }
 

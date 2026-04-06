@@ -88,8 +88,21 @@ export function useMotionDetection({ onStable, enabled = true }) {
   );
 
   // Called from worklet with gear detection result
+  const cresLogCountRef = useRef(0);
   const handleGearDetection = useCallback(
-    (detected, score, approxCenterX, approxCenterY, approxRadius) => {
+    (detected, score, approxCenterX, approxCenterY, approxRadius, diag) => {
+      // Diagnostic logging — first 5 results then every 30th
+      cresLogCountRef.current += 1;
+      const n = cresLogCountRef.current;
+      if (n <= 5 || n % 30 === 0) {
+        const d = diag || {};
+        console.log(
+          `[CRES #${n}] detected=${detected} score=${score?.toFixed(3)} ` +
+          `bpp=${d.bpp} var=${d.peakVariance?.toFixed(0)} donut=${d.donutRatio?.toFixed(2)} ` +
+          `period=${d.periodicityRel?.toFixed(3)} freq=${d.peakFreq}`
+        );
+      }
+
       const wasDetected = gearWasDetectedRef.current;
       gearWasDetectedRef.current = detected;
       setGearDetected(detected);
@@ -270,12 +283,18 @@ export function useMotionDetection({ onStable, enabled = true }) {
             const w = frame.width;
             const h = frame.height;
             if (w > 0 && h > 0) {
-              const result = detectGearPresenceRGBA(pixels, w, h);
-              handleGearDetectionJS(
-                result.detected, result.score,
-                result.approxCenterX, result.approxCenterY,
-                result.approxRadius,
-              );
+              try {
+                const result = detectGearPresenceRGBA(pixels, w, h);
+                handleGearDetectionJS(
+                  result.detected, result.score,
+                  result.approxCenterX, result.approxCenterY,
+                  result.approxRadius,
+                  result._diag,
+                );
+              } catch (_e) {
+                // CRES threw — report but don't crash the frame processor
+                reportFrameErrorJS();
+              }
             }
           }
         },
