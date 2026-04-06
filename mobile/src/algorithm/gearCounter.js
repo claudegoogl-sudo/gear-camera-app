@@ -365,22 +365,24 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
 //
 // After initial center detection, refine by searching for the point that
 // maximises rotational symmetry (FFT spectral purity). Two-pass grid search:
-// coarse (±15px, step 5) then fine (±5px, step 1).
+// coarse (±25px, step 5) then fine (±5px, step 1).
 // Only accepts the refined center when:
 //   - shift ≥ 3px (avoids noise),
 //   - purity gain > 15%, and
 //   - refined purity ≥ 0.14 (clean tooth signal required).
+//
+// PAP-162: coarse pass expanded from ±15px to ±25px to match Python PAP-154.
 
 function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
-  function search(cx0, cy0, halfRange, step) {
+  function search(cx0, cy0, radius, halfRange, step) {
     let bestCx = cx0, bestCy = cy0;
-    let bestP = fftPurityCheck(enhanced, cx0, cy0, r, width, height);
+    let bestP = fftPurityCheck(enhanced, cx0, cy0, radius, width, height);
     for (let dx = -halfRange; dx <= halfRange; dx += step) {
       for (let dy = -halfRange; dy <= halfRange; dy += step) {
         if (dx === 0 && dy === 0) continue;
         const ncx = cx0 + dx, ncy = cy0 + dy;
         if (ncx < 10 || ncy < 10 || ncx >= width - 10 || ncy >= height - 10) continue;
-        const p = fftPurityCheck(enhanced, ncx, ncy, r, width, height);
+        const p = fftPurityCheck(enhanced, ncx, ncy, radius, width, height);
         if (p > bestP) {
           bestP = p;
           bestCx = ncx;
@@ -393,10 +395,10 @@ function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
 
   const origPurity = fftPurityCheck(enhanced, cx, cy, r, width, height);
 
-  // Coarse pass
-  const coarse = search(cx, cy, 15, 5);
+  // Coarse pass (±25px for broader coverage — PAP-154/PAP-162)
+  const coarse = search(cx, cy, r, 25, 5);
   // Fine pass
-  const fine = search(coarse.cx, coarse.cy, 5, 1);
+  const fine = search(coarse.cx, coarse.cy, r, 5, 1);
 
   const shift = Math.sqrt((fine.cx - cx) ** 2 + (fine.cy - cy) ** 2);
   if (shift >= 3 && origPurity > 0 && fine.purity > origPurity * 1.15 && fine.purity >= 0.14) {
@@ -1304,6 +1306,161 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   };
 }
 
+// ── 14. Off-center retry (PAP-162: port of Python _retry_near_center) ─────
+//
+// When the detected center is far from the image center (aim circle) and
+// confidence is low, the algorithm may have locked onto a background feature.
+// Re-run with the center forced near the image center using a two-pass
+// coarse-to-fine search:
+//   1. Coarse: ±80px step 20, radii 10%-35% of min dim (step 8)
+//   2. Fine:   ±15px step 5 around coarse-best position and radius
+//   3. Final refinement via refineCenterBySymmetry
+
+function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
+  const h = height, w = width;
+  let bestPurity = 0.0;
+  let bestCx = imgCx, bestCy = imgCy, bestR = Math.floor(Math.min(h, w) / 4);
+
+  // Search radii from 10% to 35% of image min dim
+  const minR = Math.max(30, Math.floor(Math.min(h, w) * 0.10));
+  const maxR = Math.floor(Math.min(h, w) * 0.35);
+
+  // Coarse pass: wide center range, larger radius step
+  for (let r = minR; r < maxR; r += 8) {
+    for (let dx = -80; dx <= 80; dx += 20) {
+      for (let dy = -80; dy <= 80; dy += 20) {
+        const tcx = Math.min(Math.max(imgCx + dx, 10), w - 10);
+        const tcy = Math.min(Math.max(imgCy + dy, 10), h - 10);
+        const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h);
+        if (p > bestPurity) {
+          bestPurity = p;
+          bestCx = tcx;
+          bestCy = tcy;
+          bestR = r;
+        }
+      }
+    }
+  }
+
+  if (bestPurity < 0.03) return null;
+
+  // Fine pass: refine around coarse-best position and radius
+  let fineCx = bestCx, fineCy = bestCy, fineR = bestR;
+  let finePurity = bestPurity;
+  const rLo = Math.max(minR, bestR - 15);
+  const rHi = Math.min(maxR, bestR + 16);
+  for (let r = rLo; r < rHi; r += 5) {
+    for (let dx = -15; dx <= 15; dx += 5) {
+      for (let dy = -15; dy <= 15; dy += 5) {
+        const tcx = Math.min(Math.max(bestCx + dx, 10), w - 10);
+        const tcy = Math.min(Math.max(bestCy + dy, 10), h - 10);
+        const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h);
+        if (p > finePurity) {
+          finePurity = p;
+          fineCx = tcx;
+          fineCy = tcy;
+          fineR = r;
+        }
+      }
+    }
+  }
+
+  bestCx = fineCx;
+  bestCy = fineCy;
+  bestR = fineR;
+  bestPurity = finePurity;
+
+  if (bestPurity < 0.05) return null;
+
+  // Final center refinement via rotational symmetry
+  const refined = refineCenterBySymmetry(enhanced, bestCx, bestCy, bestR, w, h);
+
+  // Re-run full analysis at the new center
+  // Temporarily override findGearCenter by passing a pre-set center
+  const retryResult = analyzeImageAtCenter(
+    gray, enhanced, edges, w, h,
+    refined.cx, refined.cy, bestR,
+  );
+
+  return retryResult;
+}
+
+// Analyze image with a pre-determined center (used by retryNearCenter)
+function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, contourRadius) {
+  const gearR = contourRadius > 20
+    ? contourRadius
+    : findGearRadius(edges, cx, cy, width, height);
+
+  const fft90tc = fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearR, edges, width, height);
+
+  let peakTc = 0, peakRel = 0, peakR = 0;
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(gray, edges, cx, cy, gearR, width, height));
+
+  const maxRop = Math.min(cx, width - cx, cy, height - cy) - 1;
+  let opTc = 0, opRel = 0;
+  ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height));
+
+  const { bcTc, bcPurity, bcPeaks } = binaryContourCount(gray, cx, cy, width, height);
+
+  let claheTc = 0, claheConf = 0;
+  ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
+
+  let finalRel = peakRel > 0 ? peakRel : (opRel > 0 ? opRel : 0);
+  const fftConf = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
+
+  let finalTc = 0;
+  let methodUsed = 'none';
+
+  if (fftConf >= 0.70 && peakTc > 0) {
+    finalTc = peakTc;
+    methodUsed = 'peak';
+  } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
+    finalTc = bcTc;
+    finalRel = Math.max(finalRel, bcPurity * 0.30);
+    methodUsed = 'bc-fft';
+  } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
+    if (fft90tc > 0 && bcTc > 0 && fft90tc === bcTc && Math.abs(fft90tc - bcPeaks) === 1) {
+      finalTc = fft90tc;
+    } else if (peakTc > 0 && fft90tc > 0 && peakTc === fft90tc && Math.abs(peakTc - bcPeaks) === 1) {
+      finalTc = peakTc;
+    } else {
+      finalTc = bcPeaks;
+    }
+    finalRel = Math.max(finalRel, bcPurity * 0.25);
+    methodUsed = 'bc-peaks';
+  } else if (fft90tc > 0) {
+    finalTc = fft90tc;
+    methodUsed = 'fft90-fallback';
+  } else if (peakRel >= 0.15 && peakTc >= MIN_TEETH) {
+    finalTc = peakTc;
+    methodUsed = 'multiR';
+  } else if (opTc > 0 && opRel >= 0.10) {
+    finalTc = opTc;
+    methodUsed = 'outer';
+  } else if (peakTc > 0) {
+    finalTc = peakTc;
+    methodUsed = 'multiR-fallback';
+  } else if (claheTc > 0 && claheConf >= 0.5) {
+    finalTc = claheTc;
+    methodUsed = 'clahe';
+  }
+
+  const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
+  const finalR = peakR > 0 ? peakR : gearR;
+
+  return {
+    toothCount: finalTc,
+    confidence,
+    cx, cy, gearR: finalR,
+    contourRadius,
+    centerResult: { cx, cy, radius: contourRadius, method: 'retry-near-center' },
+    fft90tc, peakTc, peakRel, opTc, opRel,
+    bcTc, bcPurity, bcPeaks,
+    claheTc, claheConf,
+    methodUsed: 'retry-' + methodUsed,
+  };
+}
+
 export async function countTeeth(photoUri) {
   const t0 = Date.now();
 
@@ -1320,6 +1477,25 @@ export async function countTeeth(photoUri) {
 
   let r = analyzeImage(gray, enhanced, edges, width, height);
   const t3 = Date.now();
+
+  // ── Off-center, low-confidence retry (PAP-162) ────────────────────
+  // When detected center is far from the aim circle and confidence is
+  // low, the algorithm may have locked onto a background feature.
+  // Re-run with center forced near image center.
+  if (r.confidence < SMALL_GEAR_CONF && r.cx !== undefined && r.cy !== undefined) {
+    const imgCx = Math.floor(width / 2);
+    const imgCy = Math.floor(height / 2);
+    const cdist = Math.sqrt((r.cx - imgCx) ** 2 + (r.cy - imgCy) ** 2);
+    if (cdist > Math.min(height, width) * 0.15) {
+      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy);
+      if (retryR !== null && retryR.confidence > r.confidence) {
+        console.log(`[GearCounter] off-center retry: center (${r.cx},${r.cy})→(${retryR.cx},${retryR.cy}), ` +
+          `${r.toothCount}T(${(r.confidence*100).toFixed(0)}%)→` +
+          `${retryR.toothCount}T(${(retryR.confidence*100).toFixed(0)}%)`);
+        r = retryR;
+      }
+    }
+  }
 
   // ── Small-gear retry at higher resolution ──────────────────────────
   // When the gear is small in the frame and confidence is low, re-run
