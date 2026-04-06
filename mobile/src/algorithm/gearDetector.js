@@ -227,9 +227,10 @@ export function detectGearPresence(gray, width, height) {
  * @param {Uint8Array} rgba - RGB or RGBA pixel buffer
  * @param {number} width    - Frame width
  * @param {number} height   - Frame height
+ * @param {number} [bytesPerRow] - Row stride in bytes (from frame.bytesPerRow). Falls back to width*bpp if omitted.
  * @returns {{ detected: boolean, score: number, approxCenterX: number, approxCenterY: number, approxRadius: number, _diag: {bpp: number, peakVariance: number, donutRatio: number, periodicityRel: number, peakFreq: number} }}
  */
-export function detectGearPresenceRGBA(rgba, width, height) {
+export function detectGearPresenceRGBA(rgba, width, height, bytesPerRow) {
   // Instead of converting the entire frame to grayscale, we only need
   // brightness at the ~640 sample points (N_RINGS × N_SAMPLES).
   // Build a lightweight gray lookup that samples directly from RGB(A).
@@ -240,6 +241,9 @@ export function detectGearPresenceRGBA(rgba, width, height) {
   // Auto-detect bytes per pixel: pixelFormat="rgb" may deliver 3 (RGB) or 4 (RGBA)
   const totalPixels = width * height;
   const bpp = totalPixels > 0 ? Math.round(rgba.length / totalPixels) : 4;
+  // Row stride: use caller-supplied bytesPerRow (from frame.bytesPerRow) when
+  // available so row-padding on Android doesn't corrupt pixel lookups.
+  const stride = (bytesPerRow && bytesPerRow > 0) ? bytesPerRow : width * bpp;
 
   const rMin = Math.floor(halfDim * MIN_RADIUS_FRAC);
   const rMax = Math.floor(halfDim * MAX_RADIUS_FRAC);
@@ -263,7 +267,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
       const py = Math.round(cy + r * SIN_TABLE[si]);
       const x = px < 0 ? 0 : (px >= width ? width - 1 : px);
       const y = py < 0 ? 0 : (py >= height ? height - 1 : py);
-      const idx = (y * width + x) * bpp;
+      const idx = y * stride + x * bpp;
       // Fast luminance: (R + R + G + G + G + B) / 6 ≈ perceptual gray
       const val = (rgba[idx] * 2 + rgba[idx + 1] * 3 + rgba[idx + 2]) / 6;
       ringSamples[si] = val;
@@ -285,7 +289,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
   // Donut profile check
   if (peakVariance < VARIANCE_THRESHOLD) {
     return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0,
-      _diag: { bpp, peakVariance, donutRatio: 0, periodicityRel: 0, peakFreq: 0 } };
+      _diag: { bpp, stride, peakVariance, donutRatio: 0, periodicityRel: 0, peakFreq: 0 } };
   }
 
   let nonPeakSum = 0;
@@ -301,7 +305,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
 
   if (donutRatio < DONUT_RATIO) {
     return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0,
-      _diag: { bpp, peakVariance, donutRatio, periodicityRel: 0, peakFreq: 0 } };
+      _diag: { bpp, stride, peakVariance, donutRatio, periodicityRel: 0, peakFreq: 0 } };
   }
 
   // Radial periodicity check
@@ -320,7 +324,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
   const periodicityRel = totalEnergy > 0 ? peakEnergy / totalEnergy : 0;
   if (periodicityRel < PERIODICITY_REL || peakFreq < MIN_TEETH) {
     return { detected: false, score: 0, approxCenterX: cx, approxCenterY: cy, approxRadius: 0,
-      _diag: { bpp, peakVariance, donutRatio, periodicityRel, peakFreq } };
+      _diag: { bpp, stride, peakVariance, donutRatio, periodicityRel, peakFreq } };
   }
 
   const donutScore = Math.min(donutRatio / 4.0, 1.0);
@@ -333,7 +337,7 @@ export function detectGearPresenceRGBA(rgba, width, height) {
     approxCenterX: cx,
     approxCenterY: cy,
     approxRadius: Math.round(ringRadius[peakRingIdx]),
-    _diag: { bpp, peakVariance, donutRatio, periodicityRel, peakFreq },
+    _diag: { bpp, stride, peakVariance, donutRatio, periodicityRel, peakFreq },
   };
 }
 

@@ -87,6 +87,16 @@ export function useMotionDetection({ onStable, enabled = true }) {
     [clearTimer, onStable],
   );
 
+  // Called from worklet once with first-frame diagnostics
+  const handleFrameDiag = useCallback((w, h, bytesPerRow, bufLen) => {
+    console.log(
+      `[FrameDiag] width=${w} height=${h} bytesPerRow=${bytesPerRow} ` +
+      `bufLen=${bufLen} computedBpp=${(bufLen / (w * h)).toFixed(2)}`
+    );
+  }, []);
+  const handleFrameDiagJS = useRunOnJS(handleFrameDiag, [handleFrameDiag]);
+  const diagLogged = useSharedValue(false);
+
   // Called from worklet with gear detection result
   const cresLogCountRef = useRef(0);
   const handleGearDetection = useCallback(
@@ -98,7 +108,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
         const d = diag || {};
         console.log(
           `[CRES #${n}] detected=${detected} score=${score?.toFixed(3)} ` +
-          `bpp=${d.bpp} var=${d.peakVariance?.toFixed(0)} donut=${d.donutRatio?.toFixed(2)} ` +
+          `bpp=${d.bpp} stride=${d.stride} var=${d.peakVariance?.toFixed(0)} donut=${d.donutRatio?.toFixed(2)} ` +
           `period=${d.periodicityRel?.toFixed(3)} freq=${d.peakFreq}`
         );
       }
@@ -257,6 +267,12 @@ export function useMotionDetection({ onStable, enabled = true }) {
           const total = pixels.length;
           if (total === 0) return;
 
+          // Log first-frame diagnostics (once) to aid on-device debugging.
+          if (!diagLogged.value) {
+            diagLogged.value = true;
+            handleFrameDiagJS(frame.width, frame.height, frame.bytesPerRow, total);
+          }
+
           // ── Pixel-diff motion detection ─────────────────────────────────
           const step = Math.floor(total / NUM_SAMPLES);
           // Use a plain Array — Float32Array triggers the broken legacy
@@ -284,7 +300,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
             const h = frame.height;
             if (w > 0 && h > 0) {
               try {
-                const result = detectGearPresenceRGBA(pixels, w, h);
+                const result = detectGearPresenceRGBA(pixels, w, h, frame.bytesPerRow);
                 handleGearDetectionJS(
                   result.detected, result.score,
                   result.approxCenterX, result.approxCenterY,
@@ -298,7 +314,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
             }
           }
         },
-        [enabled, handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, reportFrameErrorJS],
+        [enabled, handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, reportFrameErrorJS, handleFrameDiagJS],
       );
     } catch {
       // Worklets runtime unavailable at this point — fall back to manual capture.
@@ -321,7 +337,8 @@ export function useMotionDetection({ onStable, enabled = true }) {
     prevSamples.value = null;
     frameCounter.value = 0;
     gearDetectCounter.value = 0;
-  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter]);
+    diagLogged.value = false;
+  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged]);
 
   return { isStable, gearDetected, gearHints, frameProcessor, reset, usingFallback };
 }

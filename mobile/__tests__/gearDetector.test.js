@@ -225,5 +225,28 @@ describe('gearDetector', () => {
       expect(result.approxCenterX).toBe(200);
       expect(result.approxCenterY).toBe(150);
     });
+
+    test('detects gear with row stride padding (bytesPerRow > width*bpp)', () => {
+      const w = 400, h = 400;
+      const bpp = 4; // RGBA
+      const padding = 8; // extra bytes per row
+      const bytesPerRow = w * bpp + padding;
+      const gray = syntheticGear(w, h, 200, 200, 100, 14);
+      // Build a padded RGBA buffer
+      const padded = new Uint8Array(bytesPerRow * h);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const v = gray[y * w + x];
+          const dst = y * bytesPerRow + x * bpp;
+          padded[dst] = v;
+          padded[dst + 1] = v;
+          padded[dst + 2] = v;
+          padded[dst + 3] = 255;
+        }
+      }
+      const result = detectGearPresenceRGBA(padded, w, h, bytesPerRow);
+      expect(result.detected).toBe(true);
+      expect(result._diag.stride).toBe(bytesPerRow);
+    });
   });
 });
