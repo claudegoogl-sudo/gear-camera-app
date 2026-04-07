@@ -282,7 +282,6 @@ export default function ResultScreen({ navigation, route }) {
                   }
                 }}
                 keyboardType="number-pad"
-                selectTextOnFocus
                 maxLength={3}
               />
 

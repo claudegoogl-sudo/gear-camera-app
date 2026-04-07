@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useIsFocused } from '@react-navigation/native';
 import { useCameraDevice, Camera, useCameraPermission } from 'react-native-vision-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -120,31 +121,36 @@ export default function CameraScreen({ navigation }) {
   }, []);
 
   // ── Download + install a specific build ───────────────────────────────
+  const [downloading, setDownloading] = useState(false);
   const downloadAndInstall = useCallback(async (build) => {
-    try {
-      if (!build.downloadUrl) {
-        Alert.alert('No APK available', 'This release has no downloadable APK.');
-        return;
-      }
-      if (Platform.OS === 'android') {
-        // Explicitly target Chrome so the download opens in a real browser
-        // instead of Android's content-preview sheet (which fails 100%).
-        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-          data: build.downloadUrl,
-          packageName: 'com.android.chrome',
-        });
-      } else {
-        await Linking.openURL(build.downloadUrl);
-      }
-    } catch (e) {
-      if (Platform.OS === 'android') {
-        // Chrome not installed or intent failed — fall back to default browser
-        try {
-          await Linking.openURL(build.downloadUrl);
-        } catch (e2) {
-          Alert.alert('Download failed', e2.message);
+    if (!build.downloadUrl) {
+      Alert.alert('No APK available', 'This release has no downloadable APK.');
+      return;
+    }
+    if (Platform.OS === 'android') {
+      try {
+        setDownloading(true);
+        const fileName = build.downloadUrl.split('/').pop() || `build-${build.buildNumber}.apk`;
+        const destUri = FileSystem.cacheDirectory + fileName;
+        const { uri, status } = await FileSystem.downloadAsync(build.downloadUrl, destUri);
+        if (status !== 200) {
+          throw new Error(`Download failed (HTTP ${status})`);
         }
-      } else {
+        const contentUri = await FileSystem.getContentUriAsync(uri);
+        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+          data: contentUri,
+          type: 'application/vnd.android.package-archive',
+          flags: 268435457, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
+        });
+      } catch (e) {
+        Alert.alert('Download failed', e.message);
+      } finally {
+        setDownloading(false);
+      }
+    } else {
+      try {
+        await Linking.openURL(build.downloadUrl);
+      } catch (e) {
         Alert.alert('Download failed', e.message);
       }
     }
@@ -252,6 +258,15 @@ export default function CameraScreen({ navigation }) {
             <View style={styles.processingCard}>
               <Text style={styles.processingTitle}>Counting teeth…</Text>
               <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Download overlay */}
+        {downloading && (
+          <View style={styles.processingOverlay}>
+            <View style={styles.processingCard}>
+              <Text style={styles.processingTitle}>Downloading APK…</Text>
             </View>
           </View>
         )}
