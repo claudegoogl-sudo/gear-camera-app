@@ -19,11 +19,16 @@ const NUM_SAMPLES = 300;
 const FRAME_SKIP = 3;
 // Gear detection (CRES) — run every Nth frame (heavier than pixel-diff)
 const GEAR_DETECT_SKIP = 5;
+// Gear detection hysteresis — tolerate brief CRES flickers without resetting
+// stability timers.  At ~500 ms between CRES checks, 3 misses ≈ 1.5 s of
+// no-gear before we clear the detection flag.
+const GEAR_LOST_THRESHOLD = 3;
 // IMU-based stillness detection (accelerometer + gyroscope)
 const ACCEL_MOTION_THRESHOLD = 0.05;
 const GYRO_MOTION_THRESHOLD = 0.12; // rad/s — rotation rate indicating motion
 const IMU_UPDATE_MS = 100;
 const IMU_STILLNESS_MS = 800; // shorter than old 4s — capture when user stops moving
+const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no CRES gate)
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
@@ -49,12 +54,14 @@ export function useMotionDetection({ onStable, enabled = true }) {
   const gearDetectCounter = useSharedValue(0);
   const stabilityTimer = useRef(null);
   const gearWasDetectedRef = useRef(false);
+  const gearLostCountRef = useRef(0);
   const imuTimer = useRef(null);
   const lastAccel = useRef(null);
   const latestGyro = useRef({ x: 0, y: 0, z: 0 });
 
   // Tracks whether the worklet has ever successfully read pixel data.
   const frameProcessorActiveRef = useRef(false);
+  const usingFallbackRef = useRef(false);
   const [usingFallback, setUsingFallback] = useState(false);
 
   const clearTimer = useCallback(() => {
@@ -101,7 +108,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
   const cresLogCountRef = useRef(0);
   const handleGearDetection = useCallback(
     (detected, score, approxCenterX, approxCenterY, approxRadius, diag) => {
-      // Diagnostic logging — first 5 results then every 30th
+      // Diagnostic logging — first 10 results then every 10th
       cresLogCountRef.current += 1;
       const n = cresLogCountRef.current;
       if (n <= 10 || n % 10 === 0) {
@@ -113,23 +120,33 @@ export function useMotionDetection({ onStable, enabled = true }) {
         );
       }
 
-      const wasDetected = gearWasDetectedRef.current;
-      gearWasDetectedRef.current = detected;
-      setGearDetected(detected);
-
       if (detected) {
+        gearLostCountRef.current = 0;
+        gearWasDetectedRef.current = true;
+        setGearDetected(true);
         setGearHints({ centerX: approxCenterX, centerY: approxCenterY, radius: approxRadius, score });
       } else {
-        setGearHints(null);
-        // Gear disappeared while phone was stable → reset stability
-        if (wasDetected) {
-          clearTimer();
-          if (imuTimer.current) {
-            clearTimeout(imuTimer.current);
-            imuTimer.current = null;
+        gearLostCountRef.current += 1;
+
+        // Hysteresis: tolerate brief CRES flickers. Only clear detection
+        // state after GEAR_LOST_THRESHOLD consecutive misses (~1.5 s).
+        if (gearLostCountRef.current >= GEAR_LOST_THRESHOLD) {
+          const wasDetected = gearWasDetectedRef.current;
+          gearWasDetectedRef.current = false;
+          setGearDetected(false);
+          setGearHints(null);
+
+          if (wasDetected) {
+            clearTimer();
+            if (imuTimer.current) {
+              clearTimeout(imuTimer.current);
+              imuTimer.current = null;
+            }
+            setIsStable(false);
           }
-          setIsStable(false);
         }
+        // Under threshold: keep gearWasDetectedRef true so stability
+        // timers continue through brief detection gaps.
       }
     },
     [clearTimer],
@@ -161,16 +178,19 @@ export function useMotionDetection({ onStable, enabled = true }) {
   // usingFallback for UI purposes (IMU always runs regardless).
   useEffect(() => {
     if (!enabled) {
+      usingFallbackRef.current = !useFrameProcessor;
       setUsingFallback(!useFrameProcessor);
       return;
     }
     frameProcessorActiveRef.current = false;
+    usingFallbackRef.current = !useFrameProcessor;
     setUsingFallback(!useFrameProcessor);
 
     // Give the frame processor a brief window to prove it works.
     const check = setTimeout(() => {
       if (!frameProcessorActiveRef.current) {
         console.warn('[MotionDetection] No frames processed — IMU-only mode');
+        usingFallbackRef.current = true;
         setUsingFallback(true);
       }
     }, 1500);
@@ -209,14 +229,16 @@ export function useMotionDetection({ onStable, enabled = true }) {
           setIsStable(false);
         } else if (!imuTimer.current) {
           // Device is still — start stillness countdown.
+          // In fallback (IMU-only) mode use a longer window and skip CRES gate.
+          const fallback = usingFallbackRef.current;
+          const stillnessMs = fallback ? IMU_STILLNESS_FALLBACK_MS : IMU_STILLNESS_MS;
           imuTimer.current = setTimeout(() => {
             imuTimer.current = null;
-            // Only trigger capture if a gear is detected in frame
-            if (gearWasDetectedRef.current) {
+            if (gearWasDetectedRef.current || fallback) {
               setIsStable(true);
               onStable?.();
             }
-          }, IMU_STILLNESS_MS);
+          }, stillnessMs);
         }
       }
 
@@ -331,6 +353,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
     lastAccel.current = null;
     latestGyro.current = { x: 0, y: 0, z: 0 };
     gearWasDetectedRef.current = false;
+    gearLostCountRef.current = 0;
     setIsStable(false);
     setGearDetected(false);
     setGearHints(null);
