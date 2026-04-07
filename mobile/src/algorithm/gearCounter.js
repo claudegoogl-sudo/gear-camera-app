@@ -574,13 +574,30 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   if (topCandidates.length > 0) {
     let bestPurity = -1;
     let bestIdx = 0;
+    // Evaluate purity for all candidates and store it
+    const purities = new Array(topCandidates.length);
     for (let i = 0; i < topCandidates.length; i++) {
       const c = topCandidates[i];
-      const purity = fftPurityCheck(enhanced, c.cx, c.cy, c.r, w, h);
-      if (purity > bestPurity) {
-        bestPurity = purity;
+      purities[i] = fftPurityCheck(enhanced, c.cx, c.cy, c.r, w, h);
+      if (purities[i] > bestPurity) {
+        bestPurity = purities[i];
         bestIdx = i;
       }
+    }
+    // Among candidates with acceptable purity (>= 0.04), prefer the
+    // largest radius.  Inner features (bore splines, mounting holes)
+    // often have higher purity than the outer teeth — especially on
+    // textured backgrounds — but we want the outer tooth ring.
+    const MIN_ACCEPTABLE_PURITY = 0.04;
+    if (bestPurity >= MIN_ACCEPTABLE_PURITY) {
+      let largestR = topCandidates[bestIdx].r;
+      for (let i = 0; i < topCandidates.length; i++) {
+        if (purities[i] >= MIN_ACCEPTABLE_PURITY && topCandidates[i].r > largestR) {
+          largestR = topCandidates[i].r;
+          bestIdx = i;
+        }
+      }
+      bestPurity = purities[bestIdx];
     }
 
     // ── Hough-like circle candidates (only when contour purity is weak) ──
@@ -598,12 +615,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         const margin = 5;
         if (!(margin < hc.cx && hc.cx < w - margin
               && margin < hc.cy && hc.cy < h - margin)) continue;
-        // Skip if center is too close to any edge relative to radius
         const edgeDist = Math.min(hc.cx, w - hc.cx, hc.cy, h - hc.cy);
         if (edgeDist < hc.r * 0.92) continue;
-        // Skip if Hough radius is more than 2x larger than best contour
         if (maxContourR > 0 && hc.r > maxContourR * 2) continue;
-        // Dedup against existing candidates
         let duplicate = false;
         for (const t of topCandidates) {
           if (Math.abs(hc.cx - t.cx) < 30 && Math.abs(hc.cy - t.cy) < 30
@@ -615,9 +629,13 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         if (!duplicate) {
           topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
           const idx = topCandidates.length - 1;
-          const purity = fftPurityCheck(enhanced, hc.cx, hc.cy, hc.r, w, h);
-          if (purity > bestPurity) {
-            bestPurity = purity;
+          purities[idx] = fftPurityCheck(enhanced, hc.cx, hc.cy, hc.r, w, h);
+          // Re-apply largest-radius preference including new Hough candidates
+          if (purities[idx] >= MIN_ACCEPTABLE_PURITY && topCandidates[idx].r > topCandidates[bestIdx].r) {
+            bestIdx = idx;
+            bestPurity = purities[idx];
+          } else if (purities[idx] > bestPurity && topCandidates[idx].r >= topCandidates[bestIdx].r) {
+            bestPurity = purities[idx];
             bestIdx = idx;
           }
         }
@@ -1232,7 +1250,12 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   let finalTc = 0;
   let methodUsed = 'none';
 
-  if (fftConf >= 0.70 && peakTc > 0) {
+  // Inner-bore safeguard: when peakR is much smaller than contourRadius,
+  // the multi-radius FFT is likely picking up inner features (splines,
+  // mounting holes) not outer teeth.  Suppress high-confidence override.
+  const innerBoreSuspect = contourRadius > 40 && peakR > 0 && peakR < contourRadius * 0.55;
+
+  if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect) {
     // 1. Multi-radius outermost candidate is highly confident — trust it.
     // Prefer peakTc over fft90tc because fftAtOuterRadii accumulates
     // votes across all radii and can be dominated by inner features
@@ -1403,11 +1426,12 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
 
   let finalRel = peakRel > 0 ? peakRel : (opRel > 0 ? opRel : 0);
   const fftConf = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
+  const innerBoreSuspect2 = contourRadius > 40 && peakR > 0 && peakR < contourRadius * 0.55;
 
   let finalTc = 0;
   let methodUsed = 'none';
 
-  if (fftConf >= 0.70 && peakTc > 0) {
+  if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect2) {
     finalTc = peakTc;
     methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
