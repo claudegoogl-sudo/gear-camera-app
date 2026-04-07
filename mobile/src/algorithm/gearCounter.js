@@ -526,15 +526,20 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         const encR = Math.sqrt(comp.area / Math.PI);
         const bboxR = Math.max(bw, bh) / 2;
         const effectiveR = Math.max(encR, bboxR * 0.7);
-        if (effectiveR / Math.min(h, w) < 0.05 || effectiveR / Math.min(h, w) > 0.45) continue;
+        if (effectiveR / Math.min(h, w) < 0.08 || effectiveR / Math.min(h, w) > 0.45) continue;
 
         const peri = componentPerimeter(labels, w, h, comp.id, comp.minX, comp.minY, comp.maxX, comp.maxY);
         const circ = peri > 0 ? (4 * Math.PI * comp.area) / (peri * peri) : 0;
         const compact = comp.area / (bw * bh);
 
-        // Center-of-frame bias: prefer candidates near image center
+        // Reject candidates whose center is too close to the frame edge.
+        // A gear center at 94% across / 10% down is clearly a background
+        // artifact — real gears should be roughly centered in the aim circle.
         const compCx = comp.sx / comp.area;
         const compCy = comp.sy / comp.area;
+        const edgeMarginFrac = 0.10;
+        if (compCx < w * edgeMarginFrac || compCx > w * (1 - edgeMarginFrac) ||
+            compCy < h * edgeMarginFrac || compCy > h * (1 - edgeMarginFrac)) continue;
         const dx = (compCx - w / 2) / (w / 2);
         const dy = (compCy - h / 2) / (h / 2);
         const centerBias = Math.exp(-1.5 * (dx * dx + dy * dy));
