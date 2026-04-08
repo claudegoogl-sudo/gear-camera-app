@@ -523,10 +523,14 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
         // Radius estimate: use bounding-box radius for annular shapes,
         // area-based encR for solid blobs, whichever is larger.
+        // For ring-shaped cassette cogs, bboxR ≈ outer radius; the 0.90
+        // factor accounts for slight non-circularity while preserving
+        // the outer-tooth region (previously 0.70, which underestimated
+        // outer radius by 15-20% for annular shapes).
         const encR = Math.sqrt(comp.area / Math.PI);
         const bboxR = Math.max(bw, bh) / 2;
-        const effectiveR = Math.max(encR, bboxR * 0.7);
-        if (effectiveR / Math.min(h, w) < 0.08 || effectiveR / Math.min(h, w) > 0.45) continue;
+        const effectiveR = Math.max(encR, bboxR * 0.90);
+        if (effectiveR / Math.min(h, w) < 0.08 || effectiveR / Math.min(h, w) > 0.48) continue;
 
         const peri = componentPerimeter(labels, w, h, comp.id, comp.minX, comp.minY, comp.maxX, comp.maxY);
         const circ = peri > 0 ? (4 * Math.PI * comp.area) / (peri * peri) : 0;
@@ -695,7 +699,7 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     return {
       cx: Math.round(bestComp.sx / bestComp.area),
       cy: Math.round(bestComp.sy / bestComp.area),
-      radius: Math.round(Math.max(areaR, bboxR2 * 0.7)),
+      radius: Math.round(Math.max(areaR, bboxR2 * 0.90)),
       method: 'otsu-contour',
     };
   }
@@ -779,9 +783,11 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
   const maxRUse = Math.max(contourRadius, gearRadius);
   if (maxRUse < 20) return 0;
 
-  const thresholdR = Math.floor(maxRUse * 0.85);
+  // Scan from 70% to 115% of max radius to capture tooth-tip zone even
+  // when contourRadius underestimates (common for ring-shaped cogs).
+  const thresholdR = Math.floor(maxRUse * 0.70);
   const maxRScan = Math.min(
-    Math.floor(maxRUse * 1.10),
+    Math.floor(maxRUse * 1.15),
     Math.min(cx, width - cx, cy, height - cy) - 1,
   );
 
@@ -1098,6 +1104,13 @@ function binaryContourCount(gray, cx, cy, width, height) {
 
       if (bx.length < 100) continue;
 
+      // Use the component's own centroid instead of the passed-in (cx, cy).
+      // This decouples the radial profile from center detection errors —
+      // critical for ring-shaped cassette cogs where findGearCenter may
+      // lock onto inner features (bore, splines, mounting holes).
+      const compCx = comp.sx / comp.area;
+      const compCy = comp.sy / comp.area;
+
       // Build outer-envelope radius profile: for each angular bin, take
       // the maximum boundary radius.  This correctly handles ring-shaped
       // gears (cassette cogs) where inner splines would otherwise corrupt
@@ -1105,8 +1118,8 @@ function binaryContourCount(gray, cx, cy, width, height) {
       const rInterp = new Float64Array(BC_ANGLES);
       const binHit = new Uint8Array(BC_ANGLES);
       for (let i = 0; i < bx.length; i++) {
-        const dx = bx[i] - cx;
-        const dy = by[i] - cy;
+        const dx = bx[i] - compCx;
+        const dy = by[i] - compCy;
         const angle = Math.atan2(dy, dx);                     // -π to π
         const bin = ((Math.floor(((angle + Math.PI) / (2 * Math.PI)) * BC_ANGLES) % BC_ANGLES) + BC_ANGLES) % BC_ANGLES;
         const r = Math.sqrt(dx * dx + dy * dy);
@@ -1246,7 +1259,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   // FFT-based confidence (linear ramp: rel 0.05→0%, 0.20→100%)
   const fftConf = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
 
-  // ── Decision rule (matches Python detect_teeth exactly) ────────────
+  // ── Decision rule ──────────────────────────────────────────────────
   let finalTc = 0;
   let methodUsed = 'none';
 
@@ -1255,11 +1268,29 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   // mounting holes) not outer teeth.  Suppress high-confidence override.
   const innerBoreSuspect = contourRadius > 40 && peakR > 0 && peakR < contourRadius * 0.55;
 
-  if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect) {
+  // Binary contour consensus: when peak count and FFT on the same
+  // Otsu silhouette agree within ±2, this is the strongest available
+  // signal — the method is self-centering (uses component centroid)
+  // and two independent analyses of the same contour agree.
+  const bcConsensus = bcPurity >= 0.08
+    && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH
+    && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH
+    && Math.abs(bcTc - bcPeaks) <= 2;
+
+  if (bcConsensus) {
+    // 0. Binary contour consensus — use FFT count (more precise than peaks).
+    // When high-confidence multi-radius FFT agrees, defer to it for precision.
+    if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect
+        && Math.abs(peakTc - bcTc) <= 2) {
+      finalTc = peakTc;
+      methodUsed = 'bc-consensus+peak';
+    } else {
+      finalTc = bcTc;
+      methodUsed = 'bc-consensus';
+    }
+    finalRel = Math.max(finalRel, bcPurity * 0.50);
+  } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect) {
     // 1. Multi-radius outermost candidate is highly confident — trust it.
-    // Prefer peakTc over fft90tc because fftAtOuterRadii accumulates
-    // votes across all radii and can be dominated by inner features
-    // (spider arms, mounting holes) in large gears.
     finalTc = peakTc;
     methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
@@ -1269,10 +1300,6 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     methodUsed = 'bc-fft';
   } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
     // 3. Binary contour peak count is in valid range.
-    // Peak counting on Otsu silhouette can be off by ±1 for
-    // small gears (11-15T) due to merged/split teeth.  When
-    // FFT methods agree on a count that differs from bcPeaks
-    // by exactly 1, prefer the FFT result.
     if (fft90tc > 0 && bcTc > 0
         && fft90tc === bcTc
         && Math.abs(fft90tc - bcPeaks) === 1) {
@@ -1431,7 +1458,22 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   let finalTc = 0;
   let methodUsed = 'none';
 
-  if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect2) {
+  const bcConsensus2 = bcPurity >= 0.08
+    && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH
+    && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH
+    && Math.abs(bcTc - bcPeaks) <= 2;
+
+  if (bcConsensus2) {
+    if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect2
+        && Math.abs(peakTc - bcTc) <= 2) {
+      finalTc = peakTc;
+      methodUsed = 'bc-consensus+peak';
+    } else {
+      finalTc = bcTc;
+      methodUsed = 'bc-consensus';
+    }
+    finalRel = Math.max(finalRel, bcPurity * 0.50);
+  } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect2) {
     finalTc = peakTc;
     methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
