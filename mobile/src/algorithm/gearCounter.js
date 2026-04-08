@@ -311,6 +311,23 @@ function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
     if (score > bestScore) { bestScore = score; bestF = f; }
   }
 
+  // Sub-harmonic doubling: the harmonic-weighted scoring above can boost
+  // sub-harmonics of the true tooth frequency (e.g., for a 28T gear,
+  // score[14] includes 0.5×mag[28], the dominant peak).  Detect and
+  // correct by checking raw magnitude at 2×bestF.
+  while (bestF * 2 <= MAX_TEETH && bestF * 2 < mag.length) {
+    if (mag[bestF * 2] >= mag[bestF] * 0.4) {
+      bestF = bestF * 2;
+    } else {
+      break;
+    }
+  }
+
+  // Recalculate score for the (possibly doubled) bestF
+  bestScore = mag[bestF];
+  if (2 * bestF < mag.length) bestScore += 0.5 * mag[2 * bestF];
+  if (3 * bestF < mag.length) bestScore += 0.25 * mag[3 * bestF];
+
   const rel = totalScore > 0 ? bestScore / totalScore : 0;
   return { tc: bestF, rel };
 }
@@ -826,6 +843,19 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
   for (const [freq, val] of Object.entries(fftVotes)) {
     if (val > bestVal) { bestVal = val; bestFreq = Number(freq); }
   }
+
+  // Sub-harmonic doubling: if 2×bestFreq has ≥40% of the votes,
+  // the winner is likely a sub-harmonic of the actual tooth frequency.
+  while (bestFreq * 2 <= MAX_TEETH) {
+    const doubleVotes = fftVotes[bestFreq * 2] || 0;
+    if (doubleVotes >= bestVal * 0.4) {
+      bestFreq = bestFreq * 2;
+      bestVal = doubleVotes;
+    } else {
+      break;
+    }
+  }
+
   return bestFreq;
 }
 

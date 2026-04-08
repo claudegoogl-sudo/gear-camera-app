@@ -131,6 +131,16 @@ function pickToothCount(dft) {
   }
   let best=10;
   for (let f=11;f<=65;f++) if(scores[f]>scores[best])best=f;
+
+  // Sub-harmonic doubling (mirrors production fftCountAtRadius)
+  while (best*2<=65 && best*2<dft.length) {
+    if (dft[best*2]>=dft[best]*0.4) { best=best*2; } else { break; }
+  }
+  // Recalculate score for the (possibly doubled) best
+  scores[best]=dft[best];
+  if(2*best<dft.length)scores[best]+=0.5*dft[2*best];
+  if(3*best<dft.length)scores[best]+=0.25*dft[3*best];
+
   let total=0;
   for (let f=10;f<=65;f++) total+=scores[f];
   const rel=total>0?scores[best]/total:0;
@@ -258,12 +268,13 @@ describe('pickToothCount', () => {
   });
 
   test('harmonic boosts correct frequency', () => {
-    // freq 18 modest + its harmonic at 36 strong → should beat a slightly
-    // higher fundamental at 19 with no harmonic support
+    // freq 18 modest + its harmonic at 36 present → should beat a slightly
+    // higher fundamental at 19 with no harmonic support.
+    // Harmonic must be weaker than fundamental (realistic gear signal).
     const dft = new Float32Array(181).fill(1);
     dft[19] = 50;   // strong fundamental, no harmonic
-    dft[18] = 45;   // slightly lower, but...
-    dft[36] = 80;   // ...harmonic makes score[18] = 45 + 40 = 85 > 50
+    dft[18] = 48;   // slightly lower, but...
+    dft[36] = 15;   // ...harmonic makes score[18] = 48 + 7.5 = 55.5 > 50
     expect(pickToothCount(dft).toothCount).toBe(18);
   });
 
@@ -279,6 +290,32 @@ describe('pickToothCount', () => {
     dft[23] = 1000;
     const { confidence } = pickToothCount(dft);
     expect(confidence).toBeGreaterThan(0.9);
+  });
+
+  test('sub-harmonic doubling: 28T gear not detected as 14T', () => {
+    // Simulate a 28T gear: dominant peak at 28, modest sub-harmonic at 14
+    const dft = new Float32Array(181).fill(1);
+    dft[28] = 100;  // true fundamental
+    dft[14] = 30;   // sub-harmonic (structural feature)
+    // Without sub-harmonic fix, harmonic scoring at f=14 would get
+    // 30 + 0.5×100 = 80, beating f=28's score of 100.
+    // With the fix, the doubling detects that mag[28] >= 0.4×mag[14].
+    expect(pickToothCount(dft).toothCount).toBe(28);
+  });
+
+  test('sub-harmonic doubling: 24T gear not detected as 12T', () => {
+    const dft = new Float32Array(181).fill(1);
+    dft[24] = 80;
+    dft[12] = 25;
+    expect(pickToothCount(dft).toothCount).toBe(24);
+  });
+
+  test('genuine 14T gear is not falsely doubled to 28T', () => {
+    // For a real 14T gear: strong fundamental at 14, weak 2nd harmonic at 28
+    const dft = new Float32Array(181).fill(1);
+    dft[14] = 100;
+    dft[28] = 20;  // weak harmonic (< 0.4 × 100), should NOT trigger doubling
+    expect(pickToothCount(dft).toothCount).toBe(14);
   });
 });
 
