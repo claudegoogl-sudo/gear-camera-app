@@ -43,7 +43,10 @@ const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no C
  *   2. IMU sensors (accelerometer + gyroscope) — physical stillness detection
  *   3. CRES gear shape pre-recognition — detects gear presence in frame
  *
- * Trigger logic: gear must be detected AND (IMU stable OR pixel stable).
+ * Trigger logic (three parallel paths fire capture):
+ *   1. CRES primary — gear detected while device has been still ≥ CRES_TRIGGER_MIN_STILLNESS_MS
+ *   2. Pixel-diff — gear detected + no pixel change for STABILITY_MS
+ *   3. IMU — gear detected (or IMU-only fallback) + physically still for IMU_STILLNESS_MS
  * If the gear disappears while stable, stability timers reset.
  *
  * Gear detection also produces approximate center/radius hints that
