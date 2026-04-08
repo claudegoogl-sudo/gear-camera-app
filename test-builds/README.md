@@ -5,6 +5,7 @@ Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are com
 
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
+| 2026-04-08 19:09 | gear-camera-debug-2026-04-08 19:08-b45.apk (185MB) | b45 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b45/gear-camera-debug-2026-04-08.19:08-b45.apk) |
 | 2026-04-08 18:16 | gear-camera-debug-2026-04-08 18:14-b44.apk (185MB) | b44 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b44/gear-camera-debug-2026-04-08.18:14-b44.apk) |
 | 2026-04-07 17:52 | gear-camera-debug-2026-04-07 17:50-b43.apk (185MB) | b43 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b43/gear-camera-debug-2026-04-07.17:50-b43.apk) |
 | 2026-04-06 21:30 | gear-camera-debug-2026-04-06 21:29-b42.apk (185MB) | b42 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b42/gear-camera-debug-2026-04-06.21:29-b42.apk) |
