@@ -23,6 +23,10 @@ const GEAR_DETECT_SKIP = 5;
 // stability timers.  At ~500 ms between CRES checks, 3 misses ≈ 1.5 s of
 // no-gear before we clear the detection flag.
 const GEAR_LOST_THRESHOLD = 3;
+// CRES-primary trigger — minimum device stillness before a CRES gear detection
+// can fire capture on its own.  Much shorter than IMU_STILLNESS_MS so that
+// visual detection drives the trigger, with IMU as supporting evidence.
+const CRES_TRIGGER_MIN_STILLNESS_MS = 300;
 // IMU-based stillness detection (accelerometer + gyroscope)
 const ACCEL_MOTION_THRESHOLD = 0.05;
 const GYRO_MOTION_THRESHOLD = 0.12; // rad/s — rotation rate indicating motion
@@ -55,6 +59,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
   const stabilityTimer = useRef(null);
   const gearWasDetectedRef = useRef(false);
   const gearLostCountRef = useRef(0);
+  const lastMotionTimeRef = useRef(Date.now());
   const imuTimer = useRef(null);
   const lastAccel = useRef(null);
   const latestGyro = useRef({ x: 0, y: 0, z: 0 });
@@ -125,6 +130,16 @@ export function useMotionDetection({ onStable, enabled = true }) {
         gearWasDetectedRef.current = true;
         setGearDetected(true);
         setGearHints({ centerX: approxCenterX, centerY: approxCenterY, radius: approxRadius, score });
+
+        // CRES-primary trigger: visual gear detection drives capture when the
+        // device has already been still long enough.  This fires faster than
+        // the IMU_STILLNESS_MS timer so that gear presence — not phone
+        // standstill — is the dominant signal.
+        const stillnessMs = Date.now() - lastMotionTimeRef.current;
+        if (stillnessMs >= CRES_TRIGGER_MIN_STILLNESS_MS) {
+          setIsStable(true);
+          onStable?.();
+        }
       } else {
         gearLostCountRef.current += 1;
 
@@ -149,7 +164,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
         // timers continue through brief detection gaps.
       }
     },
-    [clearTimer],
+    [clearTimer, onStable],
   );
 
   // Called from worklet when a buffer was read successfully — proves the
@@ -222,6 +237,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
 
         if (isMoving) {
           // Device is moving — cancel any pending stability trigger.
+          lastMotionTimeRef.current = Date.now();
           if (imuTimer.current) {
             clearTimeout(imuTimer.current);
             imuTimer.current = null;
@@ -350,6 +366,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
       clearTimeout(imuTimer.current);
       imuTimer.current = null;
     }
+    lastMotionTimeRef.current = Date.now();
     lastAccel.current = null;
     latestGyro.current = { x: 0, y: 0, z: 0 };
     gearWasDetectedRef.current = false;

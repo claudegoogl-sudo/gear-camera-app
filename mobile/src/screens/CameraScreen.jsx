@@ -137,9 +137,11 @@ export default function CameraScreen({ navigation }) {
           throw new Error(`Download failed (HTTP ${status})`);
         }
         const contentUri = await FileSystem.getContentUriAsync(uri);
-        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+        // Use ACTION_INSTALL_PACKAGE instead of ACTION_VIEW so the Android
+        // Package Installer is the exclusive handler.  ACTION_VIEW with the
+        // APK MIME type can be intercepted by Chrome on some devices.
+        await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
           data: contentUri,
-          type: 'application/vnd.android.package-archive',
           flags: 268435457, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
         });
       } catch (e) {
