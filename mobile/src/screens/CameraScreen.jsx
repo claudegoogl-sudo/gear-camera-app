@@ -38,9 +38,12 @@ export default function CameraScreen({ navigation }) {
   // support photo capture (some ultra-wide lenses are video-streaming only).
   const wideAngleDevice = useCameraDevice('back', { physicalDevices: ['wide-angle-camera'] });
   const mainDevice = useCameraDevice('back');
-  const device = (wideAngleDevice == null || wideAngleDevice.supportsPhotoCapture === false)
-    ? mainDevice
-    : wideAngleDevice;
+  // Use formats to detect photo capture support — supportsPhotoCapture does not
+  // exist in react-native-vision-camera v4.x. A format with photoWidth > 0
+  // indicates the camera supports still image capture.
+  const device = (wideAngleDevice?.formats?.some(f => f.photoWidth > 0 && f.photoHeight > 0) ?? false)
+    ? wideAngleDevice
+    : mainDevice;
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
