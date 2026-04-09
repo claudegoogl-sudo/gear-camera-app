@@ -288,7 +288,12 @@ export function useMotionDetection({ onStable, enabled = true }) {
       frameProcessor = useFrameProcessor(
         (frame) => {
           'worklet';
-          if (!enabled) return;
+          // No `enabled` check here — the Camera component passes
+          // `frameProcessor={undefined}` when disabled, so this worklet is
+          // never invoked outside of enabled state.  Removing the captured
+          // `enabled` flag prevents the stale-closure bug where the worklet
+          // would permanently see the initial `enabled=false` value and
+          // short-circuit CRES / pixel-diff detection on every frame.
 
           frameCounter.value += 1;
           if (frameCounter.value % FRAME_SKIP !== 0) return;
@@ -355,7 +360,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
             }
           }
         },
-        [enabled, handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, reportFrameErrorJS, handleFrameDiagJS],
+        [handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, reportFrameErrorJS, handleFrameDiagJS],
       );
     } catch {
       // Worklets runtime unavailable at this point — fall back to manual capture.

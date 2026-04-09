@@ -31,11 +31,16 @@ import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
-  const device = useCameraDevice('back');
+  // Prefer wide-angle lens during aiming — keeps the gear in frame without
+  // requiring the user to hold the phone far away.  The algorithm crops and
+  // scales internally, so capturing wide is fine.
+  const device = useCameraDevice('back', { physicalDevices: ['wide-angle-camera'] });
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '', allBuilds: [] });
+  // Declared before handleCapture so the capture guard can read it.
+  const [downloading, setDownloading] = useState(false);
   const isFocused = useIsFocused();
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
@@ -46,7 +51,9 @@ export default function CameraScreen({ navigation }) {
 
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
-    if (!camera.current || isProcessing || !isCameraReady) return;
+    // Guard against capturing while a download is in progress — navigating
+    // away mid-download would interrupt the in-flight FileSystem.downloadAsync.
+    if (!camera.current || isProcessing || !isCameraReady || downloading) return;
 
     motionResetRef.current?.();
     setProcessing(true);
@@ -76,12 +83,14 @@ export default function CameraScreen({ navigation }) {
       setProcessing(false);
       motionResetRef.current?.();
     }
-  }, [isCameraReady, isProcessing, navigation, setError, setProcessing, setResult]);
+  }, [isCameraReady, isProcessing, downloading, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
+  // Disabled during download to prevent auto-trigger from navigating away
+  // mid-flight and interrupting the in-progress FileSystem.downloadAsync.
   const { isStable, gearDetected, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
-    enabled: isFocused && isCameraReady && !isProcessing && hasPermission,
+    enabled: isFocused && isCameraReady && !isProcessing && !downloading && hasPermission,
   });
 
   useEffect(() => { motionResetRef.current = motionReset; }, [motionReset]);
@@ -121,7 +130,6 @@ export default function CameraScreen({ navigation }) {
   }, []);
 
   // ── Download + install a specific build ───────────────────────────────
-  const [downloading, setDownloading] = useState(false);
   const downloadAndInstall = useCallback(async (build) => {
     if (!build.downloadUrl) {
       Alert.alert('No APK available', 'This release has no downloadable APK.');
@@ -223,7 +231,15 @@ export default function CameraScreen({ navigation }) {
         photo={true}
         pixelFormat="rgb"
         torch={isCameraReady && !isProcessing ? 'on' : 'off'}
-        frameProcessor={isCameraReady ? frameProcessor : undefined}
+        frameProcessor={
+          // Pass frameProcessor only when fully enabled so the worklet never
+          // runs with a stale closure.  This is what makes CRES reliable:
+          // the worklet is undefined (not called at all) rather than
+          // checking a captured-at-creation-time `enabled` flag.
+          isFocused && isCameraReady && !isProcessing && !downloading
+            ? frameProcessor
+            : undefined
+        }
         onInitialized={() => setIsCameraReady(true)}
         onError={(e) => {
           console.warn('Camera error:', e.message);
