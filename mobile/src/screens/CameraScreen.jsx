@@ -34,7 +34,13 @@ export default function CameraScreen({ navigation }) {
   // Prefer wide-angle lens during aiming — keeps the gear in frame without
   // requiring the user to hold the phone far away.  The algorithm crops and
   // scales internally, so capturing wide is fine.
-  const device = useCameraDevice('back', { physicalDevices: ['wide-angle-camera'] });
+  // Fall back to the standard back camera if the wide-angle device does not
+  // support photo capture (some ultra-wide lenses are video-streaming only).
+  const wideAngleDevice = useCameraDevice('back', { physicalDevices: ['wide-angle-camera'] });
+  const mainDevice = useCameraDevice('back');
+  const device = (wideAngleDevice == null || wideAngleDevice.supportsPhotoCapture === false)
+    ? mainDevice
+    : wideAngleDevice;
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
