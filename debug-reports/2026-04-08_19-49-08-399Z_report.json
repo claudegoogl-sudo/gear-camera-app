@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-04-08T19:49:08.399Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (46) · 2026-04-08 19:32",
+  "result": {
+    "toothCount": 24,
+    "confidence": 0.5698,
+    "gearContour": {
+      "centerX": 0.44266666666666665,
+      "centerY": 0.419,
+      "radius": 0.3466666666666667
+    }
+  },
+  "actualTeethCount": 24,
+  "photoFile": "debug-reports/2026-04-08_19-49-08-399Z_photo.jpg"
+}

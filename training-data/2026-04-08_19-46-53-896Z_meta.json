@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-04-08T19:46:53.896Z",
+  "build": "v1.0.0 (46) · 2026-04-08 19:32",
+  "photoFile": "training-data/2026-04-08_19-46-53-896Z_photo.jpg",
+  "result": {
+    "toothCount": 20,
+    "confidence": 0.6128,
+    "gearContour": {
+      "centerX": 0.538,
+      "centerY": 0.38533333333333336,
+      "radius": 0.257
+    }
+  }
+}
