@@ -225,6 +225,7 @@ export default function CameraScreen({ navigation }) {
         gearContour: null,
         actualTeethCount: null,
         cameraErrors: cameraErrorsRef.current,
+        cameraHasError,
         isCameraReady,
         isFocused,
       });
@@ -238,7 +239,7 @@ export default function CameraScreen({ navigation }) {
     } finally {
       setSharingDebug(false);
     }
-  }, [isCameraReady, isFocused]);
+  }, [cameraHasError, isCameraReady, isFocused]);
 
   const aimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
