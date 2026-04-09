@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-04-09T14:45:32.669Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (53) · 2026-04-09 14:33",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [
+    {
+      "timestamp": "2026-04-09T14:44:57.539Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.540Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.541Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.541Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.542Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.542Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.543Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T14:44:57.544Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    }
+  ],
+  "isCameraReady": true,
+  "isFocused": true
+}
