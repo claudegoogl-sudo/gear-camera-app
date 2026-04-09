@@ -34,7 +34,7 @@ def load_labeled_images():
             skipped += 1
             continue
 
-        actual = meta.get("actual_tooth_count")
+        actual = meta.get("actual_tooth_count") or meta.get("actualTeethCount")
         if not actual:
             skipped += 1
             continue
