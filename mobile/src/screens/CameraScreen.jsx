@@ -34,16 +34,17 @@ export default function CameraScreen({ navigation }) {
   // Prefer wide-angle lens during aiming — keeps the gear in frame without
   // requiring the user to hold the phone far away.  The algorithm crops and
   // scales internally, so capturing wide is fine.
-  // Fall back to the standard back camera if the wide-angle device does not
-  // support photo capture (some ultra-wide lenses are video-streaming only).
+  // Fall back to the standard back camera if the wide-angle device fires an
+  // error at runtime.  Android OEM Camera2 metadata is unreliable — some
+  // ultra-wide lenses report photoWidth > 0 in their formats yet still fail
+  // when VisionCamera tries to configure a photo session.  A static formats
+  // pre-check is therefore insufficient; we detect failure via onError and
+  // switch devices dynamically (once, guarded by a ref to avoid loops).
   const wideAngleDevice = useCameraDevice('back', { physicalDevices: ['wide-angle-camera'] });
   const mainDevice = useCameraDevice('back');
-  // Use formats to detect photo capture support — supportsPhotoCapture does not
-  // exist in react-native-vision-camera v4.x. A format with photoWidth > 0
-  // indicates the camera supports still image capture.
-  const device = (wideAngleDevice?.formats?.some(f => f.photoWidth > 0 && f.photoHeight > 0) ?? false)
-    ? wideAngleDevice
-    : mainDevice;
+  const [wideAngleFailed, setWideAngleFailed] = useState(false);
+  const wideAngleFailedRef = useRef(false);
+  const device = (!wideAngleFailed && wideAngleDevice) ? wideAngleDevice : mainDevice;
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -252,7 +253,23 @@ export default function CameraScreen({ navigation }) {
         onInitialized={() => setIsCameraReady(true)}
         onError={(e) => {
           console.warn('Camera error:', e.message);
-          setIsCameraReady(true); // unblock UI even on error
+          // If the wide-angle device errored and we haven't already fallen back,
+          // switch to the main camera.  Only bother when they are different
+          // devices (different ids); if they are the same there is nothing to
+          // fall back to.
+          if (
+            !wideAngleFailedRef.current &&
+            wideAngleDevice?.id &&
+            mainDevice?.id &&
+            wideAngleDevice.id !== mainDevice.id
+          ) {
+            console.warn('Camera: wide-angle failed, falling back to main camera');
+            wideAngleFailedRef.current = true;
+            setWideAngleFailed(true);
+            setIsCameraReady(false); // hold UI locked until main camera initialises
+          } else {
+            setIsCameraReady(true); // unblock UI even on error
+          }
         }}
       />
 
