@@ -60,6 +60,7 @@ export default function CameraScreen({ navigation }) {
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
 
   const cameraErrorsRef = useRef([]);
+  const cameraEventsRef = useRef([]);
   const [cameraHasError, setCameraHasError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const [sharingDebug, setSharingDebug] = useState(false);
@@ -149,7 +150,9 @@ export default function CameraScreen({ navigation }) {
   useEffect(() => {
     if (!isPolicyRestricted) return;
     const sub = AppState.addEventListener('change', (nextState) => {
+      cameraEventsRef.current.push({ type: 'appState', ts: new Date().toISOString(), nextState, isPolicyRestricted: true });
       if (nextState === 'active') {
+        cameraEventsRef.current.push({ type: 'policyRetry', ts: new Date().toISOString(), retryKey: retryKey + 1, policyRetryCount: policyRetryCountRef.current, trigger: 'appState' });
         setIsPolicyRestricted(false);
         policyRetryCountRef.current = 0;
         isCameraReadyRef.current = false;
@@ -249,9 +252,12 @@ export default function CameraScreen({ navigation }) {
         gearContour: null,
         actualTeethCount: null,
         cameraErrors: cameraErrorsRef.current,
+        cameraEvents: cameraEventsRef.current,
         cameraHasError,
         isCameraReady,
         isFocused,
+        retryKey,
+        policyRetryCount: policyRetryCountRef.current,
       });
       if (Platform.OS === 'android') {
         ToastAndroid.show('Debug report uploaded', ToastAndroid.SHORT);
@@ -263,7 +269,7 @@ export default function CameraScreen({ navigation }) {
     } finally {
       setSharingDebug(false);
     }
-  }, [cameraHasError, isCameraReady, isFocused]);
+  }, [cameraHasError, isCameraReady, isFocused, retryKey]);
 
   const aimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
@@ -312,7 +318,11 @@ export default function CameraScreen({ navigation }) {
             ? frameProcessor
             : undefined
         }
-        onInitialized={() => { isCameraReadyRef.current = true; setIsCameraReady(true); }}
+        onInitialized={() => {
+          isCameraReadyRef.current = true;
+          setIsCameraReady(true);
+          cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null });
+        }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
           const isPolicyError = e.code === 'system/camera-is-restricted';
@@ -327,6 +337,16 @@ export default function CameraScreen({ navigation }) {
             deviceId: device?.id ?? null,
             wideAngleFallback: !!isWideAngleFallback,
             policyRestricted: isPolicyError,
+          });
+          cameraEventsRef.current.push({
+            type: 'error',
+            ts: new Date().toISOString(),
+            code: e.code ?? null,
+            message: e.message,
+            policyRestricted: isPolicyError,
+            wideAngleFallback: !!isWideAngleFallback,
+            retryKey,
+            policyRetryCount: policyRetryCountRef.current,
           });
           // If the wide-angle device errored and we haven't already fallen back,
           // switch to the main camera.  Only bother when they are different
@@ -428,8 +448,10 @@ export default function CameraScreen({ navigation }) {
             <TouchableOpacity
               style={styles.retryButton}
               onPress={() => {
+                cameraEventsRef.current.push({ type: 'retryButton', ts: new Date().toISOString(), isPolicyRestricted, retryKey });
                 setCameraHasError(false);
                 if (isPolicyRestricted) {
+                  cameraEventsRef.current.push({ type: 'policyRetry', ts: new Date().toISOString(), retryKey: retryKey + 1, policyRetryCount: policyRetryCountRef.current, trigger: 'button' });
                   // User explicitly tapped Retry after (presumably) unlocking.
                   // Immediate remount — no delay needed.
                   isCameraReadyRef.current = false;
