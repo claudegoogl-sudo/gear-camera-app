@@ -62,6 +62,9 @@ export default function CameraScreen({ navigation }) {
   const [cameraHasError, setCameraHasError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const [sharingDebug, setSharingDebug] = useState(false);
+  const [isPolicyRestricted, setIsPolicyRestricted] = useState(false);
+  const policyRetryCountRef = useRef(0);
+  const policyRetryTimerRef = useRef(null);
 
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
@@ -133,6 +136,9 @@ export default function CameraScreen({ navigation }) {
       isCameraReadyRef.current = false;
       setIsCameraReady(false);
       setCameraHasError(false);
+      setIsPolicyRestricted(false);
+      policyRetryCountRef.current = 0;
+      if (policyRetryTimerRef.current) clearTimeout(policyRetryTimerRef.current);
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
@@ -291,6 +297,7 @@ export default function CameraScreen({ navigation }) {
         onInitialized={() => { isCameraReadyRef.current = true; setIsCameraReady(true); }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
+          const isPolicyError = /restricted by the operating system|device policy/i.test(e.message);
           const isWideAngleFallback =
             !wideAngleFailedRef.current &&
             wideAngleDevice?.id &&
@@ -301,6 +308,7 @@ export default function CameraScreen({ navigation }) {
             message: e.message,
             deviceId: device?.id ?? null,
             wideAngleFallback: !!isWideAngleFallback,
+            policyRestricted: isPolicyError,
           });
           // If the wide-angle device errored and we haven't already fallen back,
           // switch to the main camera.  Only bother when they are different
@@ -312,9 +320,21 @@ export default function CameraScreen({ navigation }) {
             wideAngleFailedRef.current = true;
             setWideAngleFailed(true);
             setIsCameraReady(false); // hold UI locked until main camera initialises
+          } else if (isPolicyError && policyRetryCountRef.current < 1) {
+            // OS-level camera restriction (screen-lock / keyguard / device policy).
+            // Auto-retry once after 2 s to let the OS release the camera.
+            console.warn('Camera: device-policy restriction detected, auto-retrying in 2s');
+            isCameraReadyRef.current = false;
+            setIsCameraReady(false);
+            setIsPolicyRestricted(true);
+            policyRetryCountRef.current += 1;
+            policyRetryTimerRef.current = setTimeout(() => {
+              setRetryKey((k) => k + 1);
+            }, 2000);
           } else {
             isCameraReadyRef.current = false;
             setIsCameraReady(false); // keep UI locked — camera session is broken
+            if (isPolicyError) setIsPolicyRestricted(true);
             setCameraHasError(true);
           }
         }}
@@ -327,7 +347,7 @@ export default function CameraScreen({ navigation }) {
         <View style={styles.topBar}>
           {isCameraReady
             ? <MotionIndicator stable={isStable} gearDetected={gearDetected} />
-            : <Text style={styles.initText}>{cameraHasError ? 'Camera error' : 'Starting camera…'}</Text>
+            : <Text style={styles.initText}>{cameraHasError ? (isPolicyRestricted ? 'Camera blocked by OS' : 'Camera error') : 'Starting camera…'}</Text>
           }
           <TouchableOpacity
             style={styles.debugIcon}
@@ -374,7 +394,9 @@ export default function CameraScreen({ navigation }) {
         <View style={styles.bottomBar}>
           <Text style={styles.hint}>
             {cameraHasError
-              ? 'Camera error — tap Retry below'
+              ? (isPolicyRestricted
+                ? 'Camera restricted by OS — unlock your phone and tap Retry'
+                : 'Camera error — tap Retry below')
               : !isCameraReady
               ? 'Starting camera…'
               : isProcessing
@@ -391,9 +413,21 @@ export default function CameraScreen({ navigation }) {
               style={styles.retryButton}
               onPress={() => {
                 setCameraHasError(false);
-                isCameraReadyRef.current = false;
-                setIsCameraReady(false);
-                setRetryKey((k) => k + 1);
+                if (isPolicyRestricted) {
+                  // Delay remount so the OS has time to release the camera.
+                  // UI shows "Starting camera…" during the wait.
+                  policyRetryTimerRef.current = setTimeout(() => {
+                    isCameraReadyRef.current = false;
+                    setIsCameraReady(false);
+                    setIsPolicyRestricted(false);
+                    policyRetryCountRef.current = 0;
+                    setRetryKey((k) => k + 1);
+                  }, 2000);
+                } else {
+                  isCameraReadyRef.current = false;
+                  setIsCameraReady(false);
+                  setRetryKey((k) => k + 1);
+                }
               }}
               activeOpacity={0.8}
             >
