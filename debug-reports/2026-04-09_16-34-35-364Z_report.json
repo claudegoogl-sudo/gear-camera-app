@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-04-09T16:34:35.364Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (54) · 2026-04-09 15:14",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [
+    {
+      "timestamp": "2026-04-09T16:34:02.464Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T16:34:02.533Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T16:34:16.321Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    },
+    {
+      "timestamp": "2026-04-09T16:34:16.381Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false
+    }
+  ],
+  "isCameraReady": true,
+  "isFocused": true
+}
