@@ -59,6 +59,8 @@ export default function CameraScreen({ navigation }) {
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
 
   const cameraErrorsRef = useRef([]);
+  const [cameraHasError, setCameraHasError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [sharingDebug, setSharingDebug] = useState(false);
 
   const pulseScale = useSharedValue(1);
@@ -130,6 +132,7 @@ export default function CameraScreen({ navigation }) {
       motionReset();
       isCameraReadyRef.current = false;
       setIsCameraReady(false);
+      setCameraHasError(false);
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
@@ -267,13 +270,14 @@ export default function CameraScreen({ navigation }) {
     <View style={styles.container}>
       {/* Full-screen camera preview — no frame processor until camera is ready */}
       <Camera
+        key={retryKey}
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
         isActive={isFocused}
         photo={true}
         pixelFormat="rgb"
-        torch={isCameraReady && !isProcessing ? 'on' : 'off'}
+        torch="off"
         frameProcessor={
           // Pass frameProcessor only when fully enabled so the worklet never
           // runs with a stale closure.  This is what makes CRES reliable:
@@ -310,6 +314,7 @@ export default function CameraScreen({ navigation }) {
           } else {
             isCameraReadyRef.current = false;
             setIsCameraReady(false); // keep UI locked — camera session is broken
+            setCameraHasError(true);
           }
         }}
       />
@@ -321,7 +326,7 @@ export default function CameraScreen({ navigation }) {
         <View style={styles.topBar}>
           {isCameraReady
             ? <MotionIndicator stable={isStable} gearDetected={gearDetected} />
-            : <Text style={styles.initText}>Starting camera…</Text>
+            : <Text style={styles.initText}>{cameraHasError ? 'Camera error' : 'Starting camera…'}</Text>
           }
           <TouchableOpacity
             style={styles.debugIcon}
@@ -367,7 +372,9 @@ export default function CameraScreen({ navigation }) {
         {/* Bottom controls */}
         <View style={styles.bottomBar}>
           <Text style={styles.hint}>
-            {!isCameraReady
+            {cameraHasError
+              ? 'Camera error — tap Retry below'
+              : !isCameraReady
               ? 'Starting camera…'
               : isProcessing
               ? 'Processing…'
@@ -377,6 +384,21 @@ export default function CameraScreen({ navigation }) {
               ? 'Center gear in the circle'
               : 'Gear found — hold steady…'}
           </Text>
+
+          {cameraHasError && (
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => {
+                setCameraHasError(false);
+                isCameraReadyRef.current = false;
+                setIsCameraReady(false);
+                setRetryKey((k) => k + 1);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.retryButtonText}>Retry Camera</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.captureButton, captureDisabled && styles.captureButtonDisabled]}
@@ -537,4 +559,16 @@ const styles = StyleSheet.create({
   },
   processingTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
   processingHint:  { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
+
+  retryButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryButtonText: {
+    color: '#111',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
