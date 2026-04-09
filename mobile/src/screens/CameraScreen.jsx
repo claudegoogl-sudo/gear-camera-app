@@ -63,7 +63,7 @@ export default function CameraScreen({ navigation }) {
   const handleCapture = useCallback(async () => {
     // Guard against capturing while a download is in progress — navigating
     // away mid-download would interrupt the in-flight FileSystem.downloadAsync.
-    if (!camera.current || isProcessing || !isCameraReady || downloading) return;
+    if (!camera.current || isProcessing || !isCameraReady || downloading || !isFocused) return;
 
     motionResetRef.current?.();
     setProcessing(true);
@@ -93,7 +93,7 @@ export default function CameraScreen({ navigation }) {
       setProcessing(false);
       motionResetRef.current?.();
     }
-  }, [isCameraReady, isProcessing, downloading, navigation, setError, setProcessing, setResult]);
+  }, [isCameraReady, isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
   // Disabled during download to prevent auto-trigger from navigating away
@@ -228,7 +228,7 @@ export default function CameraScreen({ navigation }) {
     );
   }
 
-  const captureDisabled = isProcessing || !isCameraReady;
+  const captureDisabled = isProcessing || !isCameraReady || !isFocused;
 
   return (
     <View style={styles.container}>
