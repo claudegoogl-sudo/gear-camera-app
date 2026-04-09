@@ -237,7 +237,7 @@ export default function CameraScreen({ navigation }) {
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
-        isActive={true}
+        isActive={isFocused}
         photo={true}
         pixelFormat="rgb"
         torch={isCameraReady && !isProcessing ? 'on' : 'off'}
@@ -268,7 +268,7 @@ export default function CameraScreen({ navigation }) {
             setWideAngleFailed(true);
             setIsCameraReady(false); // hold UI locked until main camera initialises
           } else {
-            setIsCameraReady(true); // unblock UI even on error
+            setIsCameraReady(false); // keep UI locked — camera session is broken
           }
         }}
       />
