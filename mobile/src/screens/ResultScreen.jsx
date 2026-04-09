@@ -74,7 +74,7 @@ function useCountUp(target) {
  *   • Reset button slides up on mount
  */
 export default function ResultScreen({ navigation, route }) {
-  const { photoPath } = route.params ?? {};
+  const { photoPath, cameraErrors } = route.params ?? {};
   const { toothCount, confidence, gearContour, isProcessing, error, reset } = useGearStore();
   const { width } = useWindowDimensions();
   const imageHeight = width;
@@ -133,7 +133,7 @@ export default function ResultScreen({ navigation, route }) {
     const actualTeethCount = confirmedCount;
     setSharing(true);
     try {
-      await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount });
+      await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount, cameraErrors: cameraErrors ?? null });
 
       // Upload training data alongside debug share (fire-and-forget).
       uploadTrainingData({ photoPath, toothCount, confidence, gearContour }).catch(() => {});

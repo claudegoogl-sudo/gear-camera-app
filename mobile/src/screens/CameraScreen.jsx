@@ -7,6 +7,7 @@ import {
   Alert,
   Linking,
   Platform,
+  ToastAndroid,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -27,6 +28,7 @@ import useGearStore from '../store/useGearStore';
 import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
+import { shareDebugReport } from '../utils/debugShare';
 
 
 export default function CameraScreen({ navigation }) {
@@ -55,6 +57,9 @@ export default function CameraScreen({ navigation }) {
   const isFocused = useIsFocused();
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
+
+  const cameraErrorsRef = useRef([]);
+  const [sharingDebug, setSharingDebug] = useState(false);
 
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
@@ -87,7 +92,7 @@ export default function CameraScreen({ navigation }) {
         },
       });
 
-      navigation.navigate('Result', { photoPath: photo.path });
+      navigation.navigate('Result', { photoPath: photo.path, cameraErrors: cameraErrorsRef.current });
     } catch (e) {
       setError(e.message);
       Alert.alert('Processing failed', e.message);
@@ -206,6 +211,32 @@ export default function CameraScreen({ navigation }) {
     Alert.alert('Available test builds', `You have build ${BUILD_NUMBER}.`, buttons);
   }, [updateInfo, downloadAndInstall]);
 
+  // ── Debug report from camera screen ────────────────────────────────
+  const handleDebugReport = useCallback(async () => {
+    setSharingDebug(true);
+    try {
+      await shareDebugReport({
+        photoPath: null,
+        toothCount: null,
+        confidence: null,
+        gearContour: null,
+        actualTeethCount: null,
+        cameraErrors: cameraErrorsRef.current,
+        isCameraReady,
+        isFocused,
+      });
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Debug report uploaded', ToastAndroid.SHORT);
+      } else {
+        Alert.alert('', 'Debug report uploaded');
+      }
+    } catch (e) {
+      Alert.alert('Debug report failed', e.message);
+    } finally {
+      setSharingDebug(false);
+    }
+  }, [isCameraReady, isFocused]);
+
   const aimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
     opacity: aimOpacity.value,
@@ -255,16 +286,22 @@ export default function CameraScreen({ navigation }) {
         onInitialized={() => { isCameraReadyRef.current = true; setIsCameraReady(true); }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
+          const isWideAngleFallback =
+            !wideAngleFailedRef.current &&
+            wideAngleDevice?.id &&
+            mainDevice?.id &&
+            wideAngleDevice.id !== mainDevice.id;
+          cameraErrorsRef.current.push({
+            timestamp: new Date().toISOString(),
+            message: e.message,
+            deviceId: device?.id ?? null,
+            wideAngleFallback: !!isWideAngleFallback,
+          });
           // If the wide-angle device errored and we haven't already fallen back,
           // switch to the main camera.  Only bother when they are different
           // devices (different ids); if they are the same there is nothing to
           // fall back to.
-          if (
-            !wideAngleFailedRef.current &&
-            wideAngleDevice?.id &&
-            mainDevice?.id &&
-            wideAngleDevice.id !== mainDevice.id
-          ) {
+          if (isWideAngleFallback) {
             console.warn('Camera: wide-angle failed, falling back to main camera');
             isCameraReadyRef.current = false;
             wideAngleFailedRef.current = true;
@@ -286,6 +323,14 @@ export default function CameraScreen({ navigation }) {
             ? <MotionIndicator stable={isStable} gearDetected={gearDetected} />
             : <Text style={styles.initText}>Starting camera…</Text>
           }
+          <TouchableOpacity
+            style={styles.debugIcon}
+            onPress={handleDebugReport}
+            disabled={sharingDebug}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.debugIconText}>{sharingDebug ? '…' : '🐛'}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.updateIcon, updateInfo.available && styles.updateIconActive]}
             onPress={handleUpdatePress}
@@ -367,6 +412,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 12,
     paddingHorizontal: 16,
+  },
+
+  debugIcon: {
+    position: 'absolute',
+    right: 56,
+    top: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  debugIconText: {
+    fontSize: 16,
   },
 
   updateIcon: {
