@@ -276,7 +276,7 @@ export default function CameraScreen({ navigation }) {
         device={device}
         isActive={isFocused}
         photo={true}
-        pixelFormat="rgb"
+        pixelFormat="yuv"
         torch="off"
         frameProcessor={
           // Pass frameProcessor only when fully enabled so the worklet never
