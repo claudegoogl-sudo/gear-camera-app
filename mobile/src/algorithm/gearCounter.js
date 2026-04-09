@@ -800,9 +800,12 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
   const maxRUse = Math.max(contourRadius, gearRadius);
   if (maxRUse < 20) return 0;
 
-  // Scan from 70% to 115% of max radius to capture tooth-tip zone even
-  // when contourRadius underestimates (common for ring-shaped cogs).
-  const thresholdR = Math.floor(maxRUse * 0.70);
+  // Scan from 85% to 115% of max radius — matches Python _fft_at_90pct().
+  // Previously 70%, but since bboxR factor was raised to 0.90 (commit 2dad86a)
+  // the contour radius is accurate enough that starting at 85% avoids inner
+  // features (spider arms, cutout holes) on large gears like 28T cassette cogs
+  // which contaminate the FFT vote with spurious frequencies (PAP-203).
+  const thresholdR = Math.floor(maxRUse * 0.85);
   const maxRScan = Math.min(
     Math.floor(maxRUse * 1.15),
     Math.min(cx, width - cx, cy, height - cy) - 1,
