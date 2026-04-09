@@ -48,6 +48,7 @@ export default function CameraScreen({ navigation }) {
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const isCameraReadyRef = useRef(false);
   const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '', allBuilds: [] });
   // Declared before handleCapture so the capture guard can read it.
   const [downloading, setDownloading] = useState(false);
@@ -63,7 +64,7 @@ export default function CameraScreen({ navigation }) {
   const handleCapture = useCallback(async () => {
     // Guard against capturing while a download is in progress — navigating
     // away mid-download would interrupt the in-flight FileSystem.downloadAsync.
-    if (!camera.current || isProcessing || !isCameraReady || downloading || !isFocused) return;
+    if (!camera.current || isProcessing || !isCameraReadyRef.current || downloading || !isFocused) return;
 
     motionResetRef.current?.();
     setProcessing(true);
@@ -93,7 +94,7 @@ export default function CameraScreen({ navigation }) {
       setProcessing(false);
       motionResetRef.current?.();
     }
-  }, [isCameraReady, isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
+  }, [isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
 
   // ── Motion detection ───────────────────────────────────────────────────
   // Disabled during download to prevent auto-trigger from navigating away
@@ -122,6 +123,7 @@ export default function CameraScreen({ navigation }) {
     const unsub = navigation.addListener('focus', () => {
       resetStore();
       motionReset();
+      isCameraReadyRef.current = false;
       setIsCameraReady(false);
     });
     return unsub;
@@ -250,7 +252,7 @@ export default function CameraScreen({ navigation }) {
             ? frameProcessor
             : undefined
         }
-        onInitialized={() => setIsCameraReady(true)}
+        onInitialized={() => { isCameraReadyRef.current = true; setIsCameraReady(true); }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
           // If the wide-angle device errored and we haven't already fallen back,
@@ -264,10 +266,12 @@ export default function CameraScreen({ navigation }) {
             wideAngleDevice.id !== mainDevice.id
           ) {
             console.warn('Camera: wide-angle failed, falling back to main camera');
+            isCameraReadyRef.current = false;
             wideAngleFailedRef.current = true;
             setWideAngleFailed(true);
             setIsCameraReady(false); // hold UI locked until main camera initialises
           } else {
+            isCameraReadyRef.current = false;
             setIsCameraReady(false); // keep UI locked — camera session is broken
           }
         }}
