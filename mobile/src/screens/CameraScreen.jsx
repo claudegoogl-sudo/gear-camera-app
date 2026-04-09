@@ -143,6 +143,11 @@ export default function CameraScreen({ navigation }) {
     return unsub;
   }, [navigation, resetStore, motionReset]);
 
+  // Clean up policy-retry timer on unmount
+  useEffect(() => {
+    return () => { if (policyRetryTimerRef.current) clearTimeout(policyRetryTimerRef.current); };
+  }, []);
+
   // ── Permission gate ────────────────────────────────────────────────────
   useEffect(() => {
     if (!hasPermission) requestPermission();
@@ -297,7 +302,7 @@ export default function CameraScreen({ navigation }) {
         onInitialized={() => { isCameraReadyRef.current = true; setIsCameraReady(true); }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
-          const isPolicyError = /restricted by the operating system|device policy/i.test(e.message);
+          const isPolicyError = e.code === 'system/camera-is-restricted';
           const isWideAngleFallback =
             !wideAngleFailedRef.current &&
             wideAngleDevice?.id &&
