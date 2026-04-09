@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   ToastAndroid,
+  AppState,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -64,7 +65,6 @@ export default function CameraScreen({ navigation }) {
   const [sharingDebug, setSharingDebug] = useState(false);
   const [isPolicyRestricted, setIsPolicyRestricted] = useState(false);
   const policyRetryCountRef = useRef(0);
-  const policyRetryTimerRef = useRef(null);
 
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
@@ -138,15 +138,28 @@ export default function CameraScreen({ navigation }) {
       setCameraHasError(false);
       setIsPolicyRestricted(false);
       policyRetryCountRef.current = 0;
-      if (policyRetryTimerRef.current) clearTimeout(policyRetryTimerRef.current);
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
 
-  // Clean up policy-retry timer on unmount
+  // AppState-triggered retry for policy-restricted camera.
+  // When the OS blocks the camera (screen lock / device policy), we subscribe
+  // to AppState so the retry fires only when the user actually returns to the
+  // app after unlocking — instead of a blind timer that fires too early.
   useEffect(() => {
-    return () => { if (policyRetryTimerRef.current) clearTimeout(policyRetryTimerRef.current); };
-  }, []);
+    if (!isPolicyRestricted) return;
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        setIsPolicyRestricted(false);
+        policyRetryCountRef.current = 0;
+        isCameraReadyRef.current = false;
+        setIsCameraReady(false);
+        setCameraHasError(false);
+        setRetryKey((k) => k + 1);
+      }
+    });
+    return () => sub.remove();
+  }, [isPolicyRestricted]);
 
   // ── Permission gate ────────────────────────────────────────────────────
   useEffect(() => {
@@ -327,15 +340,13 @@ export default function CameraScreen({ navigation }) {
             setIsCameraReady(false); // hold UI locked until main camera initialises
           } else if (isPolicyError && policyRetryCountRef.current < 1) {
             // OS-level camera restriction (screen-lock / keyguard / device policy).
-            // Auto-retry once after 2 s to let the OS release the camera.
-            console.warn('Camera: device-policy restriction detected, auto-retrying in 2s');
+            // AppState listener auto-retries when the user returns to the app.
+            console.warn('Camera: device-policy restriction detected, will retry on AppState active');
             isCameraReadyRef.current = false;
             setIsCameraReady(false);
             setIsPolicyRestricted(true);
+            setCameraHasError(true);
             policyRetryCountRef.current += 1;
-            policyRetryTimerRef.current = setTimeout(() => {
-              setRetryKey((k) => k + 1);
-            }, 2000);
           } else {
             isCameraReadyRef.current = false;
             setIsCameraReady(false); // keep UI locked — camera session is broken
@@ -400,7 +411,7 @@ export default function CameraScreen({ navigation }) {
           <Text style={styles.hint}>
             {cameraHasError
               ? (isPolicyRestricted
-                ? 'Camera restricted by OS — unlock your phone and tap Retry'
+                ? 'Camera blocked by OS — unlock your phone'
                 : 'Camera error — tap Retry below')
               : !isCameraReady
               ? 'Starting camera…'
@@ -419,15 +430,13 @@ export default function CameraScreen({ navigation }) {
               onPress={() => {
                 setCameraHasError(false);
                 if (isPolicyRestricted) {
-                  // Delay remount so the OS has time to release the camera.
-                  // UI shows "Starting camera…" during the wait.
-                  policyRetryTimerRef.current = setTimeout(() => {
-                    isCameraReadyRef.current = false;
-                    setIsCameraReady(false);
-                    setIsPolicyRestricted(false);
-                    policyRetryCountRef.current = 0;
-                    setRetryKey((k) => k + 1);
-                  }, 2000);
+                  // User explicitly tapped Retry after (presumably) unlocking.
+                  // Immediate remount — no delay needed.
+                  isCameraReadyRef.current = false;
+                  setIsCameraReady(false);
+                  setIsPolicyRestricted(false);
+                  policyRetryCountRef.current = 0;
+                  setRetryKey((k) => k + 1);
                 } else {
                   isCameraReadyRef.current = false;
                   setIsCameraReady(false);
