@@ -92,6 +92,15 @@ export default function CameraScreen({ navigation }) {
 
       const result = await countTeeth(`file://${photo.path}`);
 
+      if (!result) {
+        setProcessing(false);
+        motionResetRef.current?.();
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('No gear detected — try again', ToastAndroid.SHORT);
+        }
+        return;
+      }
+
       setResult({
         toothCount:  result.toothCount,
         confidence:  result.confidence,
