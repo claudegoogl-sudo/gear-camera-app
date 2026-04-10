@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-04-10T05:42:57.334Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (59) · 2026-04-09 21:30",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T05:42:49.332Z",
+      "retryKey": 0,
+      "deviceId": "0"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T05:42:49.529Z",
+      "retryKey": 0,
+      "deviceId": "0"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T05:42:51.601Z",
+      "retryKey": 0,
+      "deviceId": "0"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T05:42:51.690Z",
+      "retryKey": 0,
+      "deviceId": "0"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T05:42:55.143Z",
+      "retryKey": 0,
+      "deviceId": "0"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T05:42:55.258Z",
+      "retryKey": 0,
+      "deviceId": "0"
+    }
+  ],
+  "cameraHasError": false,
+  "isCameraReady": true,
+  "isFocused": true,
+  "retryKey": 0,
+  "policyRetryCount": 0
+}
