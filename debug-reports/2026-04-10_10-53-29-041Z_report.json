@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-04-10T10:53:29.041Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (62) · 2026-04-10 10:50",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T10:53:19.273Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T10:53:19.593Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T10:53:23.261Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T10:53:23.437Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T10:53:26.194Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T10:53:26.318Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    }
+  ],
+  "cameraHasError": false,
+  "isCameraReady": true,
+  "isFocused": true,
+  "retryKey": 0,
+  "policyRetryCount": 0
+}
