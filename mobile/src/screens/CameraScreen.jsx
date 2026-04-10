@@ -149,19 +149,25 @@ export default function CameraScreen({ navigation }) {
   // app after unlocking — instead of a blind timer that fires too early.
   useEffect(() => {
     if (!isPolicyRestricted) return;
+    let settleTimer = null;
     const sub = AppState.addEventListener('change', (nextState) => {
       cameraEventsRef.current.push({ type: 'appState', ts: new Date().toISOString(), nextState, isPolicyRestricted: true });
       if (nextState === 'active') {
         cameraEventsRef.current.push({ type: 'policyRetry', ts: new Date().toISOString(), retryKey: retryKey + 1, policyRetryCount: policyRetryCountRef.current, trigger: 'appState' });
-        setIsPolicyRestricted(false);
-        policyRetryCountRef.current = 0;
-        isCameraReadyRef.current = false;
-        setIsCameraReady(false);
         setCameraHasError(false);
-        setRetryKey((k) => k + 1);
+        // Delay remount to let camera hardware settle after OS releases it.
+        // setIsPolicyRestricted(false) must be inside the timeout — calling it
+        // here would trigger effect cleanup and cancel the settle timer.
+        settleTimer = setTimeout(() => {
+          setIsPolicyRestricted(false);
+          policyRetryCountRef.current = 0;
+          isCameraReadyRef.current = false;
+          setIsCameraReady(false);
+          setRetryKey((k) => k + 1);
+        }, 400);
       }
     });
-    return () => sub.remove();
+    return () => { sub.remove(); if (settleTimer) clearTimeout(settleTimer); };
   }, [isPolicyRestricted]);
 
   // ── Permission gate ────────────────────────────────────────────────────
@@ -319,9 +325,13 @@ export default function CameraScreen({ navigation }) {
             : undefined
         }
         onInitialized={() => {
-          isCameraReadyRef.current = true;
-          setIsCameraReady(true);
-          cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null });
+          cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current });
+          // Guard against spurious duplicate onInitialized from VisionCamera —
+          // without this the state toggle causes a brief "Starting camera…" flash.
+          if (!isCameraReadyRef.current) {
+            isCameraReadyRef.current = true;
+            setIsCameraReady(true);
+          }
         }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
@@ -367,6 +377,17 @@ export default function CameraScreen({ navigation }) {
             setIsPolicyRestricted(true);
             setCameraHasError(true);
             policyRetryCountRef.current += 1;
+          } else if (!isPolicyError && policyRetryCountRef.current > 0) {
+            // Non-policy config error right after a policy retry — the camera
+            // hardware wasn't ready yet.  Auto-retry once with a delay.
+            console.warn('Camera: post-policy config error, auto-retrying after delay');
+            cameraEventsRef.current.push({ type: 'postPolicyAutoRetry', ts: new Date().toISOString(), retryKey: retryKey + 1, policyRetryCount: policyRetryCountRef.current });
+            isCameraReadyRef.current = false;
+            setIsCameraReady(false);
+            policyRetryCountRef.current = 0;
+            setTimeout(() => {
+              setRetryKey((k) => k + 1);
+            }, 500);
           } else {
             isCameraReadyRef.current = false;
             setIsCameraReady(false); // keep UI locked — camera session is broken
