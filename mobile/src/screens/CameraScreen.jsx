@@ -9,6 +9,8 @@ import {
   Platform,
   ToastAndroid,
   AppState,
+  Modal,
+  FlatList,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -65,6 +67,8 @@ export default function CameraScreen({ navigation }) {
   const [retryKey, setRetryKey] = useState(0);
   const [sharingDebug, setSharingDebug] = useState(false);
   const [isPolicyRestricted, setIsPolicyRestricted] = useState(false);
+  const [showBuildPicker, setShowBuildPicker] = useState(false);
+  const [pickerBuilds, setPickerBuilds] = useState([]);
   const policyRetryCountRef = useRef(0);
 
   const pulseScale = useSharedValue(1);
@@ -238,14 +242,9 @@ export default function CameraScreen({ navigation }) {
       return;
     }
 
-    const buttons = builds.map((b) => ({
-      text: `${b.releaseName} (build ${b.buildNumber})${b.buildNumber === BUILD_NUMBER ? ' · current' : b.buildNumber > BUILD_NUMBER ? ' · newer' : ' · older'}`,
-      onPress: () => downloadAndInstall(b),
-    }));
-    buttons.push({ text: 'Cancel', style: 'cancel' });
-
-    Alert.alert('Available test builds', `You have build ${BUILD_NUMBER}.`, buttons);
-  }, [updateInfo, downloadAndInstall]);
+    setPickerBuilds(builds);
+    setShowBuildPicker(true);
+  }, [updateInfo]);
 
   // ── Debug report from camera screen ────────────────────────────────
   const handleDebugReport = useCallback(async () => {
@@ -332,6 +331,9 @@ export default function CameraScreen({ navigation }) {
             isCameraReadyRef.current = true;
             setIsCameraReady(true);
           }
+          // Clear any lingering error state — the camera recovered successfully.
+          setCameraHasError(false);
+          setIsPolicyRestricted(false);
         }}
         onError={(e) => {
           console.warn('Camera error:', e.message);
@@ -506,6 +508,56 @@ export default function CameraScreen({ navigation }) {
         </View>
 
       </SafeAreaView>
+
+      {/* Build picker modal */}
+      <Modal
+        visible={showBuildPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBuildPicker(false)}
+      >
+        <View style={styles.pickerOverlay}>
+          <View style={styles.pickerSheet}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Available test builds</Text>
+              <TouchableOpacity
+                style={styles.pickerClose}
+                onPress={() => setShowBuildPicker(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.pickerCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.pickerSubtitle}>You have build {BUILD_NUMBER}.</Text>
+            <FlatList
+              data={pickerBuilds}
+              keyExtractor={(item) => String(item.buildNumber)}
+              style={styles.pickerList}
+              renderItem={({ item }) => {
+                const tag = item.buildNumber === BUILD_NUMBER
+                  ? ' · current'
+                  : item.buildNumber > BUILD_NUMBER
+                  ? ' · newer'
+                  : ' · older';
+                return (
+                  <TouchableOpacity
+                    style={styles.pickerItem}
+                    onPress={() => {
+                      setShowBuildPicker(false);
+                      downloadAndInstall(item);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.pickerItemText}>
+                      {item.releaseName} (build {item.buildNumber}){tag}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -628,7 +680,7 @@ const styles = StyleSheet.create({
   },
 
   buildLabel: {
-    color: 'rgba(255,255,255,0.2)',
+    color: 'rgba(255,255,255,0.55)',
     fontSize: 10,
     letterSpacing: 0.3,
   },
@@ -662,5 +714,63 @@ const styles = StyleSheet.create({
     color: '#111',
     fontSize: 15,
     fontWeight: '600',
+  },
+
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: '#1c1c1e',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 32,
+    maxHeight: '70%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  pickerTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  pickerClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  pickerSubtitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 13,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  pickerList: {
+    paddingHorizontal: 12,
+  },
+  pickerItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  pickerItemText: {
+    color: '#fff',
+    fontSize: 15,
   },
 });
