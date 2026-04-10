@@ -1,0 +1,394 @@
+{
+  "timestamp": "2026-04-10T12:36:46.913Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (63) · 2026-04-10 11:32",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [
+    {
+      "type": "processingError",
+      "ts": "2026-04-10T12:36:39.868Z",
+      "message": "Camera is closed.",
+      "stack": "unknown/unknown: Camera is closed.\n    at construct (native)\n    at apply (native)\n    at _construct (address at index.android.bundle:1:107823)\n    at Wrapper (address at index.android.bundle:1:107476)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraError (address at index.android.bundle:1:1033169)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraRuntimeError (address at index.android.bundle:1:1033670)\n    at tryParseNativeCameraError (address at index.android.bundle:1:1033976)\n    at ?anon_0_ (address at index.android.bundle:1:1028498)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:177621)\n    at _throw (address at index.android.bundle:1:177926)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)"
+    },
+    {
+      "type": "processingError",
+      "ts": "2026-04-10T12:36:44.784Z",
+      "message": "Camera is closed.",
+      "stack": "unknown/unknown: Camera is closed.\n    at construct (native)\n    at apply (native)\n    at _construct (address at index.android.bundle:1:107823)\n    at Wrapper (address at index.android.bundle:1:107476)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraError (address at index.android.bundle:1:1033169)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraRuntimeError (address at index.android.bundle:1:1033670)\n    at tryParseNativeCameraError (address at index.android.bundle:1:1033976)\n    at ?anon_0_ (address at index.android.bundle:1:1028498)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:177621)\n    at _throw (address at index.android.bundle:1:177926)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)"
+    }
+  ],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T12:36:37.542Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T12:36:37.773Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:38.851Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.056Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.159Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.258Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.356Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.456Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.566Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.664Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:39.766Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T12:36:39.892Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T12:36:40.045Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:40.687Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:40.792Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:40.879Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:40.999Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.090Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.194Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.291Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.390Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.492Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.592Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.693Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.795Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.893Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:41.992Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.091Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.193Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.294Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.391Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.495Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.595Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.695Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.796Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.894Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:42.990Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.095Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.195Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.296Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.394Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.495Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.590Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.696Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.789Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.890Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:43.988Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.092Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.188Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.294Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.398Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.499Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.598Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:44.699Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T12:36:44.807Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-10T12:36:44.928Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": true
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:45.597Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:45.697Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:45.801Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:45.902Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.000Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.102Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.199Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.301Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.396Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.502Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.602Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.697Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.800Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-10T12:36:46.904Z",
+      "message": "toArrayBuffer unavailable"
+    }
+  ],
+  "cameraHasError": false,
+  "isCameraReady": true,
+  "isFocused": true,
+  "retryKey": 0,
+  "policyRetryCount": 0
+}
