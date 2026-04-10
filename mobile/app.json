@@ -43,7 +43,8 @@
           "cameraPermissionText": "GearCounter needs camera access to photograph gears.",
           "enableLocation": false
         }
-      ]
+      ],
+      "./plugins/withExtractYPlanePlugin"
     ],
     "extra": {
       "eas": {

@@ -5,11 +5,17 @@ import { Accelerometer, Gyroscope } from 'expo-sensors';
 import { detectGearPresenceRGBA } from '../algorithm/gearDetector';
 
 let useFrameProcessor;
+let VisionCameraProxy;
 try {
-  ({ useFrameProcessor } = require('react-native-vision-camera'));
+  ({ useFrameProcessor, VisionCameraProxy } = require('react-native-vision-camera'));
 } catch {
   useFrameProcessor = null;
+  VisionCameraProxy = null;
 }
+
+// Native plugin that extracts the Y (grayscale) plane from YUV frames.
+// This bypasses frame.toArrayBuffer() which is broken for YUV on Android.
+const extractYPlanePlugin = VisionCameraProxy?.initFrameProcessorPlugin('extractYPlane');
 
 // ── Tuning constants ────────────────────────────────────────────────────────
 // Frame-processor pixel-diff motion detection
@@ -310,10 +316,22 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
           frameCounter.value += 1;
           if (frameCounter.value % FRAME_SKIP !== 0) return;
 
+          // Use native extractYPlane plugin for YUV frames (toArrayBuffer()
+          // is broken for YUV on Android — HardwareBuffer returns null).
+          // Falls back to toArrayBuffer() for RGB or if the plugin is missing.
           let buffer;
           try {
-            buffer = frame.toArrayBuffer();
+            if (extractYPlanePlugin != null && frame.pixelFormat === 'yuv') {
+              buffer = extractYPlanePlugin.call(frame);
+            } else {
+              buffer = frame.toArrayBuffer();
+            }
           } catch (e) {
+            reportFrameErrorJS();
+            return;
+          }
+
+          if (!buffer) {
             reportFrameErrorJS();
             return;
           }
@@ -358,7 +376,10 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
             const h = frame.height;
             if (w > 0 && h > 0) {
               try {
-                const result = detectGearPresenceRGBA(pixels, w, h, frame.bytesPerRow);
+                // Y-plane data (from extractYPlane plugin) is already
+                // contiguous — no row padding to account for.
+                const bpr = frame.pixelFormat === 'yuv' ? undefined : frame.bytesPerRow;
+                const result = detectGearPresenceRGBA(pixels, w, h, bpr);
                 handleGearDetectionJS(
                   result.detected, result.score,
                   result.approxCenterX, result.approxCenterY,

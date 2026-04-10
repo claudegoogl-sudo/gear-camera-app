@@ -226,11 +226,13 @@ export function detectGearPresence(gray, width, height) {
 // ── RGBA convenience wrapper ────────────────────────────────────────────────
 
 /**
- * Detect gear presence from an RGB or RGBA pixel buffer (e.g., from frame.toArrayBuffer()).
- * Extracts grayscale on the fly by luminance weighting, subsampled for speed.
- * Auto-detects bytes-per-pixel (3 for RGB, 4 for RGBA) from buffer length.
+ * Detect gear presence from a pixel buffer (grayscale, RGB, or RGBA).
+ * Auto-detects bytes-per-pixel from buffer length:
+ *   1 = grayscale (Y-plane from YUV), 3 = RGB, 4 = RGBA.
+ * Extracts grayscale on the fly by luminance weighting for RGB/RGBA,
+ * or uses the value directly for grayscale input.
  *
- * @param {Uint8Array} rgba - RGB or RGBA pixel buffer
+ * @param {Uint8Array} rgba - Pixel buffer (grayscale, RGB, or RGBA)
  * @param {number} width    - Frame width
  * @param {number} height   - Frame height
  * @param {number} [bytesPerRow] - Row stride in bytes (from frame.bytesPerRow). Falls back to width*bpp if omitted.
@@ -274,8 +276,9 @@ export function detectGearPresenceRGBA(rgba, width, height, bytesPerRow) {
       const x = px < 0 ? 0 : (px >= width ? width - 1 : px);
       const y = py < 0 ? 0 : (py >= height ? height - 1 : py);
       const idx = y * stride + x * bpp;
-      // Fast luminance: (R + R + G + G + G + B) / 6 ≈ perceptual gray
-      const val = (rgba[idx] * 2 + rgba[idx + 1] * 3 + rgba[idx + 2]) / 6;
+      // Grayscale (bpp=1): value is already luminance.
+      // RGB/RGBA: fast luminance (R*2 + G*3 + B) / 6 ≈ perceptual gray.
+      const val = bpp === 1 ? rgba[idx] : (rgba[idx] * 2 + rgba[idx + 1] * 3 + rgba[idx + 2]) / 6;
       ringSamples[si] = val;
       sum += val;
       sumSq += val * val;
