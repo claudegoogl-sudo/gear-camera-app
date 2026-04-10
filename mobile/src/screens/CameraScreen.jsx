@@ -93,6 +93,7 @@ export default function CameraScreen({ navigation }) {
       const result = await countTeeth(`file://${photo.path}`);
 
       if (!result) {
+        cameraEventsRef.current.push({ type: 'noDetection', ts: new Date().toISOString(), reason: 'countTeeth returned null' });
         setProcessing(false);
         motionResetRef.current?.();
         if (Platform.OS === 'android') {
@@ -111,8 +112,9 @@ export default function CameraScreen({ navigation }) {
         },
       });
 
-      navigation.navigate('Result', { photoPath: photo.path, cameraErrors: cameraErrorsRef.current });
+      navigation.navigate('Result', { photoPath: photo.path, cameraErrors: cameraErrorsRef.current, cameraEvents: cameraEventsRef.current });
     } catch (e) {
+      cameraErrorsRef.current.push({ type: 'processingError', ts: new Date().toISOString(), message: e.message, stack: e.stack });
       setError(e.message);
       Alert.alert('Processing failed', e.message);
       setProcessing(false);
@@ -123,8 +125,13 @@ export default function CameraScreen({ navigation }) {
   // ── Motion detection ───────────────────────────────────────────────────
   // Disabled during download to prevent auto-trigger from navigating away
   // mid-flight and interrupting the in-progress FileSystem.downloadAsync.
+  const handleFrameError = useCallback(() => {
+    cameraEventsRef.current.push({ type: 'frameProcessorError', ts: new Date().toISOString(), message: 'toArrayBuffer unavailable' });
+  }, []);
+
   const { isStable, gearDetected, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
+    onFrameError: handleFrameError,
     enabled: isFocused && isCameraReady && !isProcessing && !downloading && hasPermission,
   });
 

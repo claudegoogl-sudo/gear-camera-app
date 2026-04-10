@@ -52,7 +52,7 @@ const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no C
  * Gear detection also produces approximate center/radius hints that
  * can speed up the main tooth-counting algorithm.
  */
-export function useMotionDetection({ onStable, enabled = true }) {
+export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   const [isStable, setIsStable] = useState(false);
   const [gearDetected, setGearDetected] = useState(false);
   const [gearHints, setGearHints] = useState(null);
@@ -181,7 +181,8 @@ export function useMotionDetection({ onStable, enabled = true }) {
   // makeShareableCloneOnUIRecursiveLEGACY → _createSerializableString path.
   const reportFrameError = useCallback(() => {
     console.warn('[MotionDetection] Frame processor inactive: toArrayBuffer unavailable');
-  }, []);
+    onFrameError?.();
+  }, [onFrameError]);
 
   // Worklet-safe JS callbacks for use inside the VisionCamera frame processor.
   // useRunOnJS (worklets-core) schedules via the worklets-core runtime;
