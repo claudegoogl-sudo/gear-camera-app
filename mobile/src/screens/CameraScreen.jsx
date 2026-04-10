@@ -320,7 +320,8 @@ export default function CameraScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Full-screen camera preview — no frame processor until camera is ready */}
+      {/* Full-screen camera preview — frameProcessor always attached; worklet
+           self-gates via enabledSV shared value to avoid session reconfiguration */}
       <Camera
         key={retryKey}
         ref={camera}
@@ -330,26 +331,20 @@ export default function CameraScreen({ navigation }) {
         photo={true}
         pixelFormat="yuv"
         torch="off"
-        frameProcessor={
-          // Pass frameProcessor only when fully enabled so the worklet never
-          // runs with a stale closure.  This is what makes CRES reliable:
-          // the worklet is undefined (not called at all) rather than
-          // checking a captured-at-creation-time `enabled` flag.
-          isFocused && isCameraReady && !isProcessing && !downloading
-            ? frameProcessor
-            : undefined
-        }
+        frameProcessor={frameProcessor}
         onInitialized={() => {
           cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current });
-          // Guard against spurious duplicate onInitialized from VisionCamera —
-          // without this the state toggle causes a brief "Starting camera…" flash.
+          // Guard against spurious duplicate onInitialized from VisionCamera.
+          // All state updates are inside the guard to avoid re-renders that
+          // would recreate the frameProcessor reference and trigger another
+          // session reconfiguration cycle.
           if (!isCameraReadyRef.current) {
             isCameraReadyRef.current = true;
             setIsCameraReady(true);
+            // Clear any lingering error state — the camera recovered.
+            setCameraHasError(false);
+            setIsPolicyRestricted(false);
           }
-          // Clear any lingering error state — the camera recovered successfully.
-          setCameraHasError(false);
-          setIsPolicyRestricted(false);
         }}
         onError={(e) => {
           console.warn('Camera error:', e.message);

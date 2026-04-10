@@ -67,6 +67,19 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   const lastAccel = useRef(null);
   const latestGyro = useRef({ x: 0, y: 0, z: 0 });
 
+  // Stable refs for callbacks — prevents dependency cascades that would
+  // recreate the frameProcessor on every render and cause VisionCamera
+  // session reconfiguration (the "init storm" bug).
+  const onStableRef = useRef(onStable);
+  useEffect(() => { onStableRef.current = onStable; }, [onStable]);
+  const onFrameErrorRef = useRef(onFrameError);
+  useEffect(() => { onFrameErrorRef.current = onFrameError; }, [onFrameError]);
+
+  // Shared value so the worklet can gate itself without toggling the
+  // frameProcessor prop (which triggers camera session reconfiguration).
+  const enabledSV = useSharedValue(enabled);
+  useEffect(() => { enabledSV.value = enabled; }, [enabled, enabledSV]);
+
   // Tracks whether the worklet has ever successfully read pixel data.
   const frameProcessorActiveRef = useRef(false);
   const usingFallbackRef = useRef(false);
@@ -93,13 +106,13 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
             // Only trigger capture if a gear is detected in frame
             if (gearWasDetectedRef.current) {
               setIsStable(true);
-              onStable?.();
+              onStableRef.current?.();
             }
           }, STABILITY_MS);
         }
       }
     },
-    [clearTimer, onStable],
+    [clearTimer],
   );
 
   // Called from worklet once with first-frame diagnostics
@@ -141,7 +154,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
         const stillnessMs = Date.now() - lastMotionTimeRef.current;
         if (stillnessMs >= CRES_TRIGGER_MIN_STILLNESS_MS) {
           setIsStable(true);
-          onStable?.();
+          onStableRef.current?.();
         }
       } else {
         gearLostCountRef.current += 1;
@@ -167,7 +180,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
         // timers continue through brief detection gaps.
       }
     },
-    [clearTimer, onStable],
+    [clearTimer],
   );
 
   // Called from worklet when a buffer was read successfully — proves the
@@ -181,8 +194,8 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   // makeShareableCloneOnUIRecursiveLEGACY → _createSerializableString path.
   const reportFrameError = useCallback(() => {
     console.warn('[MotionDetection] Frame processor inactive: toArrayBuffer unavailable');
-    onFrameError?.();
-  }, [onFrameError]);
+    onFrameErrorRef.current?.();
+  }, []);
 
   // Worklet-safe JS callbacks for use inside the VisionCamera frame processor.
   // useRunOnJS (worklets-core) schedules via the worklets-core runtime;
@@ -256,7 +269,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
             imuTimer.current = null;
             if (gearWasDetectedRef.current || fallback) {
               setIsStable(true);
-              onStable?.();
+              onStableRef.current?.();
             }
           }, stillnessMs);
         }
@@ -279,7 +292,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
       lastAccel.current = null;
       latestGyro.current = { x: 0, y: 0, z: 0 };
     };
-  }, [enabled, onStable]);
+  }, [enabled]);
 
   // ── Build frame processor ──────────────────────────────────────────────
   let frameProcessor = undefined;
@@ -289,12 +302,10 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
       frameProcessor = useFrameProcessor(
         (frame) => {
           'worklet';
-          // No `enabled` check here — the Camera component passes
-          // `frameProcessor={undefined}` when disabled, so this worklet is
-          // never invoked outside of enabled state.  Removing the captured
-          // `enabled` flag prevents the stale-closure bug where the worklet
-          // would permanently see the initial `enabled=false` value and
-          // short-circuit CRES / pixel-diff detection on every frame.
+          // Gate via shared value so the Camera always receives a stable
+          // frameProcessor reference (no undefined↔defined toggling that
+          // would trigger VisionCamera session reconfiguration).
+          if (!enabledSV.value) return;
 
           frameCounter.value += 1;
           if (frameCounter.value % FRAME_SKIP !== 0) return;
