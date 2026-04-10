@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-04-09T21:15:43.055Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (58) · 2026-04-09 20:39",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [],
+  "cameraHasError": false,
+  "isCameraReady": true,
+  "isFocused": true
+}

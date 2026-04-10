@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-04-09T20:25:40.532Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (57) · 2026-04-09 20:10",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [
+    {
+      "timestamp": "2026-04-09T20:25:19.888Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true
+    },
+    {
+      "timestamp": "2026-04-09T20:25:19.889Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true
+    },
+    {
+      "timestamp": "2026-04-09T20:25:19.889Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true
+    },
+    {
+      "timestamp": "2026-04-09T20:25:19.890Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true
+    },
+    {
+      "timestamp": "2026-04-09T20:25:31.465Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": false
+    },
+    {
+      "timestamp": "2026-04-09T20:25:31.516Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": false
+    },
+    {
+      "timestamp": "2026-04-09T20:25:37.392Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": false
+    },
+    {
+      "timestamp": "2026-04-09T20:25:37.446Z",
+      "message": "Failed to configure the Camera Session because the output/stream configurations are invalid!",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": false
+    }
+  ],
+  "cameraHasError": true,
+  "isCameraReady": false,
+  "isFocused": true
+}
