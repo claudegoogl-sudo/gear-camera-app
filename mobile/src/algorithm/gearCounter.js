@@ -311,22 +311,12 @@ function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
     if (score > bestScore) { bestScore = score; bestF = f; }
   }
 
-  // Sub-harmonic doubling: the harmonic-weighted scoring above can boost
-  // sub-harmonics of the true tooth frequency (e.g., for a 28T gear,
-  // score[14] includes 0.5×mag[28], the dominant peak).  Detect and
-  // correct by checking raw magnitude at 2×bestF.
-  while (bestF * 2 <= MAX_TEETH && bestF * 2 < mag.length) {
-    if (mag[bestF * 2] >= mag[bestF] * 0.4) {
-      bestF = bestF * 2;
-    } else {
-      break;
-    }
-  }
-
-  // Recalculate score for the (possibly doubled) bestF
-  bestScore = mag[bestF];
-  if (2 * bestF < mag.length) bestScore += 0.5 * mag[2 * bestF];
-  if (3 * bestF < mag.length) bestScore += 0.25 * mag[3 * bestF];
+  // NOTE: Sub-harmonic doubling was previously applied here per-radius, but
+  // it caused false doubling (e.g. 14T→28T) because natural 2nd harmonics
+  // of real tooth profiles easily exceed the 0.4 threshold.  The Python
+  // reference implementation does NOT double per-radius — sub-harmonic
+  // resolution is handled at the aggregate level (fftAtOuterRadii vote
+  // accumulation + decision rule consensus).  Removed in b66 (PAP-266).
 
   const rel = totalScore > 0 ? bestScore / totalScore : 0;
   return { tc: bestF, rel };
@@ -847,11 +837,15 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
     if (val > bestVal) { bestVal = val; bestFreq = Number(freq); }
   }
 
-  // Sub-harmonic doubling: if 2×bestFreq has ≥40% of the votes,
+  // Sub-harmonic doubling: if 2×bestFreq has ≥60% of the votes,
   // the winner is likely a sub-harmonic of the actual tooth frequency.
+  // Threshold raised from 0.4 to 0.6 (PAP-266) — the lower threshold
+  // caused false doubling when contour radius was wrong, leading the scan
+  // to sample inner features (cutouts, splines) whose harmonics triggered
+  // doubling even when the true tooth frequency wasn't dominant.
   while (bestFreq * 2 <= MAX_TEETH) {
     const doubleVotes = fftVotes[bestFreq * 2] || 0;
-    if (doubleVotes >= bestVal * 0.4) {
+    if (doubleVotes >= bestVal * 0.6) {
       bestFreq = bestFreq * 2;
       bestVal = doubleVotes;
     } else {
@@ -1102,11 +1096,19 @@ function binaryContourCount(gray, cx, cy, width, height) {
 
   const otsuT = otsuThreshold(gray, width, height);
 
+  // Multi-threshold sweep: try Otsu plus fixed thresholds to handle cases
+  // where Otsu fails (e.g. metallic gears on white paper have similar
+  // brightness, making Otsu separation impossible).  PAP-266.
+  const threshSet = new Set([otsuT]);
+  for (let t = 60; t <= 200; t += 35) threshSet.add(t);
+  const thresholds = [...threshSet].sort((a, b) => a - b);
+
+  for (const thresh of thresholds) {
   for (const invert of [false, true]) {
-    // Binary mask via Otsu
+    // Binary mask
     const mask = new Uint8Array(n);
     for (let i = 0; i < n; i++) {
-      mask[i] = invert ? (gray[i] <= otsuT ? 1 : 0) : (gray[i] > otsuT ? 1 : 0);
+      mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
     }
 
     // Find connected components (external contours)
@@ -1219,11 +1221,12 @@ function binaryContourCount(gray, cx, cy, width, height) {
       if (total <= 0) continue;
 
       const fftPurity = bestVal / total;
-      results.push({ fftTc: bestFreq, fftPurity, nPeaks });
+      results.push({ fftTc: bestFreq, fftPurity, nPeaks, compCx, compCy });
     }
   }
+  }  // end threshold sweep
 
-  if (results.length === 0) return { bcTc: 0, bcPurity: 0, bcPeaks: 0 };
+  if (results.length === 0) return { bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0 };
 
   // Prefer results where peak count is in valid tooth range
   const valid = results.filter(r => r.nPeaks >= MIN_TEETH && r.nPeaks <= MAX_TEETH);
@@ -1232,11 +1235,13 @@ function binaryContourCount(gray, cx, cy, width, height) {
     const agreeing = valid.filter(r => Math.abs(r.fftTc - r.nPeaks) <= 2);
     const best = (agreeing.length > 0 ? agreeing : valid)
       .reduce((a, b) => b.fftPurity > a.fftPurity ? b : a);
-    return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks };
+    return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks,
+             bcCx: best.compCx, bcCy: best.compCy };
   }
 
   const best = results.reduce((a, b) => b.fftPurity > a.fftPurity ? b : a);
-  return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks };
+  return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks,
+           bcCx: best.compCx, bcCy: best.compCy };
 }
 
 // ── Public entry point ──────────────────────────────────────────────────────
@@ -1260,10 +1265,30 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   const cy = centerResult.cy;
   const contourRadius = centerResult.radius || 0;
 
-  // Use contour radius if available, otherwise fall back to edge-density
-  const gearR = contourRadius > 20
-    ? contourRadius
-    : findGearRadius(edges, cx, cy, width, height);
+  // Always compute edge-density radius as independent cross-check (PAP-266).
+  // When findGearCenter locks onto an inner feature (cutout holes, splines)
+  // the contour radius is too small and all downstream FFT methods scan the
+  // wrong region.  Edge-density finds the outermost tooth ring reliably.
+  const edgeDensityR = findGearRadius(edges, cx, cy, width, height);
+
+  // Cross-check contour vs edge-density radius (PAP-266).
+  // - If contour is much smaller than edge-density: inner-feature lockup → use edge-density
+  // - If contour is much larger: background merge → use edge-density
+  // - Otherwise: they agree → use max (conservative)
+  let gearR;
+  if (contourRadius <= 20) {
+    gearR = edgeDensityR;
+  } else if (edgeDensityR > contourRadius * 1.4) {
+    // Contour locked on inner feature (e.g. 24T cutout holes) — edge-density
+    // found the outer tooth ring further out.
+    gearR = edgeDensityR;
+  } else if (contourRadius > edgeDensityR * 1.6) {
+    // Contour merged with background (e.g. 14T on textured surface) —
+    // edge-density found the actual tooth ring closer in.
+    gearR = edgeDensityR;
+  } else {
+    gearR = Math.max(contourRadius, edgeDensityR);
+  }
 
   // ── Method evaluation (matches Python decision rule from commit 4243213) ──
 
@@ -1280,7 +1305,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height));
 
   // Binary contour method (commit 4243213 — accuracy 29%→86%)
-  const { bcTc, bcPurity, bcPeaks } = binaryContourCount(gray, cx, cy, width, height);
+  const { bcTc, bcPurity, bcPeaks, bcCx, bcCy } = binaryContourCount(gray, cx, cy, width, height);
 
   // CLAHE peak counting
   let claheTc = 0, claheConf = 0;
@@ -1301,6 +1326,15 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   // mounting holes) not outer teeth.  Suppress high-confidence override.
   const innerBoreSuspect = contourRadius > 40 && peakR > 0 && peakR < contourRadius * 0.55;
 
+  // Center-disagreement safeguard (PAP-266): when the binary contour's
+  // self-centering centroid is far from findGearCenter's center, the FFT
+  // methods (which use findGearCenter) may be scanning from the wrong point.
+  // In that case, suppress high-confidence FFT override in favour of the
+  // self-centering binary contour method.
+  const minDim = Math.min(width, height);
+  const centerDisagree = bcCx > 0 && bcCy > 0
+    && Math.sqrt((bcCx - cx) ** 2 + (bcCy - cy) ** 2) > minDim * 0.10;
+
   // Binary contour consensus: when peak count and FFT on the same
   // Otsu silhouette agree within ±2, this is the strongest available
   // signal — the method is self-centering (uses component centroid)
@@ -1313,7 +1347,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   if (bcConsensus) {
     // 0. Binary contour consensus — use FFT count (more precise than peaks).
     // When high-confidence multi-radius FFT agrees, defer to it for precision.
-    if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect
+    if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect && !centerDisagree
         && Math.abs(peakTc - bcTc) <= 2) {
       finalTc = peakTc;
       methodUsed = 'bc-consensus+peak';
@@ -1322,8 +1356,9 @@ function analyzeImage(gray, enhanced, edges, width, height) {
       methodUsed = 'bc-consensus';
     }
     finalRel = Math.max(finalRel, bcPurity * 0.50);
-  } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect) {
+  } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect && !centerDisagree) {
     // 1. Multi-radius outermost candidate is highly confident — trust it.
+    // Suppressed when center disagrees with binary contour (PAP-266).
     finalTc = peakTc;
     methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
