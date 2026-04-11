@@ -112,6 +112,7 @@ export default function ResultScreen({ navigation, route }) {
   }));
 
   const [sharing, setSharing] = useState(false);
+  const [hasShared, setHasShared] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmedCount, setConfirmedCount] = useState(toothCount ?? 0);
   const [counterText, setCounterText] = useState(String(toothCount ?? 0));
@@ -138,6 +139,7 @@ export default function ResultScreen({ navigation, route }) {
       // Upload training data alongside debug share (fire-and-forget).
       uploadTrainingData({ photoPath, toothCount, confidence, gearContour }).catch(() => {});
 
+      setHasShared(true);
       showToast('Debug report uploaded to GitHub');
     } catch (e) {
       showError(`Upload failed: ${e.message}`);
@@ -232,12 +234,12 @@ export default function ResultScreen({ navigation, route }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.shareBtn, sharing && styles.shareBtnDisabled]}
+            style={[styles.shareBtn, (sharing || hasShared) && styles.shareBtnDisabled]}
             onPress={handleShareDebug}
-            disabled={sharing}
+            disabled={sharing || hasShared}
             activeOpacity={0.8}
           >
-            <Text style={styles.shareText}>{sharing ? 'Sharing…' : 'Share Debug'}</Text>
+            <Text style={styles.shareText}>{sharing ? 'Sharing…' : hasShared ? 'Shared' : 'Share Debug'}</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>

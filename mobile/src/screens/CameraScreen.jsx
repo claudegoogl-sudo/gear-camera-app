@@ -11,6 +11,7 @@ import {
   AppState,
   Modal,
   FlatList,
+  Dimensions,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -32,7 +33,28 @@ import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
+import * as ImageManipulator from 'expo-image-manipulator/legacy';
 
+/** Crop a photo to the area visible in the full-screen camera preview (cover mode). */
+async function cropToPreview(photoPath) {
+  try {
+    const { width: sw, height: sh } = Dimensions.get('window');
+    const photoUri = `file://${photoPath}`;
+    const info = await ImageManipulator.manipulateAsync(photoUri, [], {});
+    const scale = Math.max(sw / info.width, sh / info.height);
+    const visW = Math.round(sw / scale);
+    const visH = Math.round(sh / scale);
+    if (Math.abs(info.width - visW) < 2 && Math.abs(info.height - visH) < 2) return photoPath;
+    const cropped = await ImageManipulator.manipulateAsync(
+      photoUri,
+      [{ crop: { originX: Math.round((info.width - visW) / 2), originY: Math.round((info.height - visH) / 2), width: visW, height: visH } }],
+      { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    return cropped.uri.replace(/^file:\/\//, '');
+  } catch {
+    return photoPath;
+  }
+}
 
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
@@ -74,6 +96,7 @@ export default function CameraScreen({ navigation }) {
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
   const motionResetRef = useRef(null);
+  const captureGenRef = useRef(0);
 
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
@@ -81,6 +104,7 @@ export default function CameraScreen({ navigation }) {
     // away mid-download would interrupt the in-flight FileSystem.downloadAsync.
     if (!camera.current || isProcessing || !isCameraReadyRef.current || downloading || !isFocused) return;
 
+    const gen = ++captureGenRef.current;
     motionResetRef.current?.();
     setProcessing(true);
 
@@ -90,7 +114,14 @@ export default function CameraScreen({ navigation }) {
         qualityPrioritization: 'quality',
       });
 
-      const result = await countTeeth(`file://${photo.path}`);
+      // Crop for display (matches preview's visible area) while algorithm
+      // runs on the original uncropped photo — both execute in parallel.
+      const [displayPath, result] = await Promise.all([
+        cropToPreview(photo.path),
+        countTeeth(`file://${photo.path}`),
+      ]);
+
+      if (gen !== captureGenRef.current) return; // cancelled or superseded
 
       if (!result) {
         cameraEventsRef.current.push({ type: 'noDetection', ts: new Date().toISOString(), reason: 'countTeeth returned null' });
@@ -112,8 +143,9 @@ export default function CameraScreen({ navigation }) {
         },
       });
 
-      navigation.navigate('Result', { photoPath: photo.path, cameraErrors: cameraErrorsRef.current, cameraEvents: cameraEventsRef.current });
+      navigation.navigate('Result', { photoPath: displayPath, cameraErrors: cameraErrorsRef.current, cameraEvents: cameraEventsRef.current });
     } catch (e) {
+      if (gen !== captureGenRef.current) return; // cancelled or superseded
       cameraErrorsRef.current.push({ type: 'processingError', ts: new Date().toISOString(), message: e.message, stack: e.stack });
       setError(e.message);
       Alert.alert('Processing failed', e.message);
@@ -121,6 +153,12 @@ export default function CameraScreen({ navigation }) {
       motionResetRef.current?.();
     }
   }, [isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
+
+  const handleCancel = useCallback(() => {
+    captureGenRef.current++;
+    setProcessing(false);
+    motionResetRef.current?.();
+  }, [setProcessing]);
 
   // ── Motion detection ───────────────────────────────────────────────────
   // Disabled during download to prevent auto-trigger from navigating away
@@ -330,7 +368,7 @@ export default function CameraScreen({ navigation }) {
         isActive={isFocused}
         photo={true}
         pixelFormat="yuv"
-        torch="off"
+        torch="on"
         frameProcessor={frameProcessor}
         onInitialized={() => {
           cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current });
@@ -447,6 +485,9 @@ export default function CameraScreen({ navigation }) {
             <View style={styles.processingCard}>
               <Text style={styles.processingTitle}>Counting teeth…</Text>
               <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
+              <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -714,6 +755,14 @@ const styles = StyleSheet.create({
   },
   processingTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
   processingHint:  { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
+  cancelBtn: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 28,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  cancelBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
   retryButton: {
     backgroundColor: '#fff',
