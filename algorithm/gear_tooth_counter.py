@@ -796,10 +796,19 @@ class GearToothCounter:
         n_a = 3600
         results = []
 
-        for invert in (False, True):
-            flag = (cv2.THRESH_BINARY_INV if invert else cv2.THRESH_BINARY)
-            flag |= cv2.THRESH_OTSU
-            _, binary = cv2.threshold(self.gray, 0, 255, flag)
+        # Otsu threshold for primary analysis
+        otsu_t, _ = cv2.threshold(self.gray, 0, 255,
+                                  cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        # Multi-threshold sweep: Otsu + fixed thresholds to handle cases
+        # where Otsu fails (e.g. metallic gears on white paper).  PAP-266.
+        thresholds = sorted(set([int(otsu_t)] + list(range(60, 201, 35))))
+
+        for thresh in thresholds:
+          for invert in (False, True):
+            if invert:
+                binary = np.where(self.gray <= thresh, 255, 0).astype(np.uint8)
+            else:
+                binary = np.where(self.gray > thresh, 255, 0).astype(np.uint8)
             contours, _ = cv2.findContours(
                 binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE,
             )
