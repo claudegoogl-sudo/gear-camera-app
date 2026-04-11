@@ -33,7 +33,7 @@ import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
-import * as ImageManipulator from 'expo-image-manipulator/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 /** Crop a photo to the area visible in the full-screen camera preview (cover mode).
  *  Returns { path, crop } where crop contains the parameters needed to transform
@@ -42,7 +42,7 @@ async function cropToPreview(photoPath) {
   try {
     const { width: sw, height: sh } = Dimensions.get('window');
     const photoUri = `file://${photoPath}`;
-    const info = await ImageManipulator.manipulateAsync(photoUri, [], {});
+    const info = await manipulateAsync(photoUri, [], {});
     const scale = Math.max(sw / info.width, sh / info.height);
     const visW = Math.round(sw / scale);
     const visH = Math.round(sh / scale);
@@ -51,10 +51,10 @@ async function cropToPreview(photoPath) {
     }
     const originX = Math.round((info.width - visW) / 2);
     const originY = Math.round((info.height - visH) / 2);
-    const cropped = await ImageManipulator.manipulateAsync(
+    const cropped = await manipulateAsync(
       photoUri,
       [{ crop: { originX, originY, width: visW, height: visH } }],
-      { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
+      { compress: 0.92, format: SaveFormat.JPEG },
     );
     return {
       path: cropped.uri.replace(/^file:\/\//, ''),
