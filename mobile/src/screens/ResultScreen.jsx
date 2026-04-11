@@ -296,6 +296,7 @@ export default function ResultScreen({ navigation, route }) {
                 }}
                 keyboardType="number-pad"
                 maxLength={3}
+                selectTextOnFocus={true}
               />
 
               <TouchableOpacity
