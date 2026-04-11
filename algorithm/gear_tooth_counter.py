@@ -313,10 +313,13 @@ class GearToothCounter:
         if max_r < 20:
             max_r = min(h, w) // 3
 
-        # Constrain search to within 120 % of detected gear radius so we
+        # Constrain search to within 135 % of detected gear radius so we
         # do not waste FFT evaluations on background pixels far from the gear.
+        # Raised from 120 % → 135 % (PAP-280): 1.20× was insufficient for
+        # large cassette cogs where gearR underestimates due to edge-density
+        # peaks at inner cutout features rather than the tooth ring.
         if self.gear_radius > 20:
-            max_r = min(max_r, int(self.gear_radius * 1.20))
+            max_r = min(max_r, int(self.gear_radius * 1.35))
 
         valid = dists < max_r
         density = np.bincount(dists[valid], minlength=max_r).astype(float)
@@ -610,9 +613,14 @@ class GearToothCounter:
             if amp < 5:
                 continue
             fft_mag = np.abs(np.fft.rfft(sm - sm.mean()))
+            # Radius-weighted voting (PAP-280): bias toward outer radii
+            # where tooth tips live; inner radii are contaminated by
+            # spider-arm cutouts on large cassette cogs.
+            span = max(1, max_r_scan - threshold_r)
+            radial_weight = 0.5 + 0.5 * (rv - threshold_r) / span
             for freq in range(self.MIN_TEETH, self.MAX_TEETH + 1):
                 if freq < len(fft_mag):
-                    fft_votes[freq] += float(fft_mag[freq])
+                    fft_votes[freq] += float(fft_mag[freq]) * radial_weight
 
         if not fft_votes:
             return 0

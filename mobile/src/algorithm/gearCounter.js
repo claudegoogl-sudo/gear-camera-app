@@ -825,8 +825,14 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
     for (let i = 0; i < sm.length; i++) centered[i] = sm[i] - mean;
 
     const mag = fftMagnitude(centered);
+    // Radius-weighted voting (PAP-280): weight outer radii more heavily.
+    // Inner radii are contaminated by spider-arm cutouts and splines on
+    // large cassette cogs, producing spurious sub-harmonic votes that
+    // overpower the actual tooth frequency.  Linear ramp: 50% at inner
+    // edge, 100% at outer edge.
+    const radialWeight = 0.5 + 0.5 * (rv - thresholdR) / Math.max(1, maxRScan - thresholdR);
     for (let freq = MIN_TEETH; freq <= MAX_TEETH && freq < mag.length; freq++) {
-      fftVotes[freq] = (fftVotes[freq] || 0) + mag[freq];
+      fftVotes[freq] = (fftVotes[freq] || 0) + mag[freq] * radialWeight;
     }
   }
 
@@ -865,7 +871,7 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
 function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, height) {
   const maxR = Math.min(
     Math.floor(Math.min(cx, width - cx, cy, height - cy)) - 1,
-    contourRadius > 20 ? Math.floor(contourRadius * 1.20) : Math.floor(Math.min(height, width) / 3),
+    contourRadius > 20 ? Math.floor(contourRadius * 1.35) : Math.floor(Math.min(height, width) / 3),
   );
 
   // Build edge density
