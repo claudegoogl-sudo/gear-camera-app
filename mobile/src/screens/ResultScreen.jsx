@@ -74,8 +74,18 @@ function useCountUp(target) {
  *   • Reset button slides up on mount
  */
 export default function ResultScreen({ navigation, route }) {
-  const { photoPath, cameraErrors, cameraEvents } = route.params ?? {};
+  const { photoPath, originalPhotoPath, cropParams, cameraErrors, cameraEvents } = route.params ?? {};
   const { toothCount, confidence, gearContour, isProcessing, error, reset } = useGearStore();
+
+  // Transform algorithm coordinates (relative to original uncropped photo) into
+  // cropped-photo space for the overlay.  When no crop was applied, pass through.
+  const overlayContour = gearContour && cropParams
+    ? {
+        centerX: (gearContour.centerX * cropParams.fullW - cropParams.originX) / cropParams.visW,
+        centerY: (gearContour.centerY * cropParams.fullH - cropParams.originY) / cropParams.visH,
+        radius:  gearContour.radius * cropParams.fullW / cropParams.visW,
+      }
+    : gearContour;
   const { width } = useWindowDimensions();
   const imageHeight = width;
 
@@ -134,10 +144,11 @@ export default function ResultScreen({ navigation, route }) {
     const actualTeethCount = confirmedCount;
     setSharing(true);
     try {
-      await shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount, cameraErrors: cameraErrors ?? null, cameraEvents: cameraEvents ?? null });
+      await shareDebugReport({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour, actualTeethCount, cameraErrors: cameraErrors ?? null, cameraEvents: cameraEvents ?? null });
 
       // Upload training data alongside debug share (fire-and-forget).
-      uploadTrainingData({ photoPath, toothCount, confidence, gearContour }).catch(() => {});
+      // Use original uncropped photo so training data matches what the algorithm processed.
+      uploadTrainingData({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour }).catch(() => {});
 
       setHasShared(true);
       showToast('Debug report uploaded to GitHub');
@@ -170,13 +181,13 @@ export default function ResultScreen({ navigation, route }) {
           </View>
         )}
 
-        {toothCount != null && gearContour && (
+        {toothCount != null && overlayContour && (
           <GearContourOverlay
             width={width}
             height={imageHeight}
-            centerX={gearContour.centerX}
-            centerY={gearContour.centerY}
-            radius={gearContour.radius}
+            centerX={overlayContour.centerX}
+            centerY={overlayContour.centerY}
+            radius={overlayContour.radius}
             toothCount={toothCount}
             confidence={confidence ?? 0}
           />

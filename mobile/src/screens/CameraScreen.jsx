@@ -35,7 +35,9 @@ import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
 import * as ImageManipulator from 'expo-image-manipulator/legacy';
 
-/** Crop a photo to the area visible in the full-screen camera preview (cover mode). */
+/** Crop a photo to the area visible in the full-screen camera preview (cover mode).
+ *  Returns { path, crop } where crop contains the parameters needed to transform
+ *  algorithm coordinates (relative to the original photo) into cropped-photo space. */
 async function cropToPreview(photoPath) {
   try {
     const { width: sw, height: sh } = Dimensions.get('window');
@@ -44,15 +46,22 @@ async function cropToPreview(photoPath) {
     const scale = Math.max(sw / info.width, sh / info.height);
     const visW = Math.round(sw / scale);
     const visH = Math.round(sh / scale);
-    if (Math.abs(info.width - visW) < 2 && Math.abs(info.height - visH) < 2) return photoPath;
+    if (Math.abs(info.width - visW) < 2 && Math.abs(info.height - visH) < 2) {
+      return { path: photoPath, crop: null };
+    }
+    const originX = Math.round((info.width - visW) / 2);
+    const originY = Math.round((info.height - visH) / 2);
     const cropped = await ImageManipulator.manipulateAsync(
       photoUri,
-      [{ crop: { originX: Math.round((info.width - visW) / 2), originY: Math.round((info.height - visH) / 2), width: visW, height: visH } }],
+      [{ crop: { originX, originY, width: visW, height: visH } }],
       { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
     );
-    return cropped.uri.replace(/^file:\/\//, '');
+    return {
+      path: cropped.uri.replace(/^file:\/\//, ''),
+      crop: { originX, originY, fullW: info.width, fullH: info.height, visW, visH },
+    };
   } catch {
-    return photoPath;
+    return { path: photoPath, crop: null };
   }
 }
 
@@ -116,10 +125,12 @@ export default function CameraScreen({ navigation }) {
 
       // Crop for display (matches preview's visible area) while algorithm
       // runs on the original uncropped photo — both execute in parallel.
-      const [displayPath, result] = await Promise.all([
+      const [cropResult, result] = await Promise.all([
         cropToPreview(photo.path),
         countTeeth(`file://${photo.path}`),
       ]);
+      const displayPath = cropResult.path;
+      const cropParams = cropResult.crop;
 
       if (gen !== captureGenRef.current) return; // cancelled or superseded
 
@@ -143,7 +154,13 @@ export default function CameraScreen({ navigation }) {
         },
       });
 
-      navigation.navigate('Result', { photoPath: displayPath, cameraErrors: cameraErrorsRef.current, cameraEvents: cameraEventsRef.current });
+      navigation.navigate('Result', {
+        photoPath: displayPath,
+        originalPhotoPath: photo.path,
+        cropParams,
+        cameraErrors: cameraErrorsRef.current,
+        cameraEvents: cameraEventsRef.current,
+      });
     } catch (e) {
       if (gen !== captureGenRef.current) return; // cancelled or superseded
       cameraErrorsRef.current.push({ type: 'processingError', ts: new Date().toISOString(), message: e.message, stack: e.stack });
