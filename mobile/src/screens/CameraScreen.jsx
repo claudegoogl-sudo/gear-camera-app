@@ -106,6 +106,7 @@ export default function CameraScreen({ navigation }) {
   const aimOpacity = useSharedValue(0.5);
   const motionResetRef = useRef(null);
   const captureGenRef = useRef(0);
+  const abortRef = useRef(null);
 
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
@@ -114,6 +115,9 @@ export default function CameraScreen({ navigation }) {
     if (!camera.current || isProcessing || !isCameraReadyRef.current || downloading || !isFocused) return;
 
     const gen = ++captureGenRef.current;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     motionResetRef.current?.();
     setProcessing(true);
 
@@ -127,7 +131,7 @@ export default function CameraScreen({ navigation }) {
       // runs on the original uncropped photo — both execute in parallel.
       const [cropResult, result] = await Promise.all([
         cropToPreview(photo.path),
-        countTeeth(`file://${photo.path}`),
+        countTeeth(`file://${photo.path}`, ac.signal),
       ]);
       const displayPath = cropResult.path;
       const cropParams = cropResult.crop;
@@ -163,6 +167,7 @@ export default function CameraScreen({ navigation }) {
       });
     } catch (e) {
       if (gen !== captureGenRef.current) return; // cancelled or superseded
+      if (e.name === 'AbortError') return; // user pressed cancel
       cameraErrorsRef.current.push({ type: 'processingError', ts: new Date().toISOString(), message: e.message, stack: e.stack });
       setError(e.message);
       Alert.alert('Processing failed', e.message);
@@ -173,6 +178,7 @@ export default function CameraScreen({ navigation }) {
 
   const handleCancel = useCallback(() => {
     captureGenRef.current++;
+    abortRef.current?.abort();
     setProcessing(false);
     motionResetRef.current?.();
   }, [setProcessing]);
@@ -384,8 +390,9 @@ export default function CameraScreen({ navigation }) {
         device={device}
         isActive={isFocused}
         photo={true}
+        video={true}
         pixelFormat="yuv"
-        torch="on"
+        torch={device?.hasTorch ? 'on' : 'off'}
         frameProcessor={frameProcessor}
         onInitialized={() => {
           cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current });

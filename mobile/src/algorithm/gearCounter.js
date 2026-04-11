@@ -1591,12 +1591,21 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   };
 }
 
-export async function countTeeth(photoUri) {
+export async function countTeeth(photoUri, signal) {
   const t0 = Date.now();
+
+  // Yield to the event loop so pending UI events (e.g. cancel press) can
+  // be processed, then check if the caller aborted.
+  const yieldOrAbort = async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    if (signal?.aborted) throw new DOMException('Processing cancelled', 'AbortError');
+  };
 
   // ── Image loading ──────────────────────────────────────────────────
   const { width, height, rgba } = await loadAndDecodeImage(photoUri);
   const t1 = Date.now();
+
+  await yieldOrAbort();
 
   // ── Preprocessing ──────────────────────────────────────────────────
   const gray     = rgbaToGray(rgba, width, height);
@@ -1605,8 +1614,12 @@ export async function countTeeth(photoUri) {
   const edges    = cannyEdges(blurred, width, height, 50, 150);
   const t2 = Date.now();
 
+  await yieldOrAbort();
+
   let r = analyzeImage(gray, enhanced, edges, width, height);
   const t3 = Date.now();
+
+  await yieldOrAbort();
 
   // ── Off-center, low-confidence retry (PAP-162) ────────────────────
   // When detected center is far from the aim circle and confidence is
@@ -1630,6 +1643,7 @@ export async function countTeeth(photoUri) {
   // ── Small-gear retry at higher resolution ──────────────────────────
   // When the gear is small in the frame and confidence is low, re-run
   // at 1500 px to give the FFT more pixels per tooth.
+  await yieldOrAbort();
   if (r.confidence < SMALL_GEAR_CONF
       && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
       && r.toothCount > 0) {
