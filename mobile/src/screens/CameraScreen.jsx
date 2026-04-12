@@ -392,7 +392,7 @@ export default function CameraScreen({ navigation }) {
         photo={true}
         video={true}
         pixelFormat="yuv"
-        torch={device?.hasTorch ? 'on' : 'off'}
+        torch="on"
         frameProcessor={frameProcessor}
         onInitialized={() => {
           cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current });
