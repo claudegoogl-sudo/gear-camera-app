@@ -622,9 +622,11 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     // outlines that contours miss due to teeth lowering circularity.
     if (bestPurity < 0.15) {
       const maxContourR = Math.max(...topCandidates.map(c => c.r), 0);
+      // PAP-288: lowered minRadius from /4 to /6 so Hough detects large
+      // cassette cogs (28T) that fill ~20-25% of image width.
       const houghCands = findHoughCircleCandidates(
         edges, w, h,
-        Math.floor(Math.min(h, w) / 4),
+        Math.floor(Math.min(h, w) / 6),
         Math.floor(Math.min(h, w) / 2),
       );
       for (const hc of houghCands) {
@@ -642,21 +644,24 @@ function findGearCenter(gray, enhanced, edges, width, height) {
             break;
           }
         }
-        if (!duplicate) {
-          topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
-          const idx = topCandidates.length - 1;
-          purities[idx] = fftPurityCheck(enhanced, hc.cx, hc.cy, hc.r, w, h);
-          // PAP-282: 10% purity bonus for Hough circles — they encode a
-          // stronger geometric constraint (actual circular shape in edge
-          // image) compared to contour candidates that may match cutout holes.
-          const houghAdjPurity = purities[idx] * 1.10;
-          if (houghAdjPurity >= MIN_ACCEPTABLE_PURITY && topCandidates[idx].r > topCandidates[bestIdx].r) {
-            bestIdx = idx;
-            bestPurity = purities[idx];
-          } else if (houghAdjPurity > bestPurity && topCandidates[idx].r >= topCandidates[bestIdx].r) {
-            bestPurity = purities[idx];
-            bestIdx = idx;
+        // PAP-288: evaluate Hough purity even for near-duplicate contour
+        // candidates.  Contour and Hough may detect the same feature with
+        // different radii; the Hough radius can yield better FFT purity.
+        const hcPurity = fftPurityCheck(enhanced, hc.cx, hc.cy, hc.r, w, h);
+        const houghAdjPurity = hcPurity * 1.10;
+        if (houghAdjPurity > bestPurity) {
+          if (!duplicate) {
+            topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
+          } else {
+            topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
           }
+          const idx = topCandidates.length - 1;
+          purities[idx] = hcPurity;
+          bestPurity = hcPurity;
+          bestIdx = idx;
+        } else if (!duplicate) {
+          topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
+          purities[topCandidates.length - 1] = hcPurity;
         }
       }
     }
@@ -1658,6 +1663,9 @@ export async function countTeeth(photoUri, signal) {
 
   let r = analyzeImage(gray, enhanced, edges, width, height);
   const t3 = Date.now();
+  // PAP-288: save initial radius from gear-region detection before
+  // detect_teeth may shrink it to peak_r.
+  const initialGearRadius = r.gearR;
 
   await yieldOrAbort();
 
@@ -1685,8 +1693,15 @@ export async function countTeeth(photoUri, signal) {
       const isSubharmonic = retryR !== null
           && r.toothCount > 0 && retryR.toothCount > 0
           && [2, 3].some(k => Math.abs(retryR.toothCount * k - r.toothCount) <= 1);
+      // PAP-288: radius consistency guard — reject retry when its radius
+      // is much smaller than initial (< 80%).  The retry should refine the
+      // center for the same gear, not lock onto a smaller inner feature.
+      const radiusShrunk = retryR !== null
+          && initialGearRadius > 100
+          && retryR.gearR < initialGearRadius * 0.8;
       if (retryR !== null
           && !isSubharmonic
+          && !radiusShrunk
           && retryR.confidence > r.confidence - 0.05
           && (retryR.gearR <= 150 || retryR.toothCount > retryR.gearR / 15)) {
         console.log(`[GearCounter] off-center retry: center (${r.cx},${r.cy})→(${retryR.cx},${retryR.cy}), ` +

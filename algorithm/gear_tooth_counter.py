@@ -993,6 +993,9 @@ class GearToothCounter:
             self.preprocess()
             self.find_gear_region()
             self.extract_gear_roi()
+            # PAP-288: save initial radius from find_gear_region before
+            # detect_teeth may shrink it to peak_r (line 582).
+            initial_gear_radius = self.gear_radius
             self.detect_teeth()
 
             # Off-center, low-confidence retry: if the detected center is
@@ -1039,8 +1042,21 @@ class GearToothCounter:
                             for k in (2, 3)
                         )
                     )
+                    # PAP-288: radius consistency guard — reject retry
+                    # when its radius is much smaller than initial (< 80%).
+                    # The retry should refine the center for the same gear,
+                    # not lock onto a smaller inner feature.  Large gears
+                    # (r>100) are especially susceptible to the retry
+                    # locking onto spider-arm features at smaller radii.
+                    radius_shrunk = (
+                        retry_c is not None
+                        and initial_gear_radius > 100
+                        and retry_c["gear_radius"]
+                        < initial_gear_radius * 0.8
+                    )
                     if (retry_c is not None
                             and not is_subharmonic
+                            and not radius_shrunk
                             and retry_c["confidence"]
                             > self.confidence - 0.05
                             and (retry_c["gear_radius"] <= 150
