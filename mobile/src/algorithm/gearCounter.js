@@ -1718,5 +1718,6 @@ export async function countTeeth(photoUri, signal) {
     confidence: r.confidence,
     gearCenter: { x: r.cx / width, y: r.cy / height },
     gearRadius: r.gearR / width,
+    algorithmRuntimeMs: t4 - t0,
   };
 }

@@ -156,6 +156,7 @@ export default function CameraScreen({ navigation }) {
           centerY: result.gearCenter.y,
           radius:  result.gearRadius,
         },
+        algorithmRuntimeMs: result.algorithmRuntimeMs,
       });
 
       navigation.navigate('Result', {

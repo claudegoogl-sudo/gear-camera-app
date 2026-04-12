@@ -43,11 +43,12 @@ async function verifyUpload(gitPath, headers) {
  *   isCameraReady: boolean|null,
  *   isFocused: boolean|null,
  *   retryKey: number|null,
+ *   algorithmRuntimeMs: number|null,
  *   policyRetryCount: number|null,
  * }} params
  * @returns {Promise<string>} URL of the uploaded report file on GitHub.
  */
-export async function shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount, cameraErrors, cameraEvents, cameraHasError, isCameraReady, isFocused, retryKey, policyRetryCount }) {
+export async function shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, cameraErrors, cameraEvents, cameraHasError, isCameraReady, isFocused, retryKey, policyRetryCount }) {
   if (!GITHUB_TOKEN) {
     throw new Error('GitHub token not configured — cannot upload debug report.');
   }
@@ -77,6 +78,7 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
       confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
       gearContour,
     },
+    ...(algorithmRuntimeMs != null ? { algorithmRuntimeMs } : {}),
     actualTeethCount: actualTeethCount ?? toothCount,
     cameraErrors: cameraErrors ?? [],
     cameraEvents: cameraEvents ?? [],

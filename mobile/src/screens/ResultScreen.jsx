@@ -75,7 +75,7 @@ function useCountUp(target) {
  */
 export default function ResultScreen({ navigation, route }) {
   const { photoPath, originalPhotoPath, cropParams, cameraErrors, cameraEvents } = route.params ?? {};
-  const { toothCount, confidence, gearContour, isProcessing, error, reset } = useGearStore();
+  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset } = useGearStore();
 
   // Transform algorithm coordinates (relative to original uncropped photo) into
   // cropped-photo space for the overlay.  When no crop was applied, pass through.
@@ -144,7 +144,7 @@ export default function ResultScreen({ navigation, route }) {
     const actualTeethCount = confirmedCount;
     setSharing(true);
     try {
-      await shareDebugReport({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour, actualTeethCount, cameraErrors: cameraErrors ?? null, cameraEvents: cameraEvents ?? null });
+      await shareDebugReport({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, cameraErrors: cameraErrors ?? null, cameraEvents: cameraEvents ?? null });
 
       // Upload training data alongside debug share (fire-and-forget).
       // Use original uncropped photo so training data matches what the algorithm processed.
