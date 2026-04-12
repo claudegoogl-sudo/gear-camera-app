@@ -193,6 +193,14 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   // frame processor is alive on this device.
   const markFrameProcessorActive = useCallback(() => {
     frameProcessorActiveRef.current = true;
+    // If we entered fallback (IMU-only) mode because the frame processor was
+    // slow to start, reverse it now that frames are arriving.  This re-gates
+    // the IMU trigger on CRES gear detection so we don't fire on standstill
+    // alone.
+    if (usingFallbackRef.current) {
+      usingFallbackRef.current = false;
+      setUsingFallback(false);
+    }
   }, []);
 
   // Called from worklet when toArrayBuffer() threw — logged once.
@@ -269,11 +277,13 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
         } else if (!imuTimer.current) {
           // Device is still — start stillness countdown.
           // In fallback (IMU-only) mode use a longer window and skip CRES gate.
-          const fallback = usingFallbackRef.current;
-          const stillnessMs = fallback ? IMU_STILLNESS_FALLBACK_MS : IMU_STILLNESS_MS;
+          // Read the ref at timer creation for duration, but re-read inside the
+          // callback so a fallback→normal transition (frame processor activating)
+          // correctly re-gates on CRES detection.
+          const stillnessMs = usingFallbackRef.current ? IMU_STILLNESS_FALLBACK_MS : IMU_STILLNESS_MS;
           imuTimer.current = setTimeout(() => {
             imuTimer.current = null;
-            if (gearWasDetectedRef.current || fallback) {
+            if (gearWasDetectedRef.current || usingFallbackRef.current) {
               setIsStable(true);
               onStableRef.current?.();
             }
