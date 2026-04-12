@@ -89,6 +89,19 @@ export default function ResultScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
   const imageHeight = width;
 
+  // ── Gear-centred crop transform ──────────────────────────────────
+  // Scale so the gear always appears at a consistent visual size, and
+  // translate so the gear centre sits at the centre of the view.
+  const TARGET_RADIUS = 0.35; // gear circle fills ~70 % of view width
+  const gearTransform = overlayContour
+    ? (() => {
+        const s = Math.max(1, Math.min(TARGET_RADIUS / overlayContour.radius, 3.5));
+        const tx = (0.5 - overlayContour.centerX) * width;
+        const ty = (0.5 - overlayContour.centerY) * imageHeight;
+        return [{ scale: s }, { translateX: tx }, { translateY: ty }];
+      })()
+    : [];
+
   const displayedCount = useCountUp(toothCount);
 
   const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
@@ -168,30 +181,32 @@ export default function ResultScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
 
       {/* ── Photo + overlay ───────────────────────────────────────── */}
-      <View style={[styles.imageWrap, { width, height: imageHeight }]}>
-        {photoPath ? (
-          <Image
-            source={{ uri: `file://${photoPath}` }}
-            style={{ width, height: imageHeight }}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.placeholder, { width, height: imageHeight }]}>
-            <Text style={styles.placeholderText}>Photo unavailable</Text>
-          </View>
-        )}
+      <View style={[styles.imageWrap, { width, height: imageHeight, overflow: 'hidden' }]}>
+        <View style={{ width, height: imageHeight, transform: gearTransform }}>
+          {photoPath ? (
+            <Image
+              source={{ uri: `file://${photoPath}` }}
+              style={{ width, height: imageHeight }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.placeholder, { width, height: imageHeight }]}>
+              <Text style={styles.placeholderText}>Photo unavailable</Text>
+            </View>
+          )}
 
-        {toothCount != null && overlayContour && (
-          <GearContourOverlay
-            width={width}
-            height={imageHeight}
-            centerX={overlayContour.centerX}
-            centerY={overlayContour.centerY}
-            radius={overlayContour.radius}
-            toothCount={toothCount}
-            confidence={confidence ?? 0}
-          />
-        )}
+          {toothCount != null && overlayContour && (
+            <GearContourOverlay
+              width={width}
+              height={imageHeight}
+              centerX={overlayContour.centerX}
+              centerY={overlayContour.centerY}
+              radius={overlayContour.radius}
+              toothCount={toothCount}
+              confidence={confidence ?? 0}
+            />
+          )}
+        </View>
 
         {isProcessing && (
           <View style={styles.processingOverlay}>
