@@ -123,7 +123,7 @@ export default function CameraScreen({ navigation }) {
 
     try {
       const photo = await camera.current.takePhoto({
-        flash: 'on',
+        flash: device?.hasFlash ? 'on' : 'off',
         qualityPrioritization: 'quality',
       });
 
@@ -393,10 +393,10 @@ export default function CameraScreen({ navigation }) {
         photo={true}
         video={true}
         pixelFormat="yuv"
-        torch="on"
+        torch={device?.hasTorch ? 'on' : 'off'}
         frameProcessor={frameProcessor}
         onInitialized={() => {
-          cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current });
+          cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current, hasTorch: !!device?.hasTorch, hasFlash: !!device?.hasFlash });
           // Guard against spurious duplicate onInitialized from VisionCamera.
           // All state updates are inside the guard to avoid re-renders that
           // would recreate the frameProcessor reference and trigger another
@@ -412,6 +412,7 @@ export default function CameraScreen({ navigation }) {
         onError={(e) => {
           console.warn('Camera error:', e.message);
           const isPolicyError = e.code === 'system/camera-is-restricted';
+          const isFlashError = e.code === 'device/flash-not-available';
           const isWideAngleFallback =
             !wideAngleFailedRef.current &&
             wideAngleDevice?.id &&
@@ -423,6 +424,7 @@ export default function CameraScreen({ navigation }) {
             deviceId: device?.id ?? null,
             wideAngleFallback: !!isWideAngleFallback,
             policyRestricted: isPolicyError,
+            flashError: isFlashError,
           });
           cameraEventsRef.current.push({
             type: 'error',
@@ -430,10 +432,16 @@ export default function CameraScreen({ navigation }) {
             code: e.code ?? null,
             message: e.message,
             policyRestricted: isPolicyError,
+            flashError: isFlashError,
             wideAngleFallback: !!isWideAngleFallback,
             retryKey,
             policyRetryCount: policyRetryCountRef.current,
           });
+          // Flash-unavailable is non-fatal — camera can still work without torch.
+          if (isFlashError) {
+            console.warn('Camera: flash not available on this device, continuing without torch');
+            return;
+          }
           // If the wide-angle device errored and we haven't already fallen back,
           // switch to the main camera.  Only bother when they are different
           // devices (different ids); if they are the same there is nothing to
