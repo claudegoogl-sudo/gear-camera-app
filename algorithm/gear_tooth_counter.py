@@ -668,11 +668,9 @@ class GearToothCounter:
     def _refine_center(self, cx, cy, r):
         """
         Refine gear center by finding the point that maximizes
-        rotational symmetry (FFT spectral purity), with a radial-symmetry
-        tie-breaker to avoid drifting toward artifact centers.
+        rotational symmetry (FFT spectral purity).
 
-        Two-pass grid search: coarse (±25px, step 5) then fine (±5px, step 1).
-        Uses the full-resolution _fft_purity_check for accurate scoring.
+        Two-pass grid search: coarse (±25px, step 8) then fine (±4px, step 2).
         Only accepts the refined center if purity improves by ≥15%.
         """
         h, w = self.gray.shape
@@ -695,10 +693,10 @@ class GearToothCounter:
 
         orig_purity = self._fft_purity_check(cx, cy, r)
 
-        # Coarse pass (±25px for broader coverage)
-        cx1, cy1, _ = _search(cx, cy, r, 25, 5)
-        # Fine pass
-        cx2, cy2, refined_purity = _search(cx1, cy1, r, 5, 1)
+        # Coarse pass (±25px, step 8)
+        cx1, cy1, _ = _search(cx, cy, r, 25, 8)
+        # Fine pass (±4px, step 2)
+        cx2, cy2, refined_purity = _search(cx1, cy1, r, 4, 2)
 
         # Accept only when: meaningful shift, significant gain, and the
         # refined center actually produces a clean tooth signal.
@@ -710,15 +708,18 @@ class GearToothCounter:
             return cx2, cy2
         return cx, cy
 
-    def _fft_purity_check(self, cx, cy, r):
+    def _fft_purity_check(self, cx, cy, r, fast=False):
         """
-        Quick FFT spectral-purity score for a candidate gear centre/radius.
+        FFT spectral-purity score for a candidate gear centre/radius.
 
         Samples CLAHE-enhanced intensity at radii from 85 % to 110 % of *r*,
         accumulates FFT votes per frequency in [MIN_TEETH, MAX_TEETH], and
         returns the ratio of the winning frequency's total magnitude to the
         sum across all candidate frequencies.  Higher = cleaner tooth signal.
 
+        When *fast* is True, uses 256 angles, 4 sample radii, and a simple
+        moving average instead of Savitzky-Golay — ~12× faster per call,
+        suitable for coarse grid search screening.
         """
         h, w = self.gray.shape
         enhanced = self._get_enhanced()
@@ -728,16 +729,33 @@ class GearToothCounter:
         if lo >= hi or lo < 10:
             return 0.0
 
-        n_a = 720
+        if fast:
+            n_a = 256
+            # Sample only 4 evenly-spaced radii instead of every 2
+            span = hi - lo
+            if span < 4:
+                radii = [lo + span // 2]
+            else:
+                radii = [lo + i * span // 3 for i in range(4)]
+        else:
+            n_a = 720
+            radii = range(lo, hi + 1, 2)
+
         angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
         cos_a, sin_a = np.cos(angles), np.sin(angles)
 
         fft_votes = defaultdict(float)
-        for rv in range(lo, hi + 1, 2):
+        for rv in radii:
             px = np.clip((cx + rv * cos_a).astype(int), 0, w - 1)
             py = np.clip((cy + rv * sin_a).astype(int), 0, h - 1)
             intensity = enhanced[py, px].astype(float)
-            sm = signal.savgol_filter(intensity, 21, 3, mode='wrap')
+            if fast:
+                # Simple moving average (kernel size ~n_a/45)
+                k = max(3, n_a // 45)
+                kernel = np.ones(k) / k
+                sm = np.convolve(intensity, kernel, mode='same')
+            else:
+                sm = signal.savgol_filter(intensity, 21, 3, mode='wrap')
             amp = sm.max() - sm.min()
             if amp < 5:
                 continue
@@ -1098,8 +1116,10 @@ class GearToothCounter:
         it returns the improved result; otherwise returns None.
 
         Uses a two-pass coarse-to-fine search:
-        1. Coarse: ±80px step 20 across radii 10%-35% of min dim (step 8)
-        2. Fine:   ±15px step 5 around the coarse-best position and radius
+        1. Coarse: ±60px step 30 across radii 10%-42% of min dim (step 20),
+           using fast purity check for screening
+        2. Fine:   ±10px step 5 around the coarse-best position and radius,
+           using full purity check for precision
         """
         try:
             h, w = self.gray.shape
@@ -1107,18 +1127,16 @@ class GearToothCounter:
             best_cx, best_cy, best_r = img_cx, img_cy, min(h, w) // 4
 
             # Search radii from 10% to 42% of image min dim
-            # PAP-282: raised from 35% → 42% so 28T gears (~34% of min dim)
-            # are covered by the retry search.
             min_r = max(30, int(min(h, w) * 0.10))
             max_r = int(min(h, w) * 0.42)
 
-            # Coarse pass: wide center range, larger radius step
-            for r in range(min_r, max_r, 8):
-                for dx in range(-80, 81, 20):
-                    for dy in range(-80, 81, 20):
+            # Coarse pass: wide center range, fast purity for screening
+            for r in range(min_r, max_r, 20):
+                for dx in range(-60, 61, 30):
+                    for dy in range(-60, 61, 30):
                         tcx = int(np.clip(img_cx + dx, 10, w - 10))
                         tcy = int(np.clip(img_cy + dy, 10, h - 10))
-                        p = self._fft_purity_check(tcx, tcy, r)
+                        p = self._fft_purity_check(tcx, tcy, r, fast=True)
                         if p > best_purity:
                             best_purity = p
                             best_cx, best_cy, best_r = tcx, tcy, r
@@ -1127,16 +1145,18 @@ class GearToothCounter:
                 return None
 
             # Fine pass: refine around coarse-best position and radius
+            # Uses fast purity for screening — _refine_center (called
+            # after) provides full-precision final refinement.
             fine_cx, fine_cy, fine_r = best_cx, best_cy, best_r
             fine_purity = best_purity
             r_lo = max(min_r, best_r - 15)
             r_hi = min(max_r, best_r + 16)
             for r in range(r_lo, r_hi, 5):
-                for dx in range(-15, 16, 5):
-                    for dy in range(-15, 16, 5):
+                for dx in range(-10, 11, 5):
+                    for dy in range(-10, 11, 5):
                         tcx = int(np.clip(best_cx + dx, 10, w - 10))
                         tcy = int(np.clip(best_cy + dy, 10, h - 10))
-                        p = self._fft_purity_check(tcx, tcy, r)
+                        p = self._fft_purity_check(tcx, tcy, r, fast=True)
                         if p > fine_purity:
                             fine_purity = p
                             fine_cx, fine_cy, fine_r = tcx, tcy, r

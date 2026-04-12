@@ -334,17 +334,41 @@ function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
 
 const PURITY_ANGLES = 1024;  // Must be power of 2 — avoids FFT zero-padding frequency shift
 
-function fftPurityCheck(enhanced, cx, cy, r, width, height) {
+function fftPurityCheck(enhanced, cx, cy, r, width, height, fast = false) {
   const lo = Math.floor(r * 0.85);
   const hi = Math.min(Math.floor(r * 1.10), Math.min(cx, width - cx, cy, height - cy) - 1);
   if (lo >= hi || lo < 10) return 0.0;
 
+  // Fast mode: 256 angles, 4 sample radii, moving average — ~12× faster,
+  // suitable for coarse grid search screening.
+  const nAngles = fast ? 256 : PURITY_ANGLES;
+  let radii;
+  if (fast) {
+    const span = hi - lo;
+    if (span < 4) {
+      radii = [lo + Math.floor(span / 2)];
+    } else {
+      radii = [];
+      for (let i = 0; i < 4; i++) radii.push(lo + Math.floor(i * span / 3));
+    }
+  } else {
+    radii = [];
+    for (let rv = lo; rv <= hi; rv += 2) radii.push(rv);
+  }
+
   const fftVotes = {};
-  for (let rv = lo; rv <= hi; rv += 2) {
-    const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, PURITY_ANGLES);
-    // SavGol(21, 3) matches Python _fft_purity_check (PAP-288)
-    const halfWin = 10;
-    const sm = savgolSmooth(ring, halfWin, true);
+  for (const rv of radii) {
+    const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, nAngles);
+    let sm;
+    if (fast) {
+      // Simple moving average for speed
+      const halfWin = Math.max(1, Math.floor(nAngles / 90));
+      sm = smoothSignal(ring, halfWin, true);
+    } else {
+      // SavGol(21, 3) matches Python _fft_purity_check (PAP-288)
+      const halfWin = 10;
+      sm = savgolSmooth(ring, halfWin, true);
+    }
 
     let smMin = Infinity, smMax = -Infinity;
     for (let i = 0; i < sm.length; i++) {
@@ -385,15 +409,15 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
 // PAP-162: coarse pass expanded from ±15px to ±25px to match Python PAP-154.
 
 function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
-  function search(cx0, cy0, radius, halfRange, step) {
+  function search(cx0, cy0, radius, halfRange, step, fast = false) {
     let bestCx = cx0, bestCy = cy0;
-    let bestP = fftPurityCheck(enhanced, cx0, cy0, radius, width, height);
+    let bestP = fftPurityCheck(enhanced, cx0, cy0, radius, width, height, fast);
     for (let dx = -halfRange; dx <= halfRange; dx += step) {
       for (let dy = -halfRange; dy <= halfRange; dy += step) {
         if (dx === 0 && dy === 0) continue;
         const ncx = cx0 + dx, ncy = cy0 + dy;
         if (ncx < 10 || ncy < 10 || ncx >= width - 10 || ncy >= height - 10) continue;
-        const p = fftPurityCheck(enhanced, ncx, ncy, radius, width, height);
+        const p = fftPurityCheck(enhanced, ncx, ncy, radius, width, height, fast);
         if (p > bestP) {
           bestP = p;
           bestCx = ncx;
@@ -406,10 +430,10 @@ function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
 
   const origPurity = fftPurityCheck(enhanced, cx, cy, r, width, height);
 
-  // Coarse pass (±25px for broader coverage — PAP-154/PAP-162)
-  const coarse = search(cx, cy, r, 25, 5);
-  // Fine pass
-  const fine = search(coarse.cx, coarse.cy, r, 5, 1);
+  // Coarse pass (±25px, step 8 — full purity for accuracy)
+  const coarse = search(cx, cy, r, 25, 8);
+  // Fine pass (±4px, step 2 — full purity for precision)
+  const fine = search(coarse.cx, coarse.cy, r, 4, 2);
 
   const shift = Math.sqrt((fine.cx - cx) ** 2 + (fine.cy - cy) ** 2);
   if (shift >= 3 && origPurity > 0 && fine.purity > origPurity * 1.15 && fine.purity >= 0.14) {
@@ -500,9 +524,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
-  // Sweep thresholds 40–220 in steps of 10 (finer than 20 for accuracy,
-  // coarser than Python's 5 for mobile speed — PAP-103)
-  for (let thresh = 40; thresh < 220; thresh += 10) {
+  // Sweep thresholds 40–220 in steps of 15 (PAP-300: raised from 10 to
+  // reduce connected-component labelling overhead on mobile)
+  for (let thresh = 40; thresh < 220; thresh += 15) {
     for (const invert of [true, false]) {
       // Binary mask
       const mask = new Uint8Array(n);
@@ -1119,8 +1143,10 @@ function binaryContourCount(gray, cx, cy, width, height) {
   // Multi-threshold sweep: try Otsu plus fixed thresholds to handle cases
   // where Otsu fails (e.g. metallic gears on white paper have similar
   // brightness, making Otsu separation impossible).  PAP-266.
+  // PAP-300: reduced from step 35 (5 extras) to step 70 (2 extras) to
+  // cut connected-component labelling overhead on mobile.
   const threshSet = new Set([otsuT]);
-  for (let t = 60; t <= 200; t += 35) threshSet.add(t);
+  for (let t = 80; t <= 200; t += 70) threshSet.add(t);
   const thresholds = [...threshSet].sort((a, b) => a - b);
 
   for (const thresh of thresholds) {
@@ -1371,6 +1397,16 @@ function analyzeImage(gray, enhanced, edges, width, height) {
         && Math.abs(peakTc - bcTc) <= 2) {
       finalTc = peakTc;
       methodUsed = 'bc-consensus+peak';
+    } else if (peakTc > 0 && fft90tc > 0
+        && peakTc === fft90tc
+        && fftConf >= 0.40
+        && Math.abs(peakTc - bcTc) <= 1) {
+      // PAP-300: FFT agreement override — when two independent FFT methods
+      // (multi-radius + fft@90%) agree on a count within ±1 of bcTc at
+      // moderate confidence, prefer the FFT result.  Binary contour FFT
+      // can be off by 1 due to threshold sensitivity (e.g. 23T vs 24T).
+      finalTc = peakTc;
+      methodUsed = 'bc-consensus+fft-agree';
     } else {
       finalTc = bcTc;
       methodUsed = 'bc-consensus';
@@ -1479,18 +1515,16 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
   let bestCx = imgCx, bestCy = imgCy, bestR = Math.floor(Math.min(h, w) / 4);
 
   // Search radii from 10% to 42% of image min dim
-  // PAP-282: raised from 35% → 42% so 28T gears (~34% of min dim)
-  // are covered by the retry search.
   const minR = Math.max(30, Math.floor(Math.min(h, w) * 0.10));
   const maxR = Math.floor(Math.min(h, w) * 0.42);
 
-  // Coarse pass: wide center range, larger radius step
-  for (let r = minR; r < maxR; r += 8) {
-    for (let dx = -80; dx <= 80; dx += 20) {
-      for (let dy = -80; dy <= 80; dy += 20) {
+  // Coarse pass: wide center range, fast purity for screening
+  for (let r = minR; r < maxR; r += 20) {
+    for (let dx = -60; dx <= 60; dx += 30) {
+      for (let dy = -60; dy <= 60; dy += 30) {
         const tcx = Math.min(Math.max(imgCx + dx, 10), w - 10);
         const tcy = Math.min(Math.max(imgCy + dy, 10), h - 10);
-        const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h);
+        const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h, true);
         if (p > bestPurity) {
           bestPurity = p;
           bestCx = tcx;
@@ -1503,17 +1537,19 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
 
   if (bestPurity < 0.03) return null;
 
-  // Fine pass: refine around coarse-best position and radius
+  // Fine pass: refine around coarse-best position and radius.
+  // Uses fast purity — refineCenterBySymmetry (called after)
+  // provides full-precision final refinement.
   let fineCx = bestCx, fineCy = bestCy, fineR = bestR;
   let finePurity = bestPurity;
   const rLo = Math.max(minR, bestR - 15);
   const rHi = Math.min(maxR, bestR + 16);
   for (let r = rLo; r < rHi; r += 5) {
-    for (let dx = -15; dx <= 15; dx += 5) {
-      for (let dy = -15; dy <= 15; dy += 5) {
+    for (let dx = -10; dx <= 10; dx += 5) {
+      for (let dy = -10; dy <= 10; dy += 5) {
         const tcx = Math.min(Math.max(bestCx + dx, 10), w - 10);
         const tcy = Math.min(Math.max(bestCy + dy, 10), h - 10);
-        const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h);
+        const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h, true);
         if (p > finePurity) {
           finePurity = p;
           fineCx = tcx;
@@ -1581,6 +1617,13 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
         && Math.abs(peakTc - bcTc) <= 2) {
       finalTc = peakTc;
       methodUsed = 'bc-consensus+peak';
+    } else if (peakTc > 0 && fft90tc > 0
+        && peakTc === fft90tc
+        && fftConf >= 0.40
+        && Math.abs(peakTc - bcTc) <= 1) {
+      // PAP-300: FFT agreement override (see analyzeImage)
+      finalTc = peakTc;
+      methodUsed = 'bc-consensus+fft-agree';
     } else {
       finalTc = bcTc;
       methodUsed = 'bc-consensus';
