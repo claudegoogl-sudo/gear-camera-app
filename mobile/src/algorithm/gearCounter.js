@@ -1453,7 +1453,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   return {
     toothCount: finalTc,
     confidence,
-    cx, cy, gearR: finalR,
+    cx, cy, gearR: finalR, initialGearR: gearR,
     contourRadius,
     centerResult,
     fft90tc, peakTc, peakRel, opTc, opRel,
@@ -1626,7 +1626,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   return {
     toothCount: finalTc,
     confidence,
-    cx, cy, gearR: finalR,
+    cx, cy, gearR: finalR, initialGearR: gearR,
     contourRadius,
     centerResult: { cx, cy, radius: contourRadius, method: 'retry-near-center' },
     fft90tc, peakTc, peakRel, opTc, opRel,
@@ -1665,7 +1665,7 @@ export async function countTeeth(photoUri, signal) {
   const t3 = Date.now();
   // PAP-288: save initial radius from gear-region detection before
   // detect_teeth may shrink it to peak_r.
-  const initialGearRadius = r.gearR;
+  const initialGearRadius = r.initialGearR;
 
   await yieldOrAbort();
 
