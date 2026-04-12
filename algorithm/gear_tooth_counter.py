@@ -547,9 +547,13 @@ class GearToothCounter:
             # gears with clean Otsu segmentation (e.g. 20T, 21T).
             final_tc = peak_tc
         elif bc_purity >= 0.20 and self.MIN_TEETH <= bc_tc <= self.MAX_TEETH:
-            # Binary contour FFT has high purity — use it
+            # Binary contour FFT has high purity — use it.
+            # PAP-308: raised confidence multiplier from 0.30 → 0.50 so
+            # confident bc detections produce realistic confidence values
+            # and are not overridden by off-center retries that lock onto
+            # background features (e.g. 14T→10T on difficult angles).
             final_tc = bc_tc
-            final_rel = max(final_rel, bc_purity * 0.30)
+            final_rel = max(final_rel, bc_purity * 0.50)
         elif (bc_purity >= 0.10
               and self.MIN_TEETH <= bc_peaks <= self.MAX_TEETH):
             # Binary contour peak count is in valid range.
