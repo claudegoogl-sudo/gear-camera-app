@@ -42,12 +42,18 @@ const SMALL_GEAR_RADIUS_FRAC = 0.10;   // gear radius / image width
 // PAP-282: raised from 0.50 → 0.65 so off-center retry fires more aggressively
 // for large gears with misleading confidence from cutout artifacts.
 const SMALL_GEAR_CONF        = 0.65;
-const RETRY_MAX_DIM          = 1500;
+// PAP-309: lowered from 1500 to reduce retry cost (retry at 1000 still
+// gives the same resolution as the previous default primary pass).
+const RETRY_MAX_DIM          = 1000;
 // ────���─────────────────────────────────────────��─────────────────────────────
 
 // ── 1. Image loading ───────────��─────────────────────────────────────────────
 
-async function loadAndDecodeImage(photoUri, targetMaxDim = 1000) {
+// PAP-309: lowered default from 1000 to 750 to reduce pixel count by ~44%
+// across all image-processing operations.  At 750px, a 40%-frame gear has
+// radius ~150px, circumference ~940px, giving ~67px/tooth for 14T — still
+// well above FFT Nyquist requirements.
+async function loadAndDecodeImage(photoUri, targetMaxDim = 750) {
   const info    = await ImageManipulator.manipulateAsync(photoUri, [], {});
   const maxDim  = Math.max(info.width, info.height);
   const resizeOp = maxDim > targetMaxDim
@@ -430,8 +436,10 @@ function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
 
   const origPurity = fftPurityCheck(enhanced, cx, cy, r, width, height);
 
-  // Coarse pass (±25px, step 8 — full purity for accuracy)
-  const coarse = search(cx, cy, r, 25, 8);
+  // PAP-309: coarse pass uses fast purity (~12× cheaper per call) — the coarse
+  // grid only needs to find the approximate neighborhood; fine pass refines.
+  // Coarse pass (±25px, step 8 — fast purity for screening)
+  const coarse = search(cx, cy, r, 25, 8, true);
   // Fine pass (±4px, step 2 — full purity for precision)
   const fine = search(coarse.cx, coarse.cy, r, 4, 2);
 
@@ -524,9 +532,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
-  // Sweep thresholds 40–220 in steps of 15 (PAP-300: raised from 10 to
-  // reduce connected-component labelling overhead on mobile)
-  for (let thresh = 40; thresh < 220; thresh += 15) {
+  // Sweep thresholds 40–220 in steps of 20 (PAP-309: raised from 15 to
+  // reduce morph+label overhead on mobile — 18 iterations vs 24)
+  for (let thresh = 40; thresh < 220; thresh += 20) {
     for (const invert of [true, false]) {
       // Binary mask
       const mask = new Uint8Array(n);

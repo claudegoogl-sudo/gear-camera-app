@@ -126,9 +126,15 @@ export function cannyEdges(gray, width, height, low = 50, high = 150) {
   }
 
   // Connect weak edges adjacent to strong edges
+  // PAP-309: cap iterations to prevent pathological cases on complex images
+  // (gear teeth + background texture can create long chains of weak edges
+  // that require 50-100+ passes, dominating runtime on mobile).
   let changed = true;
-  while (changed) {
+  let hysteresisIter = 0;
+  const MAX_HYSTERESIS_ITER = 20;
+  while (changed && hysteresisIter < MAX_HYSTERESIS_ITER) {
     changed = false;
+    hysteresisIter++;
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
         const i = y * width + x;
