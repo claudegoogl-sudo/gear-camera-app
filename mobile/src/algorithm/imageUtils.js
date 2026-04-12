@@ -252,10 +252,10 @@ export function clahe(gray, width, height, clipLimit = 3.0, tilesX = 8, tilesY =
   return out;
 }
 
-// ── Savitzky-Golay-like smoothing (moving-average with polynomial fit) ──────
+// ── Smoothing filters ───────────────────────────────────────────────────────
 
 /**
- * Simple moving-average smooth for a 1-D signal.
+ * Simple moving-average (box filter) smooth for a 1-D signal.
  * Uses a window of (2*halfWin+1) samples, wrapping at boundaries.
  *
  * @param {Float32Array|Float64Array|number[]} signal
@@ -279,6 +279,77 @@ export function smoothSignal(signal, halfWin, wrap = false) {
       cnt++;
     }
     out[i] = sum / cnt;
+  }
+  return out;
+}
+
+// ── Savitzky-Golay smoothing (cubic polynomial fit) ──────────────────────────
+//
+// Matches Python scipy.signal.savgol_filter(signal, window_length, polyorder=3).
+// For 0th-derivative smoothing with order 3, the convolution coefficients are:
+//   c_i = (S4 - S2 * i²) / (S0*S4 - S2²)
+// where S_k = Σ j^k for j = -M..M.  This preserves polynomial shapes up to
+// cubic, giving a much sharper frequency cutoff than a box filter — critical
+// for preserving 24T+ tooth signals in the FFT.  (PAP-288)
+
+/**
+ * Compute Savitzky-Golay smoothing coefficients for a given half-window.
+ * @param {number} halfWin - half-window M; total window = 2M+1
+ * @returns {Float64Array} coefficients of length 2M+1 (symmetric)
+ */
+function computeSavgolCoeffs(halfWin) {
+  const M = halfWin;
+  const W = 2 * M + 1;
+  let S0 = W, S2 = 0, S4 = 0;
+  for (let i = -M; i <= M; i++) {
+    const i2 = i * i;
+    S2 += i2;
+    S4 += i2 * i2;
+  }
+  const det = S0 * S4 - S2 * S2;
+  const coeffs = new Float64Array(W);
+  for (let i = -M; i <= M; i++) {
+    coeffs[i + M] = (S4 - S2 * i * i) / det;
+  }
+  return coeffs;
+}
+
+// Pre-compute coefficients for commonly used window sizes
+const _savgolCache = {};
+function getSavgolCoeffs(halfWin) {
+  if (!_savgolCache[halfWin]) {
+    _savgolCache[halfWin] = computeSavgolCoeffs(halfWin);
+  }
+  return _savgolCache[halfWin];
+}
+
+/**
+ * Savitzky-Golay (cubic, 0th-derivative) smoothing for a 1-D signal.
+ * Drop-in replacement for smoothSignal on ring (wrap=true) signals where
+ * frequency preservation matters (FFT-based tooth counting).
+ *
+ * @param {Float32Array|Float64Array|number[]} signal
+ * @param {number} halfWin - half-window size (total window = 2*halfWin+1)
+ * @param {boolean} [wrap=false] - if true, treat signal as circular
+ * @returns {Float64Array}
+ */
+export function savgolSmooth(signal, halfWin, wrap = false) {
+  const N = signal.length;
+  const coeffs = getSavgolCoeffs(halfWin);
+  const M = halfWin;
+  const out = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    let val = 0;
+    for (let d = -M; d <= M; d++) {
+      let j = i + d;
+      if (wrap) {
+        j = ((j % N) + N) % N;
+      } else if (j < 0 || j >= N) {
+        j = Math.max(0, Math.min(N - 1, j));
+      }
+      val += coeffs[d + M] * signal[j];
+    }
+    out[i] = val;
   }
   return out;
 }

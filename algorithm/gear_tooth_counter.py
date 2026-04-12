@@ -200,10 +200,13 @@ class GearToothCounter:
             # for the stronger geometric constraint Hough provides.
             if best_purity < 0.15:
                 max_contour_r = max((c[3] for c in top_candidates), default=0)
+                # PAP-288: lowered minRadius from //4 to //6 so Hough
+                # detects large cassette cogs (28T) that fill ~20-25%
+                # of image width — previously missed at //4 threshold.
                 circles = cv2.HoughCircles(
                     self.edges, cv2.HOUGH_GRADIENT,
                     dp=2, minDist=100, param1=50, param2=30,
-                    minRadius=min(h, w) // 4, maxRadius=min(h, w) // 2,
+                    minRadius=min(h, w) // 6, maxRadius=min(h, w) // 2,
                 )
                 if circles is not None:
                     circles = np.uint16(np.around(circles))
@@ -224,19 +227,22 @@ class GearToothCounter:
                                     and abs(hc_r - t_r) < 20):
                                 duplicate = True
                                 break
-                        if not duplicate:
+                        # PAP-288: evaluate Hough purity even for near-
+                        # duplicate contour candidates.  Contour and Hough
+                        # may detect the same feature with different radii;
+                        # the Hough radius can yield better FFT purity
+                        # (e.g. r=145 vs contour r=153 for 28T gears).
+                        purity = self._fft_purity_check(
+                            hc_x, hc_y, hc_r)
+                        # PAP-282: 10% purity bonus for Hough circles —
+                        # they encode a stronger geometric constraint
+                        # (actual circular shape in edge image) compared
+                        # to contour candidates that may match cutout holes.
+                        if purity * 1.10 > best_purity:
                             top_candidates.append(
                                 (0, hc_x, hc_y, hc_r, None))
-                            idx = len(top_candidates) - 1
-                            purity = self._fft_purity_check(
-                                hc_x, hc_y, hc_r)
-                            # PAP-282: 10% purity bonus for Hough circles —
-                            # they encode a stronger geometric constraint
-                            # (actual circular shape in edge image) compared
-                            # to contour candidates that may match cutout holes.
-                            if purity * 1.10 > best_purity:
-                                best_purity = purity
-                                best_purity_idx = idx
+                            best_purity = purity
+                            best_purity_idx = len(top_candidates) - 1
 
             sc, cx, cy, outer_r, best_cnt = top_candidates[best_purity_idx]
 
@@ -562,6 +568,16 @@ class GearToothCounter:
                     and peak_tc == fft90_tc
                     and abs(peak_tc - bc_peaks) == 1):
                 final_tc = peak_tc
+            elif (self.MIN_TEETH <= bc_tc <= self.MAX_TEETH
+                    and abs(bc_tc - bc_peaks) > 3
+                    and bc_tc > bc_peaks
+                    and bc_tc < 2 * bc_peaks):
+                # PAP-288: when binary contour FFT and peak count
+                # disagree substantially (>3 teeth) and the FFT count
+                # is higher but not a harmonic (< 2× peaks), prefer
+                # the FFT.  Peak counting undercounts on large gears
+                # because spider-arm cutouts split the silhouette.
+                final_tc = bc_tc
             else:
                 final_tc = bc_peaks
             final_rel = max(final_rel, bc_purity * 0.25)
@@ -1006,7 +1022,25 @@ class GearToothCounter:
                     # where the tooth count is unrealistically low for the
                     # detected radius (implies spurious center that samples
                     # across gear edge and background).
+                    # PAP-288: sub-harmonic guard — reject retry when its
+                    # count is a sub-harmonic (half or third) of the
+                    # initial detection.  Spider-arm features create strong
+                    # 12-fold or 10-fold symmetry that can dominate at
+                    # inner radii, producing counts like 12 vs actual 24.
+                    is_subharmonic = (
+                        self.tooth_count is not None
+                        and self.tooth_count > 0
+                        and retry_c is not None
+                        and retry_c["tooth_count"] is not None
+                        and retry_c["tooth_count"] > 0
+                        and any(
+                            abs(retry_c["tooth_count"] * k
+                                - self.tooth_count) <= 1
+                            for k in (2, 3)
+                        )
+                    )
                     if (retry_c is not None
+                            and not is_subharmonic
                             and retry_c["confidence"]
                             > self.confidence - 0.05
                             and (retry_c["gear_radius"] <= 150

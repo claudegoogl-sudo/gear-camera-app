@@ -27,6 +27,7 @@ import {
   cannyEdges,
   clahe,
   smoothSignal,
+  savgolSmooth,
   findPeaks,
 } from './imageUtils';
 
@@ -290,9 +291,9 @@ function sampleIntensityRing(gray, cx, cy, r, width, height, nAngles) {
 function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
   const ring = sampleIntensityRing(enhanced, cx, cy, r, width, height, N_ANGLES);
 
-  // Smooth (window ~ N/45)
+  // Smooth (window ~ N/45) — SavGol matches Python savgol_filter (PAP-288)
   const halfWin = Math.max(2, Math.floor(N_ANGLES / 90));
-  const sm = smoothSignal(ring, halfWin, true);
+  const sm = savgolSmooth(ring, halfWin, true);
 
   // Subtract mean
   let mean = 0;
@@ -341,8 +342,9 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height) {
   const fftVotes = {};
   for (let rv = lo; rv <= hi; rv += 2) {
     const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, PURITY_ANGLES);
+    // SavGol(21, 3) matches Python _fft_purity_check (PAP-288)
     const halfWin = 10;
-    const sm = smoothSignal(ring, halfWin, true);
+    const sm = savgolSmooth(ring, halfWin, true);
 
     let smMin = Infinity, smMax = -Infinity;
     for (let i = 0; i < sm.length; i++) {
@@ -814,8 +816,9 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
     if (rv < 10) continue;
 
     const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, N_ANGLES);
+    // SavGol(21, 3) matches Python _fft_at_90pct savgol_filter (PAP-288)
     const halfWin = 10;
-    const sm = smoothSignal(ring, halfWin, true);
+    const sm = savgolSmooth(ring, halfWin, true);
 
     let smMin = Infinity, smMax = -Infinity;
     for (let i = 0; i < sm.length; i++) {
@@ -1003,9 +1006,9 @@ function outerProfileScan(edges, cx, cy, maxR, width, height) {
   const med = nonZero[Math.floor(nonZero.length / 2)];
   for (let i = 0; i < nOp; i++) if (outerRadii[i] === 0) outerRadii[i] = med;
 
-  // Smooth and FFT
+  // Smooth and FFT — SavGol matches Python savgol_filter (PAP-288)
   const halfWin = Math.max(2, Math.floor(nOp / 90));
-  const sm = smoothSignal(outerRadii, halfWin, true);
+  const sm = savgolSmooth(outerRadii, halfWin, true);
 
   let mean = 0;
   for (let i = 0; i < sm.length; i++) mean += sm[i];
@@ -1050,8 +1053,8 @@ function clahePeakCounting(enhanced, cx, cy, gearRadius, width, height) {
     if (rVal < 10 || rVal >= maxR) continue;
 
     const ring = sampleIntensityRing(enhanced, cx, cy, rVal, width, height, N_ANGLES);
-    // halfWin=10 → window=21, matching Python savgol_filter(intensity, 21, 3)
-    const sm = smoothSignal(ring, 10, true);
+    // SavGol(21, 3) matching Python savgol_filter(intensity, 21, 3) (PAP-288)
+    const sm = savgolSmooth(ring, 10, true);
 
     let smMin = Infinity, smMax = -Infinity;
     for (let i = 0; i < sm.length; i++) {
@@ -1198,8 +1201,8 @@ function binaryContourCount(gray, cx, cy, width, height) {
         }
       }
 
-      // Smooth (halfWin=28 → window=57, ~1.4% of 4096 ≈ Python savgol_filter window=51 on 3600)
-      const sm = smoothSignal(rInterp, 28, true);
+      // SavGol(57, 3) — ~1.4% of 4096 ≈ Python savgol_filter(51, 3) on 3600 (PAP-288)
+      const sm = savgolSmooth(rInterp, 28, true);
 
       let smMin = Infinity, smMax = -Infinity;
       for (let i = 0; i < sm.length; i++) {
@@ -1402,6 +1405,15 @@ function analyzeImage(gray, enhanced, edges, width, height) {
         && peakTc === fft90tc
         && Math.abs(peakTc - bcPeaks) === 1) {
       finalTc = peakTc;
+    } else if (bcTc >= MIN_TEETH && bcTc <= MAX_TEETH
+        && Math.abs(bcTc - bcPeaks) > 3
+        && bcTc > bcPeaks
+        && bcTc < 2 * bcPeaks) {
+      // PAP-288: when binary contour FFT and peak count disagree
+      // substantially (>3 teeth) and FFT is higher but not a harmonic,
+      // prefer FFT.  Peak counting undercounts on large gears because
+      // spider-arm cutouts split the silhouette.
+      finalTc = bcTc;
     } else {
       finalTc = bcPeaks;
     }
@@ -1666,7 +1678,15 @@ export async function countTeeth(photoUri, signal) {
       // (the original may have misleadingly high confidence from cutout
       // artifacts) AND tooth-density sanity check passes (reject retry
       // results where tooth count is unrealistically low for the radius).
+      // PAP-288: sub-harmonic guard — reject retry when its count is a
+      // sub-harmonic (half or third) of the initial detection.  Spider-arm
+      // features create strong 12-fold or 10-fold symmetry that can dominate
+      // at inner radii, producing counts like 12 vs actual 24.
+      const isSubharmonic = retryR !== null
+          && r.toothCount > 0 && retryR.toothCount > 0
+          && [2, 3].some(k => Math.abs(retryR.toothCount * k - r.toothCount) <= 1);
       if (retryR !== null
+          && !isSubharmonic
           && retryR.confidence > r.confidence - 0.05
           && (retryR.gearR <= 150 || retryR.toothCount > retryR.gearR / 15)) {
         console.log(`[GearCounter] off-center retry: center (${r.cx},${r.cy})→(${retryR.cx},${retryR.cy}), ` +
