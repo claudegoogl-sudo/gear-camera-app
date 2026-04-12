@@ -191,11 +191,14 @@ class GearToothCounter:
                     best_purity = purity
                     best_purity_idx = idx
 
-            # ── Hough circle candidates (only when contour purity is weak) ──
-            # Hough is expensive (~1s) so only run when contour candidates
-            # don't produce a clear tooth signal.  This handles large gears
-            # that fill the frame and are missed by the contour enc_r filter.
-            if best_purity < 0.10:
+            # ── Hough circle candidates ──────────────────────────────────
+            # PAP-282: raised threshold from 0.10 → 0.15 so Hough circles
+            # run for large cassette cogs where contour detection picks up
+            # cutout holes with moderate purity (0.08-0.12).  Hough detects
+            # actual circular gear outlines that contours miss due to teeth
+            # lowering circularity.  A small purity bonus (10%) accounts
+            # for the stronger geometric constraint Hough provides.
+            if best_purity < 0.15:
                 max_contour_r = max((c[3] for c in top_candidates), default=0)
                 circles = cv2.HoughCircles(
                     self.edges, cv2.HOUGH_GRADIENT,
@@ -227,7 +230,11 @@ class GearToothCounter:
                             idx = len(top_candidates) - 1
                             purity = self._fft_purity_check(
                                 hc_x, hc_y, hc_r)
-                            if purity > best_purity:
+                            # PAP-282: 10% purity bonus for Hough circles —
+                            # they encode a stronger geometric constraint
+                            # (actual circular shape in edge image) compared
+                            # to contour candidates that may match cutout holes.
+                            if purity * 1.10 > best_purity:
                                 best_purity = purity
                                 best_purity_idx = idx
 
@@ -520,13 +527,29 @@ class GearToothCounter:
             # votes across all radii and can be dominated by inner features
             # (spider arms, mounting holes) in large gears.
             final_tc = peak_tc
+        elif (peak_tc > 0 and fft90_tc > 0
+              and abs(peak_tc - fft90_tc) <= 1
+              and fft_conf >= 0.40
+              and bc_purity < 0.20):
+            # PAP-282: FFT agreement rule — when multi-radius FFT and
+            # FFT@90% agree (within ±1 tooth), trust them even at moderate
+            # confidence.  Two independent FFT methods agreeing is strong
+            # evidence; prevents fallthrough to unreliable binary contour
+            # on large gears with spider-arm cutouts.
+            # Guard: do NOT override a high-purity binary contour (>= 0.20)
+            # since the contour silhouette is more reliable than FFT for
+            # gears with clean Otsu segmentation (e.g. 20T, 21T).
+            final_tc = peak_tc
         elif bc_purity >= 0.20 and self.MIN_TEETH <= bc_tc <= self.MAX_TEETH:
             # Binary contour FFT has high purity — use it
             final_tc = bc_tc
             final_rel = max(final_rel, bc_purity * 0.30)
-        elif (bc_purity >= 0.05
+        elif (bc_purity >= 0.10
               and self.MIN_TEETH <= bc_peaks <= self.MAX_TEETH):
             # Binary contour peak count is in valid range.
+            # PAP-282: raised threshold from 0.05 → 0.10; lower purities
+            # are unreliable on large gears where spider-arm cutout
+            # features dominate the silhouette contour.
             # Peak counting on Otsu silhouette can be off by ±1 for
             # small gears (11-15T) due to merged/split teeth.  When
             # FFT methods agree on a count that differs from bc_peaks
@@ -934,7 +957,9 @@ class GearToothCounter:
     # resolution.  At 1000 px max dim, small sprockets (11-15 T) can end up
     # with only ~80 px radius, which gives the FFT too few pixels per tooth.
     _SMALL_GEAR_RADIUS = 100
-    _SMALL_GEAR_CONF = 0.50
+    # PAP-282: raised from 0.50 → 0.65 so the off-center retry fires
+    # more aggressively for large gears with misleading confidence.
+    _SMALL_GEAR_CONF = 0.65
     _RETRY_MAX_DIM = 1500
 
     def count(self, image_path):
@@ -966,10 +991,27 @@ class GearToothCounter:
                     (self.gear_center[0] - img_cx) ** 2
                     + (self.gear_center[1] - img_cy) ** 2
                 )
-                if cdist > min(h, w) * 0.15:
+                # PAP-282: lowered from 0.15 → 0.08 so the retry fires
+                # more aggressively for large gears whose detected center
+                # may be close to image center but still wrong (e.g. locked
+                # onto a cutout hole near the actual gear center).
+                if cdist > min(h, w) * 0.08:
                     retry_c = self._retry_near_center(img_cx, img_cy)
+                    # PAP-282: accept retry if confidence is within 0.05
+                    # of the original.  The original may have misleadingly
+                    # high confidence from spider-arm cutout artifacts;
+                    # a retry that finds a similar confidence at a centre
+                    # closer to the aim circle should be preferred.
+                    # Tooth-density sanity check: reject retry results
+                    # where the tooth count is unrealistically low for the
+                    # detected radius (implies spurious center that samples
+                    # across gear edge and background).
                     if (retry_c is not None
-                            and retry_c["confidence"] > self.confidence):
+                            and retry_c["confidence"]
+                            > self.confidence - 0.05
+                            and (retry_c["gear_radius"] <= 150
+                                 or retry_c["tooth_count"]
+                                 > retry_c["gear_radius"] / 15)):
                         return retry_c
 
             # Small-gear, low-confidence retry at higher resolution
@@ -1014,9 +1056,11 @@ class GearToothCounter:
             best_purity = 0.0
             best_cx, best_cy, best_r = img_cx, img_cy, min(h, w) // 4
 
-            # Search radii from 10% to 35% of image min dim
+            # Search radii from 10% to 42% of image min dim
+            # PAP-282: raised from 35% → 42% so 28T gears (~34% of min dim)
+            # are covered by the retry search.
             min_r = max(30, int(min(h, w) * 0.10))
-            max_r = int(min(h, w) * 0.35)
+            max_r = int(min(h, w) * 0.42)
 
             # Coarse pass: wide center range, larger radius step
             for r in range(min_r, max_r, 8):

@@ -38,7 +38,9 @@ const N_ANGLES        = 1024;  // Must be power of 2 — avoids FFT zero-padding
 // Small-gear retry: if detected gear is small and confidence is low, re-run
 // at higher resolution to give the FFT more pixels per tooth.
 const SMALL_GEAR_RADIUS_FRAC = 0.10;   // gear radius / image width
-const SMALL_GEAR_CONF        = 0.50;
+// PAP-282: raised from 0.50 → 0.65 so off-center retry fires more aggressively
+// for large gears with misleading confidence from cutout artifacts.
+const SMALL_GEAR_CONF        = 0.65;
 const RETRY_MAX_DIM          = 1500;
 // ────���─────────────────────────────────────────��─────────────────────────────
 
@@ -611,11 +613,12 @@ function findGearCenter(gray, enhanced, edges, width, height) {
       bestPurity = purities[bestIdx];
     }
 
-    // ── Hough-like circle candidates (only when contour purity is weak) ──
-    // Only run when contour candidates don't produce a clear tooth signal.
-    // This handles large gears that fill the frame and are missed by the
-    // contour enc_r filter (> 0.45).
-    if (bestPurity < 0.10) {
+    // ── Hough-like circle candidates ──────────────────────────────────
+    // PAP-282: raised threshold from 0.10 → 0.15 so Hough circles run for
+    // large cassette cogs where contour detection picks up cutout holes
+    // with moderate purity (0.08–0.12).  Hough detects actual circular gear
+    // outlines that contours miss due to teeth lowering circularity.
+    if (bestPurity < 0.15) {
       const maxContourR = Math.max(...topCandidates.map(c => c.r), 0);
       const houghCands = findHoughCircleCandidates(
         edges, w, h,
@@ -641,11 +644,14 @@ function findGearCenter(gray, enhanced, edges, width, height) {
           topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
           const idx = topCandidates.length - 1;
           purities[idx] = fftPurityCheck(enhanced, hc.cx, hc.cy, hc.r, w, h);
-          // Re-apply largest-radius preference including new Hough candidates
-          if (purities[idx] >= MIN_ACCEPTABLE_PURITY && topCandidates[idx].r > topCandidates[bestIdx].r) {
+          // PAP-282: 10% purity bonus for Hough circles — they encode a
+          // stronger geometric constraint (actual circular shape in edge
+          // image) compared to contour candidates that may match cutout holes.
+          const houghAdjPurity = purities[idx] * 1.10;
+          if (houghAdjPurity >= MIN_ACCEPTABLE_PURITY && topCandidates[idx].r > topCandidates[bestIdx].r) {
             bestIdx = idx;
             bestPurity = purities[idx];
-          } else if (purities[idx] > bestPurity && topCandidates[idx].r >= topCandidates[bestIdx].r) {
+          } else if (houghAdjPurity > bestPurity && topCandidates[idx].r >= topCandidates[bestIdx].r) {
             bestPurity = purities[idx];
             bestIdx = idx;
           }
@@ -1367,12 +1373,26 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     // Suppressed when center disagrees with binary contour (PAP-266).
     finalTc = peakTc;
     methodUsed = 'peak';
+  } else if (peakTc > 0 && fft90tc > 0
+             && Math.abs(peakTc - fft90tc) <= 1
+             && fftConf >= 0.40
+             && bcPurity < 0.20) {
+    // 1b. PAP-282: FFT agreement rule — when multi-radius FFT and FFT@90%
+    // agree (±1 tooth), trust them even at moderate confidence.  Two
+    // independent FFT methods agreeing is strong evidence; prevents
+    // fallthrough to unreliable binary contour on large gears with
+    // spider-arm cutouts.  Guard: do NOT override high-purity bc (>= 0.20).
+    finalTc = peakTc;
+    methodUsed = 'fft-agreement';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
     // 2. Binary contour FFT has high purity — use it
     finalTc = bcTc;
     finalRel = Math.max(finalRel, bcPurity * 0.30);
     methodUsed = 'bc-fft';
-  } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
+  } else if (bcPurity >= 0.10 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
+    // PAP-282: raised threshold from 0.05 → 0.10; lower purities are
+    // unreliable on large gears where spider-arm cutout features
+    // dominate the silhouette contour.
     // 3. Binary contour peak count is in valid range.
     if (fft90tc > 0 && bcTc > 0
         && fft90tc === bcTc
@@ -1432,7 +1452,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
 // confidence is low, the algorithm may have locked onto a background feature.
 // Re-run with the center forced near the image center using a two-pass
 // coarse-to-fine search:
-//   1. Coarse: ±80px step 20, radii 10%-35% of min dim (step 8)
+//   1. Coarse: ±80px step 20, radii 10%-42% of min dim (step 8)
 //   2. Fine:   ±15px step 5 around coarse-best position and radius
 //   3. Final refinement via refineCenterBySymmetry
 
@@ -1441,9 +1461,11 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
   let bestPurity = 0.0;
   let bestCx = imgCx, bestCy = imgCy, bestR = Math.floor(Math.min(h, w) / 4);
 
-  // Search radii from 10% to 35% of image min dim
+  // Search radii from 10% to 42% of image min dim
+  // PAP-282: raised from 35% → 42% so 28T gears (~34% of min dim)
+  // are covered by the retry search.
   const minR = Math.max(30, Math.floor(Math.min(h, w) * 0.10));
-  const maxR = Math.floor(Math.min(h, w) * 0.35);
+  const maxR = Math.floor(Math.min(h, w) * 0.42);
 
   // Coarse pass: wide center range, larger radius step
   for (let r = minR; r < maxR; r += 8) {
@@ -1635,9 +1657,18 @@ export async function countTeeth(photoUri, signal) {
     const imgCx = Math.floor(width / 2);
     const imgCy = Math.floor(height / 2);
     const cdist = Math.sqrt((r.cx - imgCx) ** 2 + (r.cy - imgCy) ** 2);
-    if (cdist > Math.min(height, width) * 0.15) {
+    // PAP-282: lowered from 0.15 → 0.08 so the retry fires more
+    // aggressively for large gears whose detected center may be close
+    // to image center but still wrong (e.g. locked onto a cutout hole).
+    if (cdist > Math.min(height, width) * 0.08) {
       const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy);
-      if (retryR !== null && retryR.confidence > r.confidence) {
+      // PAP-282: accept retry if confidence is within 0.05 of original
+      // (the original may have misleadingly high confidence from cutout
+      // artifacts) AND tooth-density sanity check passes (reject retry
+      // results where tooth count is unrealistically low for the radius).
+      if (retryR !== null
+          && retryR.confidence > r.confidence - 0.05
+          && (retryR.gearR <= 150 || retryR.toothCount > retryR.gearR / 15)) {
         console.log(`[GearCounter] off-center retry: center (${r.cx},${r.cy})→(${retryR.cx},${retryR.cy}), ` +
           `${r.toothCount}T(${(r.confidence*100).toFixed(0)}%)→` +
           `${retryR.toothCount}T(${(retryR.confidence*100).toFixed(0)}%)`);
