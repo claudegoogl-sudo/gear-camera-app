@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-04-12T12:41:31.941Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (69) · 2026-04-11 23:36",
+  "result": {
+    "toothCount": null,
+    "confidence": null,
+    "gearContour": null
+  },
+  "actualTeethCount": null,
+  "cameraErrors": [
+    {
+      "type": "processingError",
+      "ts": "2026-04-12T12:39:21.638Z",
+      "message": "The Camera Device does not have a flash unit! Make sure you select a device where `device.hasFlash`/`device.hasTorch` is true.",
+      "stack": "device/flash-not-available: The Camera Device does not have a flash unit! Make sure you select a device where `device.hasFlash`/`device.hasTorch` is true.\n    at construct (native)\n    at apply (native)\n    at _construct (address at index.android.bundle:1:107823)\n    at Wrapper (address at index.android.bundle:1:107476)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraError (address at index.android.bundle:1:1034442)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraRuntimeError (address at index.android.bundle:1:1034943)\n    at tryParseNativeCameraError (address at index.android.bundle:1:1035249)\n    at ?anon_0_ (address at index.android.bundle:1:1029771)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:177621)\n    at _throw (address at index.android.bundle:1:177926)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)"
+    },
+    {
+      "type": "processingError",
+      "ts": "2026-04-12T12:39:33.816Z",
+      "message": "The Camera Device does not have a flash unit! Make sure you select a device where `device.hasFlash`/`device.hasTorch` is true.",
+      "stack": "device/flash-not-available: The Camera Device does not have a flash unit! Make sure you select a device where `device.hasFlash`/`device.hasTorch` is true.\n    at construct (native)\n    at apply (native)\n    at _construct (address at index.android.bundle:1:107823)\n    at Wrapper (address at index.android.bundle:1:107476)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraError (address at index.android.bundle:1:1034442)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraRuntimeError (address at index.android.bundle:1:1034943)\n    at tryParseNativeCameraError (address at index.android.bundle:1:1035249)\n    at ?anon_0_ (address at index.android.bundle:1:1029771)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:177621)\n    at _throw (address at index.android.bundle:1:177926)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)"
+    },
+    {
+      "type": "processingError",
+      "ts": "2026-04-12T12:40:05.059Z",
+      "message": "The Camera Device does not have a flash unit! Make sure you select a device where `device.hasFlash`/`device.hasTorch` is true.",
+      "stack": "device/flash-not-available: The Camera Device does not have a flash unit! Make sure you select a device where `device.hasFlash`/`device.hasTorch` is true.\n    at construct (native)\n    at apply (native)\n    at _construct (address at index.android.bundle:1:107823)\n    at Wrapper (address at index.android.bundle:1:107476)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraError (address at index.android.bundle:1:1034442)\n    at construct (native)\n    at _callSuper (address at index.android.bundle:1:105853)\n    at CameraRuntimeError (address at index.android.bundle:1:1034943)\n    at tryParseNativeCameraError (address at index.android.bundle:1:1035249)\n    at ?anon_0_ (address at index.android.bundle:1:1029771)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:177621)\n    at _throw (address at index.android.bundle:1:177926)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)"
+    }
+  ],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-12T12:39:09.295Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-12T12:40:06.458Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-12T12:40:47.183Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-12T12:41:26.544Z",
+      "message": "toArrayBuffer unavailable"
+    }
+  ],
+  "cameraHasError": false,
+  "isCameraReady": true,
+  "isFocused": true,
+  "retryKey": 0,
+  "policyRetryCount": 0
+}
