@@ -161,7 +161,7 @@ export default function ResultScreen({ navigation, route }) {
 
       // Upload training data alongside debug share (fire-and-forget).
       // Use original uncropped photo so training data matches what the algorithm processed.
-      uploadTrainingData({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour }).catch(() => {});
+      uploadTrainingData({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour, actualTeethCount }).catch(() => {});
 
       setHasShared(true);
       showToast('Debug report uploaded to GitHub');

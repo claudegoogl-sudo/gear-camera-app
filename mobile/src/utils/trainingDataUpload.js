@@ -30,9 +30,10 @@ const HEADERS = {
  *   toothCount: number|null,
  *   confidence: number|null,
  *   gearContour: {centerX: number, centerY: number, radius: number}|null,
+ *   actualTeethCount: number|null,
  * }} params
  */
-export async function uploadTrainingData({ photoPath, toothCount, confidence, gearContour }) {
+export async function uploadTrainingData({ photoPath, toothCount, confidence, gearContour, actualTeethCount }) {
   if (!GITHUB_TOKEN || !photoPath) return;
 
   // Quick auth check — skip upload entirely if token is expired.
@@ -92,6 +93,7 @@ export async function uploadTrainingData({ photoPath, toothCount, confidence, ge
         confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
         gearContour,
       },
+      actualTeethCount: actualTeethCount ?? toothCount,
     };
 
     const metaGitPath = `training-data/${slug}_meta.json`;
