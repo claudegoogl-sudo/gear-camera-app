@@ -184,9 +184,13 @@ class GearToothCounter:
         if top_candidates:
             best_purity = -1.0
             best_purity_idx = 0
+            # PAP-313: track purities for all candidates so the
+            # inner-hub override (below) can compare them.
+            purities = []
 
             for idx, (sc, c_x, c_y, c_r, cnt) in enumerate(top_candidates):
                 purity = self._fft_purity_check(c_x, c_y, c_r)
+                purities.append(purity)
                 if purity > best_purity:
                     best_purity = purity
                     best_purity_idx = idx
@@ -241,8 +245,90 @@ class GearToothCounter:
                         if purity * 1.10 > best_purity:
                             top_candidates.append(
                                 (0, hc_x, hc_y, hc_r, None))
+                            purities.append(purity)
                             best_purity = purity
                             best_purity_idx = len(top_candidates) - 1
+
+            # ── PAP-313: Center-distance weighted purity ────────────────
+            # Only when all candidates have low raw purity (< 0.10) —
+            # indicating no strong periodic signal at any candidate.
+            # In this regime, the gear is likely a large cog with spider-
+            # arm cutouts where inner hub features or corner artifacts
+            # can match the weak outer-tooth signal.  Center weighting
+            # penalizes candidates far from the viewfinder aim circle.
+            # Skipped when any candidate has strong purity (>= 0.10) to
+            # avoid overriding confidently detected small/medium gears
+            # that may be slightly off-center.
+            if max(purities) < 0.10:
+                img_cx, img_cy = w // 2, h // 2
+                max_dist = max(1.0, np.sqrt(
+                    float(img_cx ** 2 + img_cy ** 2)))
+
+                best_weighted = -1.0
+                for idx in range(len(top_candidates)):
+                    c_x = top_candidates[idx][1]
+                    c_y = top_candidates[idx][2]
+                    dist = np.sqrt(float(
+                        (c_x - img_cx) ** 2
+                        + (c_y - img_cy) ** 2))
+                    cw = max(0.5, 1.0 - 0.5 * (dist / max_dist))
+                    weighted = purities[idx] * cw
+                    if weighted > best_weighted:
+                        best_weighted = weighted
+                        best_purity_idx = idx
+                        best_purity = purities[idx]
+
+            # ── PAP-313: Frequency plausibility guard ───────────────────
+            # Check if the selected candidate's dominant FFT frequency
+            # suggests it is an inner hub/spline feature (freq < MIN_TEETH,
+            # typically ~10 for hub splines) rather than the actual gear
+            # tooth ring.  If so, override to a larger candidate whose
+            # dominant frequency falls in the valid tooth range.
+            #
+            # This replaces the previous edge-density approach (which
+            # failed for device photos with sparse tooth-ring edges).
+            # Per QA review (PAP-320): frequency plausibility is more
+            # robust and uses data already computed by the FFT pipeline.
+            sel_r = top_candidates[best_purity_idx][3]
+            sel_cx = top_candidates[best_purity_idx][1]
+            sel_cy = top_candidates[best_purity_idx][2]
+            sel_purity, sel_freq = self._fft_dominant_freq(
+                sel_cx, sel_cy, sel_r)
+
+            # Relative purity floor: 30% of best purity (PAP-320 QA rec)
+            purity_floor = max(0.03, best_purity * 0.30)
+
+            if sel_freq < self.MIN_TEETH or sel_freq > self.MAX_TEETH:
+                # Selected candidate's dominant frequency is outside the
+                # valid tooth range — likely a hub spline or background.
+                # Find larger candidates with plausible tooth frequency.
+                larger = []
+                for i in range(len(top_candidates)):
+                    if i == best_purity_idx:
+                        continue
+                    lc_r = top_candidates[i][3]
+                    # PAP-320 QA rec: lowered ratio threshold to 65%
+                    # (hub/ring < 65% → ring > hub/0.65 ≈ 1.54× hub)
+                    if lc_r <= sel_r * 1.10:
+                        continue
+                    if purities[i] < purity_floor:
+                        continue
+                    # Max radius cap: 45% of image dimension (PAP-320)
+                    if lc_r > min(h, w) * 0.45:
+                        continue
+                    lc_purity, lc_freq = self._fft_dominant_freq(
+                        top_candidates[i][1], top_candidates[i][2],
+                        lc_r)
+                    if self.MIN_TEETH <= lc_freq <= self.MAX_TEETH:
+                        larger.append((i, lc_purity, lc_freq))
+
+                if larger:
+                    # Prefer the candidate with best purity among those
+                    # with valid frequency.
+                    larger.sort(key=lambda x: -x[1])
+                    ov_idx = larger[0][0]
+                    best_purity_idx = ov_idx
+                    best_purity = purities[ov_idx]
 
             sc, cx, cy, outer_r, best_cnt = top_candidates[best_purity_idx]
 
@@ -674,14 +760,17 @@ class GearToothCounter:
         Refine gear center by finding the point that maximizes
         rotational symmetry (FFT spectral purity).
 
-        Two-pass grid search: coarse (±25px, step 8) then fine (±4px, step 2).
+        Two-pass grid search:
+        - Coarse: ±40px step 10, fast purity for screening  (PAP-313)
+        - Fine:   ±5px step 2, full purity for precision
         Only accepts the refined center if purity improves by ≥15%.
         """
         h, w = self.gray.shape
 
-        def _search(cx0, cy0, radius, half_range, step):
+        def _search(cx0, cy0, radius, half_range, step, fast=False):
             best_cx, best_cy = cx0, cy0
-            best_p = self._fft_purity_check(cx0, cy0, radius)
+            best_p = self._fft_purity_check(cx0, cy0, radius,
+                                            fast=fast)
             for dx in range(-half_range, half_range + 1, step):
                 for dy in range(-half_range, half_range + 1, step):
                     if dx == 0 and dy == 0:
@@ -689,7 +778,8 @@ class GearToothCounter:
                     ncx, ncy = cx0 + dx, cy0 + dy
                     if ncx < 10 or ncy < 10 or ncx >= w - 10 or ncy >= h - 10:
                         continue
-                    p = self._fft_purity_check(ncx, ncy, radius)
+                    p = self._fft_purity_check(ncx, ncy, radius,
+                                               fast=fast)
                     if p > best_p:
                         best_p = p
                         best_cx, best_cy = ncx, ncy
@@ -697,18 +787,24 @@ class GearToothCounter:
 
         orig_purity = self._fft_purity_check(cx, cy, r)
 
-        # Coarse pass (±25px, step 8)
-        cx1, cy1, _ = _search(cx, cy, r, 25, 8)
-        # Fine pass (±4px, step 2)
-        cx2, cy2, refined_purity = _search(cx1, cy1, r, 4, 2)
+        # PAP-313: use wider coarse search for large gears (r > 120)
+        # where the detected center may be on an inner hub feature up
+        # to 40+ px from the actual gear center.  Small gears keep the
+        # original tight search to avoid drifting to wrong features.
+        if r > 120:
+            cx1, cy1, _ = _search(cx, cy, r, 40, 10, fast=True)
+            cx2, cy2, refined_purity = _search(cx1, cy1, r, 5, 2)
+            accept_threshold = max(0.06, min(0.14, orig_purity * 1.5))
+        else:
+            cx1, cy1, _ = _search(cx, cy, r, 25, 8)
+            cx2, cy2, refined_purity = _search(cx1, cy1, r, 4, 2)
+            accept_threshold = 0.14
 
-        # Accept only when: meaningful shift, significant gain, and the
-        # refined center actually produces a clean tooth signal.
         shift = np.sqrt((cx2 - cx) ** 2 + (cy2 - cy) ** 2)
         if (shift >= 3
                 and orig_purity > 0
                 and refined_purity > orig_purity * 1.15
-                and refined_purity >= 0.14):
+                and refined_purity >= accept_threshold):
             return cx2, cy2
         return cx, cy
 
@@ -774,6 +870,45 @@ class GearToothCounter:
         total = sum(fft_votes.values())
         best = max(fft_votes.values())
         return best / total if total > 0 else 0.0
+
+    def _fft_dominant_freq(self, cx, cy, r):
+        """Return (purity, dominant_frequency) for a candidate.
+
+        Same FFT accumulation as ``_fft_purity_check`` (full mode) but
+        also returns the winning frequency.  Used by the inner-hub
+        frequency plausibility guard (PAP-313).
+        """
+        h, w = self.gray.shape
+        enhanced = self._get_enhanced()
+        lo = int(r * 0.85)
+        hi = min(int(r * 1.10), min(cx, w - cx, cy, h - cy) - 1)
+        if lo >= hi or lo < 10:
+            return 0.0, 0
+
+        n_a = 720
+        angles = np.linspace(0, 2 * np.pi, n_a, endpoint=False)
+        cos_a, sin_a = np.cos(angles), np.sin(angles)
+
+        fft_votes = defaultdict(float)
+        for rv in range(lo, hi + 1, 2):
+            px = np.clip((cx + rv * cos_a).astype(int), 0, w - 1)
+            py = np.clip((cy + rv * sin_a).astype(int), 0, h - 1)
+            intensity = enhanced[py, px].astype(float)
+            sm = signal.savgol_filter(intensity, 21, 3, mode='wrap')
+            amp = sm.max() - sm.min()
+            if amp < 5:
+                continue
+            fft_mag = np.abs(np.fft.rfft(sm - sm.mean()))
+            for freq in range(self.MIN_TEETH, self.MAX_TEETH + 1):
+                if freq < len(fft_mag):
+                    fft_votes[freq] += float(fft_mag[freq])
+
+        if not fft_votes:
+            return 0.0, 0
+        total = sum(fft_votes.values())
+        best_freq = max(fft_votes, key=fft_votes.get)
+        purity = fft_votes[best_freq] / total if total > 0 else 0.0
+        return purity, best_freq
 
     def _contour_groups(self, pct=94):
         """
@@ -1120,7 +1255,7 @@ class GearToothCounter:
         it returns the improved result; otherwise returns None.
 
         Uses a two-pass coarse-to-fine search:
-        1. Coarse: ±60px step 30 across radii 10%-42% of min dim (step 20),
+        1. Coarse: ±90px step 30 across radii 10%-42% of min dim (step 20),
            using fast purity check for screening
         2. Fine:   ±10px step 5 around the coarse-best position and radius,
            using full purity check for precision
@@ -1134,23 +1269,42 @@ class GearToothCounter:
             min_r = max(30, int(min(h, w) * 0.10))
             max_r = int(min(h, w) * 0.42)
 
-            # Coarse pass: wide center range, fast purity for screening
+            # PAP-313: coarse search tracks top candidates by purity
+            # so we can later filter by frequency plausibility.
+            coarse_candidates = []  # (purity, cx, cy, r)
             for r in range(min_r, max_r, 20):
-                for dx in range(-60, 61, 30):
-                    for dy in range(-60, 61, 30):
+                for dx in range(-90, 91, 30):
+                    for dy in range(-90, 91, 30):
                         tcx = int(np.clip(img_cx + dx, 10, w - 10))
                         tcy = int(np.clip(img_cy + dy, 10, h - 10))
                         p = self._fft_purity_check(tcx, tcy, r, fast=True)
-                        if p > best_purity:
-                            best_purity = p
-                            best_cx, best_cy, best_r = tcx, tcy, r
+                        if p > 0.03:
+                            coarse_candidates.append((p, tcx, tcy, r))
 
-            if best_purity < 0.03:
+            if not coarse_candidates:
                 return None
 
-            # Fine pass: refine around coarse-best position and radius
-            # Uses fast purity for screening — _refine_center (called
-            # after) provides full-precision final refinement.
+            # Sort by purity descending and keep top candidates
+            coarse_candidates.sort(key=lambda x: -x[0])
+
+            # PAP-313: frequency plausibility — prefer candidates whose
+            # dominant FFT frequency is in the valid tooth range (11-34).
+            # Background patterns (paper edges, surface texture) produce
+            # high purity but frequencies outside this range.
+            selected = None
+            for p, tcx, tcy, tr in coarse_candidates[:10]:
+                _, freq = self._fft_dominant_freq(tcx, tcy, tr)
+                if self.MIN_TEETH <= freq <= 34:
+                    selected = (p, tcx, tcy, tr)
+                    break
+
+            # Fall back to best overall purity if no freq-valid candidate
+            if selected is None:
+                selected = coarse_candidates[0]
+
+            best_purity, best_cx, best_cy, best_r = selected
+
+            # Fine pass: refine around selected position and radius
             fine_cx, fine_cy, fine_r = best_cx, best_cy, best_r
             fine_purity = best_purity
             r_lo = max(min_r, best_r - 15)
