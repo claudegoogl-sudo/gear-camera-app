@@ -342,11 +342,7 @@ export default function CameraScreen({ navigation }) {
         retryKey,
         policyRetryCount: policyRetryCountRef.current,
       });
-      if (Platform.OS === 'android') {
-        ToastAndroid.show('Debug report uploaded', ToastAndroid.SHORT);
-      } else {
-        Alert.alert('', 'Debug report uploaded');
-      }
+      // Button state change (setSharingDebug) is sufficient feedback — no toast needed.
     } catch (e) {
       Alert.alert('Debug report failed', e.message);
     } finally {

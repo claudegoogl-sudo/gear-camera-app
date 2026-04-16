@@ -189,7 +189,7 @@ export default function ResultScreen({ navigation, route }) {
       uploadTrainingData({ photoPath: originalPhotoPath || photoPath, toothCount, confidence, gearContour, actualTeethCount }).catch(() => {});
 
       setHasShared(true);
-      showToast('Debug report uploaded to GitHub');
+      // Button state change (setHasShared) is sufficient feedback — no toast needed.
     } catch (e) {
       showError(`Upload failed: ${e.message}`);
     } finally {
