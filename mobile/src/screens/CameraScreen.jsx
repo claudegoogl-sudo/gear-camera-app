@@ -88,6 +88,7 @@ export default function CameraScreen({ navigation }) {
   const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '', allBuilds: [] });
   // Declared before handleCapture so the capture guard can read it.
   const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const isFocused = useIsFocused();
 
   const { setProcessing, setResult, setError, isProcessing, reset: resetStore } = useGearStore();
@@ -273,12 +274,24 @@ export default function CameraScreen({ navigation }) {
     if (Platform.OS === 'android') {
       try {
         setDownloading(true);
+        setDownloadProgress(0);
         const fileName = build.downloadUrl.split('/').pop() || `build-${build.buildNumber}.apk`;
         const destUri = FileSystem.cacheDirectory + fileName;
-        const { uri, status } = await FileSystem.downloadAsync(build.downloadUrl, destUri);
-        if (status !== 200) {
-          throw new Error(`Download failed (HTTP ${status})`);
+        const downloadResumable = FileSystem.createDownloadResumable(
+          build.downloadUrl,
+          destUri,
+          {},
+          ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+            if (totalBytesExpectedToWrite > 0) {
+              setDownloadProgress(totalBytesWritten / totalBytesExpectedToWrite);
+            }
+          },
+        );
+        const result = await downloadResumable.downloadAsync();
+        if (!result || result.status !== 200) {
+          throw new Error(`Download failed (HTTP ${result?.status ?? 'unknown'})`);
         }
+        const uri = result.uri;
         const contentUri = await FileSystem.getContentUriAsync(uri);
         // Use ACTION_INSTALL_PACKAGE instead of ACTION_VIEW so the Android
         // Package Installer is the exclusive handler.  ACTION_VIEW with the
@@ -526,6 +539,10 @@ export default function CameraScreen({ navigation }) {
           <View style={styles.processingOverlay}>
             <View style={styles.processingCard}>
               <Text style={styles.processingTitle}>Downloading APK…</Text>
+              <View style={styles.progressBarTrack}>
+                <View style={[styles.progressBarFill, { width: `${Math.round(downloadProgress * 100)}%` }]} />
+              </View>
+              <Text style={styles.processingHint}>{Math.round(downloadProgress * 100)}%</Text>
             </View>
           </View>
         )}
@@ -783,6 +800,18 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.15)',
   },
   processingTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  progressBarTrack: {
+    width: '100%',
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 3,
+  },
   processingHint:  { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
   cancelBtn: {
     marginTop: 16,
