@@ -402,6 +402,53 @@ function fftPurityCheck(enhanced, cx, cy, r, width, height, fast = false) {
   return total > 0 ? best / total : 0.0;
 }
 
+// ── 9b. FFT dominant frequency for a candidate (PAP-324) ────────────────
+//
+// Same FFT accumulation as fftPurityCheck (full mode) but also returns the
+// dominant frequency.  Used by the frequency plausibility guard to reject
+// inner-hub or background candidates whose dominant frequency is outside
+// the valid tooth range.
+
+function fftDominantFreq(enhanced, cx, cy, r, width, height) {
+  const lo = Math.floor(r * 0.85);
+  const hi = Math.min(Math.floor(r * 1.10), Math.min(cx, width - cx, cy, height - cy) - 1);
+  if (lo >= hi || lo < 10) return { purity: 0.0, freq: 0 };
+
+  const nAngles = PURITY_ANGLES;
+  const fftVotes = {};
+  for (let rv = lo; rv <= hi; rv += 2) {
+    const ring = sampleIntensityRing(enhanced, cx, cy, rv, width, height, nAngles);
+    const halfWin = 10;
+    const sm = savgolSmooth(ring, halfWin, true);
+
+    let smMin = Infinity, smMax = -Infinity;
+    for (let i = 0; i < sm.length; i++) {
+      if (sm[i] < smMin) smMin = sm[i];
+      if (sm[i] > smMax) smMax = sm[i];
+    }
+    if (smMax - smMin < 5) continue;
+
+    let mean = 0;
+    for (let i = 0; i < sm.length; i++) mean += sm[i];
+    mean /= sm.length;
+    const centered = new Array(sm.length);
+    for (let i = 0; i < sm.length; i++) centered[i] = sm[i] - mean;
+
+    const mag = fftMagnitude(centered);
+    for (let freq = MIN_TEETH; freq <= MAX_TEETH && freq < mag.length; freq++) {
+      fftVotes[freq] = (fftVotes[freq] || 0) + mag[freq];
+    }
+  }
+
+  if (Object.keys(fftVotes).length === 0) return { purity: 0.0, freq: 0 };
+  const total = Object.values(fftVotes).reduce((a, b) => a + b, 0);
+  let bestFreq = 0, bestVal = 0;
+  for (const [f, v] of Object.entries(fftVotes)) {
+    if (v > bestVal) { bestVal = v; bestFreq = Number(f); }
+  }
+  return { purity: total > 0 ? bestVal / total : 0.0, freq: bestFreq };
+}
+
 // ── 9a. Center refinement via FFT purity maximisation ─────────────────────
 //
 // After initial center detection, refine by searching for the point that
@@ -542,8 +589,12 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
       }
 
-      // Morphological close then open (radius=2 for speed)
-      const closed = morphClose(mask, w, h, 2);
+      // Morphological close then open.
+      // PAP-324: apply close twice (matching Python iterations=2) for
+      // more aggressive gap-bridging — critical for separating gears
+      // from white paper backgrounds on medium-large cassette cogs.
+      const closed1 = morphClose(mask, w, h, 2);
+      const closed = morphClose(closed1, w, h, 2);
       const cleaned = morphOpen(closed, w, h, 1);
 
       // Label components
@@ -694,6 +745,44 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         } else if (!duplicate) {
           topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
           purities[topCandidates.length - 1] = hcPurity;
+        }
+      }
+    }
+
+    // ── PAP-324: Frequency plausibility guard (port of PAP-313) ──────
+    // Check if the selected candidate's dominant FFT frequency is in the
+    // valid tooth range.  Inner hub splines and background artifacts often
+    // have high purity but dominant frequency outside [MIN_TEETH, MAX_TEETH].
+    // If so, override to a larger candidate with plausible frequency.
+    {
+      const sel = topCandidates[bestIdx];
+      const { purity: selPurity, freq: selFreq } = fftDominantFreq(
+        enhanced, sel.cx, sel.cy, sel.r, w, h);
+      const purityFloor = Math.max(0.03, bestPurity * 0.30);
+
+      if (selFreq < MIN_TEETH || selFreq > MAX_TEETH) {
+        // Selected candidate's frequency is implausible — search for a
+        // larger candidate with valid tooth frequency.
+        let bestOverride = null;
+        let bestOverridePurity = 0;
+        for (let i = 0; i < topCandidates.length; i++) {
+          if (i === bestIdx) continue;
+          const lc = topCandidates[i];
+          if (lc.r <= sel.r * 1.10) continue;          // must be larger
+          if ((purities[i] || 0) < purityFloor) continue;
+          if (lc.r > Math.min(h, w) * 0.45) continue;  // max radius cap
+          const { freq: lcFreq, purity: lcPurity } = fftDominantFreq(
+            enhanced, lc.cx, lc.cy, lc.r, w, h);
+          if (lcFreq >= MIN_TEETH && lcFreq <= MAX_TEETH && lcPurity > bestOverridePurity) {
+            bestOverride = i;
+            bestOverridePurity = lcPurity;
+          }
+        }
+        if (bestOverride !== null) {
+          bestIdx = bestOverride;
+          bestPurity = purities[bestIdx] || 0;
+          console.log(`[GearCenter] freq plausibility override: freq ${selFreq} → ` +
+            `candidate #${bestIdx} r=${topCandidates[bestIdx].r}`);
         }
       }
     }
@@ -1165,8 +1254,15 @@ function binaryContourCount(gray, cx, cy, width, height) {
       mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
     }
 
+    // PAP-324: morph close+open before labeling — matches findGearCenter.
+    // Without this, gears on white paper form a single border-touching
+    // component (gear metal blends with paper) and the method returns
+    // nothing for medium-large cassette cogs.
+    const closed = morphClose(mask, width, height, 2);
+    const cleaned = morphOpen(closed, width, height, 1);
+
     // Find connected components (external contours)
-    const { labels, components } = labelComponents(mask, width, height, 1);
+    const { labels, components } = labelComponents(cleaned, width, height, 1);
 
     for (const comp of components) {
       if (comp.touchesBorder) continue;
