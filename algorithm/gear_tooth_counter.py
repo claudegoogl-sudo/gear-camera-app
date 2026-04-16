@@ -180,6 +180,7 @@ class GearToothCounter:
         best_cnt = None
         best_score = -1
         cx, cy, outer_r = w // 2, h // 2, min(h, w) // 4
+        found_valid_candidate = False
 
         if top_candidates:
             best_purity = -1.0
@@ -331,9 +332,10 @@ class GearToothCounter:
                     best_purity = purities[ov_idx]
 
             sc, cx, cy, outer_r, best_cnt = top_candidates[best_purity_idx]
+            found_valid_candidate = max(purities) > 0.0
 
         # ── Fallback: Hough circles (small radii) ────────────────────────
-        if best_cnt is None and outer_r <= min(h, w) // 4:
+        if not found_valid_candidate and outer_r <= min(h, w) // 4:
             circles_fb = cv2.HoughCircles(
                 self.edges, cv2.HOUGH_GRADIENT,
                 dp=2, minDist=50, param1=50, param2=30,
