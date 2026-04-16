@@ -33,9 +33,13 @@ const GEAR_LOST_THRESHOLD = 3;
 // can fire capture on its own.  Much shorter than IMU_STILLNESS_MS so that
 // visual detection drives the trigger, with IMU as supporting evidence.
 const CRES_TRIGGER_MIN_STILLNESS_MS = 300;
+// Consecutive CRES detections needed to trigger capture without IMU stillness.
+// At ~500 ms between CRES checks, 3 hits ≈ 1.5 s of sustained visual gear
+// presence — strong enough evidence that the camera is stable for a photo.
+const CRES_CONSECUTIVE_TRIGGER = 3;
 // IMU-based stillness detection (accelerometer + gyroscope)
-const ACCEL_MOTION_THRESHOLD = 0.05;
-const GYRO_MOTION_THRESHOLD = 0.12; // rad/s — rotation rate indicating motion
+const ACCEL_MOTION_THRESHOLD = 0.08; // g — relaxed to tolerate normal hand tremor
+const GYRO_MOTION_THRESHOLD = 0.18; // rad/s — relaxed to tolerate normal hand tremor
 const IMU_UPDATE_MS = 100;
 const IMU_STILLNESS_MS = 800; // shorter than old 4s — capture when user stops moving
 const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no CRES gate)
@@ -49,8 +53,9 @@ const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no C
  *   2. IMU sensors (accelerometer + gyroscope) — physical stillness detection
  *   3. CRES gear shape pre-recognition — detects gear presence in frame
  *
- * Trigger logic (three parallel paths fire capture):
+ * Trigger logic (four parallel paths fire capture):
  *   1. CRES primary — gear detected while device has been still ≥ CRES_TRIGGER_MIN_STILLNESS_MS
+ *   1b. CRES consecutive — gear detected N times in a row (bypasses IMU stillness)
  *   2. Pixel-diff — gear detected + no pixel change for STABILITY_MS
  *   3. IMU — gear detected + physically still for IMU_STILLNESS_MS
  * If the gear disappears while stable, stability timers reset.
@@ -68,6 +73,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   const stabilityTimer = useRef(null);
   const gearWasDetectedRef = useRef(false);
   const gearLostCountRef = useRef(0);
+  const cresConsecutiveHitsRef = useRef(0);
   const lastMotionTimeRef = useRef(Date.now());
   const imuTimer = useRef(null);
   const lastAccel = useRef(null);
@@ -150,6 +156,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
       if (detected) {
         gearLostCountRef.current = 0;
         gearWasDetectedRef.current = true;
+        cresConsecutiveHitsRef.current += 1;
         setGearDetected(true);
         setGearHints({ centerX: approxCenterX, centerY: approxCenterY, radius: approxRadius, score });
 
@@ -157,13 +164,17 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
         // device has already been still long enough.  This fires faster than
         // the IMU_STILLNESS_MS timer so that gear presence — not phone
         // standstill — is the dominant signal.
+        // Also triggers on consecutive CRES detections — sustained visual
+        // presence proves the camera is stable enough for a good photo,
+        // even if IMU reports micro-motion from hand tremor.
         const stillnessMs = Date.now() - lastMotionTimeRef.current;
-        if (stillnessMs >= CRES_TRIGGER_MIN_STILLNESS_MS) {
+        if (stillnessMs >= CRES_TRIGGER_MIN_STILLNESS_MS || cresConsecutiveHitsRef.current >= CRES_CONSECUTIVE_TRIGGER) {
           setIsStable(true);
           onStableRef.current?.();
         }
       } else {
         gearLostCountRef.current += 1;
+        cresConsecutiveHitsRef.current = 0;
 
         // Hysteresis: tolerate brief CRES flickers. Only clear detection
         // state after GEAR_LOST_THRESHOLD consecutive misses (~1.5 s).
@@ -422,6 +433,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     latestGyro.current = { x: 0, y: 0, z: 0 };
     gearWasDetectedRef.current = false;
     gearLostCountRef.current = 0;
+    cresConsecutiveHitsRef.current = 0;
     setIsStable(false);
     setGearDetected(false);
     setGearHints(null);
