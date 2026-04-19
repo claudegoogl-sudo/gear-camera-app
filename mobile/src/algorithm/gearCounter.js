@@ -42,9 +42,10 @@ const SMALL_GEAR_RADIUS_FRAC = 0.10;   // gear radius / image width
 // PAP-282: raised from 0.50 → 0.65 so off-center retry fires more aggressively
 // for large gears with misleading confidence from cutout artifacts.
 const SMALL_GEAR_CONF        = 0.65;
-// PAP-309: lowered from 1500 to reduce retry cost (retry at 1000 still
-// gives the same resolution as the previous default primary pass).
-const RETRY_MAX_DIM          = 1000;
+// PAP-339: restored from 1000 to 1500 to match Python.  With primary
+// resolution at 900px, the high-res retry at 1500px gives large gears
+// ~67% more pixels for FFT analysis.
+const RETRY_MAX_DIM          = 1500;
 // ────���─────────────────────────────────────────��─────────────────────────────
 
 // ── 1. Image loading ───────────��─────────────────────────────────────────────
