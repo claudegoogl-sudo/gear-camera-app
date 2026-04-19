@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-04-04T05:39:43.689Z",
   "app": "gear-camera",
-  "build": "v1.0.0 (10) · 2026-04-03 21:44",
+  "build": "v1.0.0 (10) \ufffd 2026-04-03 21:44",
   "result": {
     "toothCount": 26,
     "confidence": 0,
@@ -10,5 +10,7 @@
       "centerY": 0.5,
       "radius": 0.42
     }
-  }
+  },
+  "actualTeethCount": null,
+  "labelNote": "unlabelable: no photo available"
 }
