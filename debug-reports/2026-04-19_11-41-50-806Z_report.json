@@ -1,0 +1,719 @@
+{
+  "timestamp": "2026-04-19T11:41:50.806Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (80) · 2026-04-19 11:12",
+  "result": {
+    "toothCount": 15,
+    "confidence": 1,
+    "gearContour": {
+      "centerX": 0.5066666666666667,
+      "centerY": 0.42777777777777776,
+      "radius": 0.2222222222222222
+    }
+  },
+  "algorithmRuntimeMs": 60681,
+  "actualTeethCount": 15,
+  "cameraErrors": [],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-19T11:39:53.700Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:54.704Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:55.213Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:55.768Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:56.247Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:56.743Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:57.247Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:57.699Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:58.239Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:58.755Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:59.265Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:39:59.759Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:00.250Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:00.765Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:01.241Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:01.700Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:03.033Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:03.035Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:05.446Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:05.449Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:05.452Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:05.453Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:40:05.454Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.486Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.487Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.488Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.490Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.491Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.494Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.496Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.499Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.500Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.501Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.502Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.503Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.504Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.504Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.505Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.506Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.506Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.507Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.507Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.508Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.509Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.509Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.510Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.511Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.512Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.512Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.513Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.513Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.514Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.515Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.517Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.518Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.518Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.519Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.519Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.519Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.520Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.520Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.521Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.521Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.522Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.522Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.523Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.523Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.525Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.525Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.525Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.526Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.527Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.528Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.528Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.529Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.529Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.530Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.531Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.531Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.532Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.533Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.533Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.534Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.534Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.535Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.536Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.537Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.537Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.538Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.538Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.539Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.539Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.540Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.540Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.541Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.541Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.541Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.542Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.542Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.543Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.544Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.545Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.545Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.546Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.546Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.547Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.547Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.548Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.548Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.549Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.549Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.550Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.550Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.551Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.551Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.552Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.552Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.553Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.553Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.553Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.554Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.554Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.555Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.557Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.557Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.558Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.558Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.559Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.559Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.560Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.561Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.561Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.562Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.562Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.563Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.564Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:02.564Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:03.013Z",
+      "message": "toArrayBuffer unavailable"
+    },
+    {
+      "type": "frameProcessorError",
+      "ts": "2026-04-19T11:41:03.531Z",
+      "message": "toArrayBuffer unavailable"
+    }
+  ],
+  "photoFile": "debug-reports/2026-04-19_11-41-50-806Z_photo.jpg"
+}
