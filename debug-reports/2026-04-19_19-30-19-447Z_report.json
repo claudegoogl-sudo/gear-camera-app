@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-04-19T19:30:19.447Z",
   "app": "gear-camera",
-  "build": "v1.0.0 (82) · 2026-04-19 18:32",
+  "build": "v1.0.0 (82) Â· 2026-04-19 18:32",
   "result": {
     "toothCount": 17,
     "confidence": 0.4902,
@@ -12,7 +12,7 @@
     }
   },
   "algorithmRuntimeMs": 135519,
-  "actualTeethCount": 17,
+  "actualTeethCount": 18,
   "cameraErrors": [],
   "cameraEvents": [
     {
