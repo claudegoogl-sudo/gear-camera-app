@@ -1265,10 +1265,13 @@ function binaryContourCount(gray, cx, cy, width, height) {
   // Multi-threshold sweep: try Otsu plus fixed thresholds to handle cases
   // where Otsu fails (e.g. metallic gears on white paper have similar
   // brightness, making Otsu separation impossible).  PAP-266.
-  // PAP-300: reduced from step 35 (5 extras) to step 70 (2 extras) to
-  // cut connected-component labelling overhead on mobile.
+  // PAP-300: reduced from step 35 to step 70, but PAP-352 showed that
+  // step=70 (only Otsu, 80, 150) misses optimal thresholds for low-contrast
+  // silver gears.  Step=40 gives 80, 120, 160, 200 — 5 thresholds total
+  // with Otsu, still half the cost of findGearCenter's step=10 sweep but
+  // with much better coverage for large gears.
   const threshSet = new Set([otsuT]);
-  for (let t = 80; t <= 200; t += 70) threshSet.add(t);
+  for (let t = 80; t <= 200; t += 40) threshSet.add(t);
   const thresholds = [...threshSet].sort((a, b) => a - b);
 
   for (const thresh of thresholds) {
@@ -1283,7 +1286,13 @@ function binaryContourCount(gray, cx, cy, width, height) {
     // Without this, gears on white paper form a single border-touching
     // component (gear metal blends with paper) and the method returns
     // nothing for medium-large cassette cogs.
-    const closed = morphClose(mask, width, height, 2);
+    // PAP-352: apply close TWICE (iterations=2), matching findGearCenter
+    // lines 611-612.  Single close was insufficient for low-contrast
+    // silver gears on white paper — the gear body didn't fully separate
+    // from the background, causing components to touch the border or
+    // fragment into small pieces that get rejected.
+    const closed1 = morphClose(mask, width, height, 2);
+    const closed = morphClose(closed1, width, height, 2);
     const cleaned = morphOpen(closed, width, height, 1);
 
     // Find connected components (external contours)
