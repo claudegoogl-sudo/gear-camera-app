@@ -49,11 +49,12 @@ const RETRY_MAX_DIM          = 1000;
 
 // ── 1. Image loading ───────────��─────────────────────────────────────────────
 
-// PAP-309: lowered default from 1000 to 750 to reduce pixel count by ~44%
-// across all image-processing operations.  At 750px, a 40%-frame gear has
-// radius ~150px, circumference ~940px, giving ~67px/tooth for 14T — still
-// well above FFT Nyquist requirements.
-async function loadAndDecodeImage(photoUri, targetMaxDim = 750) {
+// PAP-339: raised from 750 back to 900px.  The 750px reduction (PAP-309)
+// caused large gear contours (21T, 24T, 28T) to be under-resolved for
+// the threshold sweep and morphological ops, contributing to b75-b79
+// accuracy regression.  900px is a compromise: ~44% fewer pixels than
+// 1000px (still faster than b72) while preserving contour detail.
+async function loadAndDecodeImage(photoUri, targetMaxDim = 900) {
   const info    = await ImageManipulator.manipulateAsync(photoUri, [], {});
   const maxDim  = Math.max(info.width, info.height);
   const resizeOp = maxDim > targetMaxDim
@@ -483,15 +484,26 @@ function refineCenterBySymmetry(enhanced, cx, cy, r, width, height) {
 
   const origPurity = fftPurityCheck(enhanced, cx, cy, r, width, height);
 
-  // PAP-309: coarse pass uses fast purity (~12× cheaper per call) — the coarse
-  // grid only needs to find the approximate neighborhood; fine pass refines.
-  // Coarse pass (±25px, step 8 — fast purity for screening)
-  const coarse = search(cx, cy, r, 25, 8, true);
+  // PAP-313 port: size-gate center refinement — large gears (r > 120)
+  // may have detected center on inner hub feature up to 40+ px from
+  // actual gear center; use wider coarse search with fast purity.
+  // Small gears keep the tighter search to avoid drifting to wrong features.
+  let coarse, acceptThreshold;
+  if (r > 120) {
+    coarse = search(cx, cy, r, 40, 10, true);
+    const fine0 = search(coarse.cx, coarse.cy, r, 5, 2);
+    acceptThreshold = Math.max(0.06, Math.min(0.14, origPurity * 1.5));
+    coarse = fine0; // use fine result as the output of the two-pass
+  } else {
+    // PAP-309: coarse pass uses fast purity (~12× cheaper per call)
+    coarse = search(cx, cy, r, 25, 8, true);
+    acceptThreshold = 0.14;
+  }
   // Fine pass (±4px, step 2 — full purity for precision)
   const fine = search(coarse.cx, coarse.cy, r, 4, 2);
 
   const shift = Math.sqrt((fine.cx - cx) ** 2 + (fine.cy - cy) ** 2);
-  if (shift >= 3 && origPurity > 0 && fine.purity > origPurity * 1.15 && fine.purity >= 0.14) {
+  if (shift >= 3 && origPurity > 0 && fine.purity > origPurity * 1.15 && fine.purity >= acceptThreshold) {
     return { cx: fine.cx, cy: fine.cy };
   }
   return { cx, cy };
@@ -579,9 +591,10 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
-  // Sweep thresholds 40–220 in steps of 20 (PAP-309: raised from 15 to
-  // reduce morph+label overhead on mobile — 18 iterations vs 24)
-  for (let thresh = 40; thresh < 220; thresh += 20) {
+  // Sweep thresholds 40–220 in steps of 15 (PAP-339: restored from 20 to
+  // improve threshold coverage for large gear contour detection — step 20
+  // missed optimal thresholds for some gear/background combinations).
+  for (let thresh = 40; thresh < 220; thresh += 15) {
     for (const invert of [true, false]) {
       // Binary mask
       const mask = new Uint8Array(n);
@@ -1533,9 +1546,12 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     finalTc = peakTc;
     methodUsed = 'fft-agreement';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
-    // 2. Binary contour FFT has high purity — use it
+    // 2. Binary contour FFT has high purity — use it.
+    // PAP-308 port: raised multiplier from 0.30 → 0.50 so confident bc
+    // detections produce realistic confidence and are not overridden by
+    // off-center retries that lock onto background features.
     finalTc = bcTc;
-    finalRel = Math.max(finalRel, bcPurity * 0.30);
+    finalRel = Math.max(finalRel, bcPurity * 0.50);
     methodUsed = 'bc-fft';
   } else if (bcPurity >= 0.10 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
     // PAP-282: raised threshold from 0.05 → 0.10; lower purities are
@@ -1622,24 +1638,47 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
   const minR = Math.max(30, Math.floor(Math.min(h, w) * 0.10));
   const maxR = Math.floor(Math.min(h, w) * 0.42);
 
-  // Coarse pass: wide center range, fast purity for screening
+  // PAP-313 port: coarse pass tracks top candidates by purity so we can
+  // later filter by frequency plausibility (matching Python behavior).
+  const coarseCandidates = []; // { purity, cx, cy, r }
   for (let r = minR; r < maxR; r += 20) {
-    for (let dx = -60; dx <= 60; dx += 30) {
-      for (let dy = -60; dy <= 60; dy += 30) {
+    for (let dx = -90; dx <= 90; dx += 30) {
+      for (let dy = -90; dy <= 90; dy += 30) {
         const tcx = Math.min(Math.max(imgCx + dx, 10), w - 10);
         const tcy = Math.min(Math.max(imgCy + dy, 10), h - 10);
         const p = fftPurityCheck(enhanced, tcx, tcy, r, w, h, true);
-        if (p > bestPurity) {
-          bestPurity = p;
-          bestCx = tcx;
-          bestCy = tcy;
-          bestR = r;
+        if (p > 0.03) {
+          coarseCandidates.push({ purity: p, cx: tcx, cy: tcy, r });
         }
       }
     }
   }
 
-  if (bestPurity < 0.03) return null;
+  if (coarseCandidates.length === 0) return null;
+
+  // Sort by purity descending
+  coarseCandidates.sort((a, b) => b.purity - a.purity);
+
+  // PAP-313 port: frequency plausibility — prefer candidates whose
+  // dominant FFT frequency is in the valid tooth range (11-34).
+  // Background patterns (paper edges, surface texture) produce high
+  // purity but frequencies outside this range.
+  let selected = null;
+  for (let i = 0; i < Math.min(coarseCandidates.length, 10); i++) {
+    const c = coarseCandidates[i];
+    const { freq } = fftDominantFreq(enhanced, c.cx, c.cy, c.r, w, h);
+    if (freq >= MIN_TEETH && freq <= 34) {
+      selected = c;
+      break;
+    }
+  }
+  // Fall back to best overall purity if no freq-valid candidate
+  if (!selected) selected = coarseCandidates[0];
+
+  bestPurity = selected.purity;
+  bestCx = selected.cx;
+  bestCy = selected.cy;
+  bestR = selected.r;
 
   // Fine pass: refine around coarse-best position and radius.
   // Uses fast purity — refineCenterBySymmetry (called after)
@@ -1738,7 +1777,8 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
     methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
     finalTc = bcTc;
-    finalRel = Math.max(finalRel, bcPurity * 0.30);
+    // PAP-308 port: match main analyzeImage multiplier (0.30 → 0.50)
+    finalRel = Math.max(finalRel, bcPurity * 0.50);
     methodUsed = 'bc-fft';
   } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
     if (fft90tc > 0 && bcTc > 0 && fft90tc === bcTc && Math.abs(fft90tc - bcPeaks) === 1) {
