@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-04-19T14:59:10.014Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (80) · 2026-04-19 11:12",
+  "result": {
+    "toothCount": 15,
+    "confidence": 0.5341,
+    "gearContour": {
+      "centerX": 0.4918518518518519,
+      "centerY": 0.4222222222222222,
+      "radius": 0.29185185185185186
+    }
+  },
+  "algorithmRuntimeMs": 70626,
+  "actualTeethCount": 24,
+  "cameraErrors": [
+    {
+      "timestamp": "2026-04-19T14:58:11.364Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true,
+      "flashError": false
+    }
+  ],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-19T14:57:08.217Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    },
+    {
+      "type": "error",
+      "ts": "2026-04-19T14:58:11.364Z",
+      "code": "system/camera-is-restricted",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "policyRestricted": true,
+      "flashError": false,
+      "wideAngleFallback": false,
+      "retryKey": 0,
+      "policyRetryCount": 0
+    }
+  ],
+  "photoFile": "debug-reports/2026-04-19_14-59-10-014Z_photo.jpg"
+}
