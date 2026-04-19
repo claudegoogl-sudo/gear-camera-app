@@ -97,6 +97,11 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   const usingFallbackRef = useRef(false);
   const [usingFallback, setUsingFallback] = useState(false);
 
+  // Gate to report only the first frame-processor error per session.
+  // The worklet checks this shared value before calling reportFrameErrorJS
+  // so we don't flood the event log with 100-235 identical events.
+  const frameErrorReportedSV = useSharedValue(false);
+
   const clearTimer = useCallback(() => {
     if (stabilityTimer.current) {
       clearTimeout(stabilityTimer.current);
@@ -348,12 +353,18 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
               buffer = frame.toArrayBuffer();
             }
           } catch (e) {
-            reportFrameErrorJS();
+            if (!frameErrorReportedSV.value) {
+              frameErrorReportedSV.value = true;
+              reportFrameErrorJS();
+            }
             return;
           }
 
           if (!buffer) {
-            reportFrameErrorJS();
+            if (!frameErrorReportedSV.value) {
+              frameErrorReportedSV.value = true;
+              reportFrameErrorJS();
+            }
             return;
           }
 
@@ -408,8 +419,14 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
                   result._diag,
                 );
               } catch (_e) {
-                // CRES threw — report but don't crash the frame processor
-                reportFrameErrorJS();
+                // CRES threw — treat as "gear not detected" so the
+                // hysteresis counter increments and stale gear state
+                // clears after GEAR_LOST_THRESHOLD misses.
+                handleGearDetectionJS(false, 0, 0, 0, 0, null);
+                if (!frameErrorReportedSV.value) {
+                  frameErrorReportedSV.value = true;
+                  reportFrameErrorJS();
+                }
               }
             }
           }
@@ -441,7 +458,8 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     frameCounter.value = 0;
     gearDetectCounter.value = 0;
     diagLogged.value = false;
-  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged]);
+    frameErrorReportedSV.value = false;
+  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged, frameErrorReportedSV]);
 
   return { isStable, gearDetected, gearHints, frameProcessor, reset, usingFallback };
 }
