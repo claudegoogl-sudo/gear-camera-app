@@ -102,6 +102,14 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   // so we don't flood the event log with 100-235 identical events.
   const frameErrorReportedSV = useSharedValue(false);
 
+  // Consecutive buffer-read failures.  Camera pipelines often deliver the
+  // first few frames before the backing buffer is fully wired up (YUV
+  // HardwareBuffer not yet allocated, plugin not ready, etc.).  We only
+  // report an error after BUFFER_FAIL_REPORT_THRESHOLD consecutive failures
+  // so that transient warm-up nulls are silently skipped.
+  const BUFFER_FAIL_REPORT_THRESHOLD = 10; // ~1 s at FRAME_SKIP=3 @ 30 fps
+  const consecutiveBufferFails = useSharedValue(0);
+
   const clearTimer = useCallback(() => {
     if (stabilityTimer.current) {
       clearTimeout(stabilityTimer.current);
@@ -353,7 +361,8 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
               buffer = frame.toArrayBuffer();
             }
           } catch (e) {
-            if (!frameErrorReportedSV.value) {
+            consecutiveBufferFails.value += 1;
+            if (!frameErrorReportedSV.value && consecutiveBufferFails.value >= BUFFER_FAIL_REPORT_THRESHOLD) {
               frameErrorReportedSV.value = true;
               reportFrameErrorJS();
             }
@@ -361,12 +370,16 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
           }
 
           if (!buffer) {
-            if (!frameErrorReportedSV.value) {
+            consecutiveBufferFails.value += 1;
+            if (!frameErrorReportedSV.value && consecutiveBufferFails.value >= BUFFER_FAIL_REPORT_THRESHOLD) {
               frameErrorReportedSV.value = true;
               reportFrameErrorJS();
             }
             return;
           }
+
+          // Buffer read succeeded — reset failure counter.
+          consecutiveBufferFails.value = 0;
 
           // Signal to JS side that the frame processor is working.
           markFrameProcessorActiveJS();
@@ -458,8 +471,11 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     frameCounter.value = 0;
     gearDetectCounter.value = 0;
     diagLogged.value = false;
-    frameErrorReportedSV.value = false;
-  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged, frameErrorReportedSV]);
+    // Note: frameErrorReportedSV is intentionally NOT reset here.
+    // The error is persistent per session — re-reporting after each capture
+    // cycle just floods debug reports with duplicate events.
+    consecutiveBufferFails.value = 0;
+  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged, consecutiveBufferFails]);
 
   return { isStable, gearDetected, gearHints, frameProcessor, reset, usingFallback };
 }
