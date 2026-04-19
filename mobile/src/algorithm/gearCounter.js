@@ -592,10 +592,11 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
-  // Sweep thresholds 40–220 in steps of 15 (PAP-339: restored from 20 to
-  // improve threshold coverage for large gear contour detection — step 20
-  // missed optimal thresholds for some gear/background combinations).
-  for (let thresh = 40; thresh < 220; thresh += 15) {
+  // Sweep thresholds 40–220 in steps of 10 (PAP-346: reduced from 15 to
+  // improve contour candidate coverage for large gears — Python uses
+  // step=5 but 10 is a reasonable mobile compromise.  18 iterations vs
+  // the previous 12, matching Python more closely without the full 36).
+  for (let thresh = 40; thresh < 220; thresh += 10) {
     for (const invert of [true, false]) {
       // Binary mask
       const mask = new Uint8Array(n);
@@ -696,22 +697,6 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         bestIdx = i;
       }
     }
-    // Among candidates with acceptable purity (>= 0.04), prefer the
-    // largest radius.  Inner features (bore splines, mounting holes)
-    // often have higher purity than the outer teeth — especially on
-    // textured backgrounds — but we want the outer tooth ring.
-    const MIN_ACCEPTABLE_PURITY = 0.04;
-    if (bestPurity >= MIN_ACCEPTABLE_PURITY) {
-      let largestR = topCandidates[bestIdx].r;
-      for (let i = 0; i < topCandidates.length; i++) {
-        if (purities[i] >= MIN_ACCEPTABLE_PURITY && topCandidates[i].r > largestR) {
-          largestR = topCandidates[i].r;
-          bestIdx = i;
-        }
-      }
-      bestPurity = purities[bestIdx];
-    }
-
     // ── Hough-like circle candidates ──────────────────────────────────
     // PAP-282: raised threshold from 0.10 → 0.15 so Hough circles run for
     // large cassette cogs where contour detection picks up cutout holes
@@ -759,6 +744,32 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         } else if (!duplicate) {
           topCandidates.push({ score: 0, cx: hc.cx, cy: hc.cy, r: hc.r });
           purities[topCandidates.length - 1] = hcPurity;
+        }
+      }
+    }
+
+    // ── PAP-346: Center-distance weighted purity (port of PAP-313) ────
+    // When ALL candidates have low raw purity (< 0.10), the gear is
+    // likely a large cog with spider-arm cutouts where inner hub features
+    // or corner artifacts match the weak outer-tooth signal.  Center
+    // weighting penalizes candidates far from the viewfinder aim circle.
+    // Skipped when any candidate has strong purity (>= 0.10) to avoid
+    // overriding confidently detected small/medium gears that may be
+    // slightly off-center.
+    if (Math.max(...purities) < 0.10) {
+      const imgCx = w / 2, imgCy = h / 2;
+      const maxDist = Math.max(1.0, Math.sqrt(imgCx * imgCx + imgCy * imgCy));
+      let bestWeighted = -1.0;
+      for (let i = 0; i < topCandidates.length; i++) {
+        const dist = Math.sqrt(
+          (topCandidates[i].cx - imgCx) ** 2 +
+          (topCandidates[i].cy - imgCy) ** 2);
+        const cw = Math.max(0.5, 1.0 - 0.5 * (dist / maxDist));
+        const weighted = (purities[i] || 0) * cw;
+        if (weighted > bestWeighted) {
+          bestWeighted = weighted;
+          bestIdx = i;
+          bestPurity = purities[i] || 0;
         }
       }
     }
