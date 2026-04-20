@@ -1125,7 +1125,7 @@ function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, heigh
 // For each angle, scan outward to find the outermost edge pixel.
 // FFT on this radial profile gives a tooth count independent of radius.
 
-function outerProfileScan(edges, cx, cy, maxR, width, height) {
+function outerProfileScan(edges, cx, cy, maxR, width, height, gearRadius) {
   const nOp = N_ANGLES;
   const cosA = new Float64Array(nOp);
   const sinA = new Float64Array(nOp);
@@ -1135,9 +1135,18 @@ function outerProfileScan(edges, cx, cy, maxR, width, height) {
     sinA[i] = Math.sin(a);
   }
 
+  // PAP-364: Constrain scan start using the known gear radius.  The old
+  // approach started at maxR*0.95 (near the image edge), picking up
+  // background edges (paper marks, table edges, cables) before reaching
+  // the actual gear.  Starting from gearRadius*1.20 eliminates background
+  // clutter and directly targets the tooth-tip zone.
+  const scanStart = gearRadius > 20
+    ? Math.min(Math.floor(maxR * 0.95), Math.floor(gearRadius * 1.20))
+    : Math.floor(maxR * 0.95);
+
   const outerRadii = new Float64Array(nOp);
   let remaining = nOp;
-  for (let rScan = Math.floor(maxR * 0.95); rScan > 10 && remaining > 0; rScan -= 3) {
+  for (let rScan = scanStart; rScan > 10 && remaining > 0; rScan -= 3) {
     for (let i = 0; i < nOp; i++) {
       if (outerRadii[i] > 0) continue;
       const px = Math.min(Math.max(Math.round(cx + rScan * cosA[i]), 0), width - 1);
@@ -1282,21 +1291,24 @@ function binaryContourCount(gray, cx, cy, width, height) {
       mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
     }
 
-    // PAP-324: morph close+open before labeling — matches findGearCenter.
-    // Without this, gears on white paper form a single border-touching
-    // component (gear metal blends with paper) and the method returns
-    // nothing for medium-large cassette cogs.
-    // PAP-352: apply close TWICE (iterations=2), matching findGearCenter
-    // lines 611-612.  Single close was insufficient for low-contrast
-    // silver gears on white paper — the gear body didn't fully separate
-    // from the background, causing components to touch the border or
-    // fragment into small pieces that get rejected.
-    const closed1 = morphClose(mask, width, height, 2);
-    const closed = morphClose(closed1, width, height, 2);
-    const cleaned = morphOpen(closed, width, height, 1);
+    // PAP-364: Try both with and without morph ops.  The morph pass
+    // (PAP-324/352) helps when gears on white paper form border-touching
+    // components.  The no-morph pass matches the Python reference and
+    // works better for large gears where the JS morph close border
+    // handling creates spurious non-border-touching background components
+    // that interfere with the analysis.
+    for (const useMorph of [true, false]) {
+    let processedMask;
+    if (useMorph) {
+      const closed1 = morphClose(mask, width, height, 2);
+      const closed = morphClose(closed1, width, height, 2);
+      processedMask = morphOpen(closed, width, height, 1);
+    } else {
+      processedMask = mask;
+    }
 
     // Find connected components (external contours)
-    const { labels, components } = labelComponents(cleaned, width, height, 1);
+    const { labels, components } = labelComponents(processedMask, width, height, 1);
 
     for (const comp of components) {
       if (comp.touchesBorder) continue;
@@ -1345,28 +1357,48 @@ function binaryContourCount(gray, cx, cy, width, height) {
         if (r > rInterp[bin]) { rInterp[bin] = r; binHit[bin] = 1; }
       }
 
-      // Check angular coverage: need ≥ 60% of bins populated
-      let hitCount = 0;
-      for (let i = 0; i < BC_ANGLES; i++) if (binHit[i]) hitCount++;
-      if (hitCount < BC_ANGLES * 0.6) continue;
+      // Check angular coverage: the boundary must span the full circle.
+      // PAP-364: The old threshold (hitCount >= 60% of BC_ANGLES) was
+      // impossible to meet for real gears — a gear with radius 120px has
+      // ~750 boundary pixels, populating only ~18% of 4096 bins.  This
+      // caused the binary contour method to silently return empty results
+      // for ALL real-world photos, breaking large-gear detection.
+      //
+      // New check: require (a) at least 50 boundary pixels, and (b) no
+      // angular gap larger than 90° (BC_ANGLES/4).  This rejects partial
+      // arcs (background edges) while accepting valid gear contours that
+      // span the full 360° with sparse per-bin coverage.
+      const populatedBins = [];
+      for (let i = 0; i < BC_ANGLES; i++) if (binHit[i]) populatedBins.push(i);
+      if (populatedBins.length < 50) continue;
+      let maxGap = populatedBins[0] + BC_ANGLES - populatedBins[populatedBins.length - 1];
+      for (let k = 1; k < populatedBins.length; k++) {
+        const gap = populatedBins[k] - populatedBins[k - 1];
+        if (gap > maxGap) maxGap = gap;
+      }
+      if (maxGap > BC_ANGLES / 4) continue;  // Largest gap must be < 90°
 
-      // Fill empty bins via nearest-neighbor interpolation
+      // PAP-364: Fill empty bins via linear interpolation between nearest
+      // populated bins on each side.  The old nearest-neighbor fill created
+      // step-function artifacts when coverage was sparse (~20% for typical
+      // gears), corrupting the FFT tooth signal.  Linear interpolation
+      // produces a smooth profile matching Python's np.interp behaviour.
       for (let i = 0; i < BC_ANGLES; i++) {
         if (binHit[i]) continue;
-        // Search outward in both directions for nearest populated bin
+        let prevBin = -1, nextBin = -1;
         for (let d = 1; d < BC_ANGLES / 2; d++) {
-          const prev = (i - d + BC_ANGLES) % BC_ANGLES;
-          const next = (i + d) % BC_ANGLES;
-          if (binHit[prev] && binHit[next]) {
-            rInterp[i] = (rInterp[prev] + rInterp[next]) / 2;
-            break;
-          } else if (binHit[prev]) {
-            rInterp[i] = rInterp[prev];
-            break;
-          } else if (binHit[next]) {
-            rInterp[i] = rInterp[next];
-            break;
-          }
+          if (prevBin < 0 && binHit[(i - d + BC_ANGLES) % BC_ANGLES]) prevBin = (i - d + BC_ANGLES) % BC_ANGLES;
+          if (nextBin < 0 && binHit[(i + d) % BC_ANGLES]) nextBin = (i + d) % BC_ANGLES;
+          if (prevBin >= 0 && nextBin >= 0) break;
+        }
+        if (prevBin >= 0 && nextBin >= 0) {
+          const dPrev = (i - prevBin + BC_ANGLES) % BC_ANGLES;
+          const dNext = (nextBin - i + BC_ANGLES) % BC_ANGLES;
+          rInterp[i] = (rInterp[prevBin] * dNext + rInterp[nextBin] * dPrev) / (dPrev + dNext);
+        } else if (prevBin >= 0) {
+          rInterp[i] = rInterp[prevBin];
+        } else if (nextBin >= 0) {
+          rInterp[i] = rInterp[nextBin];
         }
       }
 
@@ -1407,6 +1439,7 @@ function binaryContourCount(gray, cx, cy, width, height) {
       const fftPurity = bestVal / total;
       results.push({ fftTc: bestFreq, fftPurity, nPeaks, compCx, compCy });
     }
+  }  // end useMorph
   }
   }  // end threshold sweep
 
@@ -1486,7 +1519,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   // Outer-profile scan
   let opTc = 0, opRel = 0;
   const maxRop = Math.min(cx, width - cx, cy, height - cy) - 1;
-  ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height));
+  ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height, gearR));
 
   // Binary contour method (commit 4243213 — accuracy 29%→86%)
   const { bcTc, bcPurity, bcPeaks, bcCx, bcCy } = binaryContourCount(gray, cx, cy, width, height);
@@ -1757,7 +1790,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
 
   const maxRop = Math.min(cx, width - cx, cy, height - cy) - 1;
   let opTc = 0, opRel = 0;
-  ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height));
+  ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height, gearR));
 
   const { bcTc, bcPurity, bcPeaks } = binaryContourCount(gray, cx, cy, width, height);
 
