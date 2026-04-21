@@ -164,6 +164,7 @@ export default function ResultScreen({ navigation, route }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmedCount, setConfirmedCount] = useState(toothCount ?? 0);
   const [counterText, setCounterText] = useState(String(toothCount ?? 0));
+  const counterInputRef = useRef(null);
 
   // Sync confirmed count when toothCount changes (e.g. on first load).
   useEffect(() => {
@@ -320,6 +321,7 @@ export default function ResultScreen({ navigation, route }) {
               </TouchableOpacity>
 
               <TextInput
+                ref={counterInputRef}
                 style={styles.counterValue}
                 value={counterText}
                 onChangeText={(text) => {
@@ -327,6 +329,19 @@ export default function ResultScreen({ navigation, route }) {
                   setCounterText(cleaned);
                   const num = parseInt(cleaned, 10);
                   if (!isNaN(num) && num >= 1) setConfirmedCount(num);
+                }}
+                onFocus={() => {
+                  // Select all text once on focus via imperative ref so that
+                  // subsequent re-renders (triggered by onChangeText) do not
+                  // re-apply the selection and overwrite typed digits.
+                  // Avoids the `selectTextOnFocus` prop, which on Android
+                  // re-selects on every re-render of a controlled TextInput.
+                  const len = counterText.length;
+                  if (len > 0) {
+                    counterInputRef.current?.setNativeProps({
+                      selection: { start: 0, end: len },
+                    });
+                  }
                 }}
                 onBlur={() => {
                   if (counterText === '' || parseInt(counterText, 10) < 1) {
@@ -336,7 +351,6 @@ export default function ResultScreen({ navigation, route }) {
                 }}
                 keyboardType="number-pad"
                 maxLength={3}
-                selectTextOnFocus={true}
               />
 
               <TouchableOpacity

@@ -85,6 +85,10 @@ export default function CameraScreen({ navigation }) {
 
   const [isCameraReady, setIsCameraReady] = useState(false);
   const isCameraReadyRef = useRef(false);
+  // Pause the live preview once we have a captured photo. Keeps the sensor
+  // from burning battery while the algorithm is counting teeth and while the
+  // Result screen is showing. Resumes on focus (Reset button navigates here).
+  const [previewPaused, setPreviewPaused] = useState(false);
   const [updateInfo, setUpdateInfo] = useState({ available: false, latestBuild: null, downloadUrl: '', allBuilds: [] });
   // Declared before handleCapture so the capture guard can read it.
   const [downloading, setDownloading] = useState(false);
@@ -128,6 +132,11 @@ export default function CameraScreen({ navigation }) {
         qualityPrioritization: 'quality',
       });
 
+      // Pause the live preview now that the frame is in-hand — the algorithm
+      // runs on the saved file, so the sensor can go idle during counting
+      // and while the Result screen is shown.
+      setPreviewPaused(true);
+
       // Crop for display (matches preview's visible area) while algorithm
       // runs on the original uncropped photo — both execute in parallel.
       const [cropResult, result] = await Promise.all([
@@ -142,6 +151,7 @@ export default function CameraScreen({ navigation }) {
       if (!result) {
         cameraEventsRef.current.push({ type: 'noDetection', ts: new Date().toISOString(), reason: 'countTeeth returned null' });
         setProcessing(false);
+        setPreviewPaused(false); // stay on camera — resume live preview
         motionResetRef.current?.();
         if (Platform.OS === 'android') {
           ToastAndroid.show('No gear detected — try again', ToastAndroid.SHORT);
@@ -174,6 +184,7 @@ export default function CameraScreen({ navigation }) {
       setError(e.message);
       Alert.alert('Processing failed', e.message);
       setProcessing(false);
+      setPreviewPaused(false); // resume live preview after failure
       motionResetRef.current?.();
     }
   }, [isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
@@ -182,6 +193,7 @@ export default function CameraScreen({ navigation }) {
     captureGenRef.current++;
     abortRef.current?.abort();
     setProcessing(false);
+    setPreviewPaused(false); // resume live preview after cancel
     motionResetRef.current?.();
   }, [setProcessing]);
 
@@ -222,6 +234,7 @@ export default function CameraScreen({ navigation }) {
       setCameraHasError(false);
       setIsPolicyRestricted(false);
       policyRetryCountRef.current = 0;
+      setPreviewPaused(false); // resume live preview (e.g. Reset from Result)
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
@@ -398,7 +411,7 @@ export default function CameraScreen({ navigation }) {
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
-        isActive={isFocused}
+        isActive={isFocused && !previewPaused}
         photo={true}
         video={true}
         pixelFormat="yuv"
