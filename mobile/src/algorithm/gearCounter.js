@@ -1264,6 +1264,86 @@ function clahePeakCounting(enhanced, cx, cy, gearRadius, width, height) {
 // peak counting.  Added in commit 4243213 — the method that brought accuracy
 // from 29% to 86%.
 
+// Moore-neighbour outer-boundary tracer with Jacob's stopping criterion
+// (PAP-364 / PAP-379).  Matches the behaviour of
+// cv2.findContours(RETR_EXTERNAL, CHAIN_APPROX_NONE) on solid blobs: returns
+// an ordered sequence of outer-boundary pixels.
+//
+// Direction convention: 8 Moore-neighbour offsets in clockwise order,
+//   index 0: W   1: NW  2: N   3: NE   4: E   5: SE   6: S   7: SW
+// After moving to a foreground pixel in direction `d`, the new scan-from
+// direction is (d - 2 + 8) % 8 (the pixel we just came from, rotated one
+// step counter-clockwise — matches the "start scanning clockwise from the
+// neighbour you came from" definition).
+function traceOuterContour(labels, compId, width, height, startX, startY) {
+  const DX = [-1, -1, 0, 1, 1, 1, 0, -1];
+  const DY = [ 0, -1, -1, -1, 0, 1, 1, 1];
+
+  const isFg = (x, y) => x >= 0 && x < width && y >= 0 && y < height
+                         && labels[y * width + x] === compId;
+
+  // Scan clockwise from (bDir + 1) for the next foreground neighbour.
+  function nextFg(px, py, bDir) {
+    for (let k = 1; k <= 8; k++) {
+      const d = (bDir + k) % 8;
+      const nx = px + DX[d], ny = py + DY[d];
+      if (isFg(nx, ny)) return { d, nx, ny };
+    }
+    return null;
+  }
+
+  const contour = [[startX, startY]];
+
+  // First step: initial b is the west neighbour (background by scan order).
+  const first = nextFg(startX, startY, 0);
+  if (!first) return contour;  // isolated pixel
+
+  const firstX = first.nx, firstY = first.ny;
+  let px = first.nx, py = first.ny;
+  let bDir = (first.d - 2 + 8) % 8;
+  contour.push([px, py]);
+
+  const maxSteps = 8 * (width + height);
+  for (let step = 0; step < maxSteps; step++) {
+    const nf = nextFg(px, py, bDir);
+    if (!nf) break;  // single-pixel or isolated component
+
+    const newBDir = (nf.d - 2 + 8) % 8;
+
+    // Jacob's stopping criterion: stop when the (current, next) transition
+    // we're about to take is the same as the (start, firstAfter) transition
+    // we took at the beginning.  Prevents the classic "revisit start from
+    // the wrong side" miss on thin boundary segments.
+    if (px === startX && py === startY && nf.nx === firstX && nf.ny === firstY) {
+      return contour;
+    }
+
+    px = nf.nx;
+    py = nf.ny;
+    bDir = newBDir;
+    contour.push([px, py]);
+  }
+  return contour;
+}
+
+// np.interp equivalent for monotonically non-decreasing xp.
+function linearInterp1d(x, xp, fp) {
+  const n = xp.length;
+  if (n === 0) return 0;
+  if (x <= xp[0]) return fp[0];
+  if (x >= xp[n - 1]) return fp[n - 1];
+  let lo = 0, hi = n - 1;
+  while (lo + 1 < hi) {
+    const mid = (lo + hi) >> 1;
+    if (xp[mid] <= x) lo = mid;
+    else hi = mid;
+  }
+  const span = xp[hi] - xp[lo];
+  if (span <= 0) return fp[lo];
+  const t = (x - xp[lo]) / span;
+  return fp[lo] * (1 - t) + fp[hi] * t;
+}
+
 function binaryContourCount(gray, cx, cy, width, height) {
   const n = width * height;
   const BC_ANGLES = 4096;  // Must be power of 2 — avoids FFT zero-padding frequency shift
@@ -1271,16 +1351,11 @@ function binaryContourCount(gray, cx, cy, width, height) {
 
   const otsuT = otsuThreshold(gray, width, height);
 
-  // Multi-threshold sweep: try Otsu plus fixed thresholds to handle cases
-  // where Otsu fails (e.g. metallic gears on white paper have similar
-  // brightness, making Otsu separation impossible).  PAP-266.
-  // PAP-300: reduced from step 35 to step 70, but PAP-352 showed that
-  // step=70 (only Otsu, 80, 150) misses optimal thresholds for low-contrast
-  // silver gears.  Step=40 gives 80, 120, 160, 200 — 5 thresholds total
-  // with Otsu, still half the cost of findGearCenter's step=10 sweep but
-  // with much better coverage for large gears.
+  // PAP-364 (v2, QA-approved [PAP-379]): align threshold grid with Python
+  // reference (60..200 step 35).  The old step=40 grid missed 60 and 95
+  // which catch low-contrast silver/metallic gears Otsu can't separate.
   const threshSet = new Set([otsuT]);
-  for (let t = 80; t <= 200; t += 40) threshSet.add(t);
+  for (let t = 60; t <= 200; t += 35) threshSet.add(t);
   const thresholds = [...threshSet].sort((a, b) => a - b);
 
   for (const thresh of thresholds) {
@@ -1291,115 +1366,75 @@ function binaryContourCount(gray, cx, cy, width, height) {
       mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
     }
 
-    // PAP-364: Try both with and without morph ops.  The morph pass
-    // (PAP-324/352) helps when gears on white paper form border-touching
-    // components.  The no-morph pass matches the Python reference and
-    // works better for large gears where the JS morph close border
-    // handling creates spurious non-border-touching background components
-    // that interfere with the analysis.
-    for (const useMorph of [true, false]) {
-    let processedMask;
-    if (useMorph) {
-      const closed1 = morphClose(mask, width, height, 2);
-      const closed = morphClose(closed1, width, height, 2);
-      processedMask = morphOpen(closed, width, height, 1);
-    } else {
-      processedMask = mask;
-    }
+    // PAP-364 (v2): no morphology — matches Python reference which calls
+    // cv2.findContours directly on the raw binary mask.  The previous
+    // useMorph ∈ {true,false} dual-pass doubled pipeline time and the
+    // no-morph pass inside it generated the noisy 24T→44 FFT spike QA
+    // flagged in b84.
+    const { labels, components } = labelComponents(mask, width, height, 1);
 
-    // Find connected components (external contours)
-    const { labels, components } = labelComponents(processedMask, width, height, 1);
-
+    const nTotal = width * height;
     for (const comp of components) {
-      if (comp.touchesBorder) continue;
+      if (comp.area < 100) continue;
+      // PAP-364 (v2): Python's cv2.findContours does not filter out
+      // border-touching contours, and real large gears at 900px can extend
+      // to the frame edge.  Skip only components that cover most of the
+      // image (the background silhouette) instead of any border contact.
+      if (comp.area > 0.7 * nTotal) continue;
 
-      // Extract boundary pixels for this component
-      const bx = [], by = [];
-      const y0 = Math.max(0, comp.minY);
-      const y1 = Math.min(height - 1, comp.maxY);
-      const x0 = Math.max(0, comp.minX);
-      const x1 = Math.min(width - 1, comp.maxX);
-      for (let y = y0; y <= y1; y++) {
+      // Find the scan-order start pixel for this component (first foreground
+      // encountered in row-major order).  This is the canonical Moore
+      // start — the pixel directly to its west must be background.
+      let startX = -1, startY = -1;
+      for (let y = comp.minY; y <= comp.maxY && startX < 0; y++) {
         const row = y * width;
-        for (let x = x0; x <= x1; x++) {
-          if (labels[row + x] !== comp.id) continue;
-          // Boundary pixel: has at least one 4-connected neighbour outside
-          if (x === 0 || x === width - 1 || y === 0 || y === height - 1 ||
-              labels[row + x + 1] !== comp.id || labels[row + x - 1] !== comp.id ||
-              labels[(y + 1) * width + x] !== comp.id || labels[(y - 1) * width + x] !== comp.id) {
-            bx.push(x);
-            by.push(y);
-          }
+        for (let x = comp.minX; x <= comp.maxX; x++) {
+          if (labels[row + x] === comp.id) { startX = x; startY = y; break; }
         }
       }
+      if (startX < 0) continue;
 
-      if (bx.length < 100) continue;
+      // Ordered outer-contour trace.  Matches the semantics of
+      // cv2.findContours(RETR_EXTERNAL, CHAIN_APPROX_NONE) for solid blobs.
+      const contour = traceOuterContour(labels, comp.id, width, height, startX, startY);
+      if (contour.length < 100) continue;
 
-      // Use the component's own centroid instead of the passed-in (cx, cy).
-      // This decouples the radial profile from center detection errors —
-      // critical for ring-shaped cassette cogs where findGearCenter may
-      // lock onto inner features (bore, splines, mounting holes).
-      const compCx = comp.sx / comp.area;
-      const compCy = comp.sy / comp.area;
+      // PAP-364 (v2): polar transform about the GLOBAL gear center
+      // (findGearCenter's output), matching Python.  The previous version
+      // used the component centroid, which lands at the silhouette's
+      // geometric center — off-axis for ring-shaped cassette cogs and
+      // asymmetric large gears, and produced the 28T→10 undercounts.
+      const angles = new Float64Array(contour.length);
+      const radii  = new Float64Array(contour.length);
+      for (let i = 0; i < contour.length; i++) {
+        const dx = contour[i][0] - cx;
+        const dy = contour[i][1] - cy;
+        angles[i] = Math.atan2(dy, dx);
+        radii[i]  = Math.sqrt(dx * dx + dy * dy);
+      }
 
-      // Build outer-envelope radius profile: for each angular bin, take
-      // the maximum boundary radius.  This correctly handles ring-shaped
-      // gears (cassette cogs) where inner splines would otherwise corrupt
-      // the tooth signal.
+      // Sort by angle — matches Python's np.argsort(angles_cnt) before
+      // np.interp.  Contour-ordered points may wrap around ±π, so an
+      // explicit sort is required before linear interpolation.
+      const order = Array.from({ length: contour.length }, (_, i) => i);
+      order.sort((a, b) => angles[a] - angles[b]);
+      const aSorted = new Float64Array(contour.length);
+      const rSorted = new Float64Array(contour.length);
+      for (let i = 0; i < order.length; i++) {
+        aSorted[i] = angles[order[i]];
+        rSorted[i] = radii[order[i]];
+      }
+
+      // Reject contours that don't span close to a full circle (matches
+      // Python's `if a_sorted[-1] - a_sorted[0] < 4.0: continue`).
+      if (aSorted[aSorted.length - 1] - aSorted[0] < 4.0) continue;
+
+      // Uniform angular grid, linear interp — matches Python's
+      // np.interp(uniform, a_sorted, r_sorted) exactly.
       const rInterp = new Float64Array(BC_ANGLES);
-      const binHit = new Uint8Array(BC_ANGLES);
-      for (let i = 0; i < bx.length; i++) {
-        const dx = bx[i] - compCx;
-        const dy = by[i] - compCy;
-        const angle = Math.atan2(dy, dx);                     // -π to π
-        const bin = ((Math.floor(((angle + Math.PI) / (2 * Math.PI)) * BC_ANGLES) % BC_ANGLES) + BC_ANGLES) % BC_ANGLES;
-        const r = Math.sqrt(dx * dx + dy * dy);
-        if (r > rInterp[bin]) { rInterp[bin] = r; binHit[bin] = 1; }
-      }
-
-      // Check angular coverage: the boundary must span the full circle.
-      // PAP-364: The old threshold (hitCount >= 60% of BC_ANGLES) was
-      // impossible to meet for real gears — a gear with radius 120px has
-      // ~750 boundary pixels, populating only ~18% of 4096 bins.  This
-      // caused the binary contour method to silently return empty results
-      // for ALL real-world photos, breaking large-gear detection.
-      //
-      // New check: require (a) at least 50 boundary pixels, and (b) no
-      // angular gap larger than 90° (BC_ANGLES/4).  This rejects partial
-      // arcs (background edges) while accepting valid gear contours that
-      // span the full 360° with sparse per-bin coverage.
-      const populatedBins = [];
-      for (let i = 0; i < BC_ANGLES; i++) if (binHit[i]) populatedBins.push(i);
-      if (populatedBins.length < 50) continue;
-      let maxGap = populatedBins[0] + BC_ANGLES - populatedBins[populatedBins.length - 1];
-      for (let k = 1; k < populatedBins.length; k++) {
-        const gap = populatedBins[k] - populatedBins[k - 1];
-        if (gap > maxGap) maxGap = gap;
-      }
-      if (maxGap > BC_ANGLES / 4) continue;  // Largest gap must be < 90°
-
-      // PAP-364: Fill empty bins via linear interpolation between nearest
-      // populated bins on each side.  The old nearest-neighbor fill created
-      // step-function artifacts when coverage was sparse (~20% for typical
-      // gears), corrupting the FFT tooth signal.  Linear interpolation
-      // produces a smooth profile matching Python's np.interp behaviour.
       for (let i = 0; i < BC_ANGLES; i++) {
-        if (binHit[i]) continue;
-        let prevBin = -1, nextBin = -1;
-        for (let d = 1; d < BC_ANGLES / 2; d++) {
-          if (prevBin < 0 && binHit[(i - d + BC_ANGLES) % BC_ANGLES]) prevBin = (i - d + BC_ANGLES) % BC_ANGLES;
-          if (nextBin < 0 && binHit[(i + d) % BC_ANGLES]) nextBin = (i + d) % BC_ANGLES;
-          if (prevBin >= 0 && nextBin >= 0) break;
-        }
-        if (prevBin >= 0 && nextBin >= 0) {
-          const dPrev = (i - prevBin + BC_ANGLES) % BC_ANGLES;
-          const dNext = (nextBin - i + BC_ANGLES) % BC_ANGLES;
-          rInterp[i] = (rInterp[prevBin] * dNext + rInterp[nextBin] * dPrev) / (dPrev + dNext);
-        } else if (prevBin >= 0) {
-          rInterp[i] = rInterp[prevBin];
-        } else if (nextBin >= 0) {
-          rInterp[i] = rInterp[nextBin];
-        }
+        const a = -Math.PI + (2 * Math.PI * i) / BC_ANGLES;
+        rInterp[i] = linearInterp1d(a, aSorted, rSorted);
       }
 
       // SavGol(57, 3) — ~1.4% of 4096 ≈ Python savgol_filter(51, 3) on 3600 (PAP-288)
@@ -1437,9 +1472,11 @@ function binaryContourCount(gray, cx, cy, width, height) {
       if (total <= 0) continue;
 
       const fftPurity = bestVal / total;
+      // Component centroid kept for downstream center-disagreement guard.
+      const compCx = comp.sx / comp.area;
+      const compCy = comp.sy / comp.area;
       results.push({ fftTc: bestFreq, fftPurity, nPeaks, compCx, compCy });
     }
-  }  // end useMorph
   }
   }  // end threshold sweep
 
@@ -1995,5 +2032,54 @@ export async function countTeeth(photoUri, signal) {
     gearCenter: { x: r.cx / width, y: r.cy / height },
     gearRadius: r.gearR / width,
     algorithmRuntimeMs: t4 - t0,
+  };
+}
+
+// ── Test / validation harness exports (not for production use) ──────────────
+// PAP-364 / PAP-379: exposed so a Node-side harness can validate the
+// full pipeline against labeled training JPGs without needing an on-device
+// build.  Keeps the underlying countTeeth() entry point unchanged.
+export const __test = {
+  analyzeImage,
+  analyzeImageAtCenter,
+  retryNearCenter,
+  binaryContourCount,
+  traceOuterContour,
+};
+
+export function countTeethFromRgba(rgba, width, height) {
+  const gray     = rgbaToGray(rgba, width, height);
+  const enhanced = clahe(gray, width, height, 3.0, 8, 8);
+  const blurred  = gaussianBlur5x5(enhanced, width, height);
+  const edges    = cannyEdges(blurred, width, height, 50, 150);
+  let r = analyzeImage(gray, enhanced, edges, width, height);
+  if (r.confidence < SMALL_GEAR_CONF && r.cx !== undefined && r.cy !== undefined) {
+    const imgCx = Math.floor(width / 2);
+    const imgCy = Math.floor(height / 2);
+    const cdist = Math.sqrt((r.cx - imgCx) ** 2 + (r.cy - imgCy) ** 2);
+    if (cdist > Math.min(height, width) * 0.08) {
+      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy);
+      const isSubharmonic = retryR !== null
+          && r.toothCount > 0 && retryR.toothCount > 0
+          && [2, 3].some(k => Math.abs(retryR.toothCount * k - r.toothCount) <= 1);
+      const radiusShrunk = retryR !== null
+          && r.initialGearR > 100
+          && retryR.gearR < r.initialGearR * 0.8;
+      if (retryR !== null && !isSubharmonic && !radiusShrunk
+          && retryR.confidence > r.confidence - 0.05
+          && (retryR.gearR <= 150 || retryR.toothCount > retryR.gearR / 15)) {
+        r = retryR;
+      }
+    }
+  }
+  return {
+    toothCount: r.toothCount,
+    confidence: r.confidence,
+    gearCenter: { x: r.cx / width, y: r.cy / height },
+    gearRadius: r.gearR / width,
+    methodUsed: r.methodUsed,
+    bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,
+    peakTc: r.peakTc, peakRel: r.peakRel,
+    fft90tc: r.fft90tc, opTc: r.opTc, opRel: r.opRel,
   };
 }
