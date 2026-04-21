@@ -1598,6 +1598,41 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH
     && Math.abs(bcTc - bcPeaks) <= 2;
 
+  // PAP-390: low-confidence 4-way consensus signals (precomputed).
+  // When ≥3 of {peakTc, fft90tc, opTc, bcPeaks} agree within ±1 AND
+  // overall fftConf is below the PAP-282/PAP-300 moderate-confidence
+  // band (<0.40), trust the consensus count.  Rationale: device-side
+  // image perturbation (Expo JPEG re-encode) drops confidence below
+  // the existing cascade triggers, but the underlying signals still
+  // converge on the correct count.  Includes bcPeaks (silhouette-
+  // independent channel) so harmonic aliasing cannot trick the rule
+  // by fooling all 3 angular methods the same way.
+  const consensusSignals = [];
+  if (peakTc >= MIN_TEETH && peakTc <= MAX_TEETH) consensusSignals.push(peakTc);
+  if (fft90tc >= MIN_TEETH && fft90tc <= MAX_TEETH) consensusSignals.push(fft90tc);
+  if (opTc >= MIN_TEETH && opTc <= MAX_TEETH) consensusSignals.push(opTc);
+  if (bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) consensusSignals.push(bcPeaks);
+  let consensusValue = 0;
+  let consensusCount = 0;
+  for (const v of consensusSignals) {
+    const agreeing = consensusSignals.filter(s => Math.abs(s - v) <= 1);
+    if (agreeing.length > consensusCount) {
+      consensusCount = agreeing.length;
+      const sorted = [...agreeing].sort((a, b) => a - b);
+      consensusValue = sorted[Math.floor(sorted.length / 2)];
+    }
+  }
+  // 16T Shimano aliases to 14T via its 14 mounting holes (see QA
+  // project memory `project_16t_aliasing.md`).  When consensus lands
+  // on 14 or 16 AND the gear is large (contourRadius > 25% minDim),
+  // fall through to the existing cascade rather than overriding —
+  // the existing bc-fft / bc-peaks branches handle the aliasing case.
+  const consensusAliasingSuspect = (consensusValue === 14 || consensusValue === 16)
+    && contourRadius > minDim * 0.25;
+  const lowConfConsensusFires = fftConf < 0.40
+    && consensusCount >= 3
+    && !consensusAliasingSuspect;
+
   if (bcConsensus) {
     // 0. Binary contour consensus — use FFT count (more precise than peaks).
     // When high-confidence multi-radius FFT agrees, defer to it for precision.
@@ -1620,6 +1655,19 @@ function analyzeImage(gray, enhanced, edges, width, height) {
       methodUsed = 'bc-consensus';
     }
     finalRel = Math.max(finalRel, bcPurity * 0.50);
+  } else if (lowConfConsensusFires) {
+    // 0b. PAP-390: low-confidence 4-way consensus — trust the agreed
+    // value when ≥3 of 4 independent tooth-count signals agree within
+    // ±1 at sub-0.40 confidence.  Runs after bcConsensus so it never
+    // double-overrides the high-quality silhouette path, and before
+    // the high-conf peak / PAP-282 FFT-agreement rules so low-
+    // confidence consensus cannot be clobbered by an unreliable
+    // fft90-fallback.
+    finalTc = consensusValue;
+    methodUsed = 'low-conf-consensus';
+    console.log(`[low-conf-consensus] final=${finalTc} fftConf=${fftConf.toFixed(3)} ` +
+      `bcPeaks=${bcPeaks} fft90=${fft90tc} peak=${peakTc} op=${opTc} ` +
+      `agree=${consensusCount}/4 contourR=${contourRadius}`);
   } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect && !centerDisagree) {
     // 1. Multi-radius outermost candidate is highly confident — trust it.
     // Suppressed when center disagrees with binary contour (PAP-266).
