@@ -1995,6 +1995,34 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     methodUsed = 'clahe';
   }
 
+  // PAP-406 / PAP-441: large-gear op-preference override (Pattern A).
+  // Extension of the PAP-408 Option C principle — when the correlated FFT
+  // channels (peak, fft90) collapse to the sub-harmonic floor but the
+  // silhouette-based op channel reads in the large-gear range, prefer op.
+  // Narrow gate approved by QA on PAP-441; expected delta on b83–89 22–28T
+  // corpus is +1 exact HIT (b89 19-16-05 op=24 vs actual=24).  Does NOT
+  // solve Pattern B (total FFT collapse where op also fails) — that needs
+  // QIFFT / radial-gradient per PAP-412 and will ship separately.
+  // bcTc<=15 || bcPeaks<=15 tightening per QA PAP-441 review: keeps the
+  // +1 HIT while preventing b88 07-04-49 (bc=20) from overshooting.
+  const largeOpEligibleMethod = methodUsed === 'low-conf-consensus'
+    || methodUsed === 'low-conf-consensus+op-override'
+    || methodUsed === 'fft90-fallback'
+    || methodUsed === 'fft-agreement'
+    || methodUsed === 'bc-fft';
+  if (largeOpEligibleMethod
+      && contourRadius > minDim * 0.25
+      && opTc >= 20
+      && peakTc <= 15 && fft90tc <= 15
+      && opRel >= 0.04
+      && (bcTc <= 15 || bcPeaks <= 15)) {
+    console.log(`[large-op-override] ${methodUsed}=>${opTc} ` +
+      `peak=${peakTc} fft90=${fft90tc} bc=${bcTc}(peaks=${bcPeaks}) ` +
+      `op=${opTc}(rel=${opRel.toFixed(3)}) contourR=${contourRadius} minDim=${minDim}`);
+    finalTc = opTc;
+    methodUsed = methodUsed + '+large-op-override';
+  }
+
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
 
   const finalR = peakR > 0 ? peakR : gearR;
