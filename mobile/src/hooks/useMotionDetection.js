@@ -102,13 +102,13 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   // so we don't flood the event log with 100-235 identical events.
   const frameErrorReportedSV = useSharedValue(false);
 
-  // Consecutive buffer-read failures.  Camera pipelines often deliver the
-  // first few frames before the backing buffer is fully wired up (YUV
-  // HardwareBuffer not yet allocated, plugin not ready, etc.).  We only
-  // report an error after BUFFER_FAIL_REPORT_THRESHOLD consecutive failures
-  // so that transient warm-up nulls are silently skipped.
-  const BUFFER_FAIL_REPORT_THRESHOLD = 10; // ~1 s at FRAME_SKIP=3 @ 30 fps
-  const consecutiveBufferFails = useSharedValue(0);
+  // Window after `enabled` flips on in which the frame processor must produce
+  // at least one successful buffer read.  On this device the VisionCamera
+  // pipeline takes 0.9–1.2 s before `extractYPlane` / `toArrayBuffer` return a
+  // non-null buffer, so we wait a generous 3 s before declaring the processor
+  // dead.  The check is JS-side rather than in the worklet so a single warm-up
+  // buffer miss no longer fires the event.
+  const FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS = 3000;
 
   const clearTimer = useCallback(() => {
     if (stabilityTimer.current) {
@@ -256,17 +256,26 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     usingFallbackRef.current = !useFrameProcessor;
     setUsingFallback(!useFrameProcessor);
 
-    // Give the frame processor a brief window to prove it works.
+    // Give the frame processor a generous window to prove it works.  On this
+    // device warm-up regularly takes 0.9–1.2 s, so we wait 3 s before
+    // declaring the processor dead.  If no buffer has arrived by then, fall
+    // back to IMU-only mode AND report the frame-processor error — this is
+    // the only place "toArrayBuffer unavailable" is emitted for buffer-read
+    // failures, so warm-up jitter no longer produces a false alarm.
     const check = setTimeout(() => {
       if (!frameProcessorActiveRef.current) {
         console.warn('[MotionDetection] No frames processed — IMU-only mode');
         usingFallbackRef.current = true;
         setUsingFallback(true);
+        if (!frameErrorReportedSV.value) {
+          frameErrorReportedSV.value = true;
+          onFrameErrorRef.current?.();
+        }
       }
-    }, 1500);
+    }, FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS);
 
     return () => clearTimeout(check);
-  }, [enabled]);
+  }, [enabled, frameErrorReportedSV]);
 
   // ── IMU-based capture trigger (accelerometer + gyroscope) ──────────────
   // Runs in parallel with the frame processor from the start. Triggers
@@ -353,6 +362,12 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
           // Use native extractYPlane plugin for YUV frames (toArrayBuffer()
           // is broken for YUV on Android — HardwareBuffer returns null).
           // Falls back to toArrayBuffer() for RGB or if the plugin is missing.
+          //
+          // Transient null/throw during the first ~1 s of warm-up is normal —
+          // skip the frame and wait for the pipeline to come alive. The JS
+          // side (see activation-timeout useEffect below) is the authoritative
+          // "processor dead" signal: it fires the frame-error event only if
+          // no buffer ever lands within FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS.
           let buffer;
           try {
             if (extractYPlanePlugin != null && frame.pixelFormat === 'yuv') {
@@ -360,26 +375,13 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
             } else {
               buffer = frame.toArrayBuffer();
             }
-          } catch (e) {
-            consecutiveBufferFails.value += 1;
-            if (!frameErrorReportedSV.value && consecutiveBufferFails.value >= BUFFER_FAIL_REPORT_THRESHOLD) {
-              frameErrorReportedSV.value = true;
-              reportFrameErrorJS();
-            }
+          } catch (_e) {
             return;
           }
 
           if (!buffer) {
-            consecutiveBufferFails.value += 1;
-            if (!frameErrorReportedSV.value && consecutiveBufferFails.value >= BUFFER_FAIL_REPORT_THRESHOLD) {
-              frameErrorReportedSV.value = true;
-              reportFrameErrorJS();
-            }
             return;
           }
-
-          // Buffer read succeeded — reset failure counter.
-          consecutiveBufferFails.value = 0;
 
           // Signal to JS side that the frame processor is working.
           markFrameProcessorActiveJS();
@@ -474,8 +476,7 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     // Note: frameErrorReportedSV is intentionally NOT reset here.
     // The error is persistent per session — re-reporting after each capture
     // cycle just floods debug reports with duplicate events.
-    consecutiveBufferFails.value = 0;
-  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged, consecutiveBufferFails]);
+  }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged]);
 
   return { isStable, gearDetected, gearHints, frameProcessor, reset, usingFallback };
 }
