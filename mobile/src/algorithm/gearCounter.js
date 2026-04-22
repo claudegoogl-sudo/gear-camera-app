@@ -18,7 +18,6 @@
  */
 
 import * as FileSystem from 'expo-file-system/legacy';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { decode as jpegDecode } from 'jpeg-js';
 import { fftMagnitude } from './fft';
 import {
@@ -50,26 +49,56 @@ const RETRY_MAX_DIM          = 1500;
 
 // ── 1. Image loading ───────────��─────────────────────────────────────────────
 
-// PAP-339: raised from 750 back to 900px.  The 750px reduction (PAP-309)
-// caused large gear contours (21T, 24T, 28T) to be under-resolved for
-// the threshold sweep and morphological ops, contributing to b75-b79
-// accuracy regression.  900px is a compromise: ~44% fewer pixels than
-// 1000px (still faster than b72) while preserving contour detail.
-async function loadAndDecodeImage(photoUri, targetMaxDim = 900) {
-  const info    = await ImageManipulator.manipulateAsync(photoUri, [], {});
-  const maxDim  = Math.max(info.width, info.height);
-  const resizeOp = maxDim > targetMaxDim
-    ? [{ resize: info.width >= info.height
-        ? { width: Math.round(targetMaxDim * info.width / maxDim) }
-        : { height: Math.round(targetMaxDim * info.height / maxDim) } }]
-    : [];
-  const resized = await ImageManipulator.manipulateAsync(
-    photoUri,
-    resizeOp,
-    { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
-  );
+// PAP-394: bilinear downsample of RGBA to targetMaxDim on the long side.
+// Mirrors cv2.INTER_LINEAR with pixel-center alignment (sy = (y+0.5)*h/nh - 0.5).
+// Exported so `validation.harness.js` exercises the exact same math as the
+// device pipeline, keeping host/device parity structural rather than duplicated.
+export function bilinearDownsampleRgba(rgba, w, h, targetMaxDim) {
+  const max = Math.max(w, h);
+  if (max <= targetMaxDim) return { rgba, width: w, height: h };
+  const scale = targetMaxDim / max;
+  const nw = Math.round(w * scale);
+  const nh = Math.round(h * scale);
+  const out = new Uint8Array(nw * nh * 4);
+  for (let y = 0; y < nh; y++) {
+    const sy = (y + 0.5) * h / nh - 0.5;
+    const y0 = Math.max(0, Math.floor(sy));
+    const y1 = Math.min(h - 1, y0 + 1);
+    const fy = Math.max(0, Math.min(1, sy - y0));
+    for (let x = 0; x < nw; x++) {
+      const sx = (x + 0.5) * w / nw - 0.5;
+      const x0 = Math.max(0, Math.floor(sx));
+      const x1 = Math.min(w - 1, x0 + 1);
+      const fx = Math.max(0, Math.min(1, sx - x0));
+      const i00 = (y0 * w + x0) * 4;
+      const i01 = (y0 * w + x1) * 4;
+      const i10 = (y1 * w + x0) * 4;
+      const i11 = (y1 * w + x1) * 4;
+      const io = (y * nw + x) * 4;
+      for (let c = 0; c < 4; c++) {
+        const v = (rgba[i00 + c] * (1 - fx) + rgba[i01 + c] * fx) * (1 - fy)
+                + (rgba[i10 + c] * (1 - fx) + rgba[i11 + c] * fx) * fy;
+        out[io + c] = Math.round(v);
+      }
+    }
+  }
+  return { rgba: out, width: nw, height: nh };
+}
 
-  const base64 = await FileSystem.readAsStringAsync(resized.uri, {
+// PAP-394: read the ORIGINAL JPEG bytes and decode in-process, then bilinear
+// downsample in JS.  The prior path (expo-image-manipulator resize + JPEG
+// re-encode, then jpeg-js decode of the re-encoded file) was perturbing
+// near-threshold pixel values on device — see the b86 11T→15T regression
+// where the same photo decoded correctly via the host oracle but failed
+// on device because ImageManipulator's native resize+recompress produced a
+// different pixel buffer from the host jpeg-js path.  Reading the JPEG once
+// and decoding + downsampling in JS gives host/device parity by construction.
+//
+// PAP-339: targetMaxDim kept at 900px (same as prior path).  The 750px
+// reduction (PAP-309) caused large gear contours (21T, 24T, 28T) to be
+// under-resolved for the threshold sweep and morphological ops.
+async function loadAndDecodeImage(photoUri, targetMaxDim = 900) {
+  const base64 = await FileSystem.readAsStringAsync(photoUri, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
@@ -77,8 +106,9 @@ async function loadAndDecodeImage(photoUri, targetMaxDim = 900) {
   const buf = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
 
-  const { width, height, data } = jpegDecode(buf, { useTArray: true });
-  return { width, height, rgba: data };
+  const { width: fw, height: fh, data: fullRgba } = jpegDecode(buf, { useTArray: true });
+  const { rgba, width, height } = bilinearDownsampleRgba(fullRgba, fw, fh, targetMaxDim);
+  return { width, height, rgba };
 }
 
 // ── 2. Otsu threshold ────────��───────────────────────────────────────────────

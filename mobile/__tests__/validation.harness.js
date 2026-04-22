@@ -21,39 +21,6 @@ const { decode: jpegDecode } = require('jpeg-js');
 const TRAINING = path.resolve(__dirname, '..', '..', 'training-data');
 const TARGET_MAX_DIM = 900;  // matches loadAndDecodeImage default
 
-// Bilinear downsample to targetMaxDim on the long side.
-function bilinearResize(rgba, w, h, targetMaxDim) {
-  const max = Math.max(w, h);
-  if (max <= targetMaxDim) return { rgba, w, h };
-  const scale = targetMaxDim / max;
-  const nw = Math.round(w * scale);
-  const nh = Math.round(h * scale);
-  const out = new Uint8Array(nw * nh * 4);
-  for (let y = 0; y < nh; y++) {
-    const sy = (y + 0.5) * h / nh - 0.5;
-    const y0 = Math.max(0, Math.floor(sy));
-    const y1 = Math.min(h - 1, y0 + 1);
-    const fy = Math.max(0, Math.min(1, sy - y0));
-    for (let x = 0; x < nw; x++) {
-      const sx = (x + 0.5) * w / nw - 0.5;
-      const x0 = Math.max(0, Math.floor(sx));
-      const x1 = Math.min(w - 1, x0 + 1);
-      const fx = Math.max(0, Math.min(1, sx - x0));
-      const i00 = (y0 * w + x0) * 4;
-      const i01 = (y0 * w + x1) * 4;
-      const i10 = (y1 * w + x0) * 4;
-      const i11 = (y1 * w + x1) * 4;
-      const io = (y * nw + x) * 4;
-      for (let c = 0; c < 4; c++) {
-        const v = (rgba[i00 + c] * (1 - fx) + rgba[i01 + c] * fx) * (1 - fy)
-                + (rgba[i10 + c] * (1 - fx) + rgba[i11 + c] * fx) * fy;
-        out[io + c] = Math.round(v);
-      }
-    }
-  }
-  return { rgba: out, w: nw, h: nh };
-}
-
 function loadAllLabeled() {
   const entries = fs.readdirSync(TRAINING).sort();
   const labeled = [];
@@ -105,7 +72,7 @@ describe('PAP-364 validation harness', () => {
 
   test('report accuracy by bucket', async () => {
     // Dynamic import after jest.mock runs.
-    const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
+    const { countTeethFromRgba, bilinearDownsampleRgba } = require('../src/algorithm/gearCounter');
 
     const smallMax = Number(process.env.VALIDATION_SMALL_MAX || 30);
     const largeMax = Number(process.env.VALIDATION_LARGE_MAX || 999);
@@ -123,7 +90,9 @@ describe('PAP-364 validation harness', () => {
       const { photo, actual, stamp } = labeled[i];
       const buf = fs.readFileSync(photo);
       const raw = jpegDecode(buf, { useTArray: true });
-      const { rgba, w, h } = bilinearResize(raw.data, raw.width, raw.height, TARGET_MAX_DIM);
+      const { rgba, width: w, height: h } = bilinearDownsampleRgba(
+        raw.data, raw.width, raw.height, TARGET_MAX_DIM,
+      );
       const ts = Date.now();
       let result;
       try {
