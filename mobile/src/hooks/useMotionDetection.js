@@ -98,17 +98,18 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   const [usingFallback, setUsingFallback] = useState(false);
 
   // Gate to report only the first frame-processor error per session.
-  // The worklet checks this shared value before calling reportFrameErrorJS
-  // so we don't flood the event log with 100-235 identical events.
+  // The JS-side activation timeout checks this shared value before calling
+  // onFrameErrorRef so a retry of `enabled` does not double-emit the event.
   const frameErrorReportedSV = useSharedValue(false);
 
   // Window after `enabled` flips on in which the frame processor must produce
-  // at least one successful buffer read.  On this device the VisionCamera
-  // pipeline takes 0.9–1.2 s before `extractYPlane` / `toArrayBuffer` return a
-  // non-null buffer, so we wait a generous 3 s before declaring the processor
-  // dead.  The check is JS-side rather than in the worklet so a single warm-up
-  // buffer miss no longer fires the event.
-  const FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS = 3000;
+  // at least one successful buffer read.  Observed warm-up on shipped devices:
+  // b86/b88 worst 1.18 s, b89 device ≥3 s (PAP-409 b89 triage).  10 s is >3×
+  // the b89 worst and >8× b86/b88 worst — strong headroom so a legitimately
+  // slow warm-up does not fire the event, while still catching a truly dead
+  // processor within a useful window (capture already falls back to IMU+CRES
+  // so the timeout is primarily a diagnostic signal, not a user-facing gate).
+  const FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS = 10000;
 
   const clearTimer = useCallback(() => {
     if (stabilityTimer.current) {
@@ -227,21 +228,12 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     }
   }, []);
 
-  // Called from worklet when toArrayBuffer() threw — logged once.
-  // No arguments: passing strings through runOnJS triggers the broken
-  // makeShareableCloneOnUIRecursiveLEGACY → _createSerializableString path.
-  const reportFrameError = useCallback(() => {
-    console.warn('[MotionDetection] Frame processor inactive: toArrayBuffer unavailable');
-    onFrameErrorRef.current?.();
-  }, []);
-
   // Worklet-safe JS callbacks for use inside the VisionCamera frame processor.
   // useRunOnJS (worklets-core) schedules via the worklets-core runtime;
   // reanimated's runOnJS calls scheduleOnJS which is not defined in that context.
   const handleMotionUpdateJS = useRunOnJS(handleMotionUpdate, [handleMotionUpdate]);
   const handleGearDetectionJS = useRunOnJS(handleGearDetection, [handleGearDetection]);
   const markFrameProcessorActiveJS = useRunOnJS(markFrameProcessorActive, [markFrameProcessorActive]);
-  const reportFrameErrorJS = useRunOnJS(reportFrameError, [reportFrameError]);
 
   // ── Frame-processor availability tracking ───────────────────────────────
   // Track whether the frame processor is alive. If it never fires, set
@@ -436,17 +428,18 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
               } catch (_e) {
                 // CRES threw — treat as "gear not detected" so the
                 // hysteresis counter increments and stale gear state
-                // clears after GEAR_LOST_THRESHOLD misses.
+                // clears after GEAR_LOST_THRESHOLD misses.  We do NOT emit
+                // a frame-processor error here: the name would be wrong
+                // ("toArrayBuffer unavailable" — the buffer is fine, CRES
+                // is the one that failed) and the handler already recovers
+                // gracefully on the next frame.  If CRES robustness becomes
+                // load-bearing, file a scoped ticket with its own event.
                 handleGearDetectionJS(false, 0, 0, 0, 0, null);
-                if (!frameErrorReportedSV.value) {
-                  frameErrorReportedSV.value = true;
-                  reportFrameErrorJS();
-                }
               }
             }
           }
         },
-        [handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, reportFrameErrorJS, handleFrameDiagJS],
+        [handleMotionUpdateJS, handleGearDetectionJS, markFrameProcessorActiveJS, handleFrameDiagJS],
       );
     } catch {
       // Worklets runtime unavailable at this point — fall back to manual capture.
