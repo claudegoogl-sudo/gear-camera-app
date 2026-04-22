@@ -281,6 +281,189 @@ function componentPerimeter(labels, width, height, compId, minX, minY, maxX, max
   return peri;
 }
 
+// ── 6b. Component boundary points ───────────────────────────────────────────
+//
+// PAP-391: collects pixel coordinates along a labelled component's boundary
+// so findGearCenter() can ellipse-fit the contour (parity with Python's
+// `cv2.fitEllipse(cnt)`).  Mirrors the same 4-neighbour boundary definition
+// used by componentPerimeter() — a pixel is on the boundary if it belongs
+// to the component AND any of its 4 neighbours does not.  The result is
+// strided to keep the fit cheap (≤ MAX_BOUNDARY_POINTS per contour).
+
+const MAX_BOUNDARY_POINTS = 512;
+
+function componentBoundary(labels, width, height, compId, minX, minY, maxX, maxY) {
+  const allPts = [];
+  const y0 = Math.max(0, minY);
+  const y1 = Math.min(height - 1, maxY);
+  const x0 = Math.max(0, minX);
+  const x1 = Math.min(width - 1, maxX);
+  for (let y = y0; y <= y1; y++) {
+    const row = y * width;
+    for (let x = x0; x <= x1; x++) {
+      if (labels[row + x] !== compId) continue;
+      if (x === 0 || x === width - 1 || y === 0 || y === height - 1 ||
+          labels[row + x + 1] !== compId || labels[row + x - 1] !== compId ||
+          labels[(y + 1) * width + x] !== compId || labels[(y - 1) * width + x] !== compId) {
+        allPts.push(x, y);
+      }
+    }
+  }
+  const total = allPts.length / 2;
+  if (total <= MAX_BOUNDARY_POINTS) return allPts;
+  // Uniform stride sample to cap cost of the fit.
+  const stride = Math.ceil(total / MAX_BOUNDARY_POINTS);
+  const out = [];
+  for (let i = 0; i < total; i += stride) {
+    out.push(allPts[2 * i], allPts[2 * i + 1]);
+  }
+  return out;
+}
+
+// ── 6b-2. Outer-rim-only boundary filter ────────────────────────────────────
+//
+// PAP-391: Python's `cv2.findContours(RETR_EXTERNAL)` returns only the
+// OUTERMOST polyline of a binary region.  `componentBoundary` above
+// returns every edge pixel of a connected region, which for ring-shaped
+// cassette cogs includes both outer-rim and inner-rim pixels.  Fitting
+// an ellipse to both rims skews the centre.  This helper radially
+// samples the farthest boundary pixel per angular bin from the blob
+// centroid so the subsequent ellipse fit sees only outer-rim points,
+// matching Python's RETR_EXTERNAL semantics.
+
+const OUTER_BOUNDARY_BINS = 180;
+
+function outerBoundaryPoints(coords, cx, cy) {
+  if (coords.length < 2) return coords;
+  const bins = OUTER_BOUNDARY_BINS;
+  const farthestD2 = new Float64Array(bins);
+  const farthestX  = new Float64Array(bins);
+  const farthestY  = new Float64Array(bins);
+  const hasPt      = new Uint8Array(bins);
+  const TWO_PI = 2 * Math.PI;
+  for (let i = 0; i < coords.length; i += 2) {
+    const x = coords[i], y = coords[i + 1];
+    const dx = x - cx, dy = y - cy;
+    const d2 = dx * dx + dy * dy;
+    let ang = Math.atan2(dy, dx);
+    if (ang < 0) ang += TWO_PI;
+    let b = Math.floor((ang / TWO_PI) * bins);
+    if (b >= bins) b = bins - 1;
+    if (!hasPt[b] || d2 > farthestD2[b]) {
+      hasPt[b] = 1;
+      farthestD2[b] = d2;
+      farthestX[b] = x;
+      farthestY[b] = y;
+    }
+  }
+  const out = [];
+  for (let b = 0; b < bins; b++) {
+    if (hasPt[b]) out.push(farthestX[b], farthestY[b]);
+  }
+  return out;
+}
+
+// ── 6c. Ellipse-fit center ──────────────────────────────────────────────────
+//
+// PAP-391: JS parity port of the `cv2.fitEllipse(cnt)` center that Python's
+// `find_gear_region` applies at L156-159 of gear_tooth_counter.py.  The
+// divergence was observed as JS pixel-centroid vs Python fitEllipse-center
+// being 30-40 px apart on large-gear contours (05-51-49 28T: centroid
+// (370,405) vs fitEllipse (338,383)); this shift moves candidates into
+// the high-purity region and lets the downstream fft90 branch land the
+// correct tooth count.
+//
+// Implementation: Direct linear least-squares solution of the general
+// conic a·x² + b·xy + c·y² + d·x + e·y = 1 on mean-centered boundary
+// points.  This is Fitzgibbon-style algebraic fit without the ellipse-
+// specific normalisation — since we only need the centre coordinate we
+// skip the eigenproblem and solve the 5x5 normal equations directly.
+// Reject degenerate hyperbola/parabola cases (b² − 4ac ≥ 0) and fall
+// back to the centroid when the fit is ill-conditioned.
+
+function solveLinearSystem(A, b, n) {
+  // Gaussian elimination with partial pivoting. A is modified in place;
+  // returns solution vector or null on singular matrix.
+  for (let k = 0; k < n; k++) {
+    let piv = k, pivAbs = Math.abs(A[k][k]);
+    for (let i = k + 1; i < n; i++) {
+      const v = Math.abs(A[i][k]);
+      if (v > pivAbs) { piv = i; pivAbs = v; }
+    }
+    if (pivAbs < 1e-12) return null;
+    if (piv !== k) {
+      const tmp = A[k]; A[k] = A[piv]; A[piv] = tmp;
+      const bt = b[k]; b[k] = b[piv]; b[piv] = bt;
+    }
+    const pv = A[k][k];
+    for (let i = k + 1; i < n; i++) {
+      const f = A[i][k] / pv;
+      if (f === 0) continue;
+      for (let j = k; j < n; j++) A[i][j] -= f * A[k][j];
+      b[i] -= f * b[k];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = b[i];
+    for (let j = i + 1; j < n; j++) s -= A[i][j] * x[j];
+    x[i] = s / A[i][i];
+  }
+  return x;
+}
+
+function fitEllipseCenter(coords) {
+  const n = coords.length / 2;
+  if (n < 5) return null;
+
+  // Mean-center for numerical stability.
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += coords[2 * i]; my += coords[2 * i + 1]; }
+  mx /= n; my /= n;
+
+  // Normalise scale as well so x² terms stay O(1).
+  let sx2 = 0, sy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = coords[2 * i] - mx, dy = coords[2 * i + 1] - my;
+    sx2 += dx * dx; sy2 += dy * dy;
+  }
+  const scale = Math.sqrt((sx2 + sy2) / n);
+  if (!(scale > 0)) return null;
+  const invS = 1 / scale;
+
+  // Build AtA (5x5) and Atb (5) for the system
+  //   [x² xy y² x y] · [a b c d e]ᵀ = 1.
+  const AtA = [
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+  ];
+  const Atb = [0, 0, 0, 0, 0];
+  for (let i = 0; i < n; i++) {
+    const x = (coords[2 * i] - mx) * invS;
+    const y = (coords[2 * i + 1] - my) * invS;
+    const row = [x * x, x * y, y * y, x, y];
+    for (let r = 0; r < 5; r++) {
+      const rv = row[r];
+      for (let c = 0; c < 5; c++) AtA[r][c] += rv * row[c];
+      Atb[r] += rv;
+    }
+  }
+
+  const sol = solveLinearSystem(AtA, Atb, 5);
+  if (!sol) return null;
+  const a = sol[0], b = sol[1], c = sol[2], d = sol[3], e = sol[4];
+  const disc = b * b - 4 * a * c;
+  if (!(disc < -1e-8)) return null;    // not a (proper) ellipse
+  const xc = (2 * c * d - b * e) / disc;
+  const yc = (2 * a * e - b * d) / disc;
+  if (!isFinite(xc) || !isFinite(yc)) return null;
+
+  return { cx: xc * scale + mx, cy: yc * scale + my };
+}
+
 // ── 7. Sample intensity ring ────────────────────────────────────────────────
 
 function sampleIntensityRing(gray, cx, cy, r, width, height, nAngles) {
@@ -648,8 +831,32 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         // Reject candidates whose center is too close to the frame edge.
         // A gear center at 94% across / 10% down is clearly a background
         // artifact — real gears should be roughly centered in the aim circle.
-        const compCx = comp.sx / comp.area;
-        const compCy = comp.sy / comp.area;
+        let compCx = comp.sx / comp.area;
+        let compCy = comp.sy / comp.area;
+        // PAP-391: refine centroid via ellipse-fit on the contour boundary
+        // (parity with Python's cv2.fitEllipse at L156-159).  The pixel
+        // centroid is biased toward denser blob regions (e.g. hub +
+        // spider arms on cassette cogs); the ellipse centre lands on the
+        // geometric gear centre and shifts large-gear candidates into the
+        // high-FFT-purity region so the downstream fft90 branch can
+        // recover the correct tooth count.  Edge-margin and centre-bias
+        // checks use the refined centre.
+        const rawBoundary = componentBoundary(
+          labels, w, h, comp.id,
+          comp.minX, comp.minY, comp.maxX, comp.maxY,
+        );
+        const outerBoundary = outerBoundaryPoints(rawBoundary, compCx, compCy);
+        const ellC = fitEllipseCenter(outerBoundary);
+        if (ellC !== null) {
+          const bxMin = comp.minX - 2, bxMax = comp.maxX + 2;
+          const byMin = comp.minY - 2, byMax = comp.maxY + 2;
+          if (ellC.cx >= bxMin && ellC.cx <= bxMax &&
+              ellC.cy >= byMin && ellC.cy <= byMax) {
+            compCx = ellC.cx;
+            compCy = ellC.cy;
+          }
+        }
+
         const edgeMarginFrac = 0.10;
         if (compCx < w * edgeMarginFrac || compCx > w * (1 - edgeMarginFrac) ||
             compCy < h * edgeMarginFrac || compCy > h * (1 - edgeMarginFrac)) continue;
@@ -2093,6 +2300,12 @@ export const __test = {
   retryNearCenter,
   binaryContourCount,
   traceOuterContour,
+  rgbaToGray,
+  clahe,
+  gaussianBlur5x5,
+  cannyEdges,
+  findGearCenter,
+  fftPurityCheck,
 };
 
 export function countTeethFromRgba(rgba, width, height) {
