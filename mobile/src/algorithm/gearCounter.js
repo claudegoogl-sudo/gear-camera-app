@@ -1902,7 +1902,24 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     // fft90-fallback.
     finalTc = consensusValue;
     methodUsed = 'low-conf-consensus';
-    console.log(`[low-conf-consensus] final=${finalTc} fftConf=${fftConf.toFixed(3)} ` +
+    // PAP-408: op-preference when the FFT cluster leans high by 1 and op
+    // dissents low.  peakTc and fft90tc are both FFT-based and share
+    // aliasing failure modes (sub-pixel center bias, harmonic leakage from
+    // mounting holes / spokes); treating them as one correlated vote rather
+    // than two independent votes is supported by QA PAP-416 review.  opTc
+    // (CLAHE outer-profile peak count) is silhouette-based and genuinely
+    // independent.  When the two correlated FFT channels agree AND op
+    // dissents by exactly -1 AND bcPeaks concurs that the count is ≤ op,
+    // prefer op.  Fixes 2026-04-22_07-23-04-157Z (actual=11, cluster
+    // [10,11,12,12] → upper-middle median picks 12).
+    if (peakTc > 0 && fft90tc > 0 && opTc > 0
+        && peakTc === fft90tc
+        && opTc === peakTc - 1
+        && bcPeaks > 0 && bcPeaks <= opTc) {
+      finalTc = opTc;
+      methodUsed = 'low-conf-consensus+op-override';
+    }
+    console.log(`[${methodUsed}] final=${finalTc} fftConf=${fftConf.toFixed(3)} ` +
       `bcPeaks=${bcPeaks} fft90=${fft90tc} peak=${peakTc} op=${opTc} ` +
       `agree=${consensusCount}/4 contourR=${contourRadius}`);
   } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect && !centerDisagree) {
