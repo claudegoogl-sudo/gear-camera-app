@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   Dimensions,
+  Image,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -34,6 +35,57 @@ import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+
+// PAP-476: aim-circle reticle now ≈ full screen width.  Computed from
+// Dimensions at module load (camera screen is portrait-locked elsewhere in
+// the app, so a static value is correct).  0.95 of the shorter dimension
+// matches the board ask "nearly full screen width".
+const _win = Dimensions.get('window');
+const AIM_SIZE = Math.floor(0.95 * Math.min(_win.width, _win.height));
+// Aim-circle fraction relative to the visible-region's shorter dimension.
+// Used by `cropToAimCircle` to compute the photo-space crop side length.
+const AIM_CIRCLE_FRAC = 0.95;
+// On-screen processed-frame thumbnail size (shown in the processing card).
+const PROCESSED_THUMB_SIZE = 160;
+
+/** PAP-476: crop a photo to the bounding square of the aim circle.
+ *  The aim circle on screen has diameter `AIM_CIRCLE_FRAC * min(sw, sh)` and
+ *  is centered on the visible (cover-mode) region.  In photo coordinates this
+ *  maps to a centered square of side `AIM_CIRCLE_FRAC * min(visW, visH)`.
+ *  The cropped square is what the tooth-count algorithm runs on; the
+ *  algorithm then applies a circular white mask inside, so only the
+ *  inscribed circle (the on-screen aim circle) is processed.
+ *  Returns { path, aimCrop } where aimCrop has the offsets/sizes needed to
+ *  translate algorithm-space gear-center coords back to original-photo
+ *  fractional coords (consumed by ResultScreen's overlay math). */
+async function cropToAimCircle(photoPath) {
+  const { width: sw, height: sh } = Dimensions.get('window');
+  const photoUri = `file://${photoPath}`;
+  const info = await manipulateAsync(photoUri, [], {});
+  const scale = Math.max(sw / info.width, sh / info.height);
+  const visW = sw / scale;
+  const visH = sh / scale;
+  const minVis = Math.min(visW, visH);
+  // Square side = aim-circle diameter in photo coords.  Clamp so the crop
+  // never extends beyond the photo (defensive — should not happen for the
+  // covered visible region).
+  const side = Math.min(
+    Math.round(AIM_CIRCLE_FRAC * minVis),
+    info.width,
+    info.height,
+  );
+  const originX = Math.max(0, Math.round((info.width - side) / 2));
+  const originY = Math.max(0, Math.round((info.height - side) / 2));
+  const cropped = await manipulateAsync(
+    photoUri,
+    [{ crop: { originX, originY, width: side, height: side } }],
+    { compress: 0.92, format: SaveFormat.JPEG },
+  );
+  return {
+    path: cropped.uri.replace(/^file:\/\//, ''),
+    aimCrop: { originX, originY, side, fullW: info.width, fullH: info.height },
+  };
+}
 
 /** Crop a photo to the area visible in the full-screen camera preview (cover mode).
  *  Returns { path, crop } where crop contains the parameters needed to transform
@@ -106,6 +158,10 @@ export default function CameraScreen({ navigation }) {
   const [showBuildPicker, setShowBuildPicker] = useState(false);
   const [pickerBuilds, setPickerBuilds] = useState([]);
   const policyRetryCountRef = useRef(0);
+  // PAP-476: URI of the aim-circle-cropped photo, displayed as a circular
+  // thumbnail in the processing card so the user can verify what the
+  // algorithm sees during counting.  Cleared on reset / failure / cancel.
+  const [processedThumbUri, setProcessedThumbUri] = useState(null);
 
   const pulseScale = useSharedValue(1);
   const aimOpacity = useSharedValue(0.5);
@@ -137,11 +193,20 @@ export default function CameraScreen({ navigation }) {
       // and while the Result screen is shown.
       setPreviewPaused(true);
 
-      // Crop for display (matches preview's visible area) while algorithm
-      // runs on the original uncropped photo — both execute in parallel.
+      // PAP-476: pre-crop the photo to the aim-circle bounding square so the
+      // algorithm only processes pixels inside the on-screen reticle.  Show
+      // the cropped image as the processing-card thumbnail (the algorithm
+      // also applies a circular white mask inside this square so the four
+      // corners are ignored — visualized via the circular border-radius on
+      // the thumbnail).  cropToPreview runs in parallel for ResultScreen
+      // display.
+      const aim = await cropToAimCircle(photo.path);
+      if (gen !== captureGenRef.current) return; // cancelled or superseded
+      setProcessedThumbUri(`file://${aim.path}`);
+
       const [cropResult, result] = await Promise.all([
         cropToPreview(photo.path),
-        countTeeth(`file://${photo.path}`, ac.signal),
+        countTeeth(`file://${aim.path}`, ac.signal, { aimCrop: aim.aimCrop }),
       ]);
       const displayPath = cropResult.path;
       const cropParams = cropResult.crop;
@@ -152,6 +217,7 @@ export default function CameraScreen({ navigation }) {
         cameraEventsRef.current.push({ type: 'noDetection', ts: new Date().toISOString(), reason: 'countTeeth returned null' });
         setProcessing(false);
         setPreviewPaused(false); // stay on camera — resume live preview
+        setProcessedThumbUri(null);
         motionResetRef.current?.();
         if (Platform.OS === 'android') {
           ToastAndroid.show('No gear detected — try again', ToastAndroid.SHORT);
@@ -185,6 +251,7 @@ export default function CameraScreen({ navigation }) {
       Alert.alert('Processing failed', e.message);
       setProcessing(false);
       setPreviewPaused(false); // resume live preview after failure
+      setProcessedThumbUri(null);
       motionResetRef.current?.();
     }
   }, [isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
@@ -194,6 +261,7 @@ export default function CameraScreen({ navigation }) {
     abortRef.current?.abort();
     setProcessing(false);
     setPreviewPaused(false); // resume live preview after cancel
+    setProcessedThumbUri(null);
     motionResetRef.current?.();
   }, [setProcessing]);
 
@@ -539,6 +607,19 @@ export default function CameraScreen({ navigation }) {
           <View style={styles.processingOverlay}>
             <View style={styles.processingCard}>
               <Text style={styles.processingTitle}>Counting teeth…</Text>
+              {/* PAP-476: live preview of the exact image fed to the algorithm.
+                  The square crop matches cropToAimCircle's output and the
+                  circular border-radius visualises the white mask applied
+                  inside countTeeth (corners are ignored by the detector). */}
+              {processedThumbUri && (
+                <View style={styles.processedThumbWrap}>
+                  <Image
+                    source={{ uri: processedThumbUri }}
+                    style={styles.processedThumbImg}
+                    resizeMode="cover"
+                  />
+                </View>
+              )}
               <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
               <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -672,8 +753,6 @@ export default function CameraScreen({ navigation }) {
     </View>
   );
 }
-
-const AIM_SIZE = 240;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
@@ -813,6 +892,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.15)',
   },
   processingTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  processedThumbWrap: {
+    width: PROCESSED_THUMB_SIZE,
+    height: PROCESSED_THUMB_SIZE,
+    borderRadius: PROCESSED_THUMB_SIZE / 2,
+    overflow: 'hidden',
+    marginTop: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: '#fff',
+  },
+  processedThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
   progressBarTrack: {
     width: '100%',
     height: 6,

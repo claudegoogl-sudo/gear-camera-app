@@ -28,6 +28,7 @@ import {
   smoothSignal,
   savgolSmooth,
   findPeaks,
+  applyCircularMask,
 } from './imageUtils';
 
 // ── Tuning constants (match Python defaults) ──────────��─────────────────────
@@ -2244,7 +2245,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   };
 }
 
-export async function countTeeth(photoUri, signal) {
+export async function countTeeth(photoUri, signal, opts) {
   const t0 = Date.now();
 
   // Yield to the event loop so pending UI events (e.g. cancel press) can
@@ -2254,9 +2255,32 @@ export async function countTeeth(photoUri, signal) {
     if (signal?.aborted) throw new DOMException('Processing cancelled', 'AbortError');
   };
 
+  // PAP-476: optional aim-circle pre-crop metadata.
+  // When the caller has already cropped the source photo to the aim-circle
+  // bounding square (CameraScreen.cropToAimCircle), this metadata lets us:
+  //   1. apply a circular white mask to the four corners so the algorithm
+  //      only sees the inscribed circle (matches the on-screen aim circle).
+  //   2. transform the returned gear center/radius from cropped-image
+  //      coordinates back to original-photo fractional coordinates so
+  //      ResultScreen's existing cropParams overlay math keeps working.
+  const aimCrop = opts && opts.aimCrop ? opts.aimCrop : null;
+
   // ── Image loading ──────────────────────────────────────────────────
   const { width, height, rgba } = await loadAndDecodeImage(photoUri);
   const t1 = Date.now();
+
+  // ── Aim-circle mask (PAP-476) ──────────────────────────────────────
+  // Mask radius is 0.49 * min(W, H), 4% above the algorithm's existing
+  // search radius cap (`Math.min(h, w) * 0.45` on line ~1035). The 4%
+  // margin ensures Canny edges produced at the mask boundary fall outside
+  // every center/radius candidate the algorithm evaluates, so the mask
+  // ring cannot be mistaken for the gear contour.
+  if (aimCrop) {
+    const cx = (width - 1) / 2;
+    const cy = (height - 1) / 2;
+    const maskR = 0.49 * Math.min(width, height);
+    applyCircularMask(rgba, width, height, cx, cy, maskR);
+  }
 
   await yieldOrAbort();
 
@@ -2356,11 +2380,26 @@ export async function countTeeth(photoUri, signal) {
     `  → result=${r.toothCount}T conf=${(r.confidence * 100).toFixed(1)}% via=${r.methodUsed}`
   );
 
+  // PAP-476: when the caller pre-cropped to an aim-circle square, translate
+  // gear center/radius from cropped-image fractional coords back to original-
+  // photo fractional coords. ResultScreen's cropParams math expects center as
+  // a fraction of the original photo (fullW/fullH).
+  let gearCenter = { x: r.cx / width, y: r.cy / height };
+  let gearRadius = r.gearR / width;
+  if (aimCrop) {
+    const { originX, originY, side, fullW, fullH } = aimCrop;
+    gearCenter = {
+      x: (originX + (r.cx / width) * side) / fullW,
+      y: (originY + (r.cy / height) * side) / fullH,
+    };
+    gearRadius = (r.gearR / width) * side / fullW;
+  }
+
   return {
     toothCount: r.toothCount,
     confidence: r.confidence,
-    gearCenter: { x: r.cx / width, y: r.cy / height },
-    gearRadius: r.gearR / width,
+    gearCenter,
+    gearRadius,
     algorithmRuntimeMs: t4 - t0,
   };
 }

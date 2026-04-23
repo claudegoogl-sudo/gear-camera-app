@@ -4,6 +4,41 @@
  */
 
 /**
+ * Apply a circular mask to an RGBA buffer, in-place.  Pixels outside the
+ * circle (cx, cy, radius) are filled with `fillRgb` (default white).  Used by
+ * `countTeeth` to enforce the on-screen aim-circle ROI when the photo has
+ * already been pre-cropped to the aim-circle bounding square — the mask
+ * removes the four corners so the algorithm only sees the inscribed circle.
+ *
+ * The fill defaults to white because the board's motivation is "the gear is
+ * placed on a white background"; filling matching white avoids introducing a
+ * synthetic color edge at the mask boundary.
+ *
+ * Returns the same buffer for convenience.
+ */
+export function applyCircularMask(rgba, width, height, cx, cy, radius, fillRgb) {
+  const fr = (fillRgb && fillRgb[0]) ?? 255;
+  const fg = (fillRgb && fillRgb[1]) ?? 255;
+  const fb = (fillRgb && fillRgb[2]) ?? 255;
+  const r2 = radius * radius;
+  for (let y = 0; y < height; y++) {
+    const dy = y - cy;
+    const dy2 = dy * dy;
+    for (let x = 0; x < width; x++) {
+      const dx = x - cx;
+      if (dx * dx + dy2 > r2) {
+        const j = (y * width + x) * 4;
+        rgba[j] = fr;
+        rgba[j + 1] = fg;
+        rgba[j + 2] = fb;
+        rgba[j + 3] = 255;
+      }
+    }
+  }
+  return rgba;
+}
+
+/**
  * Convert an RGBA pixel buffer to single-channel grayscale.
  * @param {Uint8Array} rgba - RGBA pixel data (length = w*h*4)
  * @param {number} width
