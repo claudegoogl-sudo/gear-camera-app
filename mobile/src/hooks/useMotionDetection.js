@@ -63,7 +63,7 @@ const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no C
  * Gear detection also produces approximate center/radius hints that
  * can speed up the main tooth-counting algorithm.
  */
-export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
+export function useMotionDetection({ onStable, enabled = true }) {
   const [isStable, setIsStable] = useState(false);
   const [gearDetected, setGearDetected] = useState(false);
   const [gearHints, setGearHints] = useState(null);
@@ -84,8 +84,6 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   // session reconfiguration (the "init storm" bug).
   const onStableRef = useRef(onStable);
   useEffect(() => { onStableRef.current = onStable; }, [onStable]);
-  const onFrameErrorRef = useRef(onFrameError);
-  useEffect(() => { onFrameErrorRef.current = onFrameError; }, [onFrameError]);
 
   // Shared value so the worklet can gate itself without toggling the
   // frameProcessor prop (which triggers camera session reconfiguration).
@@ -97,18 +95,14 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
   const usingFallbackRef = useRef(false);
   const [usingFallback, setUsingFallback] = useState(false);
 
-  // Gate to report only the first frame-processor error per session.
-  // The JS-side activation timeout checks this shared value before calling
-  // onFrameErrorRef so a retry of `enabled` does not double-emit the event.
-  const frameErrorReportedSV = useSharedValue(false);
-
   // Window after `enabled` flips on in which the frame processor must produce
-  // at least one successful buffer read.  Observed warm-up on shipped devices:
-  // b86/b88 worst 1.18 s, b89 device ≥3 s (PAP-409 b89 triage).  10 s is >3×
-  // the b89 worst and >8× b86/b88 worst — strong headroom so a legitimately
-  // slow warm-up does not fire the event, while still catching a truly dead
-  // processor within a useful window (capture already falls back to IMU+CRES
-  // so the timeout is primarily a diagnostic signal, not a user-facing gate).
+  // at least one successful buffer read.  Observed b91 field warm-up exceeds
+  // 10 s on some sessions; no threshold eliminates the false-alarm tail, and
+  // capture requires CRES detection anyway (which requires a live processor),
+  // so a truly-dead processor already produces a loud regression (no capture).
+  // The timer here only flips `usingFallback` for the IMU-only UI signal and
+  // the longer `IMU_STILLNESS_FALLBACK_MS` stillness window — no diagnostic
+  // event is emitted (PAP-409 Option B, QA-approved on PAP-481).
   const FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS = 10000;
 
   const clearTimer = useCallback(() => {
@@ -248,26 +242,22 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     usingFallbackRef.current = !useFrameProcessor;
     setUsingFallback(!useFrameProcessor);
 
-    // Give the frame processor a generous window to prove it works.  On this
-    // device warm-up regularly takes 0.9–1.2 s, so we wait 3 s before
-    // declaring the processor dead.  If no buffer has arrived by then, fall
-    // back to IMU-only mode AND report the frame-processor error — this is
-    // the only place "toArrayBuffer unavailable" is emitted for buffer-read
-    // failures, so warm-up jitter no longer produces a false alarm.
+    // Give the frame processor a generous window to prove it works.  If no
+    // buffer has arrived by the timeout, fall back to IMU-only mode.  No
+    // diagnostic event is emitted — see FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS
+    // note above.  A truly-dead processor would block CRES and thus block
+    // capture entirely, which is a louder and more actionable regression than
+    // a one-off event nobody triaged.
     const check = setTimeout(() => {
       if (!frameProcessorActiveRef.current) {
         console.warn('[MotionDetection] No frames processed — IMU-only mode');
         usingFallbackRef.current = true;
         setUsingFallback(true);
-        if (!frameErrorReportedSV.value) {
-          frameErrorReportedSV.value = true;
-          onFrameErrorRef.current?.();
-        }
       }
     }, FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS);
 
     return () => clearTimeout(check);
-  }, [enabled, frameErrorReportedSV]);
+  }, [enabled]);
 
   // ── IMU-based capture trigger (accelerometer + gyroscope) ──────────────
   // Runs in parallel with the frame processor from the start. Triggers
@@ -466,9 +456,6 @@ export function useMotionDetection({ onStable, onFrameError, enabled = true }) {
     frameCounter.value = 0;
     gearDetectCounter.value = 0;
     diagLogged.value = false;
-    // Note: frameErrorReportedSV is intentionally NOT reset here.
-    // The error is persistent per session — re-reporting after each capture
-    // cycle just floods debug reports with duplicate events.
   }, [clearTimer, prevSamples, frameCounter, gearDetectCounter, diagLogged]);
 
   return { isStable, gearDetected, gearHints, frameProcessor, reset, usingFallback };

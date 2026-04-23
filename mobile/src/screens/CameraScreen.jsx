@@ -268,13 +268,8 @@ export default function CameraScreen({ navigation }) {
   // ── Motion detection ───────────────────────────────────────────────────
   // Disabled during download to prevent auto-trigger from navigating away
   // mid-flight and interrupting the in-progress FileSystem.downloadAsync.
-  const handleFrameError = useCallback(() => {
-    cameraEventsRef.current.push({ type: 'frameProcessorError', ts: new Date().toISOString(), message: 'toArrayBuffer unavailable' });
-  }, []);
-
   const { isStable, gearDetected, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
-    onFrameError: handleFrameError,
     enabled: isFocused && isCameraReady && !isProcessing && !downloading && hasPermission,
   });
 
