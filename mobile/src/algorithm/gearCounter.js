@@ -1976,8 +1976,24 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     methodUsed = 'bc-peaks';
   } else if (fft90tc > 0) {
     // 4. fft90 available but not highly confident
-    finalTc = fft90tc;
-    methodUsed = 'fft90-fallback';
+    // PAP-407 / PAP-460 Rule M2 — peak-over-fft90-subharmonic:
+    // when fft90 would be used but multi-radius peakTc is in mid/large-gear
+    // range and reads as ~2× fft90tc, the fft90 channel has captured the
+    // half-frequency alias and peakTc has the fundamental.  Prefer peakTc.
+    // Approved on PAP-460.  Target hit b89 19-13-57 (peak=21, fft90=10).
+    if (peakTc >= MIN_TEETH
+        && peakTc >= 16 && peakTc <= 28
+        && fft90tc > 0
+        && Math.abs(peakTc - 2 * fft90tc) <= 1) {
+      console.log(`[peak-over-fft90-subharmonic] fft90-fallback=>${peakTc} ` +
+        `peak=${peakTc} fft90=${fft90tc} bc=${bcTc}(peaks=${bcPeaks}) ` +
+        `op=${opTc}(rel=${opRel.toFixed(3)})`);
+      finalTc = peakTc;
+      methodUsed = 'fft90-fallback+peak-subharmonic';
+    } else {
+      finalTc = fft90tc;
+      methodUsed = 'fft90-fallback';
+    }
   } else if (peakRel >= 0.15 && peakTc >= MIN_TEETH) {
     // 5. Multi-radius FFT
     finalTc = peakTc;
@@ -2022,6 +2038,40 @@ function analyzeImage(gray, enhanced, edges, width, height) {
       `op=${opTc}(rel=${opRel.toFixed(3)}) contourR=${contourRadius} minDim=${minDim}`);
     finalTc = opTc;
     methodUsed = methodUsed + '+large-op-override';
+  }
+
+  // PAP-407 / PAP-460 Rule M1 — mid-gear op-preference override.
+  // Mirrors large-op-override but for opTc in the 16–19 range (mid gears).
+  // Tighter FFT gate (peakTc<=13, fft90tc<=14) so we only fire when the FFT
+  // cluster is clearly in sub-harmonic territory and not just near-truth.
+  // bcTc<=15 || bcPeaks<=15 tightening matches the large-op-override gate
+  // for safety parity (per QA PAP-460 suggestion 1).
+  // Distinct log tag [mid-op-override] so telemetry disambiguates from
+  // [large-op-override] (per QA PAP-460 suggestion 2).
+  // NOTE: Uses `gearR` (fused radius from line 1782, max of contourRadius
+  // and edgeDensityR) instead of `contourRadius` for the "real gear
+  // detected" gate — mid-gear contours often lock onto inner cutouts so
+  // contourRadius is under-reported; gearR is the corrected estimate.
+  // Verified on harness: target b86 19-18-26 has contourR=95 but gearR
+  // reflects the actual outer tooth ring.
+  // Target hit: b86 19-18-26 (op=18, actual=18).
+  const midOpEligibleMethod = methodUsed === 'low-conf-consensus'
+    || methodUsed === 'low-conf-consensus+op-override'
+    || methodUsed === 'fft90-fallback'
+    || methodUsed === 'fft-agreement'
+    || methodUsed === 'bc-fft';
+  if (midOpEligibleMethod
+      && gearR > minDim * 0.25
+      && opTc >= 16 && opTc <= 19
+      && peakTc <= 13 && fft90tc <= 14
+      && opRel >= 0.04
+      && (bcTc <= 15 || bcPeaks <= 15)) {
+    console.log(`[mid-op-override] ${methodUsed}=>${opTc} ` +
+      `peak=${peakTc} fft90=${fft90tc} bc=${bcTc}(peaks=${bcPeaks}) ` +
+      `op=${opTc}(rel=${opRel.toFixed(3)}) ` +
+      `gearR=${gearR} contourR=${contourRadius} minDim=${minDim}`);
+    finalTc = opTc;
+    methodUsed = methodUsed + '+mid-op-override';
   }
 
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
