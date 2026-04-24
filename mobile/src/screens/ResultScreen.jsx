@@ -132,6 +132,11 @@ export default function ResultScreen({ navigation, route }) {
   const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
   const lowConf       = confidence != null && confidence < 0.90;
   const outOfRange    = toothCount != null && (toothCount < 10 || toothCount > 65);
+  // PAP-554: UX-level abstain for out-of-supported-range results. Training
+  // corpus is 11–28T; ≥35T with low confidence is unreliable (e.g. 51T→19 @
+  // 0.46 in b96). Raw toothCount/confidence remain in the debug JSON.
+  const outOfSupportedRange = toothCount != null && toothCount >= 35
+    && confidence != null && confidence < 0.70;
 
   // Mount animations
   const panelY    = useSharedValue(60);
@@ -252,27 +257,41 @@ export default function ResultScreen({ navigation, route }) {
           </View>
 
         ) : toothCount != null ? (
-          <>
-            {/* Big number */}
-            <View style={styles.countRow}>
-              <Text style={styles.countNumber}>{displayedCount}</Text>
-              <Text style={styles.countUnit}>T</Text>
-            </View>
-            <Text style={styles.countLabel}>teeth detected</Text>
-
-            {/* Confidence badge */}
-            {confidencePct != null && (
-              <View style={[styles.badge, lowConf ? styles.badgeLow : styles.badgeGood]}>
-                <Text style={styles.badgeText}>
-                  {lowConf ? `Low confidence  ${confidencePct}%` : `Confidence  ${confidencePct}%`}
+          outOfSupportedRange ? (
+            <View style={styles.outOfSupportedBox}>
+              <Text style={styles.outOfSupportedTitle}>Out of supported range</Text>
+              <Text style={styles.outOfSupportedBody}>
+                Reliable detection: 11–28T
+              </Text>
+              {confidencePct != null && (
+                <Text style={styles.outOfSupportedHint}>
+                  Raw estimate {toothCount}T @ {confidencePct}% confidence
                 </Text>
+              )}
+            </View>
+          ) : (
+            <>
+              {/* Big number */}
+              <View style={styles.countRow}>
+                <Text style={styles.countNumber}>{displayedCount}</Text>
+                <Text style={styles.countUnit}>T</Text>
               </View>
-            )}
+              <Text style={styles.countLabel}>teeth detected</Text>
 
-            {outOfRange && (
-              <Text style={styles.outOfRange}>Outside expected range — verify manually</Text>
-            )}
-          </>
+              {/* Confidence badge */}
+              {confidencePct != null && (
+                <View style={[styles.badge, lowConf ? styles.badgeLow : styles.badgeGood]}>
+                  <Text style={styles.badgeText}>
+                    {lowConf ? `Low confidence  ${confidencePct}%` : `Confidence  ${confidencePct}%`}
+                  </Text>
+                </View>
+              )}
+
+              {outOfRange && (
+                <Text style={styles.outOfRange}>Outside expected range — verify manually</Text>
+              )}
+            </>
+          )
 
         ) : (
           <Text style={styles.waiting}>
@@ -451,6 +470,11 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 13, fontWeight: '600', color: '#ccc' },
 
   outOfRange: { fontSize: 12, color: '#FF5722', textAlign: 'center' },
+
+  outOfSupportedBox: { alignItems: 'center', gap: 8, paddingHorizontal: 16 },
+  outOfSupportedTitle: { fontSize: 22, fontWeight: '700', color: '#FF9800', textAlign: 'center' },
+  outOfSupportedBody:  { fontSize: 15, color: '#ccc', textAlign: 'center' },
+  outOfSupportedHint:  { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 4 },
 
   errorBox:  { alignItems: 'center', gap: 6 },
   errorTitle:{ fontSize: 17, fontWeight: '700', color: '#f44336' },
