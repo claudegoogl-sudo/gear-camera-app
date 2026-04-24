@@ -303,6 +303,7 @@ export default function CameraScreen({ navigation }) {
         photoPath: displayPath,
         originalPhotoPath: photo.path,
         cropParams,
+        aimCrop: aim.aimCrop,
         cameraErrors: cameraErrorsRef.current,
         cameraEvents: cameraEventsRef.current,
       });
