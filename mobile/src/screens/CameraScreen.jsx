@@ -48,17 +48,28 @@ const AIM_CIRCLE_FRAC = 0.95;
 // On-screen processed-frame thumbnail size (shown in the processing card).
 const PROCESSED_THUMB_SIZE = 160;
 
-/** PAP-476: crop a photo to the bounding square of the aim circle.
- *  The aim circle on screen has diameter `AIM_CIRCLE_FRAC * min(sw, sh)` and
- *  is centered on the visible (cover-mode) region.  In photo coordinates this
- *  maps to a centered square of side `AIM_CIRCLE_FRAC * min(visW, visH)`.
- *  The cropped square is what the tooth-count algorithm runs on; the
- *  algorithm then applies a circular white mask inside, so only the
- *  inscribed circle (the on-screen aim circle) is processed.
+/** PAP-476 / PAP-529: crop a photo to the bounding square of the aim circle.
+ *  The aim circle on screen has diameter `AIM_CIRCLE_FRAC * min(sw, sh)` but
+ *  its *center* is NOT the screen center — the top/bottom bars make the
+ *  aim-guide region asymmetric, so the reticle sits above the vertical
+ *  midline.  Under cover-mode preview, that screen-space offset maps to a
+ *  photo-space offset, so a centered crop pulls a different gear than the
+ *  user aimed at (PAP-529 b94: label 28T → result 24T with `centerY=0.422`).
+ *
+ *  This function accepts the aim circle's measured on-screen center
+ *  `screenCenter = { x, y }` (window coords) and converts it to photo
+ *  coords, then crops a square of side `AIM_CIRCLE_FRAC * min(visW, visH)`
+ *  centered on that photo point.  The algorithm applies a circular white
+ *  mask inside, so only the inscribed circle (the on-screen aim circle) is
+ *  processed.
+ *
+ *  Falls back to photo-center crop when `screenCenter` is null (layout
+ *  hasn't fired yet — rare, but defensive).
+ *
  *  Returns { path, aimCrop } where aimCrop has the offsets/sizes needed to
  *  translate algorithm-space gear-center coords back to original-photo
  *  fractional coords (consumed by ResultScreen's overlay math). */
-async function cropToAimCircle(photoPath) {
+async function cropToAimCircle(photoPath, screenCenter) {
   const { width: sw, height: sh } = Dimensions.get('window');
   const photoUri = `file://${photoPath}`;
   const info = await manipulateAsync(photoUri, [], {});
@@ -74,8 +85,28 @@ async function cropToAimCircle(photoPath) {
     info.width,
     info.height,
   );
-  const originX = Math.max(0, Math.round((info.width - side) / 2));
-  const originY = Math.max(0, Math.round((info.height - side) / 2));
+  // Convert the aim circle's on-screen center to photo coords under
+  // cover-mode (preview fills the screen, cropping whichever axis is
+  // longer).  `visOriginX/Y` is the photo-space offset of the visible
+  // (preview) region's top-left corner.
+  const visOriginX = (info.width - sw / scale) / 2;
+  const visOriginY = (info.height - sh / scale) / 2;
+  const haveMeasured =
+    screenCenter &&
+    Number.isFinite(screenCenter.x) &&
+    Number.isFinite(screenCenter.y);
+  const acx = haveMeasured ? screenCenter.x : sw / 2;
+  const acy = haveMeasured ? screenCenter.y : sh / 2;
+  const photoCX = visOriginX + acx / scale;
+  const photoCY = visOriginY + acy / scale;
+  const originX = Math.max(
+    0,
+    Math.min(info.width - side, Math.round(photoCX - side / 2)),
+  );
+  const originY = Math.max(
+    0,
+    Math.min(info.height - side, Math.round(photoCY - side / 2)),
+  );
   const cropped = await manipulateAsync(
     photoUri,
     [{ crop: { originX, originY, width: side, height: side } }],
@@ -83,7 +114,17 @@ async function cropToAimCircle(photoPath) {
   );
   return {
     path: cropped.uri.replace(/^file:\/\//, ''),
-    aimCrop: { originX, originY, side, fullW: info.width, fullH: info.height },
+    aimCrop: {
+      originX,
+      originY,
+      side,
+      fullW: info.width,
+      fullH: info.height,
+      // Debug fields — captured so debug reports can diagnose mis-aimed crops.
+      screenCenterX: haveMeasured ? acx : null,
+      screenCenterY: haveMeasured ? acy : null,
+      measured: !!haveMeasured,
+    },
   };
 }
 
@@ -168,6 +209,28 @@ export default function CameraScreen({ navigation }) {
   const motionResetRef = useRef(null);
   const captureGenRef = useRef(0);
   const abortRef = useRef(null);
+  // PAP-529: measured on-screen center of the aim circle (window coords),
+  // captured via onLayout + measureInWindow so cropToAimCircle can align the
+  // photo crop with the real reticle position instead of the photo center.
+  const aimCircleRef = useRef(null);
+  const aimCircleCenterRef = useRef(null);
+
+  const handleAimCircleLayout = useCallback(() => {
+    const node = aimCircleRef.current;
+    if (!node || typeof node.measureInWindow !== 'function') return;
+    node.measureInWindow((x, y, w, h) => {
+      if (
+        Number.isFinite(x) &&
+        Number.isFinite(y) &&
+        Number.isFinite(w) &&
+        Number.isFinite(h) &&
+        w > 0 &&
+        h > 0
+      ) {
+        aimCircleCenterRef.current = { x: x + w / 2, y: y + h / 2 };
+      }
+    });
+  }, []);
 
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
@@ -200,7 +263,7 @@ export default function CameraScreen({ navigation }) {
       // corners are ignored — visualized via the circular border-radius on
       // the thumbnail).  cropToPreview runs in parallel for ResultScreen
       // display.
-      const aim = await cropToAimCircle(photo.path);
+      const aim = await cropToAimCircle(photo.path, aimCircleCenterRef.current);
       if (gen !== captureGenRef.current) return; // cancelled or superseded
       setProcessedThumbUri(`file://${aim.path}`);
 
@@ -594,7 +657,11 @@ export default function CameraScreen({ navigation }) {
 
         {/* Aim circle */}
         <View style={styles.aimGuide} pointerEvents="none">
-          <Animated.View style={[styles.aimCircle, gearDetected && !isStable && styles.aimCircleGear, isStable && styles.aimCircleStable, aimStyle]} />
+          <Animated.View
+            ref={aimCircleRef}
+            onLayout={handleAimCircleLayout}
+            style={[styles.aimCircle, gearDetected && !isStable && styles.aimCircleGear, isStable && styles.aimCircleStable, aimStyle]}
+          />
         </View>
 
         {/* Processing overlay */}
