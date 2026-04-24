@@ -2074,6 +2074,37 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     methodUsed = methodUsed + '+mid-op-override';
   }
 
+  // PAP-474 Option A (QA-approved via PAP-497): abstain on all-10 FFT collapse.
+  // When peakTc and fft90tc both pin at MIN_TEETH=10 AND the gear is physically
+  // large (gearR > 25% minDim, contourRadius > 20% minDim), the FFT cluster has
+  // collapsed to its sub-harmonic floor.  QA corpus audit (295 training + 324
+  // debug reports) confirmed zero 10T-labeled photos exist — min truth label is
+  // 11T — so any peak=fft90=10 on a large-contour photo is by construction a
+  // fallback floor, NOT a true 10T gear.  Converting this toxic
+  // "10T @ conf≈0.53" false-positive into an honest "0T @ conf 0" (algorithm
+  // failed to count) matches the user signal that's actually present.
+  //
+  // Guards:
+  //  - `finalTc === MIN_TEETH` AND the FFT cluster both equal MIN_TEETH — only
+  //    fires when the decision cascade actually landed on the floor value.
+  //  - gearR > 25% minDim and contourRadius > 20% minDim — large-contour gate
+  //    prevents small/mid gears where a valid low count might pass through.
+  //
+  // Architectural rescue (tooth-tip radial gradient, Option C) tracked in the
+  // sibling ticket.  See PAP-497 for full cross-check.
+  if (finalTc === MIN_TEETH
+      && peakTc === MIN_TEETH
+      && fft90tc === MIN_TEETH
+      && gearR > minDim * 0.25
+      && contourRadius > minDim * 0.20) {
+    console.log(`[pap474-abstain] peak=${peakTc} fft90=${fft90tc} ` +
+      `bc=${bcTc}(peaks=${bcPeaks}) op=${opTc}(rel=${opRel.toFixed(3)}) ` +
+      `gearR=${gearR} contourR=${contourRadius} minDim=${minDim}`);
+    finalTc = 0;
+    finalRel = 0;
+    methodUsed = methodUsed + '+pap474-abstain';
+  }
+
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
 
   const finalR = peakR > 0 ? peakR : gearR;
