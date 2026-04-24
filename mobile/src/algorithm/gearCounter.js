@@ -802,45 +802,9 @@ function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
 
 function findGearCenter(gray, enhanced, edges, width, height) {
   const h = height, w = width;
+  const n = w * h;
 
   const allCandidates = [];
-
-  // PAP-555: run the threshold sweep on a 2× downsampled gray.  All O(n)
-  // operations (mask build, morphClose, morphOpen, labelComponents,
-  // componentBoundary, fitEllipseCenter) scale with pixel count, so the
-  // downsample cuts their cost ~4×.  Candidate cx/cy/r are scaled back to
-  // full-resolution space before dedup; all downstream work
-  // (fftPurityCheck, findHoughCircleCandidates, refineCenterBySymmetry)
-  // still runs on the full-resolution `enhanced` / `edges` buffers.
-  // QA-approved on PAP-557 with scaled-pixel-constant notes below.
-  // Guard: skip downsample when image is already small so morph kernels
-  // remain sane.
-  const DOWNSAMPLE = Math.min(w, h) >= 400;
-  const scale = DOWNSAMPLE ? 2 : 1;
-  let sweepGray, sweepW, sweepH;
-  if (DOWNSAMPLE) {
-    sweepW = w >> 1;
-    sweepH = h >> 1;
-    sweepGray = new Uint8Array(sweepW * sweepH);
-    // Nearest-neighbour decimation.  A 2×2 box average was tried first but
-    // smoothed away small-blob intensity gradients the threshold sweep
-    // depends on, causing mid-gear (11T/17T) center drift to alternate
-    // candidates.  NN preserves the original high-frequency content so the
-    // same Otsu-like thresholds bracket the same component boundaries.
-    for (let y = 0; y < sweepH; y++) {
-      const sy = y * 2;
-      for (let x = 0; x < sweepW; x++) {
-        sweepGray[y * sweepW + x] = gray[sy * w + x * 2];
-      }
-    }
-  } else {
-    sweepGray = gray; sweepW = w; sweepH = h;
-  }
-  const sweepN = sweepW * sweepH;
-  // Area threshold scales as pixel count (÷4 at 2× downsample).
-  const MIN_COMP_AREA = DOWNSAMPLE ? 250 : 1000;
-  // Pixel-unit border margin scales linearly (÷2 at 2× downsample).
-  const BORDER_MARGIN = DOWNSAMPLE ? 3 : 5;
 
   // Sweep thresholds 40–220 in steps of 10 (PAP-346: reduced from 15 to
   // improve contour candidate coverage for large gears — Python uses
@@ -849,27 +813,24 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   for (let thresh = 40; thresh < 220; thresh += 10) {
     for (const invert of [true, false]) {
       // Binary mask
-      const mask = new Uint8Array(sweepN);
-      for (let i = 0; i < sweepN; i++) {
-        mask[i] = invert ? (sweepGray[i] <= thresh ? 1 : 0) : (sweepGray[i] > thresh ? 1 : 0);
+      const mask = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
       }
 
       // Morphological close then open.
       // PAP-324: apply close twice (matching Python iterations=2) for
       // more aggressive gap-bridging — critical for separating gears
       // from white paper backgrounds on medium-large cassette cogs.
-      // PAP-555: kernel radius stays at 2 even at 2× downsample per QA
-      // PAP-557 cross-check; validated on 24–28T corpus to not over-close
-      // spider-arm gaps.
-      const closed1 = morphClose(mask, sweepW, sweepH, 2);
-      const closed = morphClose(closed1, sweepW, sweepH, 2);
-      const cleaned = morphOpen(closed, sweepW, sweepH, 1);
+      const closed1 = morphClose(mask, w, h, 2);
+      const closed = morphClose(closed1, w, h, 2);
+      const cleaned = morphOpen(closed, w, h, 1);
 
       // Label components
-      const { labels, components } = labelComponents(cleaned, sweepW, sweepH, 1);
+      const { labels, components } = labelComponents(cleaned, w, h, 1);
 
       for (const comp of components) {
-        if (comp.area < MIN_COMP_AREA || comp.area > 0.5 * sweepN) continue;
+        if (comp.area < 1000 || comp.area > 0.5 * n) continue;
         if (comp.touchesBorder) continue;
 
         const bw = comp.maxX - comp.minX + 1;
@@ -879,8 +840,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         if (Math.min(bw, bh) / Math.max(bw, bh) < 0.5) continue;
 
         // Border margin
-        if (comp.minX <= BORDER_MARGIN || comp.minY <= BORDER_MARGIN ||
-            comp.maxX >= sweepW - BORDER_MARGIN || comp.maxY >= sweepH - BORDER_MARGIN) continue;
+        const margin = 5;
+        if (comp.minX <= margin || comp.minY <= margin ||
+            comp.maxX >= w - margin || comp.maxY >= h - margin) continue;
 
         // Radius estimate: use bounding-box radius for annular shapes,
         // area-based encR for solid blobs, whichever is larger.
@@ -891,10 +853,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         const encR = Math.sqrt(comp.area / Math.PI);
         const bboxR = Math.max(bw, bh) / 2;
         const effectiveR = Math.max(encR, bboxR * 0.90);
-        // Fraction-of-frame bounds are scale-invariant.
-        if (effectiveR / Math.min(sweepH, sweepW) < 0.08 || effectiveR / Math.min(sweepH, sweepW) > 0.48) continue;
+        if (effectiveR / Math.min(h, w) < 0.08 || effectiveR / Math.min(h, w) > 0.48) continue;
 
-        const peri = componentPerimeter(labels, sweepW, sweepH, comp.id, comp.minX, comp.minY, comp.maxX, comp.maxY);
+        const peri = componentPerimeter(labels, w, h, comp.id, comp.minX, comp.minY, comp.maxX, comp.maxY);
         const circ = peri > 0 ? (4 * Math.PI * comp.area) / (peri * peri) : 0;
         const compact = comp.area / (bw * bh);
 
@@ -912,7 +873,7 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         // recover the correct tooth count.  Edge-margin and centre-bias
         // checks use the refined centre.
         const rawBoundary = componentBoundary(
-          labels, sweepW, sweepH, comp.id,
+          labels, w, h, comp.id,
           comp.minX, comp.minY, comp.maxX, comp.maxY,
         );
         const outerBoundary = outerBoundaryPoints(rawBoundary, compCx, compCy);
@@ -928,19 +889,16 @@ function findGearCenter(gray, enhanced, edges, width, height) {
         }
 
         const edgeMarginFrac = 0.10;
-        if (compCx < sweepW * edgeMarginFrac || compCx > sweepW * (1 - edgeMarginFrac) ||
-            compCy < sweepH * edgeMarginFrac || compCy > sweepH * (1 - edgeMarginFrac)) continue;
-        const dx = (compCx - sweepW / 2) / (sweepW / 2);
-        const dy = (compCy - sweepH / 2) / (sweepH / 2);
+        if (compCx < w * edgeMarginFrac || compCx > w * (1 - edgeMarginFrac) ||
+            compCy < h * edgeMarginFrac || compCy > h * (1 - edgeMarginFrac)) continue;
+        const dx = (compCx - w / 2) / (w / 2);
+        const dy = (compCy - h / 2) / (h / 2);
         const centerBias = Math.exp(-1.5 * (dx * dx + dy * dy));
 
         const score = circ * compact * Math.pow(comp.area, 0.3) * centerBias;
-        // Scale candidate back to full-resolution space.  All downstream
-        // operations (dedup neighborhood, FFT purity, Hough fallback,
-        // refineCenterBySymmetry) run on the original full-res buffers.
-        const cx = Math.round(compCx * scale);
-        const cy = Math.round(compCy * scale);
-        const r = Math.round(effectiveR * scale);
+        const cx = Math.round(compCx);
+        const cy = Math.round(compCy);
+        const r = Math.round(effectiveR);
 
         allCandidates.push({ score, cx, cy, r });
       }
