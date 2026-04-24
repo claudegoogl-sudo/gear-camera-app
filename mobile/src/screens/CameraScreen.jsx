@@ -297,6 +297,7 @@ export default function CameraScreen({ navigation }) {
           radius:  result.gearRadius,
         },
         algorithmRuntimeMs: result.algorithmRuntimeMs,
+        innerContourSuspected: result.innerContourSuspected ?? false,
       });
 
       navigation.navigate('Result', {
@@ -306,6 +307,7 @@ export default function CameraScreen({ navigation }) {
         aimCrop: aim.aimCrop,
         cameraErrors: cameraErrorsRef.current,
         cameraEvents: cameraEventsRef.current,
+        innerContourSuspected: result.innerContourSuspected ?? false,
       });
     } catch (e) {
       if (gen !== captureGenRef.current) return; // cancelled or superseded
