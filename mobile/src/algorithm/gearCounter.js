@@ -2060,10 +2060,18 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     || methodUsed === 'fft90-fallback'
     || methodUsed === 'fft-agreement'
     || methodUsed === 'bc-fft';
+  // PAP-537: require peakTc === MIN_TEETH (FFT-collapse floor signal) so the
+  // override only fires when the FFT has truly collapsed to its sub-harmonic
+  // floor, not when peak is a real small-gear reading (e.g. b95 11T where
+  // peak=fft90=11 is correct consensus).  Mirrors PAP-474 Option A abstain
+  // precedent — MIN_TEETH=10 is the only known sub-harmonic floor value
+  // since no 10T truth label exists in the corpus.  QA signed off on
+  // PAP-538: n=22 mid-gear corpus (b83-89) unchanged, only firing is the
+  // b86 19-18-26 target where peak=10.
   if (midOpEligibleMethod
       && gearR > minDim * 0.25
       && opTc >= 16 && opTc <= 19
-      && peakTc <= 13 && fft90tc <= 14
+      && peakTc === MIN_TEETH && fft90tc <= 14
       && opRel >= 0.04
       && (bcTc <= 15 || bcPeaks <= 15)) {
     console.log(`[mid-op-override] ${methodUsed}=>${opTc} ` +
