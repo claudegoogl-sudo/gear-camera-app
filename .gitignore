@@ -11,3 +11,4 @@ test-builds/*.apk
 # Local-only test harnesses
 mobile/_tests_/*.harness.js
 mobile/_tests/.diag*
+test-builds/
