@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-04-25T09:03:08.982Z",
   "app": "gear-camera",
-  "build": "v1.0.0 (97) · 2026-04-24 15:57",
+  "build": "v1.0.0 (97) Â· 2026-04-24 15:57",
   "result": {
     "toothCount": 52,
     "confidence": 1,
@@ -22,7 +22,7 @@
     "screenCenterY": 343.4545440673828,
     "measured": true
   },
-  "actualTeethCount": 51,
+  "actualTeethCount": 52,
   "cameraErrors": [],
   "cameraEvents": [
     {
