@@ -153,10 +153,11 @@ function _buildOffsets(radius, width) {
   return offsets;
 }
 
-function morphClose(mask, width, height, radius) {
+function morphClose(mask, width, height, radius, _tmp, _out) {
   const n = width * height;
-  const tmp = new Uint8Array(n);
-  const out = new Uint8Array(n);
+  const tmp = _tmp || new Uint8Array(n);
+  const out = _out || new Uint8Array(n);
+  if (_out) out.fill(0); // border pixels must be 0 for erode output
   const offsets = _buildOffsets(radius, width);
   const nOff = offsets.length;
 
@@ -198,10 +199,12 @@ function morphClose(mask, width, height, radius) {
 
 // ── 4. Morphological open (erode then dilate) ───────────────────────────────
 
-function morphOpen(mask, width, height, radius) {
+function morphOpen(mask, width, height, radius, _tmp, _out) {
   const n = width * height;
-  const tmp = new Uint8Array(n);
-  const out = new Uint8Array(n);
+  const tmp = _tmp || new Uint8Array(n);
+  const out = _out || new Uint8Array(n);
+  if (_tmp) tmp.fill(0); // border pixels must be 0 (erode doesn't write them)
+  if (_out) out.fill(0);
   const offsets = _buildOffsets(radius, width);
   const nOff = offsets.length;
 
@@ -235,9 +238,10 @@ function morphOpen(mask, width, height, radius) {
 
 // ── 5. Connected-component labelling (BFS) ──────────────────────────────────
 
-function labelComponents(mask, width, height, targetVal) {
+function labelComponents(mask, width, height, targetVal, _labels) {
   const n = width * height;
-  const labels = new Int32Array(n);
+  const labels = _labels || new Int32Array(n);
+  if (_labels) labels.fill(0);
   let nextLabel = 1;
   const components = [];
 
@@ -806,28 +810,38 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   const allCandidates = [];
 
+  // PAP-555: pre-allocate work buffers for the sweep loop to avoid
+  // ~350MB of short-lived Uint8Array/Int32Array allocations (36 iterations
+  // × ~8 arrays each).  Reuse across iterations — zero accuracy change.
+  const sweepBufA = new Uint8Array(n);
+  const sweepBufB = new Uint8Array(n);
+  const sweepBufC = new Uint8Array(n);
+  const sweepLabels = new Int32Array(n);
+
   // Sweep thresholds 40–220 in steps of 10 (PAP-346: reduced from 15 to
   // improve contour candidate coverage for large gears — Python uses
   // step=5 but 10 is a reasonable mobile compromise.  18 iterations vs
   // the previous 12, matching Python more closely without the full 36).
   for (let thresh = 40; thresh < 220; thresh += 10) {
     for (const invert of [true, false]) {
-      // Binary mask
-      const mask = new Uint8Array(n);
+      // Binary mask — fill sweepBufA in-place
       for (let i = 0; i < n; i++) {
-        mask[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
+        sweepBufA[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
       }
 
-      // Morphological close then open.
+      // Morphological close then open (buffers rotate to avoid aliasing).
       // PAP-324: apply close twice (matching Python iterations=2) for
       // more aggressive gap-bridging — critical for separating gears
       // from white paper backgrounds on medium-large cassette cogs.
-      const closed1 = morphClose(mask, w, h, 2);
-      const closed = morphClose(closed1, w, h, 2);
-      const cleaned = morphOpen(closed, w, h, 1);
+      // close1: sweepBufA→sweepBufC (tmp=sweepBufB)
+      const closed1 = morphClose(sweepBufA, w, h, 2, sweepBufB, sweepBufC);
+      // close2: sweepBufC→sweepBufA (tmp=sweepBufB, overwrites mask — no longer needed)
+      const closed = morphClose(closed1, w, h, 2, sweepBufB, sweepBufA);
+      // open: sweepBufA→sweepBufC (tmp=sweepBufB)
+      const cleaned = morphOpen(closed, w, h, 1, sweepBufB, sweepBufC);
 
-      // Label components
-      const { labels, components } = labelComponents(cleaned, w, h, 1);
+      // Label components (reuse sweepLabels)
+      const { labels, components } = labelComponents(cleaned, w, h, 1, sweepLabels);
 
       for (const comp of components) {
         if (comp.area < 1000 || comp.area > 0.5 * n) continue;
