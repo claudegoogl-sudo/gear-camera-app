@@ -2498,28 +2498,22 @@ export async function countTeeth(photoUri, signal, opts) {
     gearRadius = (r.gearR / width) * side / fullW;
   }
 
-  // PAP-553: radius-sanity abstain (Rule B — crop-space floor).
-  // When the selected gear-region radius is suspiciously small relative to
-  // the aim-circle crop (`r.gearR / width < 0.13`), findGearCenter has most
-  // likely locked onto an inner hub / bolt-circle / inner cog inside the
-  // aim-circle mask rather than the outer tooth ring. QA cross-check
-  // verdict (PAP-556) validated this crop-space floor against b95+ corpus:
-  //   - 51T→19 (r=0.105 crop) ✅ abstain (true rejection)
-  //   - 11T→16 (r=0.044 crop) ✅ abstain (true rejection)
-  //   - 17T→17 (r=0.148 crop) ❌ keep (correct)
-  //   - 11T→11 (r=0.274 crop) ❌ keep (correct)
-  // Rule A (0.5 × aim-radius) was dropped — threshold math false-abstained
-  // 17T. Applied unconditionally: the circular aim mask is inscribed
-  // whenever aimCrop is present, and `findGearCenter`'s own search radius
-  // cap is 0.45×min(w,h), so values below 0.13 are physically implausible
-  // for a framed gear regardless of `aimCrop.measured` state.
-  const gearRadiusCropSpace = r.gearR / width;
-  const innerContourSuspected = gearRadiusCropSpace < 0.13;
+  // PAP-553: radius-sanity abstain (Rule B).
+  // When the gear-region radius is suspiciously small, findGearCenter has
+  // most likely locked onto an inner hub / bolt-circle rather than the
+  // outer tooth ring.  The 0.13 floor is applied to `gearRadius` — the
+  // value that will be returned in the result object.  Without aimCrop this
+  // equals r.gearR/width (crop-space); with aimCrop it is the post-
+  // transform full-image-space value.  PAP-633 fix: the original gate used
+  // crop-space unconditionally, which missed detections where the aimCrop
+  // ratio (side/fullW) mapped a suspicious full-image radius back above
+  // 0.13 in crop-space (e.g. r_full=0.093, crop=0.154 at side/fullW=0.602).
+  const innerContourSuspected = gearRadius < 0.13;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
   if (innerContourSuspected) {
     console.log(
-      `[GearCounter] PAP-553 radius-sanity abstain: crop-space r=${gearRadiusCropSpace.toFixed(4)} < 0.13 — ` +
+      `[GearCounter] PAP-553 radius-sanity abstain: r=${gearRadius.toFixed(4)} < 0.13 — ` +
       `inner-contour suspected. raw tc=${r.toothCount} conf=${r.confidence.toFixed(2)} → forcing conf=0.`
     );
   }
