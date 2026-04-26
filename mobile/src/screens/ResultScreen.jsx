@@ -178,9 +178,11 @@ export default function ResultScreen({ navigation, route }) {
         <View style={{ width, height: imageHeight }}>
           {photoPath ? (
             <Image
+              key={photoPath}
               source={{ uri: `file://${photoPath}` }}
               style={{ width, height: imageHeight }}
-              resizeMode="cover"
+              resizeMode="contain"
+              fadeDuration={0}
             />
           ) : (
             <View style={[styles.placeholder, { width, height: imageHeight }]}>
