@@ -1934,6 +1934,17 @@ function analyzeImage(gray, enhanced, edges, width, height) {
       finalTc = opTc;
       methodUsed = 'low-conf-consensus+op-override';
     }
+    // PAP-632 Fix A: op-up override when FFT collapses to MIN_TEETH floor.
+    // MIN_TEETH=10 is never a true count (no 10T gears exist in corpus — min
+    // truth label is 11T), so peakTc===fft90tc===MIN_TEETH is always a sub-
+    // harmonic floor.  When opTc reads exactly MIN_TEETH+1 (=11) the silhouette-
+    // based channel found the correct count that the FFT missed.
+    // Target: 2026-04-25_08-03-33-119Z (actual=11, peak=fft90=10, op=11).
+    if (peakTc === MIN_TEETH && fft90tc === MIN_TEETH
+        && opTc === MIN_TEETH + 1) {
+      finalTc = opTc;
+      methodUsed = 'low-conf-consensus+op-up-override';
+    }
     console.log(`[${methodUsed}] final=${finalTc} fftConf=${fftConf.toFixed(3)} ` +
       `bcPeaks=${bcPeaks} fft90=${fft90tc} peak=${peakTc} op=${opTc} ` +
       `agree=${consensusCount}/4 contourR=${contourRadius}`);
@@ -2004,6 +2015,21 @@ function analyzeImage(gray, enhanced, edges, width, height) {
         `op=${opTc}(rel=${opRel.toFixed(3)})`);
       finalTc = peakTc;
       methodUsed = 'fft90-fallback+peak-subharmonic';
+    } else if (peakTc >= 29 && peakTc <= MAX_TEETH
+        && fft90tc < peakTc * 0.5
+        && peakRel >= 0.12) {
+      // PAP-632 Fix B: XL-peak override — when fft90 fallback would fire but
+      // multi-radius FFT found a strong XL-range signal (≥29T), prefer peakTc.
+      // fft90 only samples the 85-115% radius band which is contaminated when
+      // the contour locked onto an inner feature; multi-radius scans a wider
+      // range and can resolve XL tooth counts the narrow band misses.
+      // peakRel≥0.12 ensures the XL signal has reasonable quality.
+      // Target: 2026-04-24_10-54-47-201Z (actual=42, peak=42, fft90=12).
+      console.log(`[xl-peak-override] fft90-fallback=>${peakTc} ` +
+        `peak=${peakTc}(rel=${peakRel.toFixed(3)}) fft90=${fft90tc} ` +
+        `bc=${bcTc}(peaks=${bcPeaks}) op=${opTc}(rel=${opRel.toFixed(3)})`);
+      finalTc = peakTc;
+      methodUsed = 'fft90-fallback+xl-peak-override';
     } else {
       finalTc = fft90tc;
       methodUsed = 'fft90-fallback';
@@ -2125,6 +2151,26 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     finalTc = 0;
     finalRel = 0;
     methodUsed = methodUsed + '+pap474-abstain';
+  }
+
+  // PAP-632 Fix C (part 2): extended FFT-floor abstain.
+  // When peakTc collapsed to MIN_TEETH (sub-harmonic floor) but fft90tc
+  // landed on a different small count (so PAP-474 didn't fire), and the
+  // contour is moderate-sized (contourRadius > 15% minDim), the algorithm
+  // locked onto an inner structural ring.  Since no 10T truth label exists,
+  // peakTc===MIN_TEETH on a non-tiny contour is always a false reading.
+  // Abstain rather than returning a confident wrong count on XL gears.
+  // Guard: finalTc < 20 ensures we only catch inner-contour small-count
+  // lock-on, not legitimate mid/large detections where peakTc might alias.
+  if (peakTc === MIN_TEETH
+      && finalTc > 0 && finalTc < 20
+      && contourRadius > minDim * 0.15) {
+    console.log(`[pap632-fft-floor-abstain] peak=${peakTc} fft90=${fft90tc} ` +
+      `final=${finalTc} bc=${bcTc}(peaks=${bcPeaks}) op=${opTc}(rel=${opRel.toFixed(3)}) ` +
+      `gearR=${gearR} contourR=${contourRadius} minDim=${minDim}`);
+    finalTc = 0;
+    finalRel = 0;
+    methodUsed = methodUsed + '+pap632-fft-floor-abstain';
   }
 
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
@@ -2564,7 +2610,17 @@ export function countTeethFromRgba(rgba, width, height) {
       const radiusShrunk = retryR !== null
           && r.initialGearR > 100
           && retryR.gearR < r.initialGearR * 0.8;
+      // PAP-632 Fix C: reject retry when primary FFT collapsed to MIN_TEETH
+      // floor AND retry also found a small count.  Both primary and retry are
+      // locked on inner features — accepting the retry just swaps one wrong
+      // answer for another while potentially boosting confidence, producing a
+      // high-confidence false positive on XL gears.
+      // Target: 2026-04-25_09-03-08-982Z (52T, primary peak=10/fft90=13,
+      // retry=12 conf=0.92 — all inner-hub readings).
+      const primaryFftCollapse = r.peakTc === MIN_TEETH
+          && retryR !== null && retryR.toothCount < 20;
       if (retryR !== null && !isSubharmonic && !radiusShrunk
+          && !primaryFftCollapse
           && retryR.confidence > r.confidence - 0.05
           && (retryR.gearR <= 150 || retryR.toothCount > retryR.gearR / 15)) {
         r = retryR;
