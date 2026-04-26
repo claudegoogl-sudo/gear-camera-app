@@ -74,59 +74,21 @@ function useCountUp(target) {
  *   • Reset button slides up on mount
  */
 export default function ResultScreen({ navigation, route }) {
-  const { photoPath, originalPhotoPath, cropParams, aimCrop, cameraErrors, cameraEvents, innerContourSuspected } = route.params ?? {};
+  const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected } = route.params ?? {};
   const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset } = useGearStore();
 
-  // Transform algorithm coordinates (relative to original uncropped photo) into
-  // cropped-photo space for the overlay.  When no crop was applied, pass through.
-  const overlayContour = gearContour && cropParams
+  // PAP-622: Transform algorithm coordinates (relative to original uncropped
+  // photo) into aim-circle-crop space for the overlay.  The displayed photo is
+  // now the aim-circle crop (a square), so no cover-mode correction is needed.
+  const overlayContour = gearContour && aimCrop
     ? {
-        centerX: (gearContour.centerX * cropParams.fullW - cropParams.originX) / cropParams.visW,
-        centerY: (gearContour.centerY * cropParams.fullH - cropParams.originY) / cropParams.visH,
-        radius:  gearContour.radius * cropParams.fullW / cropParams.visW,
+        centerX: (gearContour.centerX * aimCrop.fullW - aimCrop.originX) / aimCrop.side,
+        centerY: (gearContour.centerY * aimCrop.fullH - aimCrop.originY) / aimCrop.side,
+        radius:  gearContour.radius * aimCrop.fullW / aimCrop.side,
       }
     : gearContour;
-  const { width, height: screenHeight } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const imageHeight = width;
-
-  // ── Cover-mode coordinate correction ──────────────────────────────
-  // The cropped photo has the screen's portrait aspect ratio but is
-  // displayed in a square (width × width) container with resizeMode="cover".
-  // Cover fills width and clips top/bottom; the overlay Y coordinate must
-  // be remapped from photo-normalised space to view space.
-  const photoAR   = cropParams ? cropParams.visW / cropParams.visH : width / screenHeight;
-  const coverH    = imageHeight / photoAR;
-  const coverOffY = (imageHeight - coverH) / 2;
-
-  const displayContour = overlayContour
-    ? {
-        centerX: overlayContour.centerX,
-        centerY: (overlayContour.centerY * coverH + coverOffY) / imageHeight,
-        radius:  overlayContour.radius,
-      }
-    : null;
-
-  // ── Gear-centred crop transform ──────────────────────────────────
-  // Scale so the gear always appears at a consistent visual size, and
-  // translate so the gear centre sits at the centre of the view.
-  // Translations are clamped so the scaled image always covers the view
-  // (no black bars at the edges).
-  const TARGET_RADIUS = 0.35; // gear circle fills ~70 % of view width
-  const gearTransform = displayContour
-    ? (() => {
-        const s = Math.max(1, Math.min(TARGET_RADIUS / displayContour.radius, 3.5));
-        const tx = (0.5 - displayContour.centerX) * width;
-        const ty = (0.5 - displayContour.centerY) * imageHeight;
-        const maxTx = (width / 2) * (s - 1) / s;
-        const maxTy = (imageHeight / 2) * (s - 1) / s;
-        return [
-          { scale: s },
-          { translateX: Math.max(-maxTx, Math.min(maxTx, tx)) },
-          { translateY: Math.max(-maxTy, Math.min(maxTy, ty)) },
-        ];
-      })()
-    : [];
-
   const displayedCount = useCountUp(toothCount);
 
   const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
@@ -213,7 +175,7 @@ export default function ResultScreen({ navigation, route }) {
 
       {/* ── Photo + overlay ───────────────────────────────────────── */}
       <View style={[styles.imageWrap, { width, height: imageHeight, overflow: 'hidden' }]}>
-        <View style={{ width, height: imageHeight, transform: gearTransform }}>
+        <View style={{ width, height: imageHeight }}>
           {photoPath ? (
             <Image
               source={{ uri: `file://${photoPath}` }}
@@ -226,13 +188,13 @@ export default function ResultScreen({ navigation, route }) {
             </View>
           )}
 
-          {toothCount != null && displayContour && (
+          {toothCount != null && overlayContour && (
             <GearContourOverlay
               width={width}
               height={imageHeight}
-              centerX={displayContour.centerX}
-              centerY={displayContour.centerY}
-              radius={displayContour.radius}
+              centerX={overlayContour.centerX}
+              centerY={overlayContour.centerY}
+              radius={overlayContour.radius}
               toothCount={toothCount}
               confidence={confidence ?? 0}
             />

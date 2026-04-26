@@ -2365,7 +2365,7 @@ export async function countTeeth(photoUri, signal, opts) {
   //      only sees the inscribed circle (matches the on-screen aim circle).
   //   2. transform the returned gear center/radius from cropped-image
   //      coordinates back to original-photo fractional coordinates so
-  //      ResultScreen's existing cropParams overlay math keeps working.
+  //      ResultScreen's aimCrop overlay math keeps working.
   const aimCrop = opts && opts.aimCrop ? opts.aimCrop : null;
 
   // ── Image loading ──────────────────────────────────────────────────
@@ -2485,8 +2485,8 @@ export async function countTeeth(photoUri, signal, opts) {
 
   // PAP-476: when the caller pre-cropped to an aim-circle square, translate
   // gear center/radius from cropped-image fractional coords back to original-
-  // photo fractional coords. ResultScreen's cropParams math expects center as
-  // a fraction of the original photo (fullW/fullH).
+  // photo fractional coords.  ResultScreen (PAP-622) transforms these back to
+  // aimCrop space for the overlay.
   let gearCenter = { x: r.cx / width, y: r.cy / height };
   let gearRadius = r.gearR / width;
   if (aimCrop) {

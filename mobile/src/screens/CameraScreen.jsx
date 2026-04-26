@@ -128,36 +128,6 @@ async function cropToAimCircle(photoPath, screenCenter) {
   };
 }
 
-/** Crop a photo to the area visible in the full-screen camera preview (cover mode).
- *  Returns { path, crop } where crop contains the parameters needed to transform
- *  algorithm coordinates (relative to the original photo) into cropped-photo space. */
-async function cropToPreview(photoPath) {
-  try {
-    const { width: sw, height: sh } = Dimensions.get('window');
-    const photoUri = `file://${photoPath}`;
-    const info = await manipulateAsync(photoUri, [], {});
-    const scale = Math.max(sw / info.width, sh / info.height);
-    const visW = Math.round(sw / scale);
-    const visH = Math.round(sh / scale);
-    if (Math.abs(info.width - visW) < 2 && Math.abs(info.height - visH) < 2) {
-      return { path: photoPath, crop: null };
-    }
-    const originX = Math.round((info.width - visW) / 2);
-    const originY = Math.round((info.height - visH) / 2);
-    const cropped = await manipulateAsync(
-      photoUri,
-      [{ crop: { originX, originY, width: visW, height: visH } }],
-      { compress: 0.92, format: SaveFormat.JPEG },
-    );
-    return {
-      path: cropped.uri.replace(/^file:\/\//, ''),
-      crop: { originX, originY, fullW: info.width, fullH: info.height, visW, visH },
-    };
-  } catch {
-    return { path: photoPath, crop: null };
-  }
-}
-
 export default function CameraScreen({ navigation }) {
   const camera = useRef(null);
   // Prefer wide-angle lens during aiming — keeps the gear in frame without
@@ -256,23 +226,18 @@ export default function CameraScreen({ navigation }) {
       // and while the Result screen is shown.
       setPreviewPaused(true);
 
-      // PAP-476: pre-crop the photo to the aim-circle bounding square so the
-      // algorithm only processes pixels inside the on-screen reticle.  Show
-      // the cropped image as the processing-card thumbnail (the algorithm
-      // also applies a circular white mask inside this square so the four
-      // corners are ignored — visualized via the circular border-radius on
-      // the thumbnail).  cropToPreview runs in parallel for ResultScreen
-      // display.
+      // PAP-476 / PAP-622: pre-crop the photo to the aim-circle bounding
+      // square.  This crop is purely geometric (on-screen reticle boundary)
+      // and is used both for the algorithm and for the ResultScreen display.
       const aim = await cropToAimCircle(photo.path, aimCircleCenterRef.current);
       if (gen !== captureGenRef.current) return; // cancelled or superseded
       setProcessedThumbUri(`file://${aim.path}`);
 
-      const [cropResult, result] = await Promise.all([
-        cropToPreview(photo.path),
-        countTeeth(`file://${aim.path}`, ac.signal, { aimCrop: aim.aimCrop }),
-      ]);
-      const displayPath = cropResult.path;
-      const cropParams = cropResult.crop;
+      // PAP-622: the displayed photo is the aim-circle crop (geometric,
+      // fixed to the on-screen reticle boundary).  Previous code used
+      // cropToPreview which showed the full visible region plus a
+      // content-dependent gearTransform — the board wants a fixed crop.
+      const result = await countTeeth(`file://${aim.path}`, ac.signal, { aimCrop: aim.aimCrop });
 
       if (gen !== captureGenRef.current) return; // cancelled or superseded
 
@@ -301,9 +266,8 @@ export default function CameraScreen({ navigation }) {
       });
 
       navigation.navigate('Result', {
-        photoPath: displayPath,
+        photoPath: aim.path,
         originalPhotoPath: photo.path,
-        cropParams,
         aimCrop: aim.aimCrop,
         cameraErrors: cameraErrorsRef.current,
         cameraEvents: cameraEventsRef.current,
