@@ -808,6 +808,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   const h = height, w = width;
   const n = w * h;
 
+  let result = null;
+  let resultPurity = 0;   // FFT purity of the chosen candidate (0 for fallback paths)
+
   const allCandidates = [];
 
   // PAP-555: pre-allocate work buffers for the sweep loop to avoid
@@ -1067,7 +1070,8 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     const winner = topCandidates[bestIdx];
     // Refine center by maximizing rotational symmetry
     const refined = refineCenterBySymmetry(enhanced, winner.cx, winner.cy, winner.r, w, h);
-    return { cx: refined.cx, cy: refined.cy, radius: winner.r, method: 'multi-threshold' };
+    result = { cx: refined.cx, cy: refined.cy, radius: winner.r, method: 'multi-threshold' };
+    resultPurity = purities[bestIdx] || 0;
   }
 
   // Fallback: single Otsu + donut detection (original JS approach)
@@ -1108,13 +1112,13 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     }
   }
 
-  if (bestComp) {
+  if (!result && bestComp) {
     // Use bbox radius for annular shapes (area-based underestimates)
     const dcBw = bestComp.maxX - bestComp.minX + 1;
     const dcBh = bestComp.maxY - bestComp.minY + 1;
     const areaR = Math.sqrt(bestComp.area / Math.PI);
     const bboxR2 = Math.max(dcBw, dcBh) / 2;
-    return {
+    result = {
       cx: Math.round(bestComp.sx / bestComp.area),
       cy: Math.round(bestComp.sy / bestComp.area),
       radius: Math.round(Math.max(areaR, bboxR2 * 0.90)),
@@ -1124,40 +1128,93 @@ function findGearCenter(gray, enhanced, edges, width, height) {
 
   // Final fallback: center-weighted edge centroid with tight Gaussian
   // Use a narrow sigma to strongly bias toward center and reject corner artifacts
-  const cx0 = w / 2, cy0 = h / 2;
-  const sigX = w * 0.18, sigY = h * 0.18;
-  let wsx = 0, wsy = 0, wsum = 0;
-  for (let y = 0; y < h; y++) {
-    const dyN = (y - cy0) / sigY;
-    const wy = Math.exp(-dyN * dyN);
-    for (let x = 0; x < w; x++) {
-      if (edges[y * w + x] > 0) {
-        const dxN = (x - cx0) / sigX;
-        const wt = wy * Math.exp(-dxN * dxN);
-        wsx += x * wt; wsy += y * wt; wsum += wt;
+  if (!result) {
+    const cx0 = w / 2, cy0 = h / 2;
+    const sigX = w * 0.18, sigY = h * 0.18;
+    let wsx = 0, wsy = 0, wsum = 0;
+    for (let y = 0; y < h; y++) {
+      const dyN = (y - cy0) / sigY;
+      const wy = Math.exp(-dyN * dyN);
+      for (let x = 0; x < w; x++) {
+        if (edges[y * w + x] > 0) {
+          const dxN = (x - cx0) / sigX;
+          const wt = wy * Math.exp(-dxN * dxN);
+          wsx += x * wt; wsy += y * wt; wsum += wt;
+        }
       }
     }
+    if (wsum === 0) {
+      result = { cx: Math.floor(cx0), cy: Math.floor(cy0), radius: 0, method: 'fallback' };
+    } else {
+      // Estimate radius from weighted edge spread around found center
+      const fcx = Math.round(wsx / wsum);
+      const fcy = Math.round(wsy / wsum);
+      let rSum = 0, rCnt = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (edges[y * w + x] > 0) {
+            const d = Math.sqrt((x - fcx) ** 2 + (y - fcy) ** 2);
+            const dxN = (x - cx0) / sigX;
+            const dyN = (y - cy0) / sigY;
+            const wt = Math.exp(-(dxN * dxN + dyN * dyN));
+            rSum += d * wt;
+            rCnt += wt;
+          }
+        }
+      }
+      const estR = rCnt > 0 ? Math.round(rSum / rCnt) : 0;
+      result = { cx: fcx, cy: fcy, radius: estR, method: 'edge-centroid' };
+    }
   }
-  if (wsum === 0) return { cx: Math.floor(cx0), cy: Math.floor(cy0), radius: 0, method: 'fallback' };
 
-  // Estimate radius from weighted edge spread around found center
-  const fcx = Math.round(wsx / wsum);
-  const fcy = Math.round(wsy / wsum);
-  let rSum = 0, rCnt = 0;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (edges[y * w + x] > 0) {
-        const d = Math.sqrt((x - fcx) ** 2 + (y - fcy) ** 2);
-        const dxN = (x - cx0) / sigX;
-        const dyN = (y - cy0) / sigY;
-        const wt = Math.exp(-(dxN * dxN + dyN * dyN));
-        rSum += d * wt;
-        rCnt += wt;
+  // ── PAP-684: Edge-density radius fallback for spider chainrings ───────
+  // When the detected radius is suspiciously small (likely inner-feature
+  // lockup on bolt holes / BCD circle), use radial edge density to find
+  // the outer tooth ring.  Applies to ALL detection paths (multi-threshold,
+  // Otsu, edge-centroid) per QA condition #1.
+  // Gated on:
+  //   - normalized radius < 0.15 (inner-feature suspected)
+  //   - purity < 0.20 at current pick (QA condition #4 — protects
+  //     11–15T tight-aimCrop edge cases from noisy outer-edge overrides)
+  const normR = result.radius / Math.min(h, w);
+  if (normR < 0.15 && resultPurity < 0.20) {
+    // QA condition #3: try candidate center first, image center as 2nd pass
+    const centers = [
+      { cx: result.cx, cy: result.cy },
+      { cx: Math.floor(w / 2), cy: Math.floor(h / 2) },
+    ];
+    let bestEdgeR = null;
+    let bestEdgePurity = resultPurity;
+    let bestEdgeCenter = null;
+
+    for (const center of centers) {
+      // Bounds check: findGearRadius needs margin from edges
+      if (center.cx < 10 || center.cx > w - 10 ||
+          center.cy < 10 || center.cy > h - 10) continue;
+      const edgeR = findGearRadius(edges, center.cx, center.cy, w, h);
+      const edgeNormR = edgeR / Math.min(h, w);
+      if (edgeNormR > 0.20 && edgeR > result.radius * 2) {
+        const p = fftPurityCheck(enhanced, center.cx, center.cy, edgeR, w, h);
+        if (p > bestEdgePurity) {
+          bestEdgeR = edgeR;
+          bestEdgePurity = p;
+          bestEdgeCenter = center;
+        }
       }
     }
+
+    if (bestEdgeR !== null) {
+      const refined = refineCenterBySymmetry(
+        enhanced, bestEdgeCenter.cx, bestEdgeCenter.cy, bestEdgeR, w, h);
+      console.log(
+        `[GearCenter] PAP-684 edge-density override: r=${result.radius}→${bestEdgeR} ` +
+        `normR=${normR.toFixed(3)}→${(bestEdgeR / Math.min(h, w)).toFixed(3)} ` +
+        `purity=${bestEdgePurity.toFixed(3)} from ${result.method}`);
+      result = { cx: refined.cx, cy: refined.cy, radius: bestEdgeR, method: 'edge-density-fallback' };
+    }
   }
-  const estR = rCnt > 0 ? Math.round(rSum / rCnt) : 0;
-  return { cx: fcx, cy: fcy, radius: estR, method: 'edge-centroid' };
+
+  return result;
 }
 
 // ── 11. Radial edge-density → gear radius ─────���─────────────────────────────
@@ -2561,8 +2618,20 @@ export async function countTeeth(photoUri, signal, opts) {
   // PAP-673: conditional extension — r < 0.15 with toothCount >= 20 is
   // also suspicious (a real >=20T gear has r >= 0.20 on device; small
   // radius + high count means inner features were detected).
+  //
+  // PAP-684/PAP-685: upper-bound abstain — when contour radius (crop-space)
+  // is small but tooth count falls in [9, 13], the algorithm has locked onto
+  // an inner feature of a much larger gear (e.g. bolt circle on a spider
+  // chainring) and is confidently wrong rather than abstaining.  A real
+  // 9-13T cassette cog at crop-space r < 0.15 would trigger small-gear
+  // retry (SMALL_GEAR_RADIUS_FRAC = 0.10); r in the 0.10–0.15 range with
+  // tc 9-13 indicates an inner BCD/shoulder feature, not a tiny cog.
+  const cropNormR = (r.contourRadius || 0) / Math.min(width, height);
+  const upperBoundMismatch = cropNormR < 0.15
+    && r.toothCount >= 9 && r.toothCount <= 13;
   const innerContourSuspected = gearRadius < 0.13
-    || (gearRadius < 0.15 && r.toothCount >= 20);
+    || (gearRadius < 0.15 && r.toothCount >= 20)
+    || upperBoundMismatch;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
   if (innerContourSuspected) {
@@ -2635,11 +2704,16 @@ export function countTeethFromRgba(rgba, width, height) {
       }
     }
   }
-  // PAP-553 + PAP-673: radius-sanity abstain (Rule B) — mirrors countTeeth
+  // PAP-553 + PAP-673 + PAP-684: radius-sanity abstain — mirrors countTeeth
   // so harness validation sees the same gate as on-device runs.
   const gearRadiusCropSpace = r.gearR / width;
+  // PAP-684/PAP-685: upper-bound mismatch (crop-space)
+  const cropNormR = (r.contourRadius || 0) / Math.min(width, height);
+  const upperBoundMismatch = cropNormR < 0.15
+    && r.toothCount >= 9 && r.toothCount <= 13;
   const innerContourSuspected = gearRadiusCropSpace < 0.13
-    || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20);
+    || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
+    || upperBoundMismatch;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
   return {
     toothCount: r.toothCount,
