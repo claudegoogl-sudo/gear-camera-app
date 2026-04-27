@@ -198,7 +198,7 @@ Provides testing strategy for future builds and defines quality gates.
 - **Test Plan:** Device testing will verify fallback behavior
 
 ### PAP-38: Debug Upload to GitHub (b8/b9)
-- **Fix:** Upload to debug-reports/ folder via Contents API
+- **Fix:** Upload to debug-reports/report_<timestamp>/ folders via Contents API
 - **Validation:** Proper folder path and file naming
 - **Test Plan:** Device testing will verify files appear on GitHub
 

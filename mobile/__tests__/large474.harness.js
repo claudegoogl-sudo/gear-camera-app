@@ -54,17 +54,16 @@ function parseBuild(b) {
 
 function loadWindow(minBuild, maxBuild) {
   const rows = [];
-  for (const f of fs.readdirSync(REPORTS).sort()) {
-    if (!f.endsWith('_report.json')) continue;
-    const meta = readJson(path.join(REPORTS, f));
+  for (const dir of fs.readdirSync(REPORTS).filter(d => d.startsWith('report_')).sort()) {
+    const meta = readJson(path.join(REPORTS, dir, 'report.json'));
     const actual = meta && (meta.actualTeethCount || meta.actual_tooth_count);
     if (!actual || actual < 22 || actual > 28) continue;
     const build = parseBuild(meta.build);
     if (build < minBuild || build > maxBuild) continue;
-    const photo = path.join(REPORTS, f.replace('_report.json', '_photo.jpg'));
+    const photo = path.join(REPORTS, dir, 'photo.jpg');
     if (!fs.existsSync(photo)) continue;
     rows.push({
-      stamp: f.replace('_report.json', ''),
+      stamp: dir.replace('report_', ''),
       build: 'b' + build,
       actual: Number(actual),
       prior: meta.result?.toothCount || 0,

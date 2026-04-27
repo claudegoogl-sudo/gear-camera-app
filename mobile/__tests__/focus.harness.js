@@ -1,6 +1,6 @@
 /**
  * Focused diagnostic harness — one image, full method breakdown.
- * Usage: FOCUS_PHOTO=debug-reports/2026-04-21_05-48-17-838Z_photo.jpg \
+ * Usage: FOCUS_PHOTO=debug-reports/report_2026-04-21_05-48-17-838Z/photo.jpg \
  *        npx jest --testMatch="**\/focus.harness.js"
  */
 

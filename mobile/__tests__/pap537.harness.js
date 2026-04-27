@@ -119,7 +119,7 @@ describe('PAP-537 11T repro', () => {
   jest.setTimeout(10 * 60 * 1000);
 
   test('reproduce b95 11T failure @ 07:16:03', () => {
-    const photo = path.join(REPORTS, '2026-04-24_07-16-03-083Z_photo.jpg');
+    const photo = path.join(REPORTS, 'report_2026-04-24_07-16-03-083Z', 'photo.jpg');
     const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
     const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
     console.log(`\n=== PAP-537 11T repro (photo=${raw.width}×${raw.height}) ===`);

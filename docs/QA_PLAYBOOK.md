@@ -210,7 +210,7 @@ adb install test-builds/gear-camera-debug-*.apk
 **GitHub Sharing:**
 1. [ ] "Share Debug" button visible on Result
 2. [ ] With token: Upload succeeds
-3. [ ] Check GitHub: Files appear in debug-reports/
+3. [ ] Check GitHub: Report folder appears in debug-reports/report_<timestamp>/
 4. [ ] Without token: Error message visible (not truncated)
 
 ---

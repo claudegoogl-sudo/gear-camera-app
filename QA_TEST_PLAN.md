@@ -54,7 +54,7 @@ Based on git history and recent fixes, these areas require careful device valida
 - [ ] Open URL → verify report JSON is complete and valid
 - [ ] Report includes: `toothCount`, `confidence`, `build`, `timestamp`
 - [ ] Photo is included in upload if available
-- [ ] Check GitHub debug-reports/ folder for uploaded files
+- [ ] Check GitHub debug-reports/ folder for uploaded report subfolder (report_<timestamp>/)
 
 **Test Checklist WITHOUT Token**:
 - [ ] "Share Debug" button disabled or shows error

@@ -89,9 +89,9 @@ function applyCircularMaskHost(rgba, w, h) {
     }
 }
 
-function runOne(photoFile) {
+function runOne(stamp) {
   const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
-  const raw = jpegDecode(fs.readFileSync(path.join(REPORTS, photoFile)), { useTArray: true });
+  const raw = jpegDecode(fs.readFileSync(path.join(REPORTS, 'report_' + stamp, 'photo.jpg')), { useTArray: true });
   const c = cropToAimCircleHost(raw.data, raw.width, raw.height);
   applyCircularMaskHost(c.rgba, c.w, c.h);
   const dn = bilinearResize(c.rgba, c.w, c.h, TARGET_DOWN);
@@ -106,7 +106,7 @@ describe('PAP-553 radius-sanity abstain (Rule B)', () => {
   // has the inner bolt circle dominating under generic aim-circle framing).
   // Gate must fire.
   test('51T photo (10-59-07-941) → inner-contour suspected', () => {
-    const out = runOne('2026-04-24_10-59-07-941Z_photo.jpg');
+    const out = runOne('2026-04-24_10-59-07-941Z');
     console.log(`51T: tc=${out.toothCount} conf=${out.confidence.toFixed(2)} ` +
       `r=${out.gearRadius.toFixed(4)} flag=${out.innerContourSuspected}`);
     expect(out.gearRadius).toBeLessThan(0.13);
@@ -117,7 +117,7 @@ describe('PAP-553 radius-sanity abstain (Rule B)', () => {
   // Counter-case: a photo where the host crop yields a well-framed gear
   // (r >> 0.13). Gate MUST NOT fire — Rule B must not regress good frames.
   test('17T photo (10-49-26-061) under host crop → flag NOT set', () => {
-    const out = runOne('2026-04-24_10-49-26-061Z_photo.jpg');
+    const out = runOne('2026-04-24_10-49-26-061Z');
     console.log(`17T-host: tc=${out.toothCount} conf=${out.confidence.toFixed(2)} ` +
       `r=${out.gearRadius.toFixed(4)} flag=${out.innerContourSuspected}`);
     // Host crop reframes differently from device; we only assert the gate
@@ -132,12 +132,12 @@ describe('PAP-553 radius-sanity abstain (Rule B)', () => {
   // Gate-consistency check: regardless of which photo we feed, the flag
   // state must exactly match `gearRadius < 0.13` and confidence=0 iff flagged.
   test('Rule B gate invariants hold across all three photos', () => {
-    for (const f of [
-      '2026-04-24_10-59-07-941Z_photo.jpg',
-      '2026-04-24_07-16-03-083Z_photo.jpg',
-      '2026-04-24_10-49-26-061Z_photo.jpg',
+    for (const stamp of [
+      '2026-04-24_10-59-07-941Z',
+      '2026-04-24_07-16-03-083Z',
+      '2026-04-24_10-49-26-061Z',
     ]) {
-      const out = runOne(f);
+      const out = runOne(stamp);
       const expectFlag = out.gearRadius < 0.13;
       expect(out.innerContourSuspected).toBe(expectFlag);
       if (expectFlag) {

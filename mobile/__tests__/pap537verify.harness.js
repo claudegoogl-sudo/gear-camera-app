@@ -90,7 +90,7 @@ describe('PAP-537 proposed-fix diagnostic cross-check', () => {
   jest.setTimeout(10 * 60 * 1000);
 
   test('case 1: 11T regression via aim-crop', () => {
-    const photo = path.join(REPORTS, '2026-04-24_07-16-03-083Z_photo.jpg');
+    const photo = path.join(REPORTS, 'report_2026-04-24_07-16-03-083Z', 'photo.jpg');
     const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
     const cr = cropToAimCircleHost(raw.data, raw.width, raw.height);
     applyCircularMaskHost(cr.rgba, cr.w, cr.h);
@@ -104,7 +104,7 @@ describe('PAP-537 proposed-fix diagnostic cross-check', () => {
   });
 
   test('case 2: b86 19-18-26 mid-op-override target (no aim crop, raw photo)', () => {
-    const photo = path.join(REPORTS, '2026-04-21_19-18-26-917Z_photo.jpg');
+    const photo = path.join(REPORTS, 'report_2026-04-21_19-18-26-917Z', 'photo.jpg');
     const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
     const dn = bilinearResize(raw.data, raw.width, raw.height, TARGET);
     const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
