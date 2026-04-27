@@ -1,8 +1,10 @@
 /**
  * Debug report sharing via GitHub Contents API.
  *
- * Uploads the captured photo and algorithm results to a `debug-reports/`
- * folder in the GitHub repo so the team can review detection data.
+ * Uploads a report folder to `debug-reports/report_<timestamp>/` containing:
+ *   - photo.jpg       (original uncropped photo)
+ *   - cropped.jpg     (aim-circle crop sent to algorithm)
+ *   - report.json     (metadata + results)
  */
 
 import * as FileSystem from 'expo-file-system/legacy';
@@ -33,6 +35,7 @@ async function verifyUpload(gitPath, headers) {
  *
  * @param {{
  *   photoPath: string|null,
+ *   croppedPhotoPath: string|null,
  *   toothCount: number|null,
  *   confidence: number|null,
  *   gearContour: object|null,
@@ -47,9 +50,9 @@ async function verifyUpload(gitPath, headers) {
  *   aimCrop: object|null,
  *   policyRetryCount: number|null,
  * }} params
- * @returns {Promise<string>} URL of the uploaded report file on GitHub.
+ * @returns {Promise<string>} URL of the uploaded report folder on GitHub.
  */
-export async function shareDebugReport({ photoPath, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, aimCrop, cameraErrors, cameraEvents, cameraHasError, isCameraReady, isFocused, retryKey, policyRetryCount, innerContourSuspected }) {
+export async function shareDebugReport({ photoPath, croppedPhotoPath, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, aimCrop, cameraErrors, cameraEvents, cameraHasError, isCameraReady, isFocused, retryKey, policyRetryCount, innerContourSuspected }) {
   if (!GITHUB_TOKEN) {
     throw new Error('GitHub token not configured — cannot upload debug report.');
   }
@@ -99,52 +102,60 @@ export async function shareDebugReport({ photoPath, toothCount, confidence, gear
     Authorization: `Bearer ${GITHUB_TOKEN}`,
   };
 
-  // Upload photo if available.
-  let photoGitPath = null;
-  if (photoPath) {
+  const folder = `debug-reports/report_${slug}`;
+
+  // Helper: read a local photo file as base64 and upload to the folder.
+  async function uploadPhoto(localPath, filename) {
+    if (!localPath) return null;
     try {
-      // Ensure file:// URI — expo-file-system/legacy requires it.
-      const fileUri = photoPath.startsWith('file://') ? photoPath : `file://${photoPath}`;
+      const fileUri = localPath.startsWith('file://') ? localPath : `file://${localPath}`;
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
       if (!fileInfo.exists) {
         console.warn(`[DebugShare] Photo file not found at: ${fileUri}`);
-      } else {
-        console.log(`[DebugShare] Reading photo: ${fileUri} (${fileInfo.size} bytes)`);
-        const base64 = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        photoGitPath = `debug-reports/${slug}_photo.jpg`;
-        const photoRes = await fetch(`${CONTENTS_URL}/${photoGitPath}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            message: `debug-report: photo ${slug}`,
-            content: base64,
-          }),
-        });
-        if (!photoRes.ok) {
-          const body = await photoRes.text();
-          console.warn(
-            `[DebugShare] Photo upload failed (${photoRes.status}): path=${fileUri} size=${fileInfo.size} body=${body}`,
-          );
-          photoGitPath = null;
-        } else {
-          await verifyUpload(photoGitPath, headers);
-        }
+        return null;
       }
+      console.log(`[DebugShare] Reading ${filename}: ${fileUri} (${fileInfo.size} bytes)`);
+      const base64 = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const gitPath = `${folder}/${filename}`;
+      const res = await fetch(`${CONTENTS_URL}/${gitPath}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          message: `debug-report: ${filename} ${slug}`,
+          content: base64,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        console.warn(
+          `[DebugShare] ${filename} upload failed (${res.status}): path=${fileUri} size=${fileInfo.size} body=${body}`,
+        );
+        return null;
+      }
+      await verifyUpload(gitPath, headers);
+      return gitPath;
     } catch (e) {
-      console.warn(`[DebugShare] Could not read/upload/verify photo (path=${photoPath}):`, e.message);
-      photoGitPath = null;
+      console.warn(`[DebugShare] Could not read/upload/verify ${filename} (path=${localPath}):`, e.message);
+      return null;
     }
   }
 
-  // Add photo path reference to report if uploaded.
+  // Upload original photo.
+  const photoGitPath = await uploadPhoto(photoPath, 'photo.jpg');
   if (photoGitPath) {
     report.photoFile = photoGitPath;
   }
 
+  // Upload cropped photo (the image sent to the algorithm).
+  const croppedGitPath = await uploadPhoto(croppedPhotoPath, 'cropped.jpg');
+  if (croppedGitPath) {
+    report.croppedPhotoFile = croppedGitPath;
+  }
+
   // Upload the JSON report.
-  const reportPath = `debug-reports/${slug}_report.json`;
+  const reportPath = `${folder}/report.json`;
   const reportContent = btoa(JSON.stringify(report, null, 2));
   const reportRes = await fetch(`${CONTENTS_URL}/${reportPath}`, {
     method: 'PUT',
