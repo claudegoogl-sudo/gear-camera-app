@@ -130,7 +130,8 @@ describe('PAP-553 radius-sanity abstain (Rule B)', () => {
   });
 
   // Gate-consistency check: regardless of which photo we feed, the flag
-  // state must exactly match `gearRadius < 0.13` and confidence=0 iff flagged.
+  // state must exactly match the PAP-553 + PAP-673 radius-sanity gate
+  // and confidence=0 iff flagged.
   test('Rule B gate invariants hold across all three photos', () => {
     for (const stamp of [
       '2026-04-24_10-59-07-941Z',
@@ -138,7 +139,8 @@ describe('PAP-553 radius-sanity abstain (Rule B)', () => {
       '2026-04-24_10-49-26-061Z',
     ]) {
       const out = runOne(stamp);
-      const expectFlag = out.gearRadius < 0.13;
+      const expectFlag = out.gearRadius < 0.13
+        || (out.gearRadius < 0.15 && out.toothCount >= 20);
       expect(out.innerContourSuspected).toBe(expectFlag);
       if (expectFlag) {
         expect(out.confidence).toBe(0);

@@ -2558,13 +2558,17 @@ export async function countTeeth(photoUri, signal, opts) {
   // crop-space unconditionally, which missed detections where the aimCrop
   // ratio (side/fullW) mapped a suspicious full-image radius back above
   // 0.13 in crop-space (e.g. r_full=0.093, crop=0.154 at side/fullW=0.602).
-  const innerContourSuspected = gearRadius < 0.13;
+  // PAP-673: conditional extension — r < 0.15 with toothCount >= 20 is
+  // also suspicious (a real >=20T gear has r >= 0.20 on device; small
+  // radius + high count means inner features were detected).
+  const innerContourSuspected = gearRadius < 0.13
+    || (gearRadius < 0.15 && r.toothCount >= 20);
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
   if (innerContourSuspected) {
     console.log(
-      `[GearCounter] PAP-553 radius-sanity abstain: r=${gearRadius.toFixed(4)} < 0.13 — ` +
-      `inner-contour suspected. raw tc=${r.toothCount} conf=${r.confidence.toFixed(2)} → forcing conf=0.`
+      `[GearCounter] radius-sanity abstain: r=${gearRadius.toFixed(4)} tc=${r.toothCount} — ` +
+      `inner-contour suspected. raw conf=${r.confidence.toFixed(2)} → forcing conf=0.`
     );
   }
 
@@ -2631,10 +2635,11 @@ export function countTeethFromRgba(rgba, width, height) {
       }
     }
   }
-  // PAP-553: radius-sanity abstain (Rule B) — mirrors countTeeth so harness
-  // validation sees the same gate as on-device runs.
+  // PAP-553 + PAP-673: radius-sanity abstain (Rule B) — mirrors countTeeth
+  // so harness validation sees the same gate as on-device runs.
   const gearRadiusCropSpace = r.gearR / width;
-  const innerContourSuspected = gearRadiusCropSpace < 0.13;
+  const innerContourSuspected = gearRadiusCropSpace < 0.13
+    || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20);
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
   return {
     toothCount: r.toothCount,
