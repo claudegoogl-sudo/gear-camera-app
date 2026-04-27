@@ -8,7 +8,13 @@
 import { GITHUB_TOKEN, GITHUB_REPO } from '../config';
 import { BUILD_NUMBER } from '../buildInfo';
 
-const RELEASES_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
+// per_page=100 is GitHub's max for the releases listing endpoint. Without it
+// the default of 30 silently truncates older builds, and any release that
+// shares its tag commit with a sibling release can be dropped from the
+// first-page response (observed for b104, whose tag commit equals b103's).
+const RELEASES_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=100`;
+const RELEASE_BY_TAG_URL = (tag) =>
+  `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${encodeURIComponent(tag)}`;
 
 /**
  * Extract the integer build number from a release tag.
@@ -37,22 +43,74 @@ function findApkUrl(assets) {
   return asset?.browser_download_url ?? '';
 }
 
+function buildHeaders() {
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  }
+  return headers;
+}
+
+function releaseToBuild(release) {
+  const buildNumber = parseBuildNumber(release.tag_name);
+  if (buildNumber === null) return null;
+  return {
+    buildNumber,
+    downloadUrl: findApkUrl(release.assets),
+    releaseName: release.name ?? release.tag_name,
+    tagName: release.tag_name,
+  };
+}
+
+/**
+ * Probe newer build tags directly. The /releases listing endpoint sometimes
+ * omits a freshly-published release when its tag commit is shared with an
+ * earlier release (observed: b103 and b104 both pinned to the same commit
+ * because the build script tags the remote HEAD that existed when the
+ * upload ran). Tag lookup never has this problem, so we walk forward from
+ * the highest build number we already saw and probe up to a small budget.
+ */
+async function probeMissingHeadBuilds(highestKnown) {
+  const headers = buildHeaders();
+  const found = [];
+  let consecutiveMisses = 0;
+  const MAX_CONSECUTIVE_MISSES = 2;
+  const MAX_PROBES = 6;
+
+  for (let i = 1; i <= MAX_PROBES; i++) {
+    const candidate = highestKnown + i;
+    try {
+      const response = await fetch(RELEASE_BY_TAG_URL(`b${candidate}`), { headers });
+      if (response.status === 404) {
+        consecutiveMisses++;
+        if (consecutiveMisses >= MAX_CONSECUTIVE_MISSES) break;
+        continue;
+      }
+      if (!response.ok) break;
+      const release = await response.json();
+      const build = releaseToBuild(release);
+      if (build) {
+        found.push(build);
+        consecutiveMisses = 0;
+      }
+    } catch {
+      break;
+    }
+  }
+
+  return found;
+}
+
 /**
  * Fetch all available debug builds from GitHub Releases.
  *
  * @returns {Promise<Array<{ buildNumber: number, downloadUrl: string, releaseName: string, tagName: string }>>}
  */
 export async function fetchAllBuilds() {
-  const headers = {
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
-
-  if (GITHUB_TOKEN) {
-    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
-  }
-
-  const response = await fetch(RELEASES_URL, { headers });
+  const response = await fetch(RELEASES_URL, { headers: buildHeaders() });
 
   if (!response.ok) {
     const body = await response.text();
@@ -61,19 +119,23 @@ export async function fetchAllBuilds() {
 
   const releases = await response.json();
 
-  return releases
-    .map((release) => {
-      const buildNumber = parseBuildNumber(release.tag_name);
-      if (buildNumber === null) return null;
-      return {
-        buildNumber,
-        downloadUrl: findApkUrl(release.assets),
-        releaseName: release.name ?? release.tag_name,
-        tagName: release.tag_name,
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.buildNumber - a.buildNumber);
+  const builds = releases.map(releaseToBuild).filter(Boolean);
+
+  const highestKnown = builds.length === 0
+    ? Math.max(BUILD_NUMBER, 0)
+    : Math.max(BUILD_NUMBER, ...builds.map((b) => b.buildNumber));
+
+  // Probe head-of-list for releases that the listing endpoint silently dropped.
+  const probed = await probeMissingHeadBuilds(highestKnown);
+  const seen = new Set(builds.map((b) => b.buildNumber));
+  for (const b of probed) {
+    if (!seen.has(b.buildNumber)) {
+      builds.push(b);
+      seen.add(b.buildNumber);
+    }
+  }
+
+  return builds.sort((a, b) => b.buildNumber - a.buildNumber);
 }
 
 /**

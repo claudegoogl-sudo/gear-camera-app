@@ -78,8 +78,10 @@ echo "[build] APK → $APK_DEST (${APK_SIZE_MB}MB)"
 # ── Upload to GitHub Releases ────────────────────────────────────────────────
 DOWNLOAD_LINK="local"
 TAG="b${BUILD_NUMBER}"
-# Sanitize APK name for upload (replace spaces with dots)
+# Sanitize APK name for upload — GitHub strips/replaces both spaces and colons
+# in release asset filenames, so the README link must use the same dots.
 UPLOAD_APK_NAME="${APK_NAME// /.}"
+UPLOAD_APK_NAME="${UPLOAD_APK_NAME//:/.}"
 
 if [[ -n "$GH_TOKEN" ]]; then
   echo "[build] Uploading to GitHub Releases as tag $TAG…"
