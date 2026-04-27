@@ -2418,12 +2418,16 @@ export async function countTeeth(photoUri, signal, opts) {
   const { width, height, rgba } = await loadAndDecodeImage(photoUri);
   const t1 = Date.now();
 
-  // ── Aim-circle mask (PAP-476) ──────────────────────────────────────
-  // Mask radius is 0.49 * min(W, H), 4% above the algorithm's existing
-  // search radius cap (`Math.min(h, w) * 0.45` on line ~1035). The 4%
-  // margin ensures Canny edges produced at the mask boundary fall outside
-  // every center/radius candidate the algorithm evaluates, so the mask
-  // ring cannot be mistaken for the gear contour.
+  // ── Aim-circle mask (PAP-476 / PAP-672) ───────────────────────────��─
+  // Mask radius is 0.49 * min(W, H), 4 % above the algorithm's existing
+  // search radius cap (`Math.min(h, w) * 0.45`).  The 4 % margin ensures
+  // Canny edges at the mask boundary fall outside every center/radius
+  // candidate the algorithm evaluates.
+  //
+  // PAP-672: the crop now includes padding beyond the aim circle, so the
+  // mask scales with the full (padded) crop dimensions.  This lets the
+  // algorithm see the padded area — an off-center gear whose contour
+  // extends past the old aim-circle boundary is no longer clipped.
   if (aimCrop) {
     const cx = (width - 1) / 2;
     const cy = (height - 1) / 2;

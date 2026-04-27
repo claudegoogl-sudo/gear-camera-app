@@ -45,10 +45,16 @@ const AIM_SIZE = Math.floor(0.95 * Math.min(_win.width, _win.height));
 // Aim-circle fraction relative to the visible-region's shorter dimension.
 // Used by `cropToAimCircle` to compute the photo-space crop side length.
 const AIM_CIRCLE_FRAC = 0.95;
+// PAP-672: extra padding around the aim circle so off-center gears are not
+// clipped by the crop boundary.  0.15 = 15 % margin on each side, giving
+// large gears room even when the user doesn't perfectly center them.
+const CROP_PAD_FRAC = 0.15;
 // On-screen processed-frame thumbnail size (shown in the processing card).
 const PROCESSED_THUMB_SIZE = 160;
 
-/** PAP-476 / PAP-529: crop a photo to the bounding square of the aim circle.
+/** PAP-476 / PAP-529 / PAP-672: crop a photo to the aim-circle region with
+ *  adaptive padding.
+ *
  *  The aim circle on screen has diameter `AIM_CIRCLE_FRAC * min(sw, sh)` but
  *  its *center* is NOT the screen center — the top/bottom bars make the
  *  aim-guide region asymmetric, so the reticle sits above the vertical
@@ -56,12 +62,11 @@ const PROCESSED_THUMB_SIZE = 160;
  *  photo-space offset, so a centered crop pulls a different gear than the
  *  user aimed at (PAP-529 b94: label 28T → result 24T with `centerY=0.422`).
  *
- *  This function accepts the aim circle's measured on-screen center
- *  `screenCenter = { x, y }` (window coords) and converts it to photo
- *  coords, then crops a square of side `AIM_CIRCLE_FRAC * min(visW, visH)`
- *  centered on that photo point.  The algorithm applies a circular white
- *  mask inside, so only the inscribed circle (the on-screen aim circle) is
- *  processed.
+ *  PAP-672: the crop now includes CROP_PAD_FRAC (15 %) extra margin beyond
+ *  the aim circle so that large gears positioned slightly off-center are
+ *  not clipped.  `aimCircleFrac` records the ratio of the aim-circle
+ *  diameter to the padded crop side so the algorithm can mask precisely to
+ *  the aim-circle boundary.
  *
  *  Falls back to photo-center crop when `screenCenter` is null (layout
  *  hasn't fired yet — rare, but defensive).
@@ -73,18 +78,34 @@ async function cropToAimCircle(photoPath, screenCenter) {
   const { width: sw, height: sh } = Dimensions.get('window');
   const photoUri = `file://${photoPath}`;
   const info = await manipulateAsync(photoUri, [], {});
+
+  // PAP-672 landscape guard: the app is portrait-locked so photo height
+  // should exceed width.  If dimensions are flipped (landscape), skip the
+  // crop entirely — the coordinate math assumes portrait orientation.
+  if (info.width > info.height) {
+    return {
+      path: photoPath,
+      aimCrop: null,
+      landscapeSkipped: true,
+    };
+  }
+
   const scale = Math.max(sw / info.width, sh / info.height);
   const visW = sw / scale;
   const visH = sh / scale;
   const minVis = Math.min(visW, visH);
-  // Square side = aim-circle diameter in photo coords.  Clamp so the crop
-  // never extends beyond the photo (defensive — should not happen for the
-  // covered visible region).
+  // Aim-circle diameter in photo coords (matches the on-screen reticle).
+  const aimSide = Math.round(AIM_CIRCLE_FRAC * minVis);
+  // PAP-672: padded crop side — adds CROP_PAD_FRAC margin so off-center
+  // gears are not clipped at the crop boundary.
   const side = Math.min(
-    Math.round(AIM_CIRCLE_FRAC * minVis),
+    Math.round(aimSide * (1 + CROP_PAD_FRAC)),
     info.width,
     info.height,
   );
+  // Ratio of the aim circle to the padded crop (used by the algorithm to
+  // size the circular mask to the actual aim-circle boundary).
+  const aimCircleFrac = aimSide / side;
   // Convert the aim circle's on-screen center to photo coords under
   // cover-mode (preview fills the screen, cropping whichever axis is
   // longer).  `visOriginX/Y` is the photo-space offset of the visible
@@ -120,6 +141,7 @@ async function cropToAimCircle(photoPath, screenCenter) {
       side,
       fullW: info.width,
       fullH: info.height,
+      aimCircleFrac,
       // Debug fields — captured so debug reports can diagnose mis-aimed crops.
       screenCenterX: haveMeasured ? acx : null,
       screenCenterY: haveMeasured ? acy : null,
@@ -202,6 +224,36 @@ export default function CameraScreen({ navigation }) {
     });
   }, []);
 
+  // PAP-672: promise-based fresh measurement of aim-circle center at
+  // capture time.  `onLayout` only fires on mount / layout change, so
+  // the ref can go stale if safe-area insets shift after mount.  This
+  // re-measures right before the crop for maximum accuracy.
+  const measureAimCircleFresh = useCallback(() => {
+    return new Promise((resolve) => {
+      const node = aimCircleRef.current;
+      if (!node || typeof node.measureInWindow !== 'function') {
+        resolve(null);
+        return;
+      }
+      node.measureInWindow((x, y, w, h) => {
+        if (
+          Number.isFinite(x) &&
+          Number.isFinite(y) &&
+          Number.isFinite(w) &&
+          Number.isFinite(h) &&
+          w > 0 &&
+          h > 0
+        ) {
+          const center = { x: x + w / 2, y: y + h / 2 };
+          aimCircleCenterRef.current = center;
+          resolve(center);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  }, []);
+
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
     // Guard against capturing while a download is in progress — navigating
@@ -226,10 +278,15 @@ export default function CameraScreen({ navigation }) {
       // and while the Result screen is shown.
       setPreviewPaused(true);
 
-      // PAP-476 / PAP-622: pre-crop the photo to the aim-circle bounding
-      // square.  This crop is purely geometric (on-screen reticle boundary)
-      // and is used both for the algorithm and for the ResultScreen display.
-      const aim = await cropToAimCircle(photo.path, aimCircleCenterRef.current);
+      // PAP-672: fresh-measure the aim circle center at capture time so
+      // the crop uses the latest layout position, not a stale onLayout ref.
+      const freshCenter = await measureAimCircleFresh();
+      const screenCenter = freshCenter || aimCircleCenterRef.current;
+
+      // PAP-476 / PAP-622 / PAP-672: pre-crop the photo to the aim-circle
+      // region with adaptive padding.  The crop includes CROP_PAD_FRAC extra
+      // margin so off-center gears are not clipped.
+      const aim = await cropToAimCircle(photo.path, screenCenter);
       if (gen !== captureGenRef.current) return; // cancelled or superseded
       setProcessedThumbUri(`file://${aim.path}`);
 
