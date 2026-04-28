@@ -45,10 +45,17 @@ const AIM_SIZE = Math.floor(0.95 * Math.min(_win.width, _win.height));
 // Aim-circle fraction relative to the visible-region's shorter dimension.
 // Used by `cropToAimCircle` to compute the photo-space crop side length.
 const AIM_CIRCLE_FRAC = 0.95;
-// PAP-672: extra padding around the aim circle so off-center gears are not
-// clipped by the crop boundary.  0.15 = 15 % margin on each side, giving
-// large gears room even when the user doesn't perfectly center them.
-const CROP_PAD_FRAC = 0.15;
+// PAP-672 / PAP-738: extra padding around the aim circle.  Set to 0 in
+// PAP-738 so the algorithm's circular mask (0.49 × min(W,H) of the crop)
+// matches the on-screen aim circle the user sees — the board reported in
+// b106 that the cropped region was visibly larger than the aim circle.
+// With pad=0 the inscribed-circle mask lands at 0.98 × aim_radius (≈ 2 %
+// residual mismatch).  Paired with PAP-740 (commit c519ebd) which bumped
+// the upper-bound chainring abstain `cropNormR < 0.15` → `< 0.17` so the
+// 1.15× rescale of crop-fractional radius doesn't widen the
+// confident-wrong window for [9, 13]-tooth chainring inner-feature hits.
+// QA b94–b106 corpus check: zero regressions on the paired change.
+const CROP_PAD_FRAC = 0;
 // On-screen processed-frame thumbnail size (shown in the processing card).
 const PROCESSED_THUMB_SIZE = 160;
 
@@ -62,11 +69,12 @@ const PROCESSED_THUMB_SIZE = 160;
  *  photo-space offset, so a centered crop pulls a different gear than the
  *  user aimed at (PAP-529 b94: label 28T → result 24T with `centerY=0.422`).
  *
- *  PAP-672: the crop now includes CROP_PAD_FRAC (15 %) extra margin beyond
- *  the aim circle so that large gears positioned slightly off-center are
- *  not clipped.  `aimCircleFrac` records the ratio of the aim-circle
- *  diameter to the padded crop side so the algorithm can mask precisely to
- *  the aim-circle boundary.
+ *  PAP-672 added a CROP_PAD_FRAC margin around the aim circle, but
+ *  PAP-738 removed it (`CROP_PAD_FRAC = 0`) because the board reported
+ *  the cropped region was visibly larger than the aim circle.  The crop
+ *  now equals the aim-circle bounding square exactly, so the algorithm's
+ *  inscribed-circle mask matches the visible reticle.  `aimCircleFrac`
+ *  is now ≈ 1.0 (kept in metadata for back-compat with debug reports).
  *
  *  Falls back to photo-center crop when `screenCenter` is null (layout
  *  hasn't fired yet — rare, but defensive).
