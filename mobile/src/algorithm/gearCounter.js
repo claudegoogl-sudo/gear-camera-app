@@ -2626,8 +2626,12 @@ export async function countTeeth(photoUri, signal, opts) {
   // 9-13T cassette cog at crop-space r < 0.15 would trigger small-gear
   // retry (SMALL_GEAR_RADIUS_FRAC = 0.10); r in the 0.10–0.15 range with
   // tc 9-13 indicates an inner BCD/shoulder feature, not a tiny cog.
+  // PAP-740: bump 0.15 → 0.17 to compensate for PAP-738 removing CROP_PAD_FRAC.
+  // With pad=0 the crop side shrinks by 1/1.15, scaling every crop-fractional
+  // radius up by 1.15× — without the bump, inner-feature hits previously in
+  // [0.13, 0.15] (abstained) shift into [0.15, 0.17] (no longer abstained).
   const cropNormR = (r.contourRadius || 0) / Math.min(width, height);
-  const upperBoundMismatch = cropNormR < 0.15
+  const upperBoundMismatch = cropNormR < 0.17
     && r.toothCount >= 9 && r.toothCount <= 13;
   const innerContourSuspected = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
@@ -2708,8 +2712,9 @@ export function countTeethFromRgba(rgba, width, height) {
   // so harness validation sees the same gate as on-device runs.
   const gearRadiusCropSpace = r.gearR / width;
   // PAP-684/PAP-685: upper-bound mismatch (crop-space)
+  // PAP-740: bump 0.15 → 0.17 to match countTeeth() after pad removal.
   const cropNormR = (r.contourRadius || 0) / Math.min(width, height);
-  const upperBoundMismatch = cropNormR < 0.15
+  const upperBoundMismatch = cropNormR < 0.17
     && r.toothCount >= 9 && r.toothCount <= 13;
   const innerContourSuspected = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
