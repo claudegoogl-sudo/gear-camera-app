@@ -817,9 +817,22 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   // ~350MB of short-lived Uint8Array/Int32Array allocations (36 iterations
   // × ~8 arrays each).  Reuse across iterations — zero accuracy change.
   const sweepBufA = new Uint8Array(n);
-  const sweepBufB = new Uint8Array(n);
   const sweepBufC = new Uint8Array(n);
   const sweepLabels = new Int32Array(n);
+
+  // PAP-588 Phase 2 (Option E): run morphological close/open at half
+  // resolution, then NN-upsample the cleaned mask to full-res for
+  // connected-component labeling.  Cuts findGearCenter's morph cost ~4×
+  // (the dominant term in the sweep) while keeping labeling, area
+  // thresholds, and component boundary geometry at full resolution so no
+  // constants need rescaling.  Approved per PAP-588 cross-check; morphOpen
+  // radius is held at r=1 (r=0 would be a no-op via _buildOffsets).
+  const halfW = w >> 1;
+  const halfH = h >> 1;
+  const halfN = halfW * halfH;
+  const halfBufA = new Uint8Array(halfN);
+  const halfBufB = new Uint8Array(halfN);
+  const halfBufC = new Uint8Array(halfN);
 
   // Sweep thresholds 40–220 in steps of 10 (PAP-346: reduced from 15 to
   // improve contour candidate coverage for large gears — Python uses
@@ -827,21 +840,58 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   // the previous 12, matching Python more closely without the full 36).
   for (let thresh = 40; thresh < 220; thresh += 10) {
     for (const invert of [true, false]) {
-      // Binary mask — fill sweepBufA in-place
+      // Build full-res mask in sweepBufA, then OR-downsample 2× to halfBufA.
+      // OR-downsample (any of the 2×2 block is foreground) is more
+      // conservative for thin-stroke features than top-left NN, which
+      // matters because the threshold sweep relies on foreground continuity
+      // for the morphClose chain to bridge gear-tooth gaps reliably.
       for (let i = 0; i < n; i++) {
         sweepBufA[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
       }
+      for (let y = 0; y < halfH; y++) {
+        const sy0 = y * 2;
+        const sy1 = sy0 + 1;
+        const r0 = sy0 * w;
+        const r1 = sy1 * w;
+        const dstRow = y * halfW;
+        for (let x = 0; x < halfW; x++) {
+          const sx0 = x * 2;
+          const sx1 = sx0 + 1;
+          halfBufA[dstRow + x] =
+            (sweepBufA[r0 + sx0] | sweepBufA[r0 + sx1] |
+             sweepBufA[r1 + sx0] | sweepBufA[r1 + sx1]) ? 1 : 0;
+        }
+      }
 
-      // Morphological close then open (buffers rotate to avoid aliasing).
+      // Morphological close (×2) then open at half-resolution.
       // PAP-324: apply close twice (matching Python iterations=2) for
       // more aggressive gap-bridging — critical for separating gears
       // from white paper backgrounds on medium-large cassette cogs.
-      // close1: sweepBufA→sweepBufC (tmp=sweepBufB)
-      const closed1 = morphClose(sweepBufA, w, h, 2, sweepBufB, sweepBufC);
-      // close2: sweepBufC→sweepBufA (tmp=sweepBufB, overwrites mask — no longer needed)
-      const closed = morphClose(closed1, w, h, 2, sweepBufB, sweepBufA);
-      // open: sweepBufA→sweepBufC (tmp=sweepBufB)
-      const cleaned = morphOpen(closed, w, h, 1, sweepBufB, sweepBufC);
+      // Kernel scaling: at half-resolution, a r=1 cross corresponds to
+      // ~r=2 disk in full-res equivalents (the kernel reach doubles after
+      // NN upsample), so r=1 close at half-res preserves the original
+      // full-res r=2 close semantics rather than the prior r=2 half-res
+      // attempt which was effectively r=4 and over-merged spider arms.
+      // halfBufA → halfBufC (close1), halfBufA reused as out for close2,
+      // halfBufC reused as out for open — strict ABA→C→A→C ping-pong.
+      const halfClosed1 = morphClose(halfBufA, halfW, halfH, 1, halfBufB, halfBufC);
+      const halfClosed = morphClose(halfClosed1, halfW, halfH, 1, halfBufB, halfBufA);
+      const halfCleaned = morphOpen(halfClosed, halfW, halfH, 1, halfBufB, halfBufC);
+
+      // NN-upsample halfCleaned to sweepBufA at full resolution. Each
+      // half-res pixel paints a 2×2 block in the full-res mask, which
+      // produces a slight staircase along component edges but preserves
+      // component identity, area, and bounding box at full-res granularity.
+      for (let y = 0; y < h; y++) {
+        const sy = y >> 1;
+        const srcRow = (sy < halfH ? sy : halfH - 1) * halfW;
+        const dstRow = y * w;
+        for (let x = 0; x < w; x++) {
+          const sx = x >> 1;
+          sweepBufA[dstRow + x] = halfCleaned[srcRow + (sx < halfW ? sx : halfW - 1)];
+        }
+      }
+      const cleaned = sweepBufA;
 
       // Label components (reuse sweepLabels)
       const { labels, components } = labelComponents(cleaned, w, h, 1, sweepLabels);
