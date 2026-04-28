@@ -1,0 +1,84 @@
+{
+  "timestamp": "2026-04-28T11:24:49.303Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (106) · 2026-04-28 11:04",
+  "result": {
+    "toothCount": 42,
+    "confidence": 0.8427,
+    "gearContour": {
+      "centerX": 0.49906407407407405,
+      "centerY": 0.42601,
+      "radius": 0.30462666666666666
+    },
+    "innerContourSuspected": false
+  },
+  "algorithmRuntimeMs": 94315,
+  "aimCrop": {
+    "originX": 461,
+    "originY": 624,
+    "side": 2077,
+    "fullW": 3000,
+    "fullH": 4000,
+    "aimCircleFrac": 0.8695233509870005,
+    "screenCenterX": 196.36363220214844,
+    "screenCenterY": 343.4545440673828,
+    "measured": true
+  },
+  "actualTeethCount": 42,
+  "cameraErrors": [
+    {
+      "timestamp": "2026-04-28T11:18:36.273Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true,
+      "flashError": false
+    }
+  ],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-28T11:18:27.064Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    },
+    {
+      "type": "error",
+      "ts": "2026-04-28T11:18:36.273Z",
+      "code": "system/camera-is-restricted",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "policyRestricted": true,
+      "flashError": false,
+      "wideAngleFallback": false,
+      "retryKey": 0,
+      "policyRetryCount": 0
+    },
+    {
+      "type": "appState",
+      "ts": "2026-04-28T11:19:17.491Z",
+      "nextState": "active",
+      "isPolicyRestricted": true
+    },
+    {
+      "type": "policyRetry",
+      "ts": "2026-04-28T11:19:17.491Z",
+      "retryKey": 1,
+      "policyRetryCount": 1,
+      "trigger": "appState"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-28T11:19:17.991Z",
+      "retryKey": 1,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    }
+  ],
+  "photoFile": "debug-reports/report_2026-04-28_11-24-49-303Z/photo.jpg",
+  "croppedPhotoFile": "debug-reports/report_2026-04-28_11-24-49-303Z/cropped.jpg"
+}
