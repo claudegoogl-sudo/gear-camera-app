@@ -566,6 +566,14 @@ export default function CameraScreen({ navigation }) {
         video={true}
         pixelFormat="yuv"
         torch={device?.hasTorch ? 'on' : 'off'}
+        // PAP-732: lock photo output to the (portrait-locked) preview
+        // orientation.  vision-camera's default `outputOrientation` is
+        // `'device'`, which rotates the photo with the physical phone
+        // orientation even when the activity is `screenOrientation=portrait`.
+        // That caused intermittent 4000x3000 landscape captures (b102 reports
+        // 13:20:54 and 13:27:37).  `'preview'` forces all photo/snapshot
+        // outputs to match the locked-portrait preview view → always 3000x4000.
+        outputOrientation="preview"
         frameProcessor={frameProcessor}
         onInitialized={() => {
           cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current, hasTorch: !!device?.hasTorch, hasFlash: !!device?.hasFlash });
