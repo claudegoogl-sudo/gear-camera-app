@@ -214,6 +214,12 @@ export default function CameraScreen({ navigation }) {
   // photo crop with the real reticle position instead of the photo center.
   const aimCircleRef = useRef(null);
   const aimCircleCenterRef = useRef(null);
+  // PAP-763: reactive copy of the measured aim-circle center, used to
+  // position the processed-thumb preview overlay during the counting
+  // phase.  The ref above is still read synchronously by the capture
+  // handler; this state mirrors it so absolute-positioned UI re-renders
+  // when the layout shifts (e.g. safe-area insets settle after mount).
+  const [aimCircleScreen, setAimCircleScreen] = useState(null);
 
   const handleAimCircleLayout = useCallback(() => {
     const node = aimCircleRef.current;
@@ -227,7 +233,9 @@ export default function CameraScreen({ navigation }) {
         w > 0 &&
         h > 0
       ) {
-        aimCircleCenterRef.current = { x: x + w / 2, y: y + h / 2 };
+        const center = { x: x + w / 2, y: y + h / 2 };
+        aimCircleCenterRef.current = center;
+        setAimCircleScreen(center);
       }
     });
   }, []);
@@ -254,6 +262,7 @@ export default function CameraScreen({ navigation }) {
         ) {
           const center = { x: x + w / 2, y: y + h / 2 };
           aimCircleCenterRef.current = center;
+          setAimCircleScreen(center);
           resolve(center);
         } else {
           resolve(null);
@@ -709,24 +718,42 @@ export default function CameraScreen({ navigation }) {
           <View style={styles.processingOverlay}>
             <View style={styles.processingCard}>
               <Text style={styles.processingTitle}>Counting teeth…</Text>
-              {/* PAP-476: live preview of the exact image fed to the algorithm.
-                  The square crop matches cropToAimCircle's output and the
-                  circular border-radius visualises the white mask applied
-                  inside countTeeth (corners are ignored by the detector). */}
-              {processedThumbUri && (
-                <View style={styles.processedThumbWrap}>
-                  <Image
-                    source={{ uri: processedThumbUri }}
-                    style={styles.processedThumbImg}
-                    resizeMode="cover"
-                  />
-                </View>
-              )}
               <Text style={styles.processingHint}>This takes about 1–2 seconds</Text>
               <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        )}
+
+        {/* PAP-763: processed-thumb preview overlaid at the reticle's
+            measured screen position so the preview appears where the
+            user aimed instead of at the screen vertical center (which
+            sits below the reticle because `bottomBar` is taller than
+            `topBar`).  Rendered AFTER `processingOverlay` so it draws
+            on top of the dimmed background and stays bright.
+
+            PAP-476: live preview of the exact image fed to the algorithm.
+            The square crop matches cropToAimCircle's output and the
+            circular border-radius visualises the white mask applied
+            inside countTeeth (corners are ignored by the detector). */}
+        {isProcessing && processedThumbUri && aimCircleScreen && (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.processedThumbWrap,
+              styles.processedThumbOverlay,
+              {
+                top: aimCircleScreen.y - PROCESSED_THUMB_SIZE / 2,
+                left: aimCircleScreen.x - PROCESSED_THUMB_SIZE / 2,
+              },
+            ]}
+          >
+            <Image
+              source={{ uri: processedThumbUri }}
+              style={styles.processedThumbImg}
+              resizeMode="cover"
+            />
           </View>
         )}
 
@@ -999,10 +1026,14 @@ const styles = StyleSheet.create({
     height: PROCESSED_THUMB_SIZE,
     borderRadius: PROCESSED_THUMB_SIZE / 2,
     overflow: 'hidden',
-    marginTop: 8,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.35)',
     backgroundColor: '#fff',
+  },
+  // PAP-763: absolute-positioned variant used to overlay the thumb on
+  // the reticle's measured screen position during the counting phase.
+  processedThumbOverlay: {
+    position: 'absolute',
   },
   processedThumbImg: {
     width: '100%',
