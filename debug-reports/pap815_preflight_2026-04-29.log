@@ -1,0 +1,356 @@
+
+=== PAP-815 pre-flight: radial-gradient outer-band + cepstrum/ACF ===
+Per QA PAP-818: anchor radial sweep at bcCx/bcCy, find R_outer = argmax of azimuthally-averaged |dI/dr|,
+then angular FFT + cepstrum + ACF at R_outer. Print also algo-anchor sweep for center self-validation.
+Tooth-count interpretation: cepstrum/ACF τ → tc ≈ N_ANGLES/τ = 1024/τ
+
+--- XL targets (cropped.jpg device-faithful) ---
+  [2026-04-29_05-29-04-170Z] actual=42 tc=42 peak=41 fft90=41 op=42 bcTc=10 bcPk=12 bcPur=0.060 
+    centers: algo=(450,450)  bc=(476,313)  Δ=139.4 px  bcValidated=false  anchor=algo
+    peakR=379  baseR=379  sweep@algo r∈[113..449]  sweep@bc r∈[113..312] (safe=true)
+    radial-grad@algo top3:  r=359(v=17.0,prom=7.0)  r=341(v=15.2,prom=5.8)  r=344(v=14.9,prom=5.4)
+    radial-grad@bc   top3:  r=175(v=6.3,prom=2.3)  r=202(v=8.5,prom=1.4)  r=310(v=5.0,prom=1.4)
+    R_outer:  STR=359  OUTER=359
+    [STR=359] angFFT top5:   k=10(M=5451)  k=40(M=4907)  k=43(M=2576)  k=18(M=1841)  k=37(M=1838)
+    [STR=359] cep top5:      τ=22→tc=46.5(q=0.30)  τ=25→tc=41.0(q=0.21)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.08)  τ=110→tc=9.3(q=0.06)
+    [STR=359] ACF top5:      τ=23→tc=44.5(acf=2.89e+8)  τ=48→tc=21.3(acf=2.75e+7)  τ=103→tc=9.9(acf=-8.70e+7)  τ=76→tc=13.5(acf=-1.09e+8)
+
+  [2026-04-29_05-31-25-376Z] actual=42 tc=41 peak=41 fft90=41 op=13 bcTc=10 bcPk=1 bcPur=0.107 
+    centers: algo=(435,474)  bc=(89,425)  Δ=349.5 px  bcValidated=false  anchor=algo
+    peakR=393  baseR=393  sweep@algo r∈[117..425]  sweep@bc r∈[117..88] (safe=false)
+    radial-grad@algo top3:  r=363(v=19.4,prom=7.9)  r=365(v=16.6,prom=5.1)  r=383(v=17.1,prom=4.6)
+    radial-grad@bc   top3:  
+    R_outer:  STR=363  OUTER=383
+    [STR=363] angFFT top5:   k=13(M=5232)  k=19(M=2233)  k=24(M=1624)  k=10(M=1580)  k=29(M=1422)
+    [STR=363] cep top5:      τ=22→tc=46.5(q=0.21)  τ=45→tc=22.8(q=0.15)  τ=68→tc=15.1(q=0.07)  τ=86→tc=11.9(q=0.04)  τ=33→tc=31.0(q=0.03)
+    [STR=363] ACF top5:      
+    [OUTER=383] angFFT top5: k=41(M=6404)  k=38(M=3052)  k=10(M=2800)  k=44(M=2783)  k=14(M=2137)
+    [OUTER=383] cep top5:    τ=22→tc=46.5(q=0.24)  τ=24→tc=42.7(q=0.21)  τ=45→tc=22.8(q=0.19)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.05)
+    [OUTER=383] ACF top5:    τ=24→tc=42.7(acf=7.56e+8)  τ=48→tc=21.3(acf=5.52e+8)  τ=73→tc=14.0(acf=3.58e+8)  τ=98→tc=10.4(acf=1.91e+8)
+
+  [2026-04-29_05-33-35-933Z] actual=52 tc=52 peak=13 fft90=13 op=17 bcTc=55 bcPk=52 bcPur=0.114 
+    centers: algo=(445,505)  bc=(459,386)  Δ=119.8 px  bcValidated=false  anchor=algo
+    peakR=330  baseR=330  sweep@algo r∈[99..394]  sweep@bc r∈[99..385] (safe=true)
+    radial-grad@algo top3:  r=182(v=11.8,prom=6.3)  r=234(v=11.8,prom=4.7)  r=353(v=10.6,prom=4.6)
+    radial-grad@bc   top3:  r=118(v=9.0,prom=4.3)  r=301(v=7.9,prom=2.9)  r=258(v=9.4,prom=2.9)
+    R_outer:  STR=182  OUTER=353
+    [STR=182] angFFT top5:   k=10(M=5041)  k=23(M=4180)  k=14(M=2409)  k=31(M=2307)  k=20(M=2080)
+    [STR=182] cep top5:      τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.11)  τ=87→tc=11.8(q=0.06)  τ=18→tc=56.9(q=0.03)
+    [STR=182] ACF top5:      τ=91→tc=11.3(acf=-8.23e+7)
+    [OUTER=353] angFFT top5: k=14(M=4147)  k=10(M=4046)  k=19(M=3711)  k=26(M=2641)  k=22(M=2612)
+    [OUTER=353] cep top5:    τ=22→tc=46.5(q=0.22)  τ=45→tc=22.8(q=0.20)  τ=68→tc=15.1(q=0.07)  τ=91→tc=11.3(q=0.04)  τ=61→tc=16.8(q=0.04)
+    [OUTER=353] ACF top5:    τ=102→tc=10.0(acf=4.04e+7)
+
+  [2026-04-29_05-35-33-518Z] actual=52 tc=24 peak=12 fft90=12 op=12 bcTc=11 bcPk=24 bcPur=0.052 
+    centers: algo=(450,440)  bc=(474,358)  Δ=85.4 px  bcValidated=false  anchor=algo
+    peakR=283  baseR=283  sweep@algo r∈[84..424]  sweep@bc r∈[84..357] (safe=true)
+    radial-grad@algo top3:  r=176(v=17.3,prom=7.2)  r=323(v=10.3,prom=6.2)  r=355(v=11.5,prom=5.5)
+    radial-grad@bc   top3:  r=215(v=7.9,prom=4.2)  r=283(v=7.5,prom=3.0)  r=90(v=6.7,prom=2.7)
+    R_outer:  STR=176  OUTER=355
+    [STR=176] angFFT top5:   k=10(M=4861)  k=13(M=2720)  k=19(M=1402)  k=23(M=1167)  k=35(M=966)
+    [STR=176] cep top5:      τ=22→tc=46.5(q=0.29)  τ=45→tc=22.8(q=0.19)  τ=68→tc=15.1(q=0.07)  τ=86→tc=11.9(q=0.06)  τ=91→tc=11.3(q=0.04)
+    [STR=176] ACF top5:      
+    [OUTER=355] angFFT top5: k=51(M=5017)  k=10(M=3554)  k=55(M=2281)  k=16(M=2132)  k=46(M=1996)
+    [OUTER=355] cep top5:    τ=21→tc=48.8(q=0.26)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.12)  τ=62→tc=16.5(q=0.08)  τ=37→tc=27.7(q=0.06)
+    [OUTER=355] ACF top5:    τ=20→tc=51.2(acf=4.79e+8)  τ=40→tc=25.6(acf=3.41e+8)  τ=60→tc=17.1(acf=2.30e+8)  τ=80→tc=12.8(acf=1.44e+8)  τ=101→tc=10.1(acf=1.03e+8)
+
+  [2026-04-29_05-37-38-177Z] actual=52 tc=52 peak=12 fft90=12 op=14 bcTc=53 bcPk=52 bcPur=0.228 
+    centers: algo=(460,480)  bc=(391,456)  Δ=73.1 px  bcValidated=false  anchor=algo
+    peakR=304  baseR=304  sweep@algo r∈[91..419]  sweep@bc r∈[91..390] (safe=true)
+    radial-grad@algo top3:  r=196(v=20.6,prom=10.8)  r=199(v=16.2,prom=5.7)  r=339(v=13.6,prom=5.2)
+    radial-grad@bc   top3:  r=269(v=9.0,prom=3.6)  r=151(v=8.3,prom=3.0)  r=127(v=8.5,prom=2.6)
+    R_outer:  STR=196  OUTER=339
+    [STR=196] angFFT top5:   k=11(M=4324)  k=39(M=3314)  k=22(M=3028)  k=26(M=2763)  k=31(M=2616)
+    [STR=196] cep top5:      τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.09)  τ=91→tc=11.3(q=0.05)  τ=31→tc=33.0(q=0.04)
+    [STR=196] ACF top5:      
+    [OUTER=339] angFFT top5: k=10(M=3783)  k=37(M=3460)  k=15(M=2733)  k=27(M=2480)  k=41(M=2194)
+    [OUTER=339] cep top5:    τ=22→tc=46.5(q=0.30)  τ=45→tc=22.8(q=0.21)  τ=20→tc=51.2(q=0.14)  τ=27→tc=37.9(q=0.05)  τ=32→tc=32.0(q=0.05)
+    [OUTER=339] ACF top5:    τ=23→tc=44.5(acf=5.05e+8)  τ=50→tc=20.5(acf=3.05e+8)  τ=81→tc=12.6(acf=1.76e+8)  τ=112→tc=9.1(acf=1.18e+8)
+
+  [2026-04-29_05-39-22-521Z] actual=52 tc=21 peak=21 fft90=21 op=21 bcTc=21 bcPk=21 bcPur=0.411 
+    centers: algo=(464,471)  bc=(458,459)  Δ=13.4 px  bcValidated=true  anchor=bc
+    peakR=380  baseR=380  sweep@algo r∈[114..428]  sweep@bc r∈[114..440] (safe=true)
+    radial-grad@algo top3:  r=215(v=21.4,prom=11.4)  r=175(v=19.3,prom=11.2)  r=183(v=18.8,prom=10.7)
+    radial-grad@bc   top3:  r=291(v=19.1,prom=5.0)  r=268(v=17.1,prom=5.0)  r=145(v=15.2,prom=4.8)
+    R_outer:  STR=291  OUTER=291
+    [STR=291] angFFT top5:   k=12(M=15997)  k=20(M=13175)  k=15(M=12610)  k=23(M=8285)  k=26(M=4818)
+    [STR=291] cep top5:      τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.09)  τ=91→tc=11.3(q=0.03)  τ=114→tc=9.0(q=0.03)
+    [STR=291] ACF top5:      τ=57→tc=18.0(acf=5.87e+6)  τ=84→tc=12.2(acf=-1.39e+8)
+
+--- Sanity sample (training-data _photo.jpg, no cropped corpus available for these labels) ---
+  [2026-04-04_09-10-51-656Z] actual=11 tc=17 peak=12 fft90=12 op=10 bcTc=11 bcPk=17 bcPur=0.166 
+    centers: algo=(388,334)  bc=(391,332)  Δ=3.6 px  bcValidated=true  anchor=bc
+    peakR=273  baseR=273  sweep@algo r∈[81..333]  sweep@bc r∈[81..331] (safe=true)
+    radial-grad@algo top3:  r=83(v=12.7,prom=2.7)  r=101(v=9.1,prom=1.9)  r=177(v=6.8,prom=1.2)
+    radial-grad@bc   top3:  r=83(v=12.4,prom=3.0)  r=97(v=10.1,prom=2.5)  r=102(v=9.1,prom=2.1)
+    R_outer:  STR=83  OUTER=102
+    [STR=83] angFFT top5:   k=10(M=11276)  k=13(M=2934)  k=26(M=2833)  k=22(M=2497)  k=33(M=2264)
+    [STR=83] cep top5:      τ=22→tc=46.5(q=0.25)  τ=45→tc=22.8(q=0.20)  τ=91→tc=11.3(q=0.08)  τ=68→tc=15.1(q=0.06)  τ=87→tc=11.8(q=0.05)
+    [STR=83] ACF top5:      τ=92→tc=11.1(acf=2.94e+8)
+    [OUTER=102] angFFT top5: k=14(M=6550)  k=11(M=5439)  k=25(M=5235)  k=32(M=3186)  k=40(M=3096)
+    [OUTER=102] cep top5:    τ=22→tc=46.5(q=0.21)  τ=45→tc=22.8(q=0.14)  τ=68→tc=15.1(q=0.05)  τ=59→tc=17.4(q=0.04)  τ=34→tc=30.1(q=0.03)
+    [OUTER=102] ACF top5:    τ=77→tc=13.3(acf=1.21e+8)  τ=37→tc=27.7(acf=1.78e+7)
+
+  [2026-04-05_08-32-48-875Z] actual=11 tc=11 peak=11 fft90=17 op=10 bcTc=10 bcPk=12 bcPur=0.115 
+    centers: algo=(338,384)  bc=(337,383)  Δ=1.4 px  bcValidated=true  anchor=bc
+    peakR=89  baseR=89  sweep@algo r∈[26..133]  sweep@bc r∈[26..133] (safe=true)
+    radial-grad@algo top3:  r=69(v=25.7,prom=17.0)  r=67(v=25.7,prom=17.0)  r=79(v=23.9,prom=14.4)
+    radial-grad@bc   top3:  r=68(v=35.2,prom=24.9)  r=78(v=27.1,prom=14.9)  r=98(v=14.2,prom=6.9)
+    R_outer:  STR=68  OUTER=78
+    [STR=68] angFFT top5:   k=10(M=7334)  k=27(M=3250)  k=18(M=2984)  k=14(M=2938)  k=37(M=2069)
+    [STR=68] cep top5:      τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.14)  τ=68→tc=15.1(q=0.05)  τ=91→tc=11.3(q=0.04)  τ=29→tc=35.3(q=0.04)
+    [STR=68] ACF top5:      τ=114→tc=9.0(acf=2.10e+8)
+    [OUTER=78] angFFT top5: k=11(M=9507)  k=14(M=8765)  k=19(M=7687)  k=29(M=4964)  k=24(M=4962)
+    [OUTER=78] cep top5:    τ=22→tc=46.5(q=0.25)  τ=45→tc=22.8(q=0.13)  τ=68→tc=15.1(q=0.08)  τ=91→tc=11.3(q=0.08)  τ=114→tc=9.0(q=0.03)
+    [OUTER=78] ACF top5:    τ=69→tc=14.8(acf=1.64e+8)  τ=65→tc=15.8(acf=1.62e+8)  τ=91→tc=11.3(acf=1.12e+8)  τ=81→tc=12.6(acf=1.01e+8)  τ=101→tc=10.1(acf=8.80e+7)
+
+  [2026-04-05_08-33-27-869Z] actual=11 tc=11 peak=11 fft90=34 op=16 bcTc=11 bcPk=9 bcPur=0.215 
+    centers: algo=(340,387)  bc=(339,383)  Δ=4.1 px  bcValidated=true  anchor=bc
+    peakR=87  baseR=87  sweep@algo r∈[26..130]  sweep@bc r∈[26..130] (safe=true)
+    radial-grad@algo top3:  r=74(v=24.8,prom=10.1)  r=62(v=16.4,prom=6.3)  r=76(v=19.7,prom=6.2)
+    radial-grad@bc   top3:  r=77(v=21.3,prom=6.3)  r=73(v=22.2,prom=5.4)  r=104(v=10.7,prom=3.2)
+    R_outer:  STR=77  OUTER=104
+    [STR=77] angFFT top5:   k=13(M=6148)  k=21(M=5569)  k=10(M=5368)  k=18(M=4417)  k=30(M=3738)
+    [STR=77] cep top5:      τ=22→tc=46.5(q=0.20)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.10)  τ=114→tc=9.0(q=0.06)  τ=91→tc=11.3(q=0.05)
+    [STR=77] ACF top5:      τ=99→tc=10.3(acf=1.24e+8)
+    [OUTER=104] angFFT top5: k=32(M=2721)  k=22(M=2555)  k=43(M=2480)  k=12(M=2420)  k=25(M=2260)
+    [OUTER=104] cep top5:    τ=22→tc=46.5(q=0.22)  τ=45→tc=22.8(q=0.15)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.06)  τ=110→tc=9.3(q=0.04)
+    [OUTER=104] ACF top5:    τ=91→tc=11.3(acf=7.52e+7)  τ=19→tc=53.9(acf=7.15e+7)  τ=36→tc=28.4(acf=6.51e+7)  τ=70→tc=14.6(acf=5.90e+7)  τ=49→tc=20.9(acf=5.15e+7)
+
+  [2026-04-04_09-10-20-407Z] actual=13 tc=13 peak=11 fft90=17 op=17 bcTc=13 bcPk=12 bcPur=0.360 
+    centers: algo=(335,383)  bc=(336,377)  Δ=6.1 px  bcValidated=true  anchor=bc
+    peakR=183  baseR=183  sweep@algo r∈[54..274]  sweep@bc r∈[54..274] (safe=true)
+    radial-grad@algo top3:  r=63(v=19.8,prom=9.6)  r=84(v=16.6,prom=7.4)  r=86(v=16.5,prom=7.3)
+    radial-grad@bc   top3:  r=62(v=17.0,prom=5.2)  r=90(v=14.7,prom=3.7)  r=106(v=9.5,prom=2.6)
+    R_outer:  STR=62  OUTER=106
+    [STR=62] angFFT top5:   k=10(M=7842)  k=16(M=4089)  k=13(M=2869)  k=29(M=2853)  k=46(M=2293)
+    [STR=62] cep top5:      τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.19)  τ=68→tc=15.1(q=0.11)  τ=110→tc=9.3(q=0.06)  τ=33→tc=31.0(q=0.06)
+    [STR=62] ACF top5:      τ=109→tc=9.4(acf=7.20e+8)
+    [OUTER=106] angFFT top5: k=14(M=10329)  k=27(M=6027)  k=20(M=2213)  k=33(M=1969)  k=30(M=1805)
+    [OUTER=106] cep top5:    τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.11)  τ=91→tc=11.3(q=0.07)  τ=74→tc=13.8(q=0.05)
+    [OUTER=106] ACF top5:    τ=74→tc=13.8(acf=3.70e+8)  τ=35→tc=29.3(acf=2.41e+6)
+
+  [2026-04-05_08-31-06-222Z] actual=13 tc=0 peak=10 fft90=34 op=14 bcTc=13 bcPk=13 bcPur=0.366 
+    centers: algo=(343,384)  bc=(348,373)  Δ=12.1 px  bcValidated=true  anchor=bc
+    peakR=170  baseR=170  sweep@algo r∈[51..255]  sweep@bc r∈[51..255] (safe=true)
+    radial-grad@algo top3:  r=69(v=23.6,prom=5.9)  r=73(v=20.9,prom=5.6)  r=96(v=17.0,prom=5.4)
+    radial-grad@bc   top3:  r=63(v=14.1,prom=5.5)  r=87(v=16.9,prom=4.2)  r=83(v=17.4,prom=3.8)
+    R_outer:  STR=63  OUTER=87
+    [STR=63] angFFT top5:   k=11(M=8144)  k=14(M=5591)  k=19(M=4086)  k=30(M=3531)  k=23(M=2279)
+    [STR=63] cep top5:      τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.13)  τ=114→tc=9.0(q=0.07)  τ=47→tc=21.8(q=0.06)
+    [STR=63] ACF top5:      τ=72→tc=14.2(acf=9.76e+8)  τ=94→tc=10.9(acf=9.57e+8)
+    [OUTER=87] angFFT top5: k=11(M=11233)  k=14(M=6199)  k=18(M=4799)  k=27(M=4277)  k=22(M=3640)
+    [OUTER=87] cep top5:    τ=22→tc=46.5(q=0.25)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.07)  τ=87→tc=11.8(q=0.04)  τ=62→tc=16.5(q=0.03)
+    [OUTER=87] ACF top5:    τ=82→tc=12.5(acf=4.64e+8)
+
+  [2026-04-05_08-31-34-725Z] actual=13 tc=0 peak=10 fft90=17 op=10 bcTc=13 bcPk=14 bcPur=0.434 
+    centers: algo=(337,383)  bc=(344,374)  Δ=11.4 px  bcValidated=true  anchor=bc
+    peakR=169  baseR=169  sweep@algo r∈[50..253]  sweep@bc r∈[50..253] (safe=true)
+    radial-grad@algo top3:  r=67(v=27.0,prom=13.4)  r=71(v=26.4,prom=12.9)  r=112(v=18.0,prom=10.9)
+    radial-grad@bc   top3:  r=84(v=17.5,prom=3.8)  r=82(v=17.8,prom=3.1)  r=60(v=13.1,prom=2.6)
+    R_outer:  STR=84  OUTER=84
+    [STR=84] angFFT top5:   k=15(M=5661)  k=11(M=5575)  k=21(M=5061)  k=26(M=4785)  k=18(M=2706)
+    [STR=84] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.13)  τ=91→tc=11.3(q=0.07)  τ=68→tc=15.1(q=0.05)  τ=51→tc=20.1(q=0.04)
+    [STR=84] ACF top5:      τ=45→tc=22.8(acf=2.27e+8)  τ=80→tc=12.8(acf=1.48e+8)
+
+  [2026-04-04_09-09-54-631Z] actual=14 tc=14 peak=14 fft90=14 op=14 bcTc=14 bcPk=14 bcPur=0.391 
+    centers: algo=(338,329)  bc=(337,313)  Δ=16.0 px  bcValidated=true  anchor=bc
+    peakR=111  baseR=111  sweep@algo r∈[33..166]  sweep@bc r∈[33..166] (safe=true)
+    radial-grad@algo top3:  r=67(v=19.9,prom=7.6)  r=112(v=11.1,prom=5.3)  r=64(v=19.8,prom=5.2)
+    radial-grad@bc   top3:  r=76(v=13.6,prom=3.0)  r=71(v=11.4,prom=2.1)  r=87(v=13.3,prom=2.0)
+    R_outer:  STR=76  OUTER=87
+    [STR=76] angFFT top5:   k=10(M=9832)  k=17(M=4374)  k=28(M=3604)  k=33(M=3349)  k=14(M=2684)
+    [STR=76] cep top5:      τ=22→tc=46.5(q=0.27)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.07)  τ=100→tc=10.2(q=0.06)  τ=91→tc=11.3(q=0.05)
+    [STR=76] ACF top5:      τ=95→tc=10.8(acf=5.57e+8)
+    [OUTER=87] angFFT top5: k=11(M=16339)  k=14(M=12277)  k=27(M=7886)  k=17(M=7093)  k=21(M=5414)
+    [OUTER=87] cep top5:    τ=22→tc=46.5(q=0.28)  τ=45→tc=22.8(q=0.15)  τ=68→tc=15.1(q=0.10)  τ=114→tc=9.0(q=0.07)  τ=91→tc=11.3(q=0.06)
+    [OUTER=87] ACF top5:    τ=79→tc=13.0(acf=5.87e+8)
+
+  [2026-04-04_16-15-39-652Z] actual=14 tc=14 peak=11 fft90=11 op=15 bcTc=14 bcPk=13 bcPur=0.423 
+    centers: algo=(512,336)  bc=(504,343)  Δ=10.6 px  bcValidated=true  anchor=bc
+    peakR=312  baseR=312  sweep@algo r∈[93..335]  sweep@bc r∈[93..331] (safe=true)
+    radial-grad@algo top3:  r=120(v=23.6,prom=10.8)  r=140(v=12.3,prom=9.0)  r=110(v=18.0,prom=5.3)
+    radial-grad@bc   top3:  r=110(v=15.7,prom=2.4)  r=105(v=16.0,prom=2.1)  r=131(v=10.7,prom=1.9)
+    R_outer:  STR=110  OUTER=131
+    [STR=110] angFFT top5:   k=18(M=5131)  k=30(M=5111)  k=12(M=4417)  k=27(M=4127)  k=24(M=3546)
+    [STR=110] cep top5:      τ=22→tc=46.5(q=0.27)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.07)  τ=114→tc=9.0(q=0.05)
+    [STR=110] ACF top5:      τ=68→tc=15.1(acf=2.64e+8)  τ=106→tc=9.7(acf=1.81e+8)
+    [OUTER=131] angFFT top5: k=14(M=17852)  k=27(M=10088)  k=30(M=6205)  k=17(M=5164)  k=11(M=3938)
+    [OUTER=131] cep top5:    τ=22→tc=46.5(q=0.22)  τ=45→tc=22.8(q=0.13)  τ=68→tc=15.1(q=0.12)  τ=76→tc=13.5(q=0.05)  τ=91→tc=11.3(q=0.05)
+    [OUTER=131] ACF top5:    τ=73→tc=14.0(acf=1.16e+9)
+
+  [2026-04-04_16-16-09-444Z] actual=14 tc=14 peak=11 fft90=11 op=10 bcTc=14 bcPk=14 bcPur=0.469 
+    centers: algo=(327,383)  bc=(329,376)  Δ=7.3 px  bcValidated=true  anchor=bc
+    peakR=286  baseR=286  sweep@algo r∈[85..326]  sweep@bc r∈[85..328] (safe=true)
+    radial-grad@algo top3:  r=107(v=23.5,prom=10.2)  r=127(v=12.0,prom=9.0)  r=98(v=18.2,prom=4.9)
+    radial-grad@bc   top3:  r=100(v=16.8,prom=3.6)  r=93(v=15.8,prom=2.6)  r=98(v=15.8,prom=2.4)
+    R_outer:  STR=100  OUTER=100
+    [STR=100] angFFT top5:   k=10(M=7081)  k=15(M=6889)  k=27(M=4358)  k=30(M=3702)  k=24(M=3232)
+    [STR=100] cep top5:      τ=22→tc=46.5(q=0.26)  τ=68→tc=15.1(q=0.18)  τ=45→tc=22.8(q=0.17)  τ=33→tc=31.0(q=0.05)  τ=111→tc=9.2(q=0.04)
+    [STR=100] ACF top5:      τ=71→tc=14.4(acf=2.64e+8)  τ=111→tc=9.2(acf=8.12e+7)
+
+  [2026-04-04_09-09-24-950Z] actual=15 tc=15 peak=15 fft90=15 op=15 bcTc=15 bcPk=14 bcPur=0.418 
+    centers: algo=(321,383)  bc=(323,378)  Δ=5.4 px  bcValidated=true  anchor=bc
+    peakR=147  baseR=147  sweep@algo r∈[44..220]  sweep@bc r∈[44..220] (safe=true)
+    radial-grad@algo top3:  r=81(v=18.3,prom=6.4)  r=83(v=16.7,prom=4.9)  r=93(v=15.3,prom=3.4)
+    radial-grad@bc   top3:  r=80(v=18.1,prom=6.5)  r=123(v=14.8,prom=5.3)  r=92(v=16.4,prom=4.7)
+    R_outer:  STR=80  OUTER=123
+    [STR=80] angFFT top5:   k=10(M=8883)  k=20(M=4171)  k=29(M=4065)  k=17(M=3685)  k=13(M=2884)
+    [STR=80] cep top5:      τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.19)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.08)  τ=114→tc=9.0(q=0.04)
+    [STR=80] ACF top5:      τ=106→tc=9.7(acf=4.88e+8)
+    [OUTER=123] angFFT top5: k=14(M=9585)  k=30(M=5241)  k=11(M=4172)  k=24(M=3175)  k=41(M=3063)
+    [OUTER=123] cep top5:    τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.15)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.08)  τ=86→tc=11.9(q=0.04)
+    [OUTER=123] ACF top5:    τ=68→tc=15.1(acf=5.57e+8)
+
+  [2026-04-05_08-29-38-474Z] actual=15 tc=15 peak=17 fft90=17 op=20 bcTc=15 bcPk=14 bcPur=0.369 
+    centers: algo=(337,389)  bc=(341,376)  Δ=13.6 px  bcValidated=true  anchor=bc
+    peakR=190  baseR=190  sweep@algo r∈[57..285]  sweep@bc r∈[57..285] (safe=true)
+    radial-grad@algo top3:  r=69(v=21.4,prom=6.0)  r=73(v=21.0,prom=5.6)  r=71(v=20.5,prom=5.2)
+    radial-grad@bc   top3:  r=78(v=16.9,prom=3.8)  r=63(v=13.1,prom=3.4)  r=80(v=16.4,prom=3.3)
+    R_outer:  STR=78  OUTER=80
+    [STR=78] angFFT top5:   k=13(M=15648)  k=37(M=4494)  k=33(M=4380)  k=16(M=4180)  k=27(M=3273)
+    [STR=78] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.05)  τ=61→tc=16.8(q=0.04)
+    [STR=78] ACF top5:      τ=82→tc=12.5(acf=4.26e+8)
+    [OUTER=80] angFFT top5: k=13(M=15806)  k=40(M=4143)  k=16(M=4135)  k=33(M=4039)  k=21(M=3250)
+    [OUTER=80] cep top5:    τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.12)  τ=68→tc=15.1(q=0.12)  τ=91→tc=11.3(q=0.07)  τ=31→tc=33.0(q=0.05)
+    [OUTER=80] ACF top5:    τ=79→tc=13.0(acf=3.59e+8)
+
+  [2026-04-05_08-30-34-676Z] actual=15 tc=15 peak=15 fft90=17 op=10 bcTc=15 bcPk=14 bcPur=0.433 
+    centers: algo=(335,390)  bc=(340,372)  Δ=18.7 px  bcValidated=true  anchor=bc
+    peakR=128  baseR=128  sweep@algo r∈[38..192]  sweep@bc r∈[38..192] (safe=true)
+    radial-grad@algo top3:  r=103(v=18.7,prom=7.9)  r=111(v=16.2,prom=7.3)  r=128(v=12.8,prom=7.0)
+    radial-grad@bc   top3:  r=56(v=14.8,prom=5.2)  r=65(v=13.4,prom=3.7)  r=91(v=17.9,prom=3.2)
+    R_outer:  STR=56  OUTER=91
+    [STR=56] angFFT top5:   k=13(M=8595)  k=10(M=7188)  k=22(M=3731)  k=26(M=3057)  k=17(M=2888)
+    [STR=56] cep top5:      τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.15)  τ=68→tc=15.1(q=0.11)  τ=91→tc=11.3(q=0.06)  τ=114→tc=9.0(q=0.04)
+    [STR=56] ACF top5:      τ=77→tc=13.3(acf=8.01e+8)
+    [OUTER=91] angFFT top5: k=15(M=6932)  k=18(M=5034)  k=12(M=4228)  k=23(M=3964)  k=28(M=3658)
+    [OUTER=91] cep top5:    τ=22→tc=46.5(q=0.25)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.11)  τ=50→tc=20.5(q=0.08)  τ=76→tc=13.5(q=0.05)
+    [OUTER=91] ACF top5:    τ=49→tc=20.9(acf=8.37e+8)  τ=98→tc=10.4(acf=6.42e+8)
+
+  [2026-04-08_18-28-12-142Z] actual=18 tc=18 peak=18 fft90=18 op=18 bcTc=18 bcPk=18 bcPur=0.389 
+    centers: algo=(342,388)  bc=(353,379)  Δ=14.2 px  bcValidated=true  anchor=bc
+    peakR=162  baseR=162  sweep@algo r∈[48..243]  sweep@bc r∈[48..243] (safe=true)
+    radial-grad@algo top3:  r=129(v=24.6,prom=16.4)  r=78(v=24.6,prom=14.3)  r=127(v=21.5,prom=13.0)
+    radial-grad@bc   top3:  r=140(v=16.4,prom=6.9)  r=85(v=16.3,prom=6.3)  r=69(v=13.6,prom=6.0)
+    R_outer:  STR=140  OUTER=140
+    [STR=140] angFFT top5:   k=17(M=10024)  k=10(M=7463)  k=34(M=5136)  k=20(M=3533)  k=31(M=3107)
+    [STR=140] cep top5:      τ=22→tc=46.5(q=0.24)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.12)  τ=114→tc=9.0(q=0.04)  τ=33→tc=31.0(q=0.04)
+    [STR=140] ACF top5:      τ=60→tc=17.1(acf=2.65e+8)
+
+  [2026-04-08_19-54-20-313Z] actual=18 tc=18 peak=18 fft90=18 op=18 bcTc=18 bcPk=18 bcPur=0.387 
+    centers: algo=(346,392)  bc=(356,379)  Δ=16.4 px  bcValidated=true  anchor=bc
+    peakR=212  baseR=212  sweep@algo r∈[63..318]  sweep@bc r∈[63..318] (safe=true)
+    radial-grad@algo top3:  r=167(v=27.4,prom=19.9)  r=100(v=22.4,prom=9.2)  r=119(v=20.0,prom=8.6)
+    radial-grad@bc   top3:  r=153(v=12.5,prom=6.7)  r=112(v=17.5,prom=6.2)  r=181(v=13.7,prom=6.1)
+    R_outer:  STR=153  OUTER=181
+    [STR=153] angFFT top5:   k=12(M=5516)  k=15(M=2469)  k=27(M=2338)  k=24(M=2252)  k=42(M=2151)
+    [STR=153] cep top5:      τ=22→tc=46.5(q=0.28)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.09)  τ=114→tc=9.0(q=0.07)  τ=91→tc=11.3(q=0.05)
+    [STR=153] ACF top5:      
+    [OUTER=181] angFFT top5: k=16(M=10174)  k=11(M=7015)  k=19(M=6633)  k=28(M=3621)  k=34(M=3340)
+    [OUTER=181] cep top5:    τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.07)  τ=61→tc=16.8(q=0.06)  τ=114→tc=9.0(q=0.05)
+    [OUTER=181] ACF top5:    τ=62→tc=16.5(acf=3.48e+8)
+
+  [2026-04-08_18-30-50-993Z] actual=21 tc=21 peak=21 fft90=21 op=21 bcTc=21 bcPk=21 bcPur=0.345 
+    centers: algo=(341,394)  bc=(379,365)  Δ=47.8 px  bcValidated=true  anchor=bc
+    peakR=151  baseR=151  sweep@algo r∈[45..226]  sweep@bc r∈[45..226] (safe=true)
+    radial-grad@algo top3:  r=63(v=24.1,prom=19.7)  r=80(v=18.7,prom=11.8)  r=136(v=25.4,prom=10.2)
+    radial-grad@bc   top3:  r=97(v=15.2,prom=2.8)  r=81(v=13.2,prom=2.8)  r=75(v=13.2,prom=2.7)
+    R_outer:  STR=97  OUTER=97
+    [STR=97] angFFT top5:   k=11(M=8137)  k=14(M=5537)  k=17(M=5479)  k=27(M=4368)  k=36(M=4012)
+    [STR=97] cep top5:      τ=22→tc=46.5(q=0.20)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.05)  τ=114→tc=9.0(q=0.04)
+    [STR=97] ACF top5:      τ=61→tc=16.8(acf=5.80e+8)  τ=90→tc=11.4(acf=5.59e+8)  τ=112→tc=9.1(acf=5.38e+8)
+
+  [2026-04-08_19-51-45-965Z] actual=21 tc=21 peak=21 fft90=21 op=21 bcTc=21 bcPk=21 bcPur=0.371 
+    centers: algo=(341,390)  bc=(367,412)  Δ=34.1 px  bcValidated=true  anchor=bc
+    peakR=215  baseR=215  sweep@algo r∈[64..322]  sweep@bc r∈[64..307] (safe=true)
+    radial-grad@algo top3:  r=85(v=21.1,prom=16.4)  r=161(v=29.2,prom=14.3)  r=112(v=19.6,prom=13.4)
+    radial-grad@bc   top3:  r=117(v=10.6,prom=4.6)  r=75(v=10.5,prom=3.4)  r=127(v=11.7,prom=3.3)
+    R_outer:  STR=117  OUTER=127
+    [STR=117] angFFT top5:   k=19(M=8064)  k=13(M=7328)  k=28(M=4488)  k=23(M=4373)  k=34(M=2854)
+    [STR=117] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.14)  τ=68→tc=15.1(q=0.08)  τ=91→tc=11.3(q=0.07)  τ=114→tc=9.0(q=0.04)
+    [STR=117] ACF top5:      τ=50→tc=20.5(acf=4.29e+8)  τ=94→tc=10.9(acf=1.82e+8)
+    [OUTER=127] angFFT top5: k=15(M=7987)  k=12(M=4677)  k=28(M=3981)  k=18(M=3005)  k=35(M=2652)
+    [OUTER=127] cep top5:    τ=22→tc=46.5(q=0.25)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.08)  τ=91→tc=11.3(q=0.06)  τ=71→tc=14.4(q=0.04)
+    [OUTER=127] ACF top5:    τ=68→tc=15.1(acf=1.46e+9)
+
+  [2026-04-08_18-34-56-184Z] actual=24 tc=24 peak=24 fft90=24 op=12 bcTc=24 bcPk=24 bcPur=0.301 
+    centers: algo=(344,391)  bc=(337,343)  Δ=48.5 px  bcValidated=true  anchor=bc
+    peakR=212  baseR=212  sweep@algo r∈[63..318]  sweep@bc r∈[63..318] (safe=true)
+    radial-grad@algo top3:  r=162(v=26.8,prom=17.5)  r=159(v=21.8,prom=9.7)  r=79(v=19.6,prom=9.6)
+    radial-grad@bc   top3:  r=116(v=12.3,prom=5.5)  r=204(v=12.7,prom=4.4)  r=200(v=11.5,prom=2.9)
+    R_outer:  STR=116  OUTER=204
+    [STR=116] angFFT top5:   k=25(M=5374)  k=14(M=4094)  k=22(M=3997)  k=17(M=3460)  k=11(M=3222)
+    [STR=116] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.18)  τ=114→tc=9.0(q=0.07)  τ=68→tc=15.1(q=0.04)  τ=34→tc=30.1(q=0.04)
+    [STR=116] ACF top5:      τ=84→tc=12.2(acf=3.07e+8)
+    [OUTER=204] angFFT top5: k=23(M=7701)  k=17(M=5901)  k=33(M=5539)  k=20(M=4309)  k=27(M=4206)
+    [OUTER=204] cep top5:    τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.15)  τ=68→tc=15.1(q=0.12)  τ=114→tc=9.0(q=0.05)  τ=91→tc=11.3(q=0.04)
+    [OUTER=204] ACF top5:    τ=38→tc=26.9(acf=8.24e+8)  τ=86→tc=11.9(acf=3.26e+8)
+
+  [2026-04-08_19-49-12-150Z] actual=24 tc=20 peak=10 fft90=10 op=20 bcTc=10 bcPk=4 bcPur=0.296 
+    centers: algo=(337,450)  bc=(358,500)  Δ=54.2 px  bcValidated=false  anchor=algo
+    peakR=39  baseR=39  sweep@algo r∈[20..58]  sweep@bc r∈[20..58] (safe=true)
+    radial-grad@algo top3:  r=38(v=12.2,prom=4.8)  r=26(v=11.7,prom=4.4)  r=50(v=8.7,prom=2.5)
+    radial-grad@bc   top3:  r=27(v=9.0,prom=5.0)  r=30(v=7.4,prom=3.5)  r=38(v=5.8,prom=1.7)
+    R_outer:  STR=38  OUTER=50
+    [STR=38] angFFT top5:   k=10(M=10277)  k=18(M=5196)  k=13(M=3479)  k=21(M=2760)  k=33(M=2415)
+    [STR=38] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.05)  τ=103→tc=9.9(q=0.04)
+    [STR=38] ACF top5:      τ=104→tc=9.8(acf=2.79e+8)
+    [OUTER=50] angFFT top5: k=11(M=7117)  k=24(M=4877)  k=32(M=4573)  k=16(M=4170)  k=27(M=3320)
+    [OUTER=50] cep top5:    τ=22→tc=46.5(q=0.27)  τ=45→tc=22.8(q=0.14)  τ=91→tc=11.3(q=0.06)  τ=68→tc=15.1(q=0.04)  τ=70→tc=14.6(q=0.03)
+    [OUTER=50] ACF top5:    τ=77→tc=13.3(acf=-3.98e+7)
+
+  [2026-04-11_17-17-26-759Z] actual=24 tc=24 peak=24 fft90=24 op=15 bcTc=10 bcPk=9 bcPur=0.127 
+    centers: algo=(330,396)  bc=(335,396)  Δ=5.0 px  bcValidated=true  anchor=bc
+    peakR=164  baseR=164  sweep@algo r∈[49..246]  sweep@bc r∈[49..246] (safe=true)
+    radial-grad@algo top3:  r=126(v=22.4,prom=9.7)  r=122(v=22.7,prom=9.6)  r=56(v=18.7,prom=7.5)
+    radial-grad@bc   top3:  r=57(v=33.6,prom=29.3)  r=61(v=32.3,prom=28.1)  r=126(v=32.7,prom=22.3)
+    R_outer:  STR=57  OUTER=126
+    [STR=57] angFFT top5:   k=18(M=9126)  k=36(M=5852)  k=10(M=3997)  k=28(M=3845)  k=53(M=2536)
+    [STR=57] cep top5:      τ=22→tc=46.5(q=0.21)  τ=45→tc=22.8(q=0.16)  τ=114→tc=9.0(q=0.13)  τ=68→tc=15.1(q=0.08)  τ=91→tc=11.3(q=0.05)
+    [STR=57] ACF top5:      τ=115→tc=8.9(acf=4.45e+8)  τ=58→tc=17.7(acf=-3.91e+7)
+    [OUTER=126] angFFT top5: k=17(M=5052)  k=14(M=2665)  k=11(M=2273)  k=32(M=2261)  k=22(M=2083)
+    [OUTER=126] cep top5:    τ=22→tc=46.5(q=0.22)  τ=45→tc=22.8(q=0.20)  τ=68→tc=15.1(q=0.12)  τ=91→tc=11.3(q=0.06)  τ=26→tc=39.4(q=0.03)
+    [OUTER=126] ACF top5:    
+
+  [2026-04-08_18-38-08-065Z] actual=28 tc=28 peak=28 fft90=28 op=28 bcTc=28 bcPk=24 bcPur=0.133 
+    centers: algo=(386,337)  bc=(320,462)  Δ=141.4 px  bcValidated=false  anchor=algo
+    peakR=242  baseR=242  sweep@algo r∈[72..336]  sweep@bc r∈[72..212] (safe=true)
+    radial-grad@algo top3:  r=175(v=31.3,prom=20.7)  r=228(v=22.0,prom=12.1)  r=106(v=21.3,prom=9.5)
+    radial-grad@bc   top3:  r=89(v=11.0,prom=2.3)  r=200(v=8.0,prom=2.3)  r=174(v=8.5,prom=2.0)
+    R_outer:  STR=175  OUTER=228
+    [STR=175] angFFT top5:   k=12(M=8548)  k=17(M=6356)  k=24(M=6057)  k=31(M=2830)  k=28(M=2378)
+    [STR=175] cep top5:      τ=22→tc=46.5(q=0.27)  τ=45→tc=22.8(q=0.20)  τ=68→tc=15.1(q=0.10)  τ=91→tc=11.3(q=0.07)  τ=62→tc=16.5(q=0.05)
+    [STR=175] ACF top5:      
+    [OUTER=228] angFFT top5: k=29(M=8232)  k=56(M=4976)  k=20(M=2839)  k=24(M=2828)  k=10(M=1805)
+    [OUTER=228] cep top5:    τ=22→tc=46.5(q=0.23)  τ=45→tc=22.8(q=0.16)  τ=68→tc=15.1(q=0.08)  τ=36→tc=28.4(q=0.06)  τ=110→tc=9.3(q=0.05)
+    [OUTER=228] ACF top5:    τ=36→tc=28.4(acf=1.91e+8)  τ=73→tc=14.0(acf=1.43e+8)  τ=109→tc=9.4(acf=1.41e+8)  τ=19→tc=53.9(acf=-3.45e+7)  τ=53→tc=19.3(acf=-4.78e+7)
+
+  [2026-04-08_19-46-53-896Z] actual=28 tc=28 peak=28 fft90=28 op=28 bcTc=28 bcPk=21 bcPur=0.199 
+    centers: algo=(515,340)  bc=(585,403)  Δ=94.2 px  bcValidated=false  anchor=algo
+    peakR=189  baseR=189  sweep@algo r∈[56..283]  sweep@bc r∈[56..271] (safe=true)
+    radial-grad@algo top3:  r=138(v=40.0,prom=30.9)  r=83(v=28.2,prom=20.1)  r=85(v=27.5,prom=19.4)
+    radial-grad@bc   top3:  r=98(v=10.8,prom=3.4)  r=82(v=10.5,prom=2.5)  r=231(v=9.7,prom=2.4)
+    R_outer:  STR=138  OUTER=138
+    [STR=138] angFFT top5:   k=12(M=12655)  k=24(M=5729)  k=19(M=4983)  k=15(M=2866)  k=29(M=2193)
+    [STR=138] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.17)  τ=68→tc=15.1(q=0.08)  τ=114→tc=9.0(q=0.06)  τ=91→tc=11.3(q=0.04)
+    [STR=138] ACF top5:      τ=86→tc=11.9(acf=2.61e+8)
+
+  [2026-04-11_17-20-57-425Z] actual=28 tc=10 peak=12 fft90=10 op=15 bcTc=10 bcPk=1 bcPur=0.131 
+    centers: algo=(383,328)  bc=(77,650)  Δ=444.2 px  bcValidated=false  anchor=algo
+    peakR=97  baseR=97  sweep@algo r∈[29..145]  sweep@bc r∈[29..76] (safe=true)
+    radial-grad@algo top3:  r=72(v=11.0,prom=2.9)  r=63(v=11.3,prom=2.8)  r=110(v=7.8,prom=2.6)
+    radial-grad@bc   top3:  r=35(v=6.5,prom=1.9)  r=40(v=5.5,prom=1.6)  r=55(v=5.3,prom=1.4)
+    R_outer:  STR=72  OUTER=110
+    [STR=72] angFFT top5:   k=14(M=7604)  k=19(M=7208)  k=10(M=4735)  k=28(M=4608)  k=42(M=3603)
+    [STR=72] cep top5:      τ=22→tc=46.5(q=0.26)  τ=45→tc=22.8(q=0.18)  τ=68→tc=15.1(q=0.10)  τ=61→tc=16.8(q=0.06)  τ=91→tc=11.3(q=0.05)
+    [STR=72] ACF top5:      τ=47→tc=21.8(acf=3.08e+8)
+    [OUTER=110] angFFT top5: k=12(M=3815)  k=17(M=2809)  k=27(M=2685)  k=21(M=2240)  k=37(M=2074)
+    [OUTER=110] cep top5:    τ=22→tc=46.5(q=0.21)  τ=45→tc=22.8(q=0.16)  τ=91→tc=11.3(q=0.05)  τ=33→tc=31.0(q=0.05)  τ=68→tc=15.1(q=0.04)
+    [OUTER=110] ACF top5:    
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        848.379 s, estimated 894 s
+Ran all test suites.
