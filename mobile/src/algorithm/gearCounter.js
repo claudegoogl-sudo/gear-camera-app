@@ -2069,8 +2069,35 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     // independent FFT methods agreeing is strong evidence; prevents
     // fallthrough to unreliable binary contour on large gears with
     // spider-arm cutouts.  Guard: do NOT override high-purity bc (>= 0.20).
-    finalTc = peakTc;
-    methodUsed = 'fft-agreement';
+    //
+    // PAP-814: XL op-vote-boost.  Mirrors the PAP-632 Fix B `xl-peak-override`
+    // pattern (line ~2125) but on the op channel and gated to the XL-narrow
+    // (≥30T) range.  PAP-811 pre-flight ruled out integer-FFT sub-bin
+    // refinement on the chosen peakR for the 42T device targets — the FFT
+    // genuinely says 41 at the dominant ring radius — so the only remaining
+    // signal for the missing tooth is the silhouette-based op channel.  When
+    // both correlated FFT channels strictly agree (peakTc===fft90tc) at
+    // peakTc≥30 AND op reads exactly peakTc+1 AND opRel meets the established
+    // mid/large-op-override floor (0.04, see PAP-441/PAP-460), prefer op.
+    // Equality `op === peak + 1` is intentionally strict so the lever cannot
+    // fire on out-of-scope inner-locked photos (e.g. PAP-810 photo 2 has
+    // op=13 ≠ peak+1=42).  Verified 0 predicate-eligible rows in the 292-
+    // photo 9-60T pap796 audit corpus (zero new confident-wrongs by
+    // construction).  Target: 2026-04-29_05-29-04-170Z (actual=42, peak=41,
+    // fft90=41, op=42, opRel=0.0475).
+    if (peakTc === fft90tc
+        && peakTc >= 30
+        && opTc === peakTc + 1
+        && opRel >= 0.04) {
+      console.log(`[xl-op-vote-boost] fft-agreement=>${opTc} ` +
+        `peak=${peakTc} fft90=${fft90tc} op=${opTc}(rel=${opRel.toFixed(3)}) ` +
+        `bc=${bcTc}(peaks=${bcPeaks})`);
+      finalTc = opTc;
+      methodUsed = 'fft-agreement+xl-op-vote-boost';
+    } else {
+      finalTc = peakTc;
+      methodUsed = 'fft-agreement';
+    }
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
     // 2. Binary contour FFT has high purity — use it.
     // PAP-308 port: raised multiplier from 0.30 → 0.50 so confident bc
