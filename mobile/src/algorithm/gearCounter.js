@@ -2683,15 +2683,35 @@ export async function countTeeth(photoUri, signal, opts) {
   const cropNormR = (r.contourRadius || 0) / Math.min(width, height);
   const upperBoundMismatch = cropNormR < 0.17
     && r.toothCount >= 9 && r.toothCount <= 13;
-  const innerContourSuspected = gearRadius < 0.13
+  // PAP-772: triple-method exact agreement override.  When peakTc, fft90tc,
+  // and opTc all land on the same value as the chosen toothCount AND that
+  // value is above the MIN_TEETH=10 sub-harmonic floor, three independent
+  // counting methods (multi-radius FFT, outer-band FFT, outer-profile scan)
+  // have converged on the same count — override the radius-sanity abstain
+  // and commit.  The MIN_TEETH guard preserves PAP-685/686 chainring
+  // suppression (52T inner-feature lock-on collapses peak/fft90 to 10).
+  // QA cross-check via PAP-774: 132-photo Large+XL scan found 0 dangerous
+  // triple rows that would be unblocked; predicted +14 / +0 on 11T cluster.
+  const tripleAgree = r.peakTc === r.fft90tc
+    && r.peakTc === r.opTc
+    && r.peakTc === r.toothCount
+    && r.peakTc > MIN_TEETH;
+  const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
+  const innerContourSuspected = radiusSanityFires && !tripleAgree;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
   if (innerContourSuspected) {
     console.log(
       `[GearCounter] radius-sanity abstain: r=${gearRadius.toFixed(4)} tc=${r.toothCount} — ` +
       `inner-contour suspected. raw conf=${r.confidence.toFixed(2)} → forcing conf=0.`
+    );
+  } else if (radiusSanityFires && tripleAgree) {
+    console.log(
+      `[GearCounter] PAP-772 triple-agree override: tc=${r.toothCount} ` +
+      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+      `r=${gearRadius.toFixed(4)} cropNR=${cropNormR.toFixed(3)} — committing.`
     );
   }
 
@@ -2758,17 +2778,24 @@ export function countTeethFromRgba(rgba, width, height) {
       }
     }
   }
-  // PAP-553 + PAP-673 + PAP-684: radius-sanity abstain — mirrors countTeeth
-  // so harness validation sees the same gate as on-device runs.
+  // PAP-553 + PAP-673 + PAP-684 + PAP-772: radius-sanity abstain — mirrors
+  // countTeeth() so harness validation sees the same gate as on-device runs.
   const gearRadiusCropSpace = r.gearR / width;
   // PAP-684/PAP-685: upper-bound mismatch (crop-space)
   // PAP-740: bump 0.15 → 0.17 to match countTeeth() after pad removal.
   const cropNormR = (r.contourRadius || 0) / Math.min(width, height);
   const upperBoundMismatch = cropNormR < 0.17
     && r.toothCount >= 9 && r.toothCount <= 13;
-  const innerContourSuspected = gearRadiusCropSpace < 0.13
+  // PAP-772: triple-method exact agreement override (see countTeeth() for
+  // full rationale; QA cross-check signed off via PAP-774).
+  const tripleAgree = r.peakTc === r.fft90tc
+    && r.peakTc === r.opTc
+    && r.peakTc === r.toothCount
+    && r.peakTc > MIN_TEETH;
+  const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
+  const innerContourSuspected = radiusSanityFires && !tripleAgree;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
   return {
     toothCount: r.toothCount,
