@@ -2290,7 +2290,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     cx, cy, gearR: finalR, initialGearR: gearR,
     contourRadius,
     centerResult,
-    fft90tc, peakTc, peakRel, opTc, opRel,
+    fft90tc, peakTc, peakRel, peakR, opTc, opRel,
     bcTc, bcPurity, bcPeaks,
     claheTc, claheConf,
     methodUsed,
@@ -2445,6 +2445,16 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
       // PAP-300: FFT agreement override (see analyzeImage)
       finalTc = peakTc;
       methodUsed = 'bc-consensus+fft-agree';
+    } else if (bcTc >= 30 && bcPeaks >= 30 && Math.abs(bcTc - bcPeaks) <= 2) {
+      // PAP-810 Option 2 (QA PAP-811 approved): chainring-regime bcPk
+      // tiebreak.  At ≥30T, the bc-FFT can lock to an off-by-1 sub-bin
+      // (e.g. 52T → bcTc=53, bcPeaks=52); the silhouette peak count is
+      // a more direct outer-ring signal in the chainring regime.  When
+      // bcTc and bcPeaks both land in chainring territory and agree
+      // within ±2, prefer bcPeaks.  Only fires after the peak / fft-agree
+      // overrides above, so it never overrides a high-conf FFT vote.
+      finalTc = bcPeaks;
+      methodUsed = 'bc-consensus+chainring-pk';
     } else {
       finalTc = bcTc;
       methodUsed = 'bc-consensus';
@@ -2494,7 +2504,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
     cx, cy, gearR: finalR, initialGearR: gearR,
     contourRadius,
     centerResult: { cx, cy, radius: contourRadius, method: 'retry-near-center' },
-    fft90tc, peakTc, peakRel, opTc, opRel,
+    fft90tc, peakTc, peakRel, peakR, opTc, opRel,
     bcTc, bcPurity, bcPeaks,
     claheTc, claheConf,
     methodUsed: 'retry-' + methodUsed,
@@ -2749,6 +2759,8 @@ export async function countTeeth(photoUri, signal, opts) {
 // PAP-364 / PAP-379: exposed so a Node-side harness can validate the
 // full pipeline against labeled training JPGs without needing an on-device
 // build.  Keeps the underlying countTeeth() entry point unchanged.
+// PAP-810 / PAP-811: sampleIntensityRing is diagnostic-only (used by the
+// pap810.preflight harness to measure FFT magnitudes at the chosen peakR).
 export const __test = {
   analyzeImage,
   analyzeImageAtCenter,
@@ -2761,6 +2773,7 @@ export const __test = {
   cannyEdges,
   findGearCenter,
   fftPurityCheck,
+  sampleIntensityRing,
 };
 
 export function countTeethFromRgba(rgba, width, height) {
@@ -2834,7 +2847,8 @@ export function countTeethFromRgba(rgba, width, height) {
     innerContourSuspected,
     methodUsed: r.methodUsed,
     bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,
-    peakTc: r.peakTc, peakRel: r.peakRel,
+    // PAP-810 / PAP-811: peakR is diagnostic-only (consumed by pap810.preflight).
+    peakTc: r.peakTc, peakRel: r.peakRel, peakR: r.peakR,
     fft90tc: r.fft90tc, opTc: r.opTc, opRel: r.opRel,
   };
 }
