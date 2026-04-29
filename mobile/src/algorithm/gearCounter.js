@@ -2696,10 +2696,24 @@ export async function countTeeth(photoUri, signal, opts) {
     && r.peakTc === r.opTc
     && r.peakTc === r.toothCount
     && r.peakTc > MIN_TEETH;
+  // PAP-792: bc-strong-disagree override.  When the binary-contour method
+  // is internally self-consistent (bcTc===bcPeaks) at the chosen toothCount
+  // AND peakTc has collapsed far below it (|bcTc-peakTc|>5), the bc method
+  // (which auto-recenters via component centroid) has resolved a different
+  // feature than peakTc — the outer tooth ring rather than an inner-feature
+  // sub-harmonic.  Override the radius-sanity abstain in that case.
+  // The trap pattern (peakTc===bcTc on the same inner feature, e.g. the
+  // 52T 28/28/28/28 4-method consensus) is excluded by the |Δ|>5 guard.
+  // QA cross-check via PAP-796: 292-photo full 9-60T audit found 2 wins
+  // (24T Large + 42T XL) and 0 losses; threshold sweep [5..15] all clean.
+  const bcStrongAgree = r.bcTc === r.bcPeaks
+    && Math.abs(r.bcTc - r.peakTc) > 5
+    && r.toothCount === r.bcTc
+    && r.bcTc > MIN_TEETH;
   const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
-  const innerContourSuspected = radiusSanityFires && !tripleAgree;
+  const innerContourSuspected = radiusSanityFires && !tripleAgree && !bcStrongAgree;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
   if (innerContourSuspected) {
@@ -2711,6 +2725,12 @@ export async function countTeeth(photoUri, signal, opts) {
     console.log(
       `[GearCounter] PAP-772 triple-agree override: tc=${r.toothCount} ` +
       `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+      `r=${gearRadius.toFixed(4)} cropNR=${cropNormR.toFixed(3)} — committing.`
+    );
+  } else if (radiusSanityFires && bcStrongAgree) {
+    console.log(
+      `[GearCounter] PAP-792 bc-strong-disagree override: tc=${r.toothCount} ` +
+      `bcTc=${r.bcTc} bcPk=${r.bcPeaks} peak=${r.peakTc} dPB=${Math.abs(r.bcTc - r.peakTc)} ` +
       `r=${gearRadius.toFixed(4)} cropNR=${cropNormR.toFixed(3)} — committing.`
     );
   }
@@ -2792,10 +2812,19 @@ export function countTeethFromRgba(rgba, width, height) {
     && r.peakTc === r.opTc
     && r.peakTc === r.toothCount
     && r.peakTc > MIN_TEETH;
+  // PAP-792: bc-strong-disagree override — when bc-method self-recenters and
+  // its tooth count agrees with its peak count (bcTc===bcPeaks) AND bc lands
+  // far from the peakTc reading (|bcTc-peakTc|>5), bc has resolved a
+  // different feature (outer ring) than the FFT methods (inner alias).
+  // QA PAP-796 validated 2 wins / 0 losses on full 292-photo 9-60T corpus.
+  const bcStrongAgree = r.bcTc === r.bcPeaks
+    && Math.abs(r.bcTc - r.peakTc) > 5
+    && r.toothCount === r.bcTc
+    && r.bcTc > MIN_TEETH;
   const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
-  const innerContourSuspected = radiusSanityFires && !tripleAgree;
+  const innerContourSuspected = radiusSanityFires && !tripleAgree && !bcStrongAgree;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
   return {
     toothCount: r.toothCount,
