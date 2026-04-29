@@ -2871,28 +2871,50 @@ export async function countTeeth(photoUri, signal, opts) {
     || upperBoundMismatch;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
 
-  // PAP-815 (QA-approved via PAP-818): radial-channel inner-feature-lock
-  // abstain.  When the chosen multi-radius FFT peakR disagrees with the
-  // outermost prominent radial-mean |dI/dr| peak (R_outer) by ≥18% of
-  // R_outer, the FFT anchored on an inner spider/bolt-circle feature
-  // rather than the true outer tooth ring.  Force conf=0.  Predicate can
-  // only push to abstain (never creates new confident-wrong by
-  // construction).
-  // Threshold 0.18 approved on PAP-815 pre-flight: tightest non-abstain
-  // margin among 6 XL targets is 10.32% (05-37-38, currently correct);
-  // tightest abstain is 20.28% (05-35-33 → catch).  Tightest small/mid
-  // headroom on b73 22-photo sanity is 16.35% (08-33-27 fft90-misread,
-  // 1.65% below threshold) — do NOT lower 0.18 without re-checking that
-  // case.  AC1 (52T 05-35-33), AC2 (52T 05-39-22), AC4 (zero new
-  // confident-wrong) satisfied; AC3 framing surfaced to CEO/AE.
-  // Note: the AE pre-flight framing referenced an "any-channel ≥30"
-  // chainring-regime gate, but QA explicitly noted the safety story is
-  // "0.18 lands above the worst small-gear rel-disagree", not the gate.
-  // Gating on signal channels would silently no-op AC1/AC2 because both
-  // failure photos have all signal channels collapsed below 30 (peakTc=12,
-  // fft90=12, etc.).  The threshold IS the safety mechanism.
+  // PAP-815 (QA verdict 2026-04-29: REJECT → re-spin per Option 4): radial-
+  // channel inner-feature-lock abstain.  When the chosen multi-radius FFT
+  // peakR disagrees with the outermost prominent radial-mean |dI/dr| peak
+  // (R_outer) by ≥18% of R_outer, the FFT anchored on an inner
+  // spider/bolt-circle feature rather than the true outer tooth ring.
+  // Force conf=0.  Predicate can only push to abstain (never creates new
+  // confident-wrong by construction).
+  //
+  // Gate (Option 4 per QA):
+  //   1. chainring-regime: ANY of peakTc/fft90tc/opTc/bcTc/bcPeaks >= 30.
+  //      Threshold-only firing on Small/Mid (chainring=false) regressed
+  //      training 305-photo corpus by -117 confident-correct rows
+  //      (Mid 89.5% → 39.5%, Small 62.7% → 15.7%, Large 43.1% → 12.8%).
+  //      The chainring gate restores baseline behavior on those rows
+  //      while preserving the +21 chainring-regime confident-wrong
+  //      rescues (13 Large / 6 XL / 2 Mid).
+  //   2. ac1-rescue narrow override: AC1 (52T 05-35-33) has all FFT
+  //      signals collapsed to MIN_TEETH-floor (peakTc=12, fft90=12,
+  //      opTc=12, bcTc=11) with bcPeaks=24 elevated — the bc-method
+  //      detected the chainring's mounting-hole ring (24 holes) but
+  //      consensus committed at 24 vs actual 52.  Override fires when:
+  //      all four FFT-method tooth counts are <= MIN_TEETH+2 AND bcPeaks
+  //      sits in [20, 30].  Tightly-scoped: training Mid 18T LOSS rows
+  //      have peakTc=18 (>MIN_TEETH+2) so this override does NOT fire on
+  //      them.
+  //
+  // AC2 (52T 05-39-22, all 5 channels === 21) is NOT rescued in this
+  // iteration — its signature could fire on training rows with 5-way
+  // agreement at 20-25T which would need a separate corpus sweep before
+  // adding.  Sacrificed back to baseline-equivalent confident-wrong.
+  // Threshold 0.18 retained from pre-flight.
+  const chainringRegime =
+    r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
+    || r.bcTc >= 30 || r.bcPeaks >= 30;
+  const ac1RescuePattern =
+    r.peakTc <= MIN_TEETH + 2
+    && r.fft90tc <= MIN_TEETH + 2
+    && r.opTc <= MIN_TEETH + 2
+    && r.bcTc <= MIN_TEETH + 2
+    && r.bcPeaks >= 20 && r.bcPeaks <= 30;
+  const radialChainringEligible = chainringRegime || ac1RescuePattern;
   const radialChainringFires =
-    r.peakR > 0 && r.rOuter > 0
+    radialChainringEligible
+    && r.peakR > 0 && r.rOuter > 0
     && Math.abs(r.peakR - r.rOuter) / r.rOuter >= 0.18;
 
   const radialRel = (r.peakR > 0 && r.rOuter > 0)
@@ -3031,12 +3053,22 @@ export function countTeethFromRgba(rgba, width, height) {
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
-  // PAP-815: radial-channel chainring abstain (mirror of countTeeth() — see
-  // there for full rationale and threshold provenance).
-  // Gate removed: 0.18 IS the safety mechanism; gating on signal channels
-  // would silently no-op AC1/AC2 (collapsed FFT readings on those photos).
+  // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
+  // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
+  // full rationale and threshold provenance.
+  const chainringRegime =
+    r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
+    || r.bcTc >= 30 || r.bcPeaks >= 30;
+  const ac1RescuePattern =
+    r.peakTc <= MIN_TEETH + 2
+    && r.fft90tc <= MIN_TEETH + 2
+    && r.opTc <= MIN_TEETH + 2
+    && r.bcTc <= MIN_TEETH + 2
+    && r.bcPeaks >= 20 && r.bcPeaks <= 30;
+  const radialChainringEligible = chainringRegime || ac1RescuePattern;
   const radialChainringFires =
-    r.peakR > 0 && r.rOuter > 0
+    radialChainringEligible
+    && r.peakR > 0 && r.rOuter > 0
     && Math.abs(r.peakR - r.rOuter) / r.rOuter >= 0.18;
   const radialRel = (r.peakR > 0 && r.rOuter > 0)
     ? Math.abs(r.peakR - r.rOuter) / r.rOuter

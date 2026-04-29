@@ -1,0 +1,94 @@
+
+=== PAP-815 implementation audit (radial-chainring abstain @ ≥0.18) ===
+
+[Part 1] Training corpus: 305 photos (9-60T)
+  [25/305] elapsed 473s
+  [50/305] elapsed 936s
+  [75/305] elapsed 1438s
+  [100/305] elapsed 1943s
+  [125/305] elapsed 2454s
+  [150/305] elapsed 2972s
+  [175/305] elapsed 3467s
+  [200/305] elapsed 3984s
+  [225/305] elapsed 4520s
+  [250/305] elapsed 5022s
+  [275/305] elapsed 5563s
+  [300/305] elapsed 6095s
+  done. wall=6210s
+
+-- Per-class accuracy (after PAP-815 v2 abstain) vs pap796_post_pap810 baseline --
+  class  n    correct                wrong              abstain           
+  Small  51   29 (56.9%) Δ-3         1 Δ0               21 Δ+3            
+  Mid    114  100 (87.7%) Δ-2        0 Δ-2              14 Δ+4            
+  Large  109  47 (43.1%) Δ0          14 Δ-1             48 Δ+1            
+  XL     31   5 (16.1%) Δ-3          5 Δ-3              21 Δ+6            
+  TOTAL  305  correct=181 (Δ-8)  wrong=20 (Δ-6)  abstain=104 (Δ14)
+
+-- PAP-815 predicate firings on training corpus --
+  total fires=21  wins(conf-wrong→abstain)=7  losses(conf-correct→abstain)=11  neutral=3
+
+  WIN rows (predicate caught a confident-wrong):
+    2026-04-19_18-38-33-566Z cls=Large actual=28 tc=32 conf=0.00 peak=15 fft90=10 op=32 bc=10(pk=4) peakR=106 rOuter=137 rel=0.2263 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-fft+large-op-override
+    2026-04-19_19-32-49-661Z cls=Mid actual=18 tc=22 conf=0.00 peak=12 fft90=22 op=30 bc=10(pk=4) peakR=140 rOuter=116 rel=0.2069 chr=true ac1=false elig=true radFire=true innerSus=true method=fft90-fallback
+    2026-04-20_15-53-34-450Z cls=Mid actual=18 tc=44 conf=0.00 peak=13 fft90=44 op=12 bc=17(pk=7) peakR=278 rOuter=101 rel=1.7525 chr=true ac1=false elig=true radFire=true innerSus=true method=fft90-fallback
+    2026-04-21_05-25-55-038Z cls=Large actual=24 tc=44 conf=0.00 peak=10 fft90=44 op=10 bc=13(pk=13) peakR=114 rOuter=57 rel=1.0000 chr=true ac1=false elig=true radFire=true innerSus=true method=fft90-fallback
+    2026-04-27_07-59-59-093Z cls=XL actual=42 tc=20 conf=0.00 peak=10 fft90=20 op=10 bc=43(pk=37) peakR=277 rOuter=163 rel=0.6994 chr=true ac1=false elig=true radFire=true innerSus=true method=fft90-fallback
+    2026-04-28_14-18-32-698Z cls=XL actual=34 tc=40 conf=0.00 peak=11 fft90=40 op=24 bc=12(pk=10) peakR=242 rOuter=142 rel=0.7042 chr=true ac1=false elig=true radFire=true innerSus=true method=fft90-fallback
+    2026-04-29_05-29-10-169Z cls=XL actual=42 tc=12 conf=0.00 peak=12 fft90=30 op=11 bc=10(pk=13) peakR=223 rOuter=162 rel=0.3765 chr=true ac1=false elig=true radFire=true innerSus=true method=low-conf-consensus
+
+  LOSS rows (predicate falsely abstained on a confident-correct):
+    2026-04-05_14-38-39-916Z cls=Small actual=13 tc=13 conf=0.00 peak=11 fft90=36 op=12 bc=13(pk=13) peakR=170 rOuter=86 rel=0.9767 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus
+    2026-04-05_14-40-38-072Z cls=Small actual=11 tc=11 conf=0.00 peak=18 fft90=36 op=12 bc=11(pk=13) peakR=297 rOuter=109 rel=1.7248 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus
+    2026-04-05_20-05-36-867Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=11 op=11 bc=10(pk=24) peakR=90 rOuter=74 rel=0.2162 chr=false ac1=true elig=true radFire=true innerSus=true method=peak
+    2026-04-06_10-01-25-781Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=36 op=22 bc=11(pk=13) peakR=186 rOuter=155 rel=0.2000 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus
+    2026-04-19_19-26-17-731Z cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=36 op=18 bc=18(pk=16) peakR=153 rOuter=118 rel=0.2966 chr=true ac1=false elig=true radFire=true innerSus=true method=retry-bc-consensus+peak
+    2026-04-22_07-13-50-403Z cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=36 op=18 bc=18(pk=15) peakR=115 rOuter=87 rel=0.3218 chr=true ac1=false elig=true radFire=true innerSus=true method=retry-peak
+    2026-04-25_07-58-59-154Z cls=XL actual=42 tc=42 conf=0.00 peak=10 fft90=10 op=10 bc=42(pk=39) peakR=318 rOuter=177 rel=0.7966 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-fft
+    2026-04-25_08-45-07-271Z cls=XL actual=36 tc=37 conf=0.00 peak=11 fft90=20 op=11 bc=37(pk=35) peakR=90 rOuter=129 rel=0.3023 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus
+    2026-04-28_11-25-03-709Z cls=XL actual=42 tc=42 conf=0.00 peak=42 fft90=10 op=18 bc=42(pk=41) peakR=202 rOuter=110 rel=0.8364 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus+peak
+    2026-04-28_11-42-46-509Z cls=XL actual=42 tc=42 conf=0.00 peak=14 fft90=13 op=20 bc=42(pk=42) peakR=72 rOuter=102 rel=0.2941 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus
+    2026-04-28_14-36-56-005Z cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=40 op=16 bc=18(pk=18) peakR=156 rOuter=117 rel=0.3333 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus+peak
+
+  NEUTRAL rows (predicate fired but tc=0/already abstained):
+    2026-04-05_08-31-06-222Z cls=Small actual=13 tc=0 conf=0.00 peak=10 fft90=34 op=14 bc=13(pk=13) peakR=170 rOuter=87 rel=0.9540 chr=true ac1=false elig=true radFire=true innerSus=true method=bc-consensus+pap632-fft-floor-abstain
+    2026-04-20_16-29-57-130Z cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=11 op=18 bc=32(pk=5) peakR=223 rOuter=112 rel=0.9911 chr=true ac1=false elig=true radFire=true innerSus=true method=fft-agreement+mid-op-override+pap632-fft-floor-abstain
+    2026-04-23_07-15-00-335Z cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=10 op=10 bc=33(pk=15) peakR=231 rOuter=154 rel=0.5000 chr=true ac1=false elig=true radFire=true innerSus=true method=low-conf-consensus+pap474-abstain
+
+-- Confident-wrong rows that survive (predicate not eligible) --
+  20 rows
+    2026-04-04_09-10-51-656Z cls=Small actual=11 tc=17 conf=0.12 peak=12 fft90=12 op=10 bc=11(pk=17) peakR=273 rOuter=302 rel=0.0960 chr=false ac1=false elig=false radFire=false innerSus=false method=bc-peaks
+    2026-04-13_09-28-41-286Z cls=Large actual=28 tc=22 conf=0.37 peak=12 fft90=12 op=22 bc=10(pk=4) peakR=289 rOuter=125 rel=1.3120 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback+large-op-override
+    2026-04-13_09-38-00-648Z cls=Large actual=28 tc=10 conf=0.37 peak=27 fft90=20 op=10 bc=10(pk=4) peakR=134 rOuter=120 rel=0.1167 chr=false ac1=false elig=false radFire=false innerSus=false method=bc-fft
+    2026-04-19_15-25-39-158Z cls=Large actual=21 tc=19 conf=0.30 peak=18 fft90=18 op=19 bc=23(pk=20) peakR=145 rOuter=100 rel=0.4500 chr=false ac1=false elig=false radFire=false innerSus=false method=low-conf-consensus
+    2026-04-19_15-55-27-352Z cls=Large actual=28 tc=11 conf=0.30 peak=11 fft90=11 op=11 bc=11(pk=4) peakR=229 rOuter=176 rel=0.3011 chr=false ac1=false elig=false radFire=false innerSus=false method=low-conf-consensus
+    2026-04-19_18-54-04-915Z cls=Large actual=24 tc=20 conf=0.24 peak=14 fft90=20 op=11 bc=12(pk=4) peakR=141 rOuter=141 rel=0.0000 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-19_19-03-10-890Z cls=Large actual=24 tc=10 conf=0.14 peak=12 fft90=10 op=17 bc=0(pk=0) peakR=101 rOuter=80 rel=0.2625 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-21_05-51-52-636Z cls=Large actual=28 tc=22 conf=0.31 peak=10 fft90=22 op=11 bc=10(pk=4) peakR=272 rOuter=111 rel=1.4505 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-21_05-55-58-591Z cls=Large actual=24 tc=26 conf=0.34 peak=26 fft90=26 op=23 bc=10(pk=5) peakR=123 rOuter=97 rel=0.2680 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-21_19-20-19-066Z cls=Large actual=21 tc=10 conf=0.26 peak=12 fft90=10 op=10 bc=10(pk=4) peakR=295 rOuter=134 rel=1.2015 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-21_19-30-41-277Z cls=Large actual=24 tc=28 conf=0.31 peak=10 fft90=11 op=28 bc=10(pk=4) peakR=243 rOuter=104 rel=1.3365 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback+large-op-override
+    2026-04-22_07-04-52-734Z cls=Large actual=24 tc=11 conf=0.44 peak=11 fft90=11 op=13 bc=10(pk=4) peakR=293 rOuter=106 rel=1.7642 chr=false ac1=false elig=false radFire=false innerSus=false method=fft-agreement
+    2026-04-22_19-24-58-121Z cls=Large actual=28 tc=20 conf=0.38 peak=10 fft90=10 op=20 bc=10(pk=4) peakR=255 rOuter=200 rel=0.2750 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback+large-op-override
+    2026-04-23_07-08-27-801Z cls=Large actual=28 tc=11 conf=0.46 peak=11 fft90=11 op=10 bc=10(pk=2) peakR=227 rOuter=111 rel=1.0450 chr=false ac1=false elig=false radFire=false innerSus=false method=fft-agreement
+    2026-04-24_07-02-48-626Z cls=Large actual=21 tc=16 conf=0.62 peak=21 fft90=21 op=21 bc=10(pk=16) peakR=176 rOuter=134 rel=0.3134 chr=false ac1=false elig=false radFire=false innerSus=false method=retry-bc-peaks
+    2026-04-24_10-54-55-930Z cls=XL actual=42 tc=40 conf=0.53 peak=40 fft90=12 op=14 bc=13(pk=14) peakR=173 rOuter=159 rel=0.0881 chr=true ac1=false elig=true radFire=false innerSus=false method=fft90-fallback+xl-peak-override
+    2026-04-28_06-52-14-899Z cls=XL actual=42 tc=10 conf=0.29 peak=11 fft90=10 op=15 bc=10(pk=1) peakR=196 rOuter=108 rel=0.8148 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-28_06-56-36-143Z cls=XL actual=52 tc=11 conf=0.42 peak=11 fft90=11 op=10 bc=11(pk=10) peakR=246 rOuter=245 rel=0.0041 chr=false ac1=false elig=false radFire=false innerSus=false method=bc-consensus+fft-agree
+    2026-04-28_18-34-58-887Z cls=XL actual=42 tc=12 conf=0.11 peak=12 fft90=12 op=10 bc=10(pk=4) peakR=255 rOuter=206 rel=0.2379 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+    2026-04-29_05-35-39-053Z cls=XL actual=52 tc=10 conf=0.33 peak=14 fft90=10 op=15 bc=10(pk=1) peakR=163 rOuter=125 rel=0.3040 chr=false ac1=false elig=false radFire=false innerSus=false method=fft90-fallback
+
+[Part 2] XL device targets (cropped.jpg, device-faithful)
+-- 6 XL targets --
+  report_2026-04-29_05-29-04-170Z cls=XL actual=42 tc=42 conf=0.53 peak=41 fft90=41 op=42 bc=10(pk=12) peakR=379 rOuter=359 rel=0.0557 chr=true ac1=false elig=true radFire=false innerSus=false method=fft-agreement+xl-op-vote-boost
+  report_2026-04-29_05-31-25-376Z cls=XL actual=42 tc=41 conf=0.84 peak=41 fft90=41 op=13 bc=10(pk=1) peakR=393 rOuter=383 rel=0.0261 chr=true ac1=false elig=true radFire=false innerSus=false method=fft-agreement
+  report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.48 peak=13 fft90=13 op=17 bc=55(pk=52) peakR=330 rOuter=353 rel=0.0652 chr=true ac1=false elig=true radFire=false innerSus=false method=retry-bc-peaks
+  report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) peakR=283 rOuter=355 rel=0.2028 chr=false ac1=true elig=true radFire=true innerSus=true method=retry-bc-peaks
+  report_2026-04-29_05-37-38-177Z cls=XL actual=52 tc=52 conf=0.61 peak=12 fft90=12 op=14 bc=53(pk=52) peakR=304 rOuter=339 rel=0.1032 chr=true ac1=false elig=true radFire=false innerSus=false method=retry-bc-consensus+chainring-pk
+  report_2026-04-29_05-39-22-521Z cls=XL actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) peakR=380 rOuter=308 rel=0.2338 chr=false ac1=false elig=false radFire=false innerSus=false method=bc-consensus+peak
+
+  XL summary: correct=4 wrong=1 abstain=1
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        6388.638 s
+Ran all test suites.
