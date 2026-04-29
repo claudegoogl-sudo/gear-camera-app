@@ -74,7 +74,7 @@ function useCountUp(target) {
  *   • Reset button slides up on mount
  */
 export default function ResultScreen({ navigation, route }) {
-  const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected } = route.params ?? {};
+  const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected, algoDiag } = route.params ?? {};
   const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset } = useGearStore();
 
   // PAP-622: Transform algorithm coordinates (relative to original uncropped
@@ -150,7 +150,7 @@ export default function ResultScreen({ navigation, route }) {
     const actualTeethCount = confirmedCount;
     setSharing(true);
     try {
-      await shareDebugReport({ photoPath: originalPhotoPath || photoPath, croppedPhotoPath: originalPhotoPath ? photoPath : null, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, aimCrop: aimCrop ?? null, cameraErrors: cameraErrors ?? null, cameraEvents: cameraEvents ?? null, innerContourSuspected: innerContourSuspected ?? false });
+      await shareDebugReport({ photoPath: originalPhotoPath || photoPath, croppedPhotoPath: originalPhotoPath ? photoPath : null, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, aimCrop: aimCrop ?? null, cameraErrors: cameraErrors ?? null, cameraEvents: cameraEvents ?? null, innerContourSuspected: innerContourSuspected ?? false, algoDiag: algoDiag ?? null });
 
       // Upload training data alongside debug share (fire-and-forget).
       // Use original uncropped photo so training data matches what the algorithm processed.

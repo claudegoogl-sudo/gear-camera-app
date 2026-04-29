@@ -1867,6 +1867,100 @@ function binaryContourCount(gray, cx, cy, width, height) {
  *                    gearCenter: {x: number, y: number},
  *                    gearRadius: number}>}
  */
+// ── PAP-815: outer-edge anchor radius via radial-mean intensity gradient ──
+// Computes R_outer = outermost prominent peak of the azimuthally-averaged
+// |dI/dr| profile in the band [0.30·peakR, 1.50·peakR], anchored at the bc
+// center when geometrically self-validated (|Δcenter|≤50 px AND bc sweep band
+// safe), else at the algo center.  Approved as the radial channel for the
+// PAP-815 inner-feature-lock abstain (PAP-818 cross-check, predicate at
+// rel-disagree ≥ 0.18 in chainring regime).  Returns 0 when sweep band is
+// too small or no prominent peaks survive.  Caller is expected to gate the
+// invocation on chainring regime so the cost (256 rays × ~300 r values ×
+// 2 bilinear samples) only runs on ≥30T candidate detections.
+function radialOuterEdgeRadius(enhanced, cx, cy, bcCx, bcCy, peakR, w, h) {
+  if (peakR <= 0) return 0;
+  const baseR = peakR;
+  const halfMinAlgo = Math.min(cx, cy, w - cx, h - cy) - 1;
+  const rMinAlgo = Math.max(20, Math.floor(0.30 * baseR));
+  const rMaxAlgo = Math.min(halfMinAlgo, Math.floor(1.50 * baseR));
+  // bc-anchor self-validation per QA PAP-818: |Δcenter|≤50 px AND bc sweep
+  // band ≥60 px halfMin AND ≥20 px span.  When false, fall back to algo.
+  const halfMinBc = Math.min(bcCx, bcCy, w - bcCx, h - bcCy) - 1;
+  const rMinBc = Math.max(20, Math.floor(0.30 * baseR));
+  const rMaxBc = Math.min(halfMinBc, Math.floor(1.50 * baseR));
+  const bcSafe = bcCx > 0 && bcCy > 0 && rMaxBc >= rMinBc + 20 && halfMinBc >= 60;
+  const centerDelta = Math.sqrt((bcCx - cx) ** 2 + (bcCy - cy) ** 2);
+  const useBc = bcSafe && centerDelta <= 50;
+  const useCx = useBc ? bcCx : cx;
+  const useCy = useBc ? bcCy : cy;
+  const rMin = useBc ? rMinBc : rMinAlgo;
+  const rMax = useBc ? rMaxBc : rMaxAlgo;
+  if (rMax < rMin + 20) return 0;
+
+  // Azimuthally-averaged |dI/dr|, central difference, bilinear sampling.
+  const N_RAYS = 256;
+  const len = rMax - rMin + 1;
+  const profile = new Float64Array(len);
+  for (let r = rMin; r <= rMax; r++) {
+    let s = 0;
+    const ri = r + 1, ro = r - 1;
+    for (let i = 0; i < N_RAYS; i++) {
+      const a = (2 * Math.PI * i) / N_RAYS;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      // Inner sample at r+1
+      let xs = useCx + ri * ca, ys = useCy + ri * sa;
+      if (xs < 0) xs = 0; else if (xs > w - 1.0001) xs = w - 1.0001;
+      if (ys < 0) ys = 0; else if (ys > h - 1.0001) ys = h - 1.0001;
+      const xi0 = xs | 0, yi0 = ys | 0;
+      const fxi = xs - xi0, fyi = ys - yi0;
+      const rowI0 = yi0 * w, rowI1 = rowI0 + w;
+      const vI = (1 - fxi) * (1 - fyi) * enhanced[rowI0 + xi0]
+               + fxi       * (1 - fyi) * enhanced[rowI0 + xi0 + 1]
+               + (1 - fxi) * fyi       * enhanced[rowI1 + xi0]
+               + fxi       * fyi       * enhanced[rowI1 + xi0 + 1];
+      // Outer sample at r-1
+      let xt = useCx + ro * ca, yt = useCy + ro * sa;
+      if (xt < 0) xt = 0; else if (xt > w - 1.0001) xt = w - 1.0001;
+      if (yt < 0) yt = 0; else if (yt > h - 1.0001) yt = h - 1.0001;
+      const xo0 = xt | 0, yo0 = yt | 0;
+      const fxo = xt - xo0, fyo = yt - yo0;
+      const rowO0 = yo0 * w, rowO1 = rowO0 + w;
+      const vO = (1 - fxo) * (1 - fyo) * enhanced[rowO0 + xo0]
+               + fxo       * (1 - fyo) * enhanced[rowO0 + xo0 + 1]
+               + (1 - fxo) * fyo       * enhanced[rowO1 + xo0]
+               + fxo       * fyo       * enhanced[rowO1 + xo0 + 1];
+      const d = (vI - vO) * 0.5;
+      s += d >= 0 ? d : -d;
+    }
+    profile[r - rMin] = s / N_RAYS;
+  }
+
+  // Top-3 prominent local maxima (shoulder window ±8 px).
+  const minDist = 8;
+  const peaks = [];
+  for (let i = 1; i < len - 1; i++) {
+    if (profile[i] > profile[i - 1] && profile[i] >= profile[i + 1]) {
+      let lMin = profile[i], rMinV = profile[i];
+      const lLo = i - minDist > 0 ? i - minDist : 0;
+      const rHi = i + minDist < len - 1 ? i + minDist : len - 1;
+      for (let j = lLo; j < i; j++) if (profile[j] < lMin) lMin = profile[j];
+      for (let j = i + 1; j <= rHi; j++) if (profile[j] < rMinV) rMinV = profile[j];
+      const prom = profile[i] - (lMin > rMinV ? lMin : rMinV);
+      peaks.push({ idx: i, prom });
+    }
+  }
+  if (peaks.length === 0) return 0;
+  peaks.sort((a, b) => b.prom - a.prom);
+  // Outermost peak among top-3 with prom ≥ 30% of strongest.
+  const top = peaks.slice(0, 3);
+  const promFloor = top[0].prom * 0.30;
+  let outermostIdx = top[0].idx;
+  for (const p of top) {
+    if (p.prom >= promFloor && p.idx > outermostIdx) outermostIdx = p.idx;
+  }
+  return outermostIdx + rMin;
+}
+
 /**
  * Core analysis pipeline — operates on already-loaded pixel buffers.
  * Returns { toothCount, confidence, gearCenter, gearRadius } in pixel units.
@@ -2311,6 +2405,21 @@ function analyzeImage(gray, enhanced, edges, width, height) {
 
   const finalR = peakR > 0 ? peakR : gearR;
 
+  // PAP-815: outer-edge anchor radius (outermost prominent radial-mean
+  // |dI/dr| peak in [0.30·peakR, 1.50·peakR], anchored at bc center when
+  // self-validated, else algo center).  Per QA PAP-818 the actual safety
+  // mechanism is the rel-disagree threshold (0.18) — gating the computation
+  // on chainring regime would silently disable AC1/AC2 because the failure
+  // photos have all signal channels collapsed to inner-feature aliases
+  // (peakTc=12 etc).  Compute whenever peakR is available; cost is bounded
+  // (256 rays × ~300 r-values, ms-scale) and amortized vs. algorithm
+  // baseline.  Returned on the result so countTeeth/countTeethFromRgba can
+  // evaluate the inner-feature-lock abstain without re-doing the work.
+  let rOuter = 0;
+  if (peakR > 0) {
+    rOuter = radialOuterEdgeRadius(enhanced, cx, cy, bcCx, bcCy, peakR, width, height);
+  }
+
   return {
     toothCount: finalTc,
     confidence,
@@ -2318,8 +2427,9 @@ function analyzeImage(gray, enhanced, edges, width, height) {
     contourRadius,
     centerResult,
     fft90tc, peakTc, peakRel, peakR, opTc, opRel,
-    bcTc, bcPurity, bcPeaks,
+    bcTc, bcPurity, bcPeaks, bcCx, bcCy,
     claheTc, claheConf,
+    rOuter,
     methodUsed,
   };
 }
@@ -2443,7 +2553,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   let opTc = 0, opRel = 0;
   ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height, gearR));
 
-  const { bcTc, bcPurity, bcPeaks } = binaryContourCount(gray, cx, cy, width, height);
+  const { bcTc, bcPurity, bcPeaks, bcCx, bcCy } = binaryContourCount(gray, cx, cy, width, height);
 
   let claheTc = 0, claheConf = 0;
   ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
@@ -2525,6 +2635,14 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
   const finalR = peakR > 0 ? peakR : gearR;
 
+  // PAP-815: outer-edge anchor (mirror of analyzeImage block — see there
+  // for rationale on why the perf gate is omitted).  Retry path can replace
+  // the primary result, so it must surface rOuter too.
+  let rOuter = 0;
+  if (peakR > 0) {
+    rOuter = radialOuterEdgeRadius(enhanced, cx, cy, bcCx, bcCy, peakR, width, height);
+  }
+
   return {
     toothCount: finalTc,
     confidence,
@@ -2532,8 +2650,9 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
     contourRadius,
     centerResult: { cx, cy, radius: contourRadius, method: 'retry-near-center' },
     fft90tc, peakTc, peakRel, peakR, opTc, opRel,
-    bcTc, bcPurity, bcPeaks,
+    bcTc, bcPurity, bcPeaks, bcCx, bcCy,
     claheTc, claheConf,
+    rOuter,
     methodUsed: 'retry-' + methodUsed,
   };
 }
@@ -2750,10 +2869,40 @@ export async function countTeeth(photoUri, signal, opts) {
   const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
-  const innerContourSuspected = radiusSanityFires && !tripleAgree && !bcStrongAgree;
+  const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
+
+  // PAP-815 (QA-approved via PAP-818): radial-channel inner-feature-lock
+  // abstain.  When the chosen multi-radius FFT peakR disagrees with the
+  // outermost prominent radial-mean |dI/dr| peak (R_outer) by ≥18% of
+  // R_outer, the FFT anchored on an inner spider/bolt-circle feature
+  // rather than the true outer tooth ring.  Force conf=0.  Predicate can
+  // only push to abstain (never creates new confident-wrong by
+  // construction).
+  // Threshold 0.18 approved on PAP-815 pre-flight: tightest non-abstain
+  // margin among 6 XL targets is 10.32% (05-37-38, currently correct);
+  // tightest abstain is 20.28% (05-35-33 → catch).  Tightest small/mid
+  // headroom on b73 22-photo sanity is 16.35% (08-33-27 fft90-misread,
+  // 1.65% below threshold) — do NOT lower 0.18 without re-checking that
+  // case.  AC1 (52T 05-35-33), AC2 (52T 05-39-22), AC4 (zero new
+  // confident-wrong) satisfied; AC3 framing surfaced to CEO/AE.
+  // Note: the AE pre-flight framing referenced an "any-channel ≥30"
+  // chainring-regime gate, but QA explicitly noted the safety story is
+  // "0.18 lands above the worst small-gear rel-disagree", not the gate.
+  // Gating on signal channels would silently no-op AC1/AC2 because both
+  // failure photos have all signal channels collapsed below 30 (peakTc=12,
+  // fft90=12, etc.).  The threshold IS the safety mechanism.
+  const radialChainringFires =
+    r.peakR > 0 && r.rOuter > 0
+    && Math.abs(r.peakR - r.rOuter) / r.rOuter >= 0.18;
+
+  const radialRel = (r.peakR > 0 && r.rOuter > 0)
+    ? Math.abs(r.peakR - r.rOuter) / r.rOuter
+    : null;
+
+  const innerContourSuspected = radiusSanityAbstain || radialChainringFires;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
-  if (innerContourSuspected) {
+  if (radiusSanityAbstain) {
     console.log(
       `[GearCounter] radius-sanity abstain: r=${gearRadius.toFixed(4)} tc=${r.toothCount} — ` +
       `inner-contour suspected. raw conf=${r.confidence.toFixed(2)} → forcing conf=0.`
@@ -2771,6 +2920,13 @@ export async function countTeeth(photoUri, signal, opts) {
       `r=${gearRadius.toFixed(4)} cropNR=${cropNormR.toFixed(3)} — committing.`
     );
   }
+  if (radialChainringFires) {
+    console.log(
+      `[GearCounter] PAP-815 radial-chainring abstain: tc=${r.toothCount} ` +
+      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} bc=${r.bcTc}(pk=${r.bcPeaks}) ` +
+      `peakR=${r.peakR} rOuter=${r.rOuter} rel=${radialRel.toFixed(4)} — forcing conf=0.`
+    );
+  }
 
   return {
     toothCount: r.toothCount,
@@ -2779,6 +2935,16 @@ export async function countTeeth(photoUri, signal, opts) {
     gearRadius,
     algorithmRuntimeMs: t4 - t0,
     innerContourSuspected,
+    // PAP-815 instrumentation: outer-edge anchor diagnostic surfaced for
+    // debug JSON capture (per QA PAP-818 implementation gate 3).  peakR is
+    // the multi-radius FFT chosen radius; rOuter is the outermost prominent
+    // radial-gradient peak in [0.30·peakR, 1.50·peakR]; radialRelDisagree
+    // is |peakR - rOuter|/rOuter and is ≥0.18 when the chainring abstain
+    // fires.  All three null/0 outside chainring regime to keep the report
+    // payload small for small/mid corpus.
+    peakR: r.peakR,
+    rOuter: r.rOuter,
+    radialRelDisagree: radialRel,
   };
 }
 
@@ -2864,7 +3030,18 @@ export function countTeethFromRgba(rgba, width, height) {
   const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch;
-  const innerContourSuspected = radiusSanityFires && !tripleAgree && !bcStrongAgree;
+  const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
+  // PAP-815: radial-channel chainring abstain (mirror of countTeeth() — see
+  // there for full rationale and threshold provenance).
+  // Gate removed: 0.18 IS the safety mechanism; gating on signal channels
+  // would silently no-op AC1/AC2 (collapsed FFT readings on those photos).
+  const radialChainringFires =
+    r.peakR > 0 && r.rOuter > 0
+    && Math.abs(r.peakR - r.rOuter) / r.rOuter >= 0.18;
+  const radialRel = (r.peakR > 0 && r.rOuter > 0)
+    ? Math.abs(r.peakR - r.rOuter) / r.rOuter
+    : null;
+  const innerContourSuspected = radiusSanityAbstain || radialChainringFires;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
   return {
     toothCount: r.toothCount,
@@ -2875,7 +3052,11 @@ export function countTeethFromRgba(rgba, width, height) {
     methodUsed: r.methodUsed,
     bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,
     // PAP-810 / PAP-811: peakR is diagnostic-only (consumed by pap810.preflight).
+    // PAP-815: rOuter (outermost radial-grad prom peak) and radialRelDisagree
+    // surfaced for harness validation of the chainring abstain predicate.
     peakTc: r.peakTc, peakRel: r.peakRel, peakR: r.peakR,
+    rOuter: r.rOuter,
+    radialRelDisagree: radialRel,
     fft90tc: r.fft90tc, opTc: r.opTc, opRel: r.opRel,
   };
 }

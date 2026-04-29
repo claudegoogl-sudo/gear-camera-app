@@ -52,7 +52,7 @@ async function verifyUpload(gitPath, headers) {
  * }} params
  * @returns {Promise<string>} URL of the uploaded report folder on GitHub.
  */
-export async function shareDebugReport({ photoPath, croppedPhotoPath, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, aimCrop, cameraErrors, cameraEvents, cameraHasError, isCameraReady, isFocused, retryKey, policyRetryCount, innerContourSuspected }) {
+export async function shareDebugReport({ photoPath, croppedPhotoPath, toothCount, confidence, gearContour, actualTeethCount, algorithmRuntimeMs, aimCrop, cameraErrors, cameraEvents, cameraHasError, isCameraReady, isFocused, retryKey, policyRetryCount, innerContourSuspected, algoDiag }) {
   if (!GITHUB_TOKEN) {
     throw new Error('GitHub token not configured — cannot upload debug report.');
   }
@@ -82,6 +82,11 @@ export async function shareDebugReport({ photoPath, croppedPhotoPath, toothCount
       confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
       gearContour,
       ...(innerContourSuspected != null ? { innerContourSuspected } : {}),
+      // PAP-815: outer-edge anchor diagnostic (peakR / rOuter / rel-disagree).
+      // Captured per QA PAP-818 implementation gate 3 so future XL chainring
+      // failures land with margin data already attached.  Null/0 outside
+      // chainring regime; ≥0.18 rel-disagree triggers the abstain predicate.
+      ...(algoDiag != null ? { algoDiag } : {}),
     },
     ...(algorithmRuntimeMs != null ? { algorithmRuntimeMs } : {}),
     ...(aimCrop != null ? { aimCrop } : {}),

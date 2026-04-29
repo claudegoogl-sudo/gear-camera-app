@@ -346,6 +346,16 @@ export default function CameraScreen({ navigation }) {
         cameraErrors: cameraErrorsRef.current,
         cameraEvents: cameraEventsRef.current,
         innerContourSuspected: result.innerContourSuspected ?? false,
+        // PAP-815: outer-edge anchor diagnostic (peakR / rOuter / rel-
+        // disagree).  Surfaced into the debug JSON so future XL chainring
+        // failures land with margin data already attached, per QA PAP-818
+        // implementation gate 3.  All three are null/0 outside chainring
+        // regime (where the abstain predicate doesn't fire).
+        algoDiag: {
+          peakR: result.peakR ?? null,
+          rOuter: result.rOuter ?? null,
+          radialRelDisagree: result.radialRelDisagree ?? null,
+        },
       });
     } catch (e) {
       if (gen !== captureGenRef.current) return; // cancelled or superseded
