@@ -1,0 +1,37 @@
+
+=== PAP-861 42T b112 diagnostic ===
+  [CORRECT] 2026-04-30_05-32-51-092Z actual=42
+    tc=42 conf=0.665 method=bc-fft innerSus=false
+    peak=43 fft90=42 op=42 bc=42(pk=36)
+    gearRadius=0.4000 contourR=undefined cropNR=0.0000 (w,h)=(900,900)
+    peakR=360 rOuter=398 rel=0.0955
+  [TOO_LARGE_0.292] 2026-04-30_05-34-20-458Z actual=42
+    tc=43 conf=0.728 method=bc-fft+pap868-fft90-xl-rescue-A innerSus=false
+    peak=10 fft90=43 op=14 bc=12(pk=4)
+    gearRadius=0.4844 contourR=undefined cropNR=0.0000 (w,h)=(900,900)
+    peakR=436 rOuter=441 rel=0.0113
+  [TOO_SMALL_0.192_BCD] 2026-04-30_05-35-59-637Z actual=42
+    tc=42 conf=0.728 method=bc-fft+pap868-fft90-xl-rescue-A innerSus=false
+    peak=10 fft90=42 op=20 bc=12(pk=4)
+    gearRadius=0.3189 contourR=undefined cropNR=0.0000 (w,h)=(900,900)
+    peakR=287 rOuter=373 rel=0.2306
+  [TOO_SMALL_0.158_BOLT] 2026-04-30_05-37-35-156Z actual=42
+    tc=39 conf=0.000 method=bc-consensus innerSus=true
+    peak=11 fft90=20 op=26 bc=39(pk=41)
+    gearRadius=0.2622 contourR=undefined cropNR=0.0000 (w,h)=(900,900)
+    peakR=236 rOuter=276 rel=0.1449
+  [b111 prior] 2026-04-29_05-29-04-170Z actual=42
+    tc=41 conf=0.479 method=fft90-fallback innerSus=false
+    peak=43 fft90=41 op=42 bc=10(pk=12)
+    gearRadius=0.4356 contourR=undefined cropNR=0.0000 (w,h)=(900,900)
+    peakR=392 rOuter=441 rel=0.1111
+  [b111 prior] 2026-04-29_05-31-25-376Z actual=42
+    tc=41 conf=0.823 method=peak innerSus=false
+    peak=41 fft90=41 op=13 bc=12(pk=4)
+    gearRadius=0.4367 contourR=undefined cropNR=0.0000 (w,h)=(900,900)
+    peakR=393 rOuter=410 rel=0.0415
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        155.006 s, estimated 160 s
+Ran all test suites.

@@ -2393,12 +2393,34 @@ function analyzeImage(gray, enhanced, edges, width, height) {
   if (peakTc === MIN_TEETH
       && finalTc > 0 && finalTc < 20
       && contourRadius > minDim * 0.15) {
-    console.log(`[pap632-fft-floor-abstain] peak=${peakTc} fft90=${fft90tc} ` +
-      `final=${finalTc} bc=${bcTc}(peaks=${bcPeaks}) op=${opTc}(rel=${opRel.toFixed(3)}) ` +
-      `gearR=${gearR} contourR=${contourRadius} minDim=${minDim}`);
-    finalTc = 0;
-    finalRel = 0;
-    methodUsed = methodUsed + '+pap632-fft-floor-abstain';
+    // PAP-868 Option A: fft90-XL-rescue.  When the pap632-fft-floor abstain
+    // would fire BUT the gear is physically large (gearR > 30% minDim) AND
+    // fft90 reads at chainring scale (>= 30T), the outer-band fft90 signal
+    // is reading the real outer tooth ring while the multi-radius FFT
+    // collapsed onto an inner feature.  Trust fft90tc instead of abstaining.
+    // Floor finalRel at 0.10 so the rescue commits as confident.
+    // QA cross-check via PAP-871: 0 fires on 305-photo training corpus
+    // (peak===MIN_TEETH ∧ fft90>=30 ∧ gearR>0.30 simultaneously is empty
+    // in training); 2 b112 XL wins (05-34-20 → 43, 05-35-59 → 42).
+    // Targets: 2026-04-30_05-34-20-458Z (42T, peak=10, fft90=43, gearR=0.484);
+    // 2026-04-30_05-35-59-637Z (42T, peak=10, fft90=42, gearR=0.319).
+    if (fft90tc >= 30
+        && gearR > minDim * 0.30
+        && contourRadius > minDim * 0.20) {
+      console.log(`[pap868-fft90-xl-rescue-A] peak=${peakTc} fft90=${fft90tc} ` +
+        `op=${opTc} bc=${bcTc}(peaks=${bcPeaks}) ` +
+        `gearR=${gearR} contourR=${contourRadius} minDim=${minDim} → committing fft90`);
+      finalTc = fft90tc;
+      finalRel = Math.max(finalRel, 0.10);
+      methodUsed = methodUsed + '+pap868-fft90-xl-rescue-A';
+    } else {
+      console.log(`[pap632-fft-floor-abstain] peak=${peakTc} fft90=${fft90tc} ` +
+        `final=${finalTc} bc=${bcTc}(peaks=${bcPeaks}) op=${opTc}(rel=${opRel.toFixed(3)}) ` +
+        `gearR=${gearR} contourR=${contourRadius} minDim=${minDim}`);
+      finalTc = 0;
+      finalRel = 0;
+      methodUsed = methodUsed + '+pap632-fft-floor-abstain';
+    }
   }
 
   const confidence = Math.min(1.0, Math.max(0.0, (finalRel - 0.05) / 0.15));
@@ -2937,9 +2959,34 @@ export async function countTeeth(photoUri, signal, opts) {
     && (r.bcTc - r.fft90tc) >= 10
     && (r.bcTc - r.opTc) >= 10;
 
-  const innerContourSuspected = radiusSanityAbstain || radialChainringFires
+  // PAP-868 Option E: fft90 outer-ring rescue.  When radialChainringFires
+  // would abstain BUT the FFT collapsed (peakTc===MIN_TEETH) AND fft90
+  // reads at chainring scale (>=30T) AND op is fft90's half-frequency alias
+  // (|fft90 − 2·op| ≤ 2), the outer-band fft90 is reading the real outer
+  // tooth ring while peakR locked onto an inner feature (BCD / mounting
+  // holes).  Bypass the radial-chainring abstain and commit fft90tc.
+  // Predicate is structurally narrower than radialChainringFires (fires
+  // only inside that gate).  QA cross-check via PAP-871: 1 b112 XL win
+  // (05-35-59); 0 fires on 305-photo training corpus.
+  // Target: 2026-04-30_05-35-59-637Z (42T, peak=10, fft90=42, op=20,
+  // gearR=0.319, rel=0.231).
+  const fft90OuterRescue =
+    radialChainringFires
+    && r.peakTc === MIN_TEETH
+    && r.fft90tc >= 30
+    && r.opTc > 0
+    && Math.abs(r.fft90tc - 2 * r.opTc) <= 2
+    && gearRadius > 0.30;
+
+  const innerContourSuspected = radiusSanityAbstain
+    || (radialChainringFires && !fft90OuterRescue)
     || bcIsolatedHighDelta;
-  const finalConfidence = innerContourSuspected ? 0 : r.confidence;
+  let finalToothCount = r.toothCount;
+  let finalConfidence = innerContourSuspected ? 0 : r.confidence;
+  if (fft90OuterRescue) {
+    finalToothCount = r.fft90tc;
+    finalConfidence = Math.max(r.confidence, 0.10);
+  }
 
   if (radiusSanityAbstain) {
     console.log(
@@ -2959,7 +3006,14 @@ export async function countTeeth(photoUri, signal, opts) {
       `r=${gearRadius.toFixed(4)} cropNR=${cropNormR.toFixed(3)} — committing.`
     );
   }
-  if (radialChainringFires) {
+  if (fft90OuterRescue) {
+    console.log(
+      `[GearCounter] PAP-868 fft90-outer-rescue-E: tc=${r.toothCount}→${r.fft90tc} ` +
+      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+      `peakR=${r.peakR} rOuter=${r.rOuter} rel=${radialRel.toFixed(4)} ` +
+      `gearR=${gearRadius.toFixed(4)} — committing fft90.`
+    );
+  } else if (radialChainringFires) {
     console.log(
       `[GearCounter] PAP-815 radial-chainring abstain: tc=${r.toothCount} ` +
       `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} bc=${r.bcTc}(pk=${r.bcPeaks}) ` +
@@ -2968,7 +3022,7 @@ export async function countTeeth(photoUri, signal, opts) {
   }
 
   return {
-    toothCount: r.toothCount,
+    toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter,
     gearRadius,
@@ -3098,11 +3152,26 @@ export function countTeethFromRgba(rgba, width, height) {
     && (r.bcTc - r.peakTc) >= 10
     && (r.bcTc - r.fft90tc) >= 10
     && (r.bcTc - r.opTc) >= 10;
-  const innerContourSuspected = radiusSanityAbstain || radialChainringFires
+  // PAP-868 Option E: fft90 outer-ring rescue (mirror of countTeeth() — see
+  // there for full rationale and QA cross-check provenance via PAP-871).
+  const fft90OuterRescue =
+    radialChainringFires
+    && r.peakTc === MIN_TEETH
+    && r.fft90tc >= 30
+    && r.opTc > 0
+    && Math.abs(r.fft90tc - 2 * r.opTc) <= 2
+    && gearRadiusCropSpace > 0.30;
+  const innerContourSuspected = radiusSanityAbstain
+    || (radialChainringFires && !fft90OuterRescue)
     || bcIsolatedHighDelta;
-  const finalConfidence = innerContourSuspected ? 0 : r.confidence;
+  let finalToothCount = r.toothCount;
+  let finalConfidence = innerContourSuspected ? 0 : r.confidence;
+  if (fft90OuterRescue) {
+    finalToothCount = r.fft90tc;
+    finalConfidence = Math.max(r.confidence, 0.10);
+  }
   return {
-    toothCount: r.toothCount,
+    toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter: { x: r.cx / width, y: r.cy / height },
     gearRadius: r.gearR / width,
