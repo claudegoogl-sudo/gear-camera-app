@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-04-30T11:41:02.507Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (114) · 2026-04-30 09:22",
+  "result": {
+    "toothCount": 32,
+    "confidence": 0,
+    "gearContour": {
+      "centerX": 0.4913044444444445,
+      "centerY": 0.4287933333333333,
+      "radius": 0.2601977777777778
+    },
+    "innerContourSuspected": true,
+    "algoDiag": {
+      "peakR": 389,
+      "rOuter": 324,
+      "radialRelDisagree": 0.2006172839506173
+    }
+  },
+  "algorithmRuntimeMs": 64941,
+  "aimCrop": {
+    "originX": 597,
+    "originY": 760,
+    "side": 1806,
+    "fullW": 3000,
+    "fullH": 4000,
+    "aimCircleFrac": 1,
+    "screenCenterX": 196.36363220214844,
+    "screenCenterY": 343.4545440673828,
+    "measured": true
+  },
+  "actualTeethCount": 32,
+  "cameraErrors": [
+    {
+      "timestamp": "2026-04-30T11:35:56.587Z",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "deviceId": "0",
+      "wideAngleFallback": false,
+      "policyRestricted": true,
+      "flashError": false
+    }
+  ],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-04-30T11:35:50.182Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    },
+    {
+      "type": "error",
+      "ts": "2026-04-30T11:35:56.587Z",
+      "code": "system/camera-is-restricted",
+      "message": "Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy.",
+      "policyRestricted": true,
+      "flashError": false,
+      "wideAngleFallback": false,
+      "retryKey": 0,
+      "policyRetryCount": 0
+    },
+    {
+      "type": "appState",
+      "ts": "2026-04-30T11:39:34.121Z",
+      "nextState": "active",
+      "isPolicyRestricted": true
+    },
+    {
+      "type": "policyRetry",
+      "ts": "2026-04-30T11:39:34.121Z",
+      "retryKey": 1,
+      "policyRetryCount": 1,
+      "trigger": "appState"
+    },
+    {
+      "type": "initialized",
+      "ts": "2026-04-30T11:39:34.656Z",
+      "retryKey": 1,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    }
+  ],
+  "photoFile": "debug-reports/report_2026-04-30_11-41-02-507Z/photo.jpg",
+  "croppedPhotoFile": "debug-reports/report_2026-04-30_11-41-02-507Z/cropped.jpg"
+}
