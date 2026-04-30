@@ -2921,7 +2921,24 @@ export async function countTeeth(photoUri, signal, opts) {
     ? Math.abs(r.peakR - r.rOuter) / r.rOuter
     : null;
 
-  const innerContourSuspected = radiusSanityAbstain || radialChainringFires;
+  // PAP-861: bc-isolated-high-delta abstain.  When the bc-consensus method
+  // chooses the bcTc fallback at chainring scale (bcTc>=30, bcPeaks>=30) but
+  // ALL three FFT methods (peak, fft90, op) land >=10 below bcTc, the bc
+  // method has resolved an inner concentric feature (BCD / mounting holes)
+  // that the FFT methods don't see.  Force conf=0.  Targets b112 42T
+  // 05-37-35 (peak=11 fft90=20 op=26 bc=39 → committed 39 confidently-wrong).
+  // QA cross-check via pap861.candidates.js: 305-photo training corpus
+  // 2 fires / 0 wins / 0 losses (all neutral); device-XL targets 1 win
+  // (b112 05-37-35) / 0 losses across 10 frames.
+  const bcIsolatedHighDelta = r.methodUsed === 'bc-consensus'
+    && r.bcTc >= 30 && r.bcPeaks >= 30
+    && r.peakTc > 0 && r.fft90tc > 0 && r.opTc > 0
+    && (r.bcTc - r.peakTc) >= 10
+    && (r.bcTc - r.fft90tc) >= 10
+    && (r.bcTc - r.opTc) >= 10;
+
+  const innerContourSuspected = radiusSanityAbstain || radialChainringFires
+    || bcIsolatedHighDelta;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
 
   if (radiusSanityAbstain) {
@@ -3073,7 +3090,16 @@ export function countTeethFromRgba(rgba, width, height) {
   const radialRel = (r.peakR > 0 && r.rOuter > 0)
     ? Math.abs(r.peakR - r.rOuter) / r.rOuter
     : null;
-  const innerContourSuspected = radiusSanityAbstain || radialChainringFires;
+  // PAP-861: bc-isolated-high-delta abstain (mirror of countTeeth() — see
+  // there for full rationale and QA cross-check provenance).
+  const bcIsolatedHighDelta = r.methodUsed === 'bc-consensus'
+    && r.bcTc >= 30 && r.bcPeaks >= 30
+    && r.peakTc > 0 && r.fft90tc > 0 && r.opTc > 0
+    && (r.bcTc - r.peakTc) >= 10
+    && (r.bcTc - r.fft90tc) >= 10
+    && (r.bcTc - r.opTc) >= 10;
+  const innerContourSuspected = radiusSanityAbstain || radialChainringFires
+    || bcIsolatedHighDelta;
   const finalConfidence = innerContourSuspected ? 0 : r.confidence;
   return {
     toothCount: r.toothCount,
