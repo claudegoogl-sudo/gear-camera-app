@@ -2888,9 +2888,27 @@ export async function countTeeth(photoUri, signal, opts) {
     && Math.abs(r.bcTc - r.peakTc) > 5
     && r.toothCount === r.bcTc
     && r.bcTc > MIN_TEETH;
+  // PAP-889 (QA verdict via PAP-896, Path 2): XL center-collapse abstain.
+  // When findGearCenter locks onto a tiny inner feature on an aim-cropped
+  // capture (gearRadius < 0.20 in full-image fractional space) AND the
+  // chosen toothCount is sub-chainring AND the commit is low-confidence,
+  // the FFT channels disagreed enough that no other rescue gate fires
+  // (triple/bcStrong) — the result is a confident-wrong sub-harmonic read.
+  // Force conf=0.  329-photo training sweep + 15-frame XL device sweep
+  // (`debug-reports/pap889_optA_sweep_2026-04-30.log`) showed conf<0.40
+  // cleanly separates the b114 34T 10-09-03 target (conf=0.37) from
+  // legitimate high-confidence small/mid gears (all LOSS rows ≥0.81)
+  // while still rescuing 4 confident-wrong training rows (conf 0.14-0.37).
+  const xlCenterCollapse = aimCrop != null
+    && gearRadius < 0.20
+    && r.toothCount < 30
+    && r.confidence < 0.40
+    && !tripleAgree
+    && !bcStrongAgree;
   const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
-    || upperBoundMismatch;
+    || upperBoundMismatch
+    || xlCenterCollapse;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
 
   // PAP-815 (QA verdict 2026-04-29: REJECT → re-spin per Option 4): radial-
@@ -3140,9 +3158,22 @@ export function countTeethFromRgba(rgba, width, height) {
     && Math.abs(r.bcTc - r.peakTc) > 5
     && r.toothCount === r.bcTc
     && r.bcTc > MIN_TEETH;
+  // PAP-889 (QA verdict via PAP-896, Path 2): XL center-collapse abstain
+  // mirror — see countTeeth() for full rationale.  Harness call site has
+  // no aimCrop (training photos are not pre-cropped), so the aimCrop
+  // guard is omitted here — same pattern as PAP-553 / PAP-673 / PAP-684 /
+  // PAP-772 mirrors above.  This means the harness conservatively
+  // surfaces tc∈[14,19] regression risk on training photos that real
+  // device captures (aimCrop != null) would also see.
+  const xlCenterCollapse = gearRadiusCropSpace < 0.20
+    && r.toothCount < 30
+    && r.confidence < 0.40
+    && !tripleAgree
+    && !bcStrongAgree;
   const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
-    || upperBoundMismatch;
+    || upperBoundMismatch
+    || xlCenterCollapse;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
   // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
   // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
