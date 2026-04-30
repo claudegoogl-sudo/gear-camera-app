@@ -2978,8 +2978,28 @@ export async function countTeeth(photoUri, signal, opts) {
     && Math.abs(r.fft90tc - 2 * r.opTc) <= 2
     && gearRadius > 0.30;
 
+  // PAP-885: 5-way-agree override for radial-chainring abstain.  When
+  // radialChainringFires would zero conf BUT all 5 FFT channels (peakTc,
+  // fft90tc, opTc, bcTc, bcPeaks) read at chainring scale (>= 30) AND their
+  // max-min spread is <= 1, rOuter has mis-anchored to an inner band — the
+  // 5-way ±1 consensus on tooth count is stronger evidence than the radial
+  // disagreement.  Bypass the abstain and commit r.toothCount with raw
+  // confidence preserved.  QA cross-check via PAP-886: 2 wins on b114 36T
+  // (10-19-19 conf=0→raw, 10-23-07 conf=0→raw); 0 fires on 13 prior XL
+  // device frames (b111+b112) — predicate fails the >=30 gate on the b111
+  // 52T 05-35-33 false-consensus row (peak/fft90/op=12, bcPk=24) and the
+  // b111 52T 05-39-22 sub-chainring 5-way-21 row (chFires=N).
+  // Mutually exclusive with bcIsolatedHighDelta (requires bcTc-peak >=10)
+  // and fft90OuterRescue (requires peakTc===MIN_TEETH).
+  const fiveWayChainringAgree = (() => {
+    if (!radialChainringFires) return false;
+    const ch = [r.peakTc, r.fft90tc, r.opTc, r.bcTc, r.bcPeaks];
+    if (ch.some((v) => v < 30)) return false;
+    return Math.max(...ch) - Math.min(...ch) <= 1;
+  })();
+
   const innerContourSuspected = radiusSanityAbstain
-    || (radialChainringFires && !fft90OuterRescue)
+    || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree)
     || bcIsolatedHighDelta;
   let finalToothCount = r.toothCount;
   let finalConfidence = innerContourSuspected ? 0 : r.confidence;
@@ -3161,8 +3181,16 @@ export function countTeethFromRgba(rgba, width, height) {
     && r.opTc > 0
     && Math.abs(r.fft90tc - 2 * r.opTc) <= 2
     && gearRadiusCropSpace > 0.30;
+  // PAP-885: 5-way-agree override (mirror of countTeeth() — see there for
+  // full rationale and QA cross-check provenance via PAP-886).
+  const fiveWayChainringAgree = (() => {
+    if (!radialChainringFires) return false;
+    const ch = [r.peakTc, r.fft90tc, r.opTc, r.bcTc, r.bcPeaks];
+    if (ch.some((v) => v < 30)) return false;
+    return Math.max(...ch) - Math.min(...ch) <= 1;
+  })();
   const innerContourSuspected = radiusSanityAbstain
-    || (radialChainringFires && !fft90OuterRescue)
+    || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree)
     || bcIsolatedHighDelta;
   let finalToothCount = r.toothCount;
   let finalConfidence = innerContourSuspected ? 0 : r.confidence;
