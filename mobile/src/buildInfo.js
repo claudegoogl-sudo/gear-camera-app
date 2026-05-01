@@ -3,6 +3,6 @@
  * DO NOT edit by hand; run the build script to update.
  */
 export const BUILD_VERSION = '1.0.0';
-export const BUILD_NUMBER  = 116;
-export const BUILD_DATE    = '2026-04-30 18:08';  // YYYY-MM-DD HH:MM
-export const BUILD_LABEL   = 'v1.0.0 (116) · 2026-04-30 18:08';
+export const BUILD_NUMBER  = 117;
+export const BUILD_DATE    = '2026-05-01 14:46';  // YYYY-MM-DD HH:MM
+export const BUILD_LABEL   = 'v1.0.0 (117) · 2026-05-01 14:46';
