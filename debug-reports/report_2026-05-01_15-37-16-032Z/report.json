@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-05-01T15:37:16.032Z",
+  "app": "gear-camera",
+  "build": "v1.0.0 (117) · 2026-05-01 14:46",
+  "result": {
+    "toothCount": 36,
+    "confidence": 0,
+    "gearContour": {
+      "centerX": 0.4993311111111111,
+      "centerY": 0.4468533333333334,
+      "radius": 0.2561844444444445
+    },
+    "innerContourSuspected": true,
+    "algoDiag": {
+      "peakR": 383,
+      "rOuter": 302,
+      "radialRelDisagree": 0.2682119205298013
+    }
+  },
+  "algorithmRuntimeMs": 71942,
+  "aimCrop": {
+    "originX": 597,
+    "originY": 760,
+    "side": 1806,
+    "fullW": 3000,
+    "fullH": 4000,
+    "aimCircleFrac": 1,
+    "screenCenterX": 196.36363220214844,
+    "screenCenterY": 343.4545440673828,
+    "measured": true
+  },
+  "actualTeethCount": 36,
+  "cameraErrors": [],
+  "cameraEvents": [
+    {
+      "type": "initialized",
+      "ts": "2026-05-01T15:31:12.070Z",
+      "retryKey": 0,
+      "deviceId": "0",
+      "alreadyReady": false,
+      "hasTorch": true,
+      "hasFlash": true
+    }
+  ],
+  "photoFile": "debug-reports/report_2026-05-01_15-37-16-032Z/photo.jpg",
+  "croppedPhotoFile": "debug-reports/report_2026-05-01_15-37-16-032Z/cropped.jpg"
+}
