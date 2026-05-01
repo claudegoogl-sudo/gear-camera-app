@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-05-01T14:56:43.693Z",
+  "build": "v1.0.0 (117) · 2026-05-01 14:46",
+  "photoFile": "training-data/2026-05-01_14-56-43-693Z_photo.jpg",
+  "result": {
+    "toothCount": 48,
+    "confidence": 1,
+    "gearContour": {
+      "centerX": 0.49398000000000003,
+      "centerY": 0.42778999999999995,
+      "radius": 0.27090000000000003
+    }
+  },
+  "actualTeethCount": 48
+}
