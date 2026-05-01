@@ -2905,10 +2905,35 @@ export async function countTeeth(photoUri, signal, opts) {
     && r.confidence < 0.40
     && !tripleAgree
     && !bcStrongAgree;
+  // PAP-939 (QA verdict via PAP-941, Cand-3): XL chainring inner-lock abstain.
+  // On large chainrings (50-52T), findGearCenter sometimes locks onto the BCD /
+  // spider mounting-bolt ring rather than the outer tooth tips.  The peakR
+  // (multi-radius FFT chosen radius) and rOuter (outermost radial-gradient
+  // peak) BOTH anchor on that inner band — so the PAP-815 radial-disagreement
+  // gate (|peakR-rOuter|/rOuter ≥ 0.18) does NOT fire — yet the FFT methods
+  // commit a sub-harmonic or alias count well below chainring scale.
+  // Signature: gearRadius small (< 0.22 fullImage on aim-cropped capture),
+  // committed toothCount sub-chainring (<35), but at least one channel
+  // resolved a chainring-scale candidate (≥30T) AND peakR≈rOuter dual-inner-
+  // lock (|Δ|/rOuter < 0.10).  Force conf=0.  QA cross-check (PAP-941):
+  // 340-photo training corpus → 1 LOSS (b114 34T 10-17-13 conf=0.90 → abstain;
+  // ≤ 1 cap), 0 b116 LOSS / 2 WIN (52T 08-22-10 conf=0.41, 08-26-34 conf=0.51
+  // both forced conf=0), 0 prior-XL LOSS (b111/b112/b114 unaffected).
+  // Mirror of PAP-815 pattern (chainringRegime + radial signal).
+  const xlChainringInnerLock = aimCrop != null
+    && gearRadius < 0.22
+    && r.toothCount < 35
+    && r.peakR > 0 && r.rOuter > 0
+    && Math.abs(r.peakR - r.rOuter) / r.rOuter < 0.10
+    && (r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
+        || r.bcTc >= 30 || r.bcPeaks >= 30)
+    && !tripleAgree
+    && !bcStrongAgree;
   const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch
-    || xlCenterCollapse;
+    || xlCenterCollapse
+    || xlChainringInnerLock;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
 
   // PAP-815 (QA verdict 2026-04-29: REJECT → re-spin per Option 4): radial-
@@ -3170,10 +3195,24 @@ export function countTeethFromRgba(rgba, width, height) {
     && r.confidence < 0.40
     && !tripleAgree
     && !bcStrongAgree;
+  // PAP-939 (QA verdict via PAP-941, Cand-3): XL chainring inner-lock abstain
+  // mirror — see countTeeth() for full rationale.  Harness call site has no
+  // aimCrop (training photos are not pre-cropped), so threshold is in
+  // crop-space (gearRadiusCropSpace < 0.365 ≈ device fullImage 0.22 at
+  // typical side/fullW=0.602).
+  const xlChainringInnerLock = gearRadiusCropSpace < 0.365
+    && r.toothCount < 35
+    && r.peakR > 0 && r.rOuter > 0
+    && Math.abs(r.peakR - r.rOuter) / r.rOuter < 0.10
+    && (r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
+        || r.bcTc >= 30 || r.bcPeaks >= 30)
+    && !tripleAgree
+    && !bcStrongAgree;
   const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch
-    || xlCenterCollapse;
+    || xlCenterCollapse
+    || xlChainringInnerLock;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
   // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
   // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
