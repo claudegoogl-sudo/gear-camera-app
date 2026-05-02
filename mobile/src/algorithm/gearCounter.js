@@ -2888,6 +2888,29 @@ export async function countTeeth(photoUri, signal, opts) {
     && Math.abs(r.bcTc - r.peakTc) > 5
     && r.toothCount === r.bcTc
     && r.bcTc > MIN_TEETH;
+  // PAP-1059 (QA verdict via PAP-1063): chainring tooth-count confirmed bypass.
+  // High-tooth (>=30T) abstain rescue when the committed toothCount is itself
+  // independently confirmed by ≥2 channels at chainring scale.  Targets the
+  // PAP-1052 detected==actual conf=0 cluster (45 photos, top accuracy
+  // bottleneck) which dominantly fires PAP-961 aimPriorAbstain (3/5 seeds) or
+  // PAP-815 radialChainringFires (2/5).  Branch A' requires peakTc===tc PLUS a
+  // second corroborator (bcTc>=30 or opTc===tc); branch B requires the bc
+  // method self-consistent (bcTc===tc and bcPeaks within ±1 of bcTc).  The
+  // tc>=30 floor is stricter than tripleAgree/bcStrongAgree (>10) so
+  // Small/Mid/Large commits cannot fire the bypass — structural protection.
+  // QA full 356-photo sweep (debug-reports/pap1063_full_sweep_2026-05-02.log):
+  // refined A'∪B = +26 XL WIN / 0 LOSS Small/Mid/Large/XL.  Original A∪B
+  // (peakTc===tc alone, no second-channel guard) regressed 1 XL row to
+  // confident-wrong (10-54-55 act=42 d=40 single-peak) and was rejected by QA.
+  // Bypasses all three existing abstain mechanisms (radiusSanityAbstain,
+  // radialChainringFires, bcIsolatedHighDelta) since the AC1 seeds hit
+  // different ones.  Method tag: pap1059-chainring-tc-confirmed.
+  const chainringTcConfirmed =
+    r.toothCount >= 30
+    && (
+      (r.peakTc === r.toothCount && (r.bcTc >= 30 || r.opTc === r.toothCount))
+      || (r.bcTc === r.toothCount && Math.abs(r.bcPeaks - r.bcTc) <= 1)
+    );
   // PAP-889 (QA verdict via PAP-896, Path 2): XL center-collapse abstain.
   // When findGearCenter locks onto a tiny inner feature on an aim-cropped
   // capture (gearRadius < 0.20 in full-image fractional space) AND the
@@ -2976,7 +2999,8 @@ export async function countTeeth(photoUri, signal, opts) {
     || xlChainringInnerLock
     || campaBoltAbstain
     || aimPriorAbstain;
-  const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
+  const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree
+    && !chainringTcConfirmed;
 
   // PAP-815 (QA verdict 2026-04-29: REJECT → re-spin per Option 4): radial-
   // channel inner-feature-lock abstain.  When the chosen multi-radius FFT
@@ -3084,8 +3108,9 @@ export async function countTeeth(photoUri, signal, opts) {
   })();
 
   const innerContourSuspected = radiusSanityAbstain
-    || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree)
-    || bcIsolatedHighDelta;
+    || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree
+        && !chainringTcConfirmed)
+    || (bcIsolatedHighDelta && !chainringTcConfirmed);
   let finalToothCount = r.toothCount;
   let finalConfidence = innerContourSuspected ? 0 : r.confidence;
   if (fft90OuterRescue) {
@@ -3127,6 +3152,16 @@ export async function countTeeth(photoUri, signal, opts) {
       `[GearCounter] PAP-792 bc-strong-disagree override: tc=${r.toothCount} ` +
       `bcTc=${r.bcTc} bcPk=${r.bcPeaks} peak=${r.peakTc} dPB=${Math.abs(r.bcTc - r.peakTc)} ` +
       `r=${gearRadius.toFixed(4)} cropNR=${cropNormR.toFixed(3)} — committing.`
+    );
+  } else if ((radiusSanityFires
+              || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree)
+              || bcIsolatedHighDelta)
+             && chainringTcConfirmed) {
+    // PAP-1059: identifiable method tag for QA grep on harness logs.
+    console.log(
+      `[GearCounter] pap1059-chainring-tc-confirmed: tc=${r.toothCount} ` +
+      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} bc=${r.bcTc}(pk=${r.bcPeaks}) ` +
+      `r=${gearRadius.toFixed(4)} — committing.`
     );
   }
   if (fft90OuterRescue) {
@@ -3247,6 +3282,16 @@ export function countTeethFromRgba(rgba, width, height) {
     && Math.abs(r.bcTc - r.peakTc) > 5
     && r.toothCount === r.bcTc
     && r.bcTc > MIN_TEETH;
+  // PAP-1059 (QA verdict via PAP-1063): chainring tooth-count confirmed bypass
+  // mirror — see countTeeth() for full rationale (PAP-1052 detected==actual
+  // conf=0 cluster, refined A'∪B = +26 XL WIN / 0 LOSS on 356-photo sweep).
+  // Method tag: pap1059-chainring-tc-confirmed.
+  const chainringTcConfirmed =
+    r.toothCount >= 30
+    && (
+      (r.peakTc === r.toothCount && (r.bcTc >= 30 || r.opTc === r.toothCount))
+      || (r.bcTc === r.toothCount && Math.abs(r.bcPeaks - r.bcTc) <= 1)
+    );
   // PAP-889 (QA verdict via PAP-896, Path 2): XL center-collapse abstain
   // mirror — see countTeeth() for full rationale.  Harness call site has
   // no aimCrop (training photos are not pre-cropped), so the aimCrop
@@ -3302,7 +3347,8 @@ export function countTeethFromRgba(rgba, width, height) {
     || xlChainringInnerLock
     || campaBoltAbstain
     || aimPriorAbstain;
-  const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
+  const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree
+    && !chainringTcConfirmed;
   // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
   // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
   // full rationale and threshold provenance.
@@ -3349,21 +3395,26 @@ export function countTeethFromRgba(rgba, width, height) {
     return Math.max(...ch) - Math.min(...ch) <= 1;
   })();
   const innerContourSuspected = radiusSanityAbstain
-    || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree)
-    || bcIsolatedHighDelta;
+    || (radialChainringFires && !fft90OuterRescue && !fiveWayChainringAgree
+        && !chainringTcConfirmed)
+    || (bcIsolatedHighDelta && !chainringTcConfirmed);
   let finalToothCount = r.toothCount;
   let finalConfidence = innerContourSuspected ? 0 : r.confidence;
   if (fft90OuterRescue) {
     finalToothCount = r.fft90tc;
     finalConfidence = Math.max(r.confidence, 0.10);
   }
-  // PAP-963 / PAP-961: identifiable method tags for QA grep on harness JSON.
+  // PAP-963 / PAP-961 / PAP-1059: identifiable method tags for QA grep on harness JSON.
   let methodUsed = r.methodUsed;
   if (radiusSanityAbstain && campaBoltAbstain) {
     methodUsed = `${methodUsed}+pap963-campa-bolt-abstain`;
   }
   if (radiusSanityAbstain && aimPriorAbstain) {
     methodUsed = `${methodUsed}+pap961-aim-circle-prior-abstain`;
+  }
+  if (chainringTcConfirmed
+      && (radiusSanityFires || radialChainringFires || bcIsolatedHighDelta)) {
+    methodUsed = `${methodUsed}+pap1059-chainring-tc-confirmed`;
   }
   return {
     toothCount: finalToothCount,

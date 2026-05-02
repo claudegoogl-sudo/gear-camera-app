@@ -1,0 +1,67 @@
+
+=== PAP-1059 — chainringTcConfirmed bypass sweep ===
+predicate: tc>=30 && (peakTc===tc || (bcTc===tc && |bcPeaks-bcTc|<=1))
+
+[pap1059-train] SCOPE=full running 356/356 labeled photos
+  [50/356] 1058s
+  [100/356] 2366s
+  [150/356] 3706s
+  [200/356] 4817s
+  [250/356] 6078s
+  [300/356] 7223s
+  [350/356] 8265s
+
+[Training] 356 photos (9-60T)
+
+=== bypass-eligible rows by class ===
+  Small  fires=0  noopAlreadyCommit=0  WIN=0  LOSS=0
+  Mid    fires=0  noopAlreadyCommit=0  WIN=0  LOSS=0
+  Large  fires=0  noopAlreadyCommit=0  WIN=0  LOSS=0
+  XL     fires=32  noopAlreadyCommit=2  WIN=29  LOSS=1
+
+=== LOSS rows (bypass converts ABSTAIN → CONFIDENT-WRONG) ===
+  2026-04-24_10-54-55-930Z  cls=XL  actual=42  tc=40  conf=0.00  peak=40 fft90=12 op=14 bc=13(pk=14)  gateHit=rSan  m=fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain
+
+=== WIN rows (bypass rescues ABSTAIN → CORRECT) ===
+  2026-04-25_08-05-45-433Z  cls=XL  actual=42  tc=42  conf=0.00  peak=42 fft90=10 op=10 bc=42(pk=41)  gateHit=rSan  m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  2026-04-27_07-56-37-377Z  cls=XL  actual=42  tc=41  conf=0.00  peak=41 fft90=41 op=20 bc=42(pk=34)  gateHit=rSan  m=fft-agreement+pap961-aim-circle-prior-abstain
+  2026-04-28_06-58-55-390Z  cls=XL  actual=52  tc=53  conf=0.00  peak=53 fft90=12 op=26 bc=12(pk=18)  gateHit=rSan  m=fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain
+  2026-04-28_11-25-03-709Z  cls=XL  actual=42  tc=42  conf=0.00  peak=42 fft90=10 op=18 bc=42(pk=41)  gateHit=rSan  m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  2026-04-28_11-42-46-509Z  cls=XL  actual=42  tc=42  conf=0.00  peak=14 fft90=13 op=20 bc=42(pk=42)  gateHit=radCR  m=bc-consensus
+  2026-04-28_18-32-08-432Z  cls=XL  actual=42  tc=43  conf=0.00  peak=43 fft90=43 op=11 bc=10(pk=4)  gateHit=rSan  m=fft90-fallback+pap961-aim-circle-prior-abstain
+  2026-04-29_05-31-31-338Z  cls=XL  actual=42  tc=41  conf=0.00  peak=41 fft90=20 op=12 bc=42(pk=8)  gateHit=rSan  m=fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain
+  2026-04-30_05-32-57-251Z  cls=XL  actual=42  tc=42  conf=0.00  peak=42 fft90=41 op=42 bc=10(pk=0)  gateHit=rSan  m=fft-agreement+pap961-aim-circle-prior-abstain
+  2026-04-30_10-17-13-321Z  cls=XL  actual=34  tc=34  conf=0.00  peak=34 fft90=11 op=12 bc=34(pk=34)  gateHit=rSan  m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  2026-04-30_10-19-29-950Z  cls=XL  actual=36  tc=36  conf=0.00  peak=32 fft90=10 op=22 bc=36(pk=36)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-04-30_10-23-20-845Z  cls=XL  actual=36  tc=36  conf=0.00  peak=10 fft90=20 op=10 bc=36(pk=35)  gateHit=radCR  m=bc-consensus
+  2026-04-30_11-41-12-489Z  cls=XL  actual=32  tc=32  conf=0.00  peak=13 fft90=14 op=16 bc=32(pk=32)  gateHit=radCR  m=bc-consensus
+  2026-04-30_11-42-53-294Z  cls=XL  actual=32  tc=32  conf=0.00  peak=11 fft90=11 op=16 bc=32(pk=32)  gateHit=radCR  m=bc-consensus
+  2026-04-30_12-31-00-766Z  cls=XL  actual=50  tc=50  conf=0.00  peak=51 fft90=10 op=13 bc=50(pk=50)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-04-30_12-33-17-234Z  cls=XL  actual=48  tc=48  conf=0.00  peak=10 fft90=10 op=14 bc=48(pk=48)  gateHit=radCR  m=bc-consensus
+  2026-04-30_12-35-25-332Z  cls=XL  actual=48  tc=48  conf=0.00  peak=10 fft90=10 op=10 bc=48(pk=47)  gateHit=radCR  m=bc-consensus
+  2026-04-30_20-03-52-567Z  cls=XL  actual=52  tc=52  conf=0.00  peak=52 fft90=10 op=13 bc=10(pk=1)  gateHit=rSan  m=fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain
+  2026-04-30_20-31-06-904Z  cls=XL  actual=48  tc=48  conf=0.00  peak=48 fft90=10 op=15 bc=48(pk=48)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-05-01_08-28-38-224Z  cls=XL  actual=50  tc=50  conf=0.00  peak=10 fft90=12 op=12 bc=50(pk=50)  gateHit=radCR  m=bc-consensus
+  2026-05-01_09-04-04-917Z  cls=XL  actual=48  tc=49  conf=0.00  peak=48 fft90=10 op=24 bc=49(pk=48)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-05-01_14-53-42-651Z  cls=XL  actual=42  tc=42  conf=0.00  peak=42 fft90=42 op=22 bc=42(pk=42)  gateHit=rSan  m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  2026-05-01_14-55-07-717Z  cls=XL  actual=42  tc=42  conf=0.00  peak=42 fft90=42 op=12 bc=42(pk=42)  gateHit=rSan  m=bc-consensus+fft-agree+pap961-aim-circle-prior-abstain
+  2026-05-01_14-56-43-693Z  cls=XL  actual=48  tc=48  conf=0.00  peak=48 fft90=12 op=11 bc=48(pk=48)  gateHit=rSan  m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  2026-05-01_15-00-55-239Z  cls=XL  actual=48  tc=48  conf=0.00  peak=13 fft90=13 op=15 bc=48(pk=48)  gateHit=radCR  m=bc-consensus
+  2026-05-01_15-04-02-875Z  cls=XL  actual=48  tc=47  conf=0.00  peak=12 fft90=13 op=30 bc=47(pk=48)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-05-01_15-06-20-161Z  cls=XL  actual=50  tc=50  conf=0.00  peak=49 fft90=24 op=50 bc=50(pk=50)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-05-01_15-08-23-136Z  cls=XL  actual=50  tc=50  conf=0.00  peak=50 fft90=50 op=24 bc=50(pk=49)  gateHit=rSan  m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  2026-05-01_15-10-32-571Z  cls=XL  actual=50  tc=50  conf=0.00  peak=51 fft90=24 op=24 bc=50(pk=50)  gateHit=rSan  m=bc-consensus+pap961-aim-circle-prior-abstain
+  2026-05-01_15-22-03-978Z  cls=XL  actual=52  tc=53  conf=0.00  peak=53 fft90=53 op=17 bc=53(pk=52)  gateHit=rSan  m=bc-consensus+fft-agree+pap961-aim-circle-prior-abstain
+
+=== AC3 PASS GATES ===
+  Small LOSS = 0 : 0 → PASS
+  Mid   LOSS = 0 : 0   → PASS
+  Large LOSS = 0 : 0 → PASS
+  XL  WIN ≥ +20  : 29    → PASS
+  XL  LOSS = 0   : 1    → FAIL
+  OVERALL        : FAIL
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        8394.633 s
+Ran all test suites.

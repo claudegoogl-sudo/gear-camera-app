@@ -1,0 +1,6 @@
+
+=== PAP-1059 — chainringTcConfirmed bypass sweep ===
+predicate: tc>=30 && (peakTc===tc || (bcTc===tc && |bcPeaks-bcTc|<=1))
+
+[pap1059-train] SCOPE=full running 356/356 labeled photos
+  [50/356] 1119s

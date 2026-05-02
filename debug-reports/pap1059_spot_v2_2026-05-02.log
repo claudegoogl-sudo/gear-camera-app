@@ -1,0 +1,44 @@
+
+=== PAP-1059 spot-check ===
+Predicate: tc>=30 && (peakTc===tc || (bcTc===tc && |bcPeaks-bcTc|<=1))
+
+--- (1) Mid/Large LOSS-risk (current ABSTAIN, detected≥30) ---
+  [NO-FIRE (safe)] 2026-04-19_18-38-33-566Z act=28 tc>=30 but no channel match  tc=32 conf=0.00 peak=15 fft90=10 op=32 bc=10(pk=4) inSus=true m=bc-fft+large-op-override+pap961-aim-circle-prior-abstain
+  [NO-FIRE (safe)] 2026-04-21_05-25-55-038Z act=24 tc>=30 but no channel match  tc=44 conf=0.00 peak=10 fft90=44 op=10 bc=13(pk=13) inSus=true m=fft90-fallback+pap961-aim-circle-prior-abstain
+  [NO-FIRE (safe)] 2026-04-23_07-21-34-334Z act=21 tc>=30 but no channel match  tc=44 conf=0.00 peak=10 fft90=44 op=15 bc=12(pk=1) inSus=true m=fft90-fallback+pap961-aim-circle-prior-abstain
+  [NO-FIRE (safe)] 2026-04-20_15-53-34-450Z act=18 tc>=30 but no channel match  tc=44 conf=0.00 peak=13 fft90=44 op=12 bc=17(pk=7) inSus=true m=fft90-fallback
+  [LOSS] 2026-04-24_10-54-55-930Z act=42 A peakTc===tc  tc=40 conf=0.00 peak=40 fft90=12 op=14 bc=13(pk=14) inSus=true m=fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain
+  [NO-FIRE (safe)] 2026-04-28_14-18-32-698Z act=34 tc>=30 but no channel match  tc=40 conf=0.00 peak=11 fft90=40 op=24 bc=12(pk=10) inSus=true m=fft90-fallback
+  [NO-FIRE (safe)] 2026-05-01_09-09-26-510Z act=36 tc>=30 but no channel match  tc=34 conf=0.00 peak=39 fft90=38 op=38 bc=34(pk=36) inSus=true m=bc-consensus+pap961-aim-circle-prior-abstain
+  [NO-FIRE (safe)] 2026-05-01_15-37-22-230Z act=36 tc>=30 but no channel match  tc=38 conf=0.00 peak=39 fft90=38 op=38 bc=38(pk=36) inSus=true m=bc-consensus+pap961-aim-circle-prior-abstain
+  → fires on 1/8 LOSS-risk rows
+
+--- (2) XL detected≈actual abstains ---
+  [NO-FIRE] 2026-04-25_07-58-59-154Z act=42 tc>=30 but no channel match  tc=42 conf=0.00 peak=10 fft90=10 op=10 bc=42(pk=39) inSus=true m=bc-fft
+  [WIN ] 2026-04-25_08-05-45-433Z act=42 A peakTc===tc  tc=42 conf=0.00 peak=42 fft90=10 op=10 bc=42(pk=41) inSus=true m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-30_12-31-00-766Z act=50 B bcTc===tc & bcPk±1  tc=50 conf=0.00 peak=51 fft90=10 op=13 bc=50(pk=50) inSus=true m=bc-consensus+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-30_12-33-17-234Z act=48 B bcTc===tc & bcPk±1  tc=48 conf=0.00 peak=10 fft90=10 op=14 bc=48(pk=48) inSus=true m=bc-consensus
+  [WIN ] 2026-04-30_20-03-52-567Z act=52 A peakTc===tc  tc=52 conf=0.00 peak=52 fft90=10 op=13 bc=10(pk=1) inSus=true m=fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-28_11-25-03-709Z act=42 A peakTc===tc  tc=42 conf=0.00 peak=42 fft90=10 op=18 bc=42(pk=41) inSus=true m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-28_11-42-46-509Z act=42 B bcTc===tc & bcPk±1  tc=42 conf=0.00 peak=14 fft90=13 op=20 bc=42(pk=42) inSus=true m=bc-consensus
+  [WIN ] 2026-04-30_05-32-57-251Z act=42 A peakTc===tc  tc=42 conf=0.00 peak=42 fft90=41 op=42 bc=10(pk=0) inSus=true m=fft-agreement+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-30_10-17-13-321Z act=34 A peakTc===tc  tc=34 conf=0.00 peak=34 fft90=11 op=12 bc=34(pk=34) inSus=true m=bc-consensus+peak+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-30_10-19-29-950Z act=36 B bcTc===tc & bcPk±1  tc=36 conf=0.00 peak=32 fft90=10 op=22 bc=36(pk=36) inSus=true m=bc-consensus+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-04-30_10-23-20-845Z act=36 B bcTc===tc & bcPk±1  tc=36 conf=0.00 peak=10 fft90=20 op=10 bc=36(pk=35) inSus=true m=bc-consensus
+  [WIN ] 2026-04-30_11-41-12-489Z act=32 B bcTc===tc & bcPk±1  tc=32 conf=0.00 peak=13 fft90=14 op=16 bc=32(pk=32) inSus=true m=bc-consensus
+  [WIN ] 2026-04-30_11-42-53-294Z act=32 B bcTc===tc & bcPk±1  tc=32 conf=0.00 peak=11 fft90=11 op=16 bc=32(pk=32) inSus=true m=bc-consensus
+  [WIN ] 2026-04-30_12-35-25-332Z act=48 B bcTc===tc & bcPk±1  tc=48 conf=0.00 peak=10 fft90=10 op=10 bc=48(pk=47) inSus=true m=bc-consensus
+  [WIN ] 2026-04-30_20-31-06-904Z act=48 A peakTc===tc  tc=48 conf=0.00 peak=48 fft90=10 op=15 bc=48(pk=48) inSus=true m=bc-consensus+pap961-aim-circle-prior-abstain
+  [WIN ] 2026-05-01_08-28-38-224Z act=50 B bcTc===tc & bcPk±1  tc=50 conf=0.00 peak=10 fft90=12 op=12 bc=50(pk=50) inSus=true m=bc-consensus
+  [NO-FIRE] 2026-05-01_08-31-05-858Z act=50 tc>=30 but no channel match  tc=50 conf=0.00 peak=11 fft90=48 op=15 bc=50(pk=48) inSus=true m=bc-consensus+pap961-aim-circle-prior-abstain
+  → fires on 15/17; LOSS=0
+
+=== summary ===
+  LOSS-risk fires: 1 (target 0)
+  WIN cohort fires: 15 (target ≥ 15)
+  WIN cohort LOSS: 0 (target 0)
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        556.947 s
+Ran all test suites.
