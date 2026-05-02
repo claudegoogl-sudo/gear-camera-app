@@ -16,7 +16,7 @@
  * for small/mid).
  *
  * Run:
- *   npx jest --config mobile/__tests__/.jest.pap815preflight.config.js
+ *   HARNESS=pap815.preflight npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });

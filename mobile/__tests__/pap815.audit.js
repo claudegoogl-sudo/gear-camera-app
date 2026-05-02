@@ -22,7 +22,7 @@
  *   - Confident-wrong rows that survive (predicate did NOT fire)
  *
  * Run:
- *   npx jest --config mobile/__tests__/.jest.pap815audit.config.js
+ *   HARNESS=pap815.audit npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });

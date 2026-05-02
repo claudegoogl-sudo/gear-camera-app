@@ -27,7 +27,7 @@
  *     42T, 48T, 50T, 52T, 36T)
  *   - 1+ WIN on b114 34T 10-09-03 (the AC1 case)
  *
- * Run: npx jest --config mobile/__tests__/.jest.pap889.config.js
+ * Run: HARNESS=pap889.candidates npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
