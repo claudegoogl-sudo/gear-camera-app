@@ -2929,11 +2929,28 @@ export async function countTeeth(photoUri, signal, opts) {
         || r.bcTc >= 30 || r.bcPeaks >= 30)
     && !tripleAgree
     && !bcStrongAgree;
+  // PAP-963 (QA verdict V2 via PAP-1032): Campagnolo bolt-pattern abstain.
+  // Targets b117 Campa case `report_2026-05-01_14-52-05-858Z` (true 50T,
+  // committed toothCount∈{12,13}) where consensus assembled a 12/13 from
+  // BCD-aliasing inside the true outer band — yet at least one channel still
+  // resolved a chainring-scale candidate (≥30T).  V2 (final toothCount gate)
+  // selected over V1 (peakTc) and V3 (bcTc) by 356-photo training + 39-photo
+  // b111-b117 XL sweep: V2 = 0 LOSS / +1 WIN; V1 and V3 both regress XL.
+  // Calibration mirror of PAP-939 Cand-3: outer 0.22 (this site) ↔
+  // in-crop 0.365 (countTeethFromRgba).  Sweep log:
+  // debug-reports/pap963_full_sweep_2026-05-01.log.  Late-stage abstain only;
+  // does not alter PAP-861/868/885/889/939 paths.  Method tag:
+  // pap963-campa-bolt-abstain.
+  const campaBoltAbstain =
+    r.toothCount >= 12 && r.toothCount <= 13
+    && (r.fft90tc >= 30 || r.opTc >= 30 || r.bcTc >= 30 || r.bcPeaks >= 30)
+    && gearRadius >= 0.22;
   const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch
     || xlCenterCollapse
-    || xlChainringInnerLock;
+    || xlChainringInnerLock
+    || campaBoltAbstain;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
 
   // PAP-815 (QA verdict 2026-04-29: REJECT → re-spin per Option 4): radial-
@@ -3056,6 +3073,14 @@ export async function countTeeth(photoUri, signal, opts) {
       `[GearCounter] radius-sanity abstain: r=${gearRadius.toFixed(4)} tc=${r.toothCount} — ` +
       `inner-contour suspected. raw conf=${r.confidence.toFixed(2)} → forcing conf=0.`
     );
+    if (campaBoltAbstain) {
+      // PAP-963 AC2: identifiable method tag for QA grep.
+      console.log(
+        `[GearCounter] pap963-campa-bolt-abstain: tc=${r.toothCount} ` +
+        `fft90=${r.fft90tc} op=${r.opTc} bc=${r.bcTc}(pk=${r.bcPeaks}) ` +
+        `r=${gearRadius.toFixed(4)} — forcing conf=0.`
+      );
+    }
   } else if (radiusSanityFires && tripleAgree) {
     console.log(
       `[GearCounter] PAP-772 triple-agree override: tc=${r.toothCount} ` +
@@ -3212,11 +3237,20 @@ export function countTeethFromRgba(rgba, width, height) {
         || r.bcTc >= 30 || r.bcPeaks >= 30)
     && !tripleAgree
     && !bcStrongAgree;
+  // PAP-963 (QA verdict V2 via PAP-1032): Campagnolo bolt-pattern abstain
+  // mirror — see countTeeth() for full rationale.  In-crop calibration:
+  // gearRadiusCropSpace >= 0.365 ↔ device fullImage 0.22 (per harness sweep,
+  // matches PAP-939 Cand-3 mirror).  Method tag: pap963-campa-bolt-abstain.
+  const campaBoltAbstain =
+    r.toothCount >= 12 && r.toothCount <= 13
+    && (r.fft90tc >= 30 || r.opTc >= 30 || r.bcTc >= 30 || r.bcPeaks >= 30)
+    && gearRadiusCropSpace >= 0.365;
   const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch
     || xlCenterCollapse
-    || xlChainringInnerLock;
+    || xlChainringInnerLock
+    || campaBoltAbstain;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
   // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
   // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
@@ -3272,13 +3306,17 @@ export function countTeethFromRgba(rgba, width, height) {
     finalToothCount = r.fft90tc;
     finalConfidence = Math.max(r.confidence, 0.10);
   }
+  // PAP-963 AC2: identifiable method tag for QA grep on harness JSON.
+  const methodUsed = (radiusSanityAbstain && campaBoltAbstain)
+    ? `${r.methodUsed}+pap963-campa-bolt-abstain`
+    : r.methodUsed;
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter: { x: r.cx / width, y: r.cy / height },
     gearRadius: r.gearR / width,
     innerContourSuspected,
-    methodUsed: r.methodUsed,
+    methodUsed,
     bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,
     // PAP-810 / PAP-811: peakR is diagnostic-only (consumed by pap810.preflight).
     // PAP-815: rOuter (outermost radial-grad prom peak) and radialRelDisagree
