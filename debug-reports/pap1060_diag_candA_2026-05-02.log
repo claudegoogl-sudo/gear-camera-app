@@ -1,0 +1,70 @@
+
+=== PAP-1060 11T over-abstain trace ===
+
+--- per-row state ---
+2026-04-05_08-32-48-875Z  675x900
+  tc=11 conf=1.000 method=bc-consensus+peak innerSus=false
+  peakTc=11 fft90=17 op=10 bcTc=10 bcPk=12
+  gearR=0.1319 contourR=0.0 cropNormR=0.0000 peakR=89 rOuter=80 radialRel=0.113
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-05_08-33-27-869Z  675x900
+  tc=11 conf=0.000 method=bc-fft+pap961-aim-circle-prior-abstain innerSus=true
+  peakTc=11 fft90=34 op=16 bcTc=11 bcPk=9
+  gearR=0.1289 contourR=0.0 cropNormR=0.0000 peakR=87 rOuter=104 radialRel=0.163
+  GATES: gR<0.13=true upperBound=true aimPrior=true | tripleAgree=false bcStrong=false
+2026-04-05_08-34-06-051Z  675x900
+  tc=11 conf=0.694 method=bc-consensus innerSus=false
+  peakTc=14 fft90=28 op=11 bcTc=11 bcPk=11
+  gearR=0.2904 contourR=0.0 cropNormR=0.0000 peakR=196 rOuter=79 radialRel=1.481
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-05_14-40-38-072Z  675x900
+  tc=11 conf=0.000 method=bc-consensus innerSus=true
+  peakTc=18 fft90=36 op=12 bcTc=11 bcPk=13
+  gearR=0.4400 contourR=0.0 cropNormR=0.0000 peakR=297 rOuter=109 radialRel=1.725
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-05_20-05-36-867Z  900x675
+  tc=11 conf=0.000 method=peak innerSus=true
+  peakTc=11 fft90=11 op=11 bcTc=10 bcPk=24
+  gearR=0.1000 contourR=0.0 cropNormR=0.0000 peakR=90 rOuter=74 radialRel=0.216
+  GATES: gR<0.13=true upperBound=true aimPrior=false | tripleAgree=true bcStrong=false
+2026-04-06_10-01-25-781Z  900x675
+  tc=11 conf=0.000 method=bc-consensus+pap961-aim-circle-prior-abstain innerSus=true
+  peakTc=11 fft90=36 op=22 bcTc=11 bcPk=13
+  gearR=0.2067 contourR=0.0 cropNormR=0.0000 peakR=186 rOuter=155 radialRel=0.200
+  GATES: gR<0.13=false upperBound=true aimPrior=true | tripleAgree=false bcStrong=false
+2026-04-19_11-32-11-962Z  675x900
+  tc=11 conf=1.000 method=peak innerSus=false
+  peakTc=11 fft90=22 op=11 bcTc=11 bcPk=18
+  gearR=0.1659 contourR=0.0 cropNormR=0.0000 peakR=112 rOuter=102 radialRel=0.098
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-19_11-33-29-608Z  900x675
+  tc=11 conf=0.000 method=peak innerSus=true
+  peakTc=11 fft90=10 op=11 bcTc=11 bcPk=16
+  gearR=0.1200 contourR=0.0 cropNormR=0.0000 peakR=108 rOuter=102 radialRel=0.059
+  GATES: gR<0.13=true upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-21_19-02-17-555Z  675x900
+  tc=11 conf=1.000 method=peak innerSus=false
+  peakTc=11 fft90=13 op=11 bcTc=11 bcPk=21
+  gearR=0.1585 contourR=0.0 cropNormR=0.0000 peakR=107 rOuter=79 radialRel=0.354
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-22_18-55-06-131Z  675x900
+  tc=11 conf=0.723 method=bc-consensus+peak innerSus=false
+  peakTc=11 fft90=20 op=11 bcTc=11 bcPk=10
+  gearR=0.1585 contourR=0.0 cropNormR=0.0000 peakR=107 rOuter=87 radialRel=0.230
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+2026-04-25_08-03-37-711Z  675x900
+  tc=11 conf=0.000 method=low-conf-consensus+op-up-override innerSus=true
+  peakTc=10 fft90=10 op=11 bcTc=13 bcPk=9
+  gearR=0.1748 contourR=0.0 cropNormR=0.0000 peakR=118 rOuter=45 radialRel=1.622
+  GATES: gR<0.13=false upperBound=true aimPrior=false | tripleAgree=false bcStrong=false
+
+--- summary ---
+upperBound fired: 11/11
+gR<0.13 fired:    3/11
+aimPrior fired:   2/11
+tripleAgree set:  1/11
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        340.577 s
+Ran all test suites.
