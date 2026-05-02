@@ -2945,12 +2945,37 @@ export async function countTeeth(photoUri, signal, opts) {
     r.toothCount >= 12 && r.toothCount <= 13
     && (r.fft90tc >= 30 || r.opTc >= 30 || r.bcTc >= 30 || r.bcPeaks >= 30)
     && gearRadius >= 0.22;
+  // PAP-961 (QA verdict via PAP-964, threshold 0.65): aim-circle prior abstain.
+  // Architectural successor to PAP-950: when the user has aim-cropped (post
+  // PAP-738 the crop bounding box IS the aim-circle bounding square) and the
+  // multi-radius FFT chosen peakR is far inside the user-aimed reticle, the
+  // FFT anchored on a sub-aim-circle inner feature (BCD/spider/inner ring)
+  // rather than the outer tooth tips.  Abstain-only — no commit override.
+  // aimR = 0.5 * min(width, height) per cropToAimCircle inscribed-circle
+  // calibration (memory: project_aimCircleFrac_unused.md).  Threshold 0.65
+  // (vs 0.75) preserves the b111 05-33-35 confident-correct 52T row
+  // (pk/aim=0.733).  Chainring-regime gate prevents Small/Mid spurious fires.
+  // Override bypasses tripleAgree/bcStrongAgree match existing radius-sanity
+  // gates; PAP-868/PAP-885 method tags are not bypassed because their rescue
+  // path is also late-stage and the predicate fires before final commit
+  // (mirror-side harness sweep `debug-reports/pap961_sweep_2026-05-02.log`
+  // shows 0 LOSS on b111-b117 39-photo XL device panel + 1 WIN on b117
+  // 15-14-08 52T; Small/Mid/Large training 0 LOSS each; +17 XL training
+  // confident-correct sacrificed — documented tradeoff for the device-panel
+  // win).  Method tag: pap961-aim-circle-prior-abstain.
+  const aimR = aimCrop ? 0.5 * Math.min(width, height) : 0;
+  const aimPriorAbstain = aimCrop != null
+    && aimR > 0
+    && (r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
+        || r.bcTc >= 30 || r.bcPeaks >= 30)
+    && r.peakR > 0 && r.peakR < 0.65 * aimR;
   const radiusSanityFires = gearRadius < 0.13
     || (gearRadius < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch
     || xlCenterCollapse
     || xlChainringInnerLock
-    || campaBoltAbstain;
+    || campaBoltAbstain
+    || aimPriorAbstain;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
 
   // PAP-815 (QA verdict 2026-04-29: REJECT → re-spin per Option 4): radial-
@@ -3079,6 +3104,16 @@ export async function countTeeth(photoUri, signal, opts) {
         `[GearCounter] pap963-campa-bolt-abstain: tc=${r.toothCount} ` +
         `fft90=${r.fft90tc} op=${r.opTc} bc=${r.bcTc}(pk=${r.bcPeaks}) ` +
         `r=${gearRadius.toFixed(4)} — forcing conf=0.`
+      );
+    }
+    if (aimPriorAbstain) {
+      // PAP-961: identifiable method tag for QA grep.
+      const ratio = aimR > 0 ? (r.peakR / aimR).toFixed(3) : 'n/a';
+      console.log(
+        `[GearCounter] pap961-aim-circle-prior-abstain: tc=${r.toothCount} ` +
+        `peakR=${r.peakR} aimR=${aimR.toFixed(0)} pk/aim=${ratio} ` +
+        `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+        `bc=${r.bcTc}(pk=${r.bcPeaks}) — forcing conf=0.`
       );
     }
   } else if (radiusSanityFires && tripleAgree) {
@@ -3245,12 +3280,28 @@ export function countTeethFromRgba(rgba, width, height) {
     r.toothCount >= 12 && r.toothCount <= 13
     && (r.fft90tc >= 30 || r.opTc >= 30 || r.bcTc >= 30 || r.bcPeaks >= 30)
     && gearRadiusCropSpace >= 0.365;
+  // PAP-961 (QA verdict via PAP-964): aim-circle prior abstain mirror.
+  // Harness call site has no aimCrop input (training photos are not pre-
+  // cropped), but the harness sweep harness applies the same circular mask
+  // for XL device replay (`mobile/__tests__/lib/harness-runner.js` evalPhoto
+  // applyMask=true) and treats the photo as the aim-cropped canvas (aim_r ≈
+  // 0.5 * min(W, H)).  Mirror unconditionally on training photos for parity
+  // with countTeeth() — same pattern as PAP-553/PAP-673/PAP-684/PAP-772 and
+  // PAP-963 mirrors above.  Threshold 0.65 retained from QA verdict.  Sweep
+  // log: debug-reports/pap961_sweep_2026-05-02.log.  Method tag:
+  // pap961-aim-circle-prior-abstain.
+  const aimR = 0.5 * Math.min(width, height);
+  const aimPriorAbstain = aimR > 0
+    && (r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
+        || r.bcTc >= 30 || r.bcPeaks >= 30)
+    && r.peakR > 0 && r.peakR < 0.65 * aimR;
   const radiusSanityFires = gearRadiusCropSpace < 0.13
     || (gearRadiusCropSpace < 0.15 && r.toothCount >= 20)
     || upperBoundMismatch
     || xlCenterCollapse
     || xlChainringInnerLock
-    || campaBoltAbstain;
+    || campaBoltAbstain
+    || aimPriorAbstain;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree;
   // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
   // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
@@ -3306,10 +3357,14 @@ export function countTeethFromRgba(rgba, width, height) {
     finalToothCount = r.fft90tc;
     finalConfidence = Math.max(r.confidence, 0.10);
   }
-  // PAP-963 AC2: identifiable method tag for QA grep on harness JSON.
-  const methodUsed = (radiusSanityAbstain && campaBoltAbstain)
-    ? `${r.methodUsed}+pap963-campa-bolt-abstain`
-    : r.methodUsed;
+  // PAP-963 / PAP-961: identifiable method tags for QA grep on harness JSON.
+  let methodUsed = r.methodUsed;
+  if (radiusSanityAbstain && campaBoltAbstain) {
+    methodUsed = `${methodUsed}+pap963-campa-bolt-abstain`;
+  }
+  if (radiusSanityAbstain && aimPriorAbstain) {
+    methodUsed = `${methodUsed}+pap961-aim-circle-prior-abstain`;
+  }
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,

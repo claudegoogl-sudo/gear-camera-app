@@ -1,0 +1,68 @@
+
+=== PAP-961 aim-circle prior sweep (peakR < 0.65 * aimR) ===
+[Training] 0 photos (9-60T)
+
+[XL device] total=39
+  [..] b111 report_2026-04-29_05-29-04-170 cls=XL act=42 tc=41 conf=0.48 peak=43 fft90=41 op=42 bc=10(pk=12) peakR=392 aimR=450 pk/aim=0.871 m=fft90-fallback
+  [..] b111 report_2026-04-29_05-31-25-376 cls=XL act=42 tc=41 conf=0.82 peak=41 fft90=41 op=13 bc=12(pk=4) peakR=393 aimR=450 pk/aim=0.873 m=peak
+  [..] b111 report_2026-04-29_05-33-35-933 cls=XL act=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) peakR=330 aimR=450 pk/aim=0.733 m=retry-bc-peaks /* b111 conf-correct (LOSS-protect) */
+  [..] b111 report_2026-04-29_05-35-33-518 cls=XL act=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) peakR=283 aimR=450 pk/aim=0.629 m=retry-bc-peaks
+  [..] b111 report_2026-04-29_05-37-38-177 cls=XL act=52 tc=50 conf=0.61 peak=12 fft90=12 op=18 bc=53(pk=50) peakR=304 aimR=450 pk/aim=0.676 m=retry-bc-peaks
+  [..] b111 report_2026-04-29_05-39-22-521 cls=XL act=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) peakR=380 aimR=450 pk/aim=0.844 m=bc-consensus+peak
+  [..] b112 report_2026-04-30_05-32-51-092 cls=XL act=42 tc=42 conf=0.67 peak=43 fft90=42 op=42 bc=42(pk=36) peakR=360 aimR=450 pk/aim=0.800 m=bc-fft
+  [..] b112 report_2026-04-30_05-34-20-458 cls=XL act=42 tc=43 conf=0.73 peak=10 fft90=43 op=14 bc=12(pk=4) peakR=436 aimR=450 pk/aim=0.969 m=bc-fft+pap868-fft90-xl-rescue-A
+  [..] b112 report_2026-04-30_05-35-59-637 cls=XL act=42 tc=42 conf=0.73 peak=10 fft90=42 op=20 bc=12(pk=4) peakR=287 aimR=450 pk/aim=0.638 m=bc-fft+pap868-fft90-xl-rescue-A+pap961-aim-circle-prior-abstain
+  [AP] b112 report_2026-04-30_05-37-35-156 cls=XL act=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) peakR=236 aimR=450 pk/aim=0.524 m=bc-consensus+pap961-aim-circle-prior-abstain
+  [..] b114 report_2026-04-30_10-09-03-515 cls=XL act=34 tc=18 conf=0.00 peak=10 fft90=18 op=24 bc=10(pk=23) peakR=118 aimR=450 pk/aim=0.262 m=fft90-fallback
+  [..] b114 report_2026-04-30_10-14-44-086 cls=XL act=34 tc=28 conf=0.00 peak=10 fft90=28 op=13 bc=11(pk=2) peakR=42 aimR=450 pk/aim=0.093 m=fft90-fallback
+  [..] b114 report_2026-04-30_10-17-03-115 cls=XL act=34 tc=34 conf=1.00 peak=34 fft90=34 op=34 bc=34(pk=34) peakR=369 aimR=450 pk/aim=0.820 m=bc-consensus+fft-agree
+  [..] b114 report_2026-04-30_10-19-19-295 cls=XL act=36 tc=35 conf=0.79 peak=35 fft90=36 op=35 bc=36(pk=36) peakR=386 aimR=450 pk/aim=0.858 m=bc-consensus+peak
+  [..] b114 report_2026-04-30_10-23-07-161 cls=XL act=36 tc=36 conf=1.00 peak=36 fft90=36 op=36 bc=36(pk=36) peakR=381 aimR=450 pk/aim=0.847 m=bc-consensus+peak
+  [AP] b116 report_2026-05-01_08-22-10-875 cls=XL act=52 tc=13 conf=0.00 peak=13 fft90=13 op=21 bc=46(pk=27) peakR=292 aimR=450 pk/aim=0.649 m=fft-agreement+pap961-aim-circle-prior-abstain
+  [AP] b116 report_2026-05-01_08-24-01-784 cls=XL act=52 tc=0 conf=0.00 peak=10 fft90=15 op=23 bc=45(pk=47) peakR=249 aimR=450 pk/aim=0.553 m=fft90-fallback+pap632-fft-floor-abstain+pap961-aim-circle-prior-abstain
+  [..] b116 report_2026-05-01_08-26-34-045 cls=XL act=52 tc=32 conf=0.00 peak=12 fft90=12 op=24 bc=52(pk=32) peakR=315 aimR=450 pk/aim=0.700 m=retry-bc-peaks /* AC1 candidate */
+  [..] b116 report_2026-05-01_08-28-32-755 cls=XL act=50 tc=50 conf=0.00 peak=50 fft90=24 op=25 bc=50(pk=50) peakR=396 aimR=450 pk/aim=0.880 m=bc-consensus
+  [..] b116 report_2026-05-01_08-30-59-457 cls=XL act=50 tc=50 conf=0.00 peak=12 fft90=24 op=24 bc=50(pk=49) peakR=305 aimR=450 pk/aim=0.678 m=bc-consensus
+  [..] b116 report_2026-05-01_09-03-58-615 cls=XL act=48 tc=48 conf=1.00 peak=48 fft90=12 op=14 bc=48(pk=48) peakR=401 aimR=450 pk/aim=0.891 m=bc-consensus+peak
+  [..] b116 report_2026-05-01_09-07-06-225 cls=XL act=42 tc=42 conf=0.49 peak=42 fft90=42 op=20 bc=40(pk=17) peakR=401 aimR=450 pk/aim=0.891 m=fft-agreement
+  [..] b116 report_2026-05-01_09-09-19-262 cls=XL act=36 tc=10 conf=0.00 peak=12 fft90=10 op=12 bc=10(pk=4) peakR=299 aimR=450 pk/aim=0.664 m=fft90-fallback
+  [..] b117 report_2026-05-01_14-52-05-858 cls=XL act=42 tc=12 conf=0.00 peak=41 fft90=43 op=15 bc=12(pk=4) peakR=374 aimR=450 pk/aim=0.831 m=bc-fft+pap963-campa-bolt-abstain /* Campagnolo dangerous */
+  [..] b117 report_2026-05-01_14-53-36-988 cls=XL act=42 tc=42 conf=1.00 peak=42 fft90=42 op=42 bc=42(pk=42) peakR=396 aimR=450 pk/aim=0.880 m=bc-consensus+peak
+  [..] b117 report_2026-05-01_14-55-01-423 cls=XL act=42 tc=42 conf=0.69 peak=42 fft90=42 op=21 bc=42(pk=42) peakR=397 aimR=450 pk/aim=0.882 m=bc-consensus+fft-agree
+  [..] b117 report_2026-05-01_14-56-37-862 cls=XL act=48 tc=48 conf=1.00 peak=48 fft90=12 op=13 bc=48(pk=48) peakR=405 aimR=450 pk/aim=0.900 m=bc-consensus+peak
+  [..] b117 report_2026-05-01_15-00-42-140 cls=XL act=48 tc=48 conf=1.00 peak=48 fft90=12 op=26 bc=48(pk=48) peakR=404 aimR=450 pk/aim=0.898 m=bc-consensus+peak
+  [..] b117 report_2026-05-01_15-03-56-895 cls=XL act=48 tc=48 conf=0.00 peak=12 fft90=12 op=10 bc=48(pk=47) peakR=345 aimR=450 pk/aim=0.767 m=bc-consensus
+  [..] b117 report_2026-05-01_15-06-13-796 cls=XL act=50 tc=50 conf=1.00 peak=50 fft90=24 op=24 bc=50(pk=50) peakR=404 aimR=450 pk/aim=0.898 m=bc-consensus+peak
+  [..] b117 report_2026-05-01_15-08-16-433 cls=XL act=50 tc=50 conf=1.00 peak=50 fft90=24 op=24 bc=50(pk=49) peakR=389 aimR=450 pk/aim=0.864 m=bc-consensus+peak
+  [..] b117 report_2026-05-01_15-10-25-896 cls=XL act=50 tc=50 conf=1.00 peak=50 fft90=24 op=24 bc=50(pk=50) peakR=421 aimR=450 pk/aim=0.936 m=bc-consensus
+  [..] b117 report_2026-05-01_15-12-27-152 cls=XL act=52 tc=36 conf=0.00 peak=12 fft90=12 op=30 bc=52(pk=36) peakR=294 aimR=450 pk/aim=0.653 m=retry-bc-peaks /* AC1 target */
+  [AP] b117 report_2026-05-01_15-14-08-511 cls=XL act=52 tc=38 conf=0.00 peak=11 fft90=11 op=13 bc=55(pk=38) peakR=252 aimR=450 pk/aim=0.560 m=retry-bc-peaks+pap961-aim-circle-prior-abstain /* AC1 target */
+  [AP] b117 report_2026-05-01_15-20-25-637 cls=XL act=52 tc=52 conf=0.69 peak=12 fft90=12 op=17 bc=52(pk=52) peakR=288 aimR=450 pk/aim=0.640 m=retry-bc-consensus+chainring-pk
+  [..] b117 report_2026-05-01_15-21-57-850 cls=XL act=52 tc=52 conf=0.78 peak=52 fft90=52 op=20 bc=52(pk=52) peakR=387 aimR=450 pk/aim=0.860 m=bc-consensus+fft-agree
+  [AP] b117 report_2026-05-01_15-28-06-337 cls=XL act=36 tc=30 conf=0.00 peak=25 fft90=30 op=20 bc=31(pk=36) peakR=245 aimR=450 pk/aim=0.544 m=fft90-fallback+pap961-aim-circle-prior-abstain
+  [AP] b117 report_2026-05-01_15-30-03-986 cls=XL act=36 tc=30 conf=0.00 peak=10 fft90=30 op=10 bc=31(pk=35) peakR=217 aimR=450 pk/aim=0.482 m=fft90-fallback+pap961-aim-circle-prior-abstain
+  [..] b117 report_2026-05-01_15-37-16-032 cls=XL act=36 tc=36 conf=0.00 peak=36 fft90=36 op=10 bc=36(pk=35) peakR=383 aimR=450 pk/aim=0.851 m=bc-consensus+peak
+
+[TRAINING 0] LOSS=0 WIN=0 NOOP=0
+  per-class LOSS: Small=0 Mid=0 Large=0 XL=0
+
+[XL 39] LOSS=0 WIN=0 NOOP=6
+  NOOP b112 report_2026-04-30_05-37-35-156 cls=XL act=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) peakR=236 aimR=450 pk/aim=0.524 m=bc-consensus+pap961-aim-circle-prior-abstain
+  NOOP b116 report_2026-05-01_08-22-10-875 cls=XL act=52 tc=13 conf=0.00 peak=13 fft90=13 op=21 bc=46(pk=27) peakR=292 aimR=450 pk/aim=0.649 m=fft-agreement+pap961-aim-circle-prior-abstain
+  NOOP b116 report_2026-05-01_08-24-01-784 cls=XL act=52 tc=0 conf=0.00 peak=10 fft90=15 op=23 bc=45(pk=47) peakR=249 aimR=450 pk/aim=0.553 m=fft90-fallback+pap632-fft-floor-abstain+pap961-aim-circle-prior-abstain
+  NOOP b117 report_2026-05-01_15-14-08-511 cls=XL act=52 tc=38 conf=0.00 peak=11 fft90=11 op=13 bc=55(pk=38) peakR=252 aimR=450 pk/aim=0.560 m=retry-bc-peaks+pap961-aim-circle-prior-abstain
+  NOOP b117 report_2026-05-01_15-28-06-337 cls=XL act=36 tc=30 conf=0.00 peak=25 fft90=30 op=20 bc=31(pk=36) peakR=245 aimR=450 pk/aim=0.544 m=fft90-fallback+pap961-aim-circle-prior-abstain
+  NOOP b117 report_2026-05-01_15-30-03-986 cls=XL act=36 tc=30 conf=0.00 peak=10 fft90=30 op=10 bc=31(pk=35) peakR=217 aimR=450 pk/aim=0.482 m=fft90-fallback+pap961-aim-circle-prior-abstain
+
+=== PAP-961 PASS GATES ===
+  Small LOSS ≤2 : 0 → PASS
+  Mid   LOSS ≤2 : 0 → PASS
+  Large LOSS ≤2 : 0 → PASS
+  XL    LOSS  0 : 0 → PASS
+  ≥1 WIN b117  : FAIL
+  OVERALL      : FAIL
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        1047.771 s, estimated 8210 s
+Ran all test suites.
