@@ -22,11 +22,9 @@
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 
-console.log = () => {};
-console.warn = () => {};
-console.info = () => {};
-console.debug = () => {};
-const out = (s) => process.stdout.write(s + '\n');
+const runner = require('./lib/harness-runner');
+const { out, DEBUG_DIR, TRAINING_DIR, TARGET_MAX_DIM } = runner;
+runner.silenceConsole();
 
 const fs = require('fs');
 const path = require('path');
@@ -34,9 +32,6 @@ const { decode: jpegDecode } = require('jpeg-js');
 const { fftMagnitude } = require('../src/algorithm/fft');
 const { savgolSmooth } = require('../src/algorithm/imageUtils');
 
-const DEBUG = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TRAINING = path.resolve(__dirname, '..', '..', 'training-data');
-const TARGET_MAX_DIM = 900;
 const N_ANGLES = 1024;
 const N_ANGLES_RAD = 256;            // rays for the radial-gradient sweep (azimuthal mean)
 
@@ -210,8 +205,7 @@ function topAcf(mag, tauLo, tauHi, k) {
 }
 
 function describePhoto(label, photoPath, actual, includeBcAnchor) {
-  const { countTeethFromRgba, bilinearDownsampleRgba, __test } =
-    require('../src/algorithm/gearCounter');
+  const { countTeethFromRgba, bilinearDownsampleRgba, __test } = runner.getAlgo();
   const { sampleIntensityRing, rgbaToGray, clahe, gaussianBlur5x5, cannyEdges,
           findGearCenter, binaryContourCount } = __test;
 
@@ -349,13 +343,13 @@ describe('PAP-815 pre-flight: radial-gradient + cepstrum/ACF', () => {
 
     out('--- XL targets (cropped.jpg device-faithful) ---');
     for (const t of TARGETS_XL) {
-      const photo = path.join(DEBUG, t.stamp, 'cropped.jpg');
+      const photo = path.join(DEBUG_DIR, t.stamp, 'cropped.jpg');
       describePhoto(t.stamp.replace(/^report_/, ''), photo, t.actual, true);
     }
 
     out('--- Sanity sample (training-data _photo.jpg, no cropped corpus available for these labels) ---');
     for (const t of TARGETS_SANITY) {
-      const photo = path.join(TRAINING, `${t.stamp}_photo.jpg`);
+      const photo = path.join(TRAINING_DIR, `${t.stamp}_photo.jpg`);
       describePhoto(t.stamp, photo, t.actual, true);
     }
 

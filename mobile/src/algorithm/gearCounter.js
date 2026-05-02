@@ -3123,6 +3123,10 @@ export const __test = {
   findGearCenter,
   fftPurityCheck,
   sampleIntensityRing,
+  // PAP-950 diagnostic: needed by pap950.diag.js to probe wide-band rOuter
+  // and FFT-at-radius rescue without changing production behavior.
+  fftCountAtRadius,
+  radialOuterEdgeRadius,
 };
 
 export function countTeethFromRgba(rgba, width, height) {

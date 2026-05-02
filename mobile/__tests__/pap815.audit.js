@@ -16,33 +16,20 @@
  *   - whether the row was previously confident-wrong (off>1) or confident-
  *     correct (within±1).
  *
- * Reports:
- *   - Per-class accuracy (with abstain in effect)
- *   - All radial-fire rows tagged WIN / LOSS / NEUTRAL
- *   - Confident-wrong rows that survive (predicate did NOT fire)
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
  *
- * Run:
- *   HARNESS=pap815.audit npx jest --config mobile/__tests__/.jest.harness.config.js
+ * Run: HARNESS=pap815.audit npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 
-console.log = () => {};
-console.warn = () => {};
-console.info = () => {};
-console.debug = () => {};
-const out = (s) => process.stdout.write(s + '\n');
-
 const fs = require('fs');
 const path = require('path');
-const { decode: jpegDecode } = require('jpeg-js');
+const runner = require('./lib/harness-runner');
+runner.silenceConsole();
+const { out, DEBUG_DIR } = runner;
 
-const TRAINING = path.resolve(__dirname, '..', '..', 'training-data');
-const DEBUG = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
-const MIN_ACTUAL = 9;
-const MAX_ACTUAL = 60;
 const THRESHOLD = 0.18;
 const MIN_TEETH = 10;
 
@@ -66,40 +53,11 @@ const XL_TARGETS = [
   { stamp: 'report_2026-04-29_05-39-22-521Z', actual: 52 },
 ];
 
-function classOf(actual) {
-  if (actual <= 13) return 'Small';
-  if (actual <= 20) return 'Mid';
-  if (actual <= 28) return 'Large';
-  return 'XL';
-}
-
-function evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, photoPath, actual, stamp) {
-  const buf = fs.readFileSync(photoPath);
-  const raw = jpegDecode(buf, { useTArray: true });
-  const { rgba, width: w, height: h } =
-    bilinearDownsampleRgba(raw.data, raw.width, raw.height, TARGET_MAX_DIM);
-  let r;
-  try { r = countTeethFromRgba(rgba, w, h); }
-  catch (e) { return { stamp, actual, error: e.message }; }
-
-  const tc = r.toothCount || 0;
-  const peak = r.peakTc || 0;
-  const fft90 = r.fft90tc || 0;
-  const op = r.opTc || 0;
-  const bcTc = r.bcTc || 0;
-  const bcPeaks = r.bcPeaks || 0;
-  const conf = r.confidence || 0;
-  const innerSus = !!r.innerContourSuspected;
-  const peakR = r.peakR || 0;
-  const rOuter = r.rOuter || 0;
-  const rel = (r.radialRelDisagree != null) ? r.radialRelDisagree : null;
-  const offBy = Math.abs(tc - actual);
-  const within1 = offBy <= 1;
-  // PAP-815 v2 production predicate (mirror of gearCounter.js after QA verdict
-  // 2026-04-29): chainring-regime gate OR AC1-rescue narrow override.
-  // Gate the rel-disagree check the SAME way production does — earlier audit
-  // version gated solely on chainring which undercounted Small/Mid abstains
-  // by ~107 rows.
+// PAP-815 v2 production predicate (mirror of gearCounter.js after QA verdict
+// 2026-04-29): chainring-regime gate OR AC1-rescue narrow override.
+function enrich(r) {
+  const peak = r.peakTc, fft90 = r.fft90, op = r.op, bcTc = r.bcTc, bcPeaks = r.bcPeaks;
+  const rel = (r.raw && r.raw.radialRelDisagree != null) ? r.raw.radialRelDisagree : null;
   const chainring = peak >= 30 || fft90 >= 30 || op >= 30 || bcTc >= 30 || bcPeaks >= 30;
   const ac1Pattern =
     peak <= MIN_TEETH + 2 && fft90 <= MIN_TEETH + 2 && op <= MIN_TEETH + 2
@@ -107,24 +65,17 @@ function evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, photoPath, actual
     && bcPeaks >= 20 && bcPeaks <= 30;
   const eligible = chainring || ac1Pattern;
   const radialFires = eligible && rel != null && rel >= THRESHOLD;
-  // Was it previously a confident wrong / correct (before this predicate fired)?
-  // tc itself doesn't change with this predicate; only conf/innerSus do.  So
-  // pre-predicate "confidence" is what tc says vs actual.
-  const wasConfidentWrong = !within1 && tc > 0;
-  const wasConfidentCorrect = within1 && tc > 0;
-  return {
-    stamp, actual, tc, conf, innerSus, peak, fft90, op, bcTc, bcPeaks,
-    peakR, rOuter, rel,
-    chainring, ac1Pattern, eligible, radialFires,
-    offBy, within1, wasConfidentWrong, wasConfidentCorrect,
-    method: r.methodUsed || '?',
-    klass: classOf(actual),
-  };
+  const wasConfidentWrong = !r.within1 && r.tc > 0;
+  const wasConfidentCorrect = r.within1 && r.tc > 0;
+  return Object.assign({}, r, {
+    rel, chainring, ac1Pattern, eligible, radialFires,
+    wasConfidentWrong, wasConfidentCorrect,
+  });
 }
 
 function fmt(r) {
   return `${r.stamp} cls=${r.klass} actual=${r.actual} tc=${r.tc} ` +
-    `conf=${r.conf.toFixed(2)} peak=${r.peak} fft90=${r.fft90} op=${r.op} ` +
+    `conf=${r.conf.toFixed(2)} peak=${r.peakTc} fft90=${r.fft90} op=${r.op} ` +
     `bc=${r.bcTc}(pk=${r.bcPeaks}) ` +
     `peakR=${r.peakR} rOuter=${r.rOuter} ` +
     `rel=${r.rel != null ? r.rel.toFixed(4) : 'n/a'} ` +
@@ -142,46 +93,16 @@ describe('PAP-815 implementation audit', () => {
   jest.setTimeout(60 * 60 * 1000);
 
   test('measure radial-chainring abstain on training + XL device corpus', () => {
-    const { countTeethFromRgba, bilinearDownsampleRgba } =
-      require('../src/algorithm/gearCounter');
-
     out(`\n=== PAP-815 implementation audit (radial-chainring abstain @ ≥${THRESHOLD}) ===`);
 
     // ── Part 1: Full 9-60T training corpus (matches PAP-796 sweep) ───────────
-    const labeled = [];
-    for (const f of fs.readdirSync(TRAINING).sort()) {
-      if (!f.endsWith('_meta.json')) continue;
-      let meta;
-      try {
-        const raw = fs.readFileSync(path.join(TRAINING, f), 'utf8')
-          .replace(/[^\x00-\x7F]+/g, '?');
-        meta = JSON.parse(raw);
-      } catch { continue; }
-      const actual = Number(meta.actual_tooth_count || meta.actualTeethCount || 0);
-      if (!actual || actual < MIN_ACTUAL || actual > MAX_ACTUAL) continue;
-      const photo = path.join(TRAINING, f.replace('_meta.json', '_photo.jpg'));
-      if (!fs.existsSync(photo)) continue;
-      labeled.push({ stamp: f.replace('_meta.json', ''), actual, photo });
-    }
-    out(`\n[Part 1] Training corpus: ${labeled.length} photos (9-60T)`);
-
-    const trainRows = [];
-    const t0 = Date.now();
-    for (let i = 0; i < labeled.length; i++) {
-      const { stamp, actual, photo } = labeled[i];
-      const row = evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, photo, actual, stamp);
-      trainRows.push(row);
-      if ((i + 1) % 25 === 0) {
-        out(`  [${i + 1}/${labeled.length}] elapsed ${((Date.now() - t0) / 1000).toFixed(0)}s`);
-      }
-    }
-    out(`  done. wall=${((Date.now() - t0) / 1000).toFixed(0)}s`);
+    const { rows: baseRows } = runner.runCorpus({
+      targetRange: [9, 60],
+      label: 'pap815-train',
+    });
+    const trainRows = baseRows.map(enrich);
 
     // ── Per-class summary (post-predicate) + delta vs baseline ───────────────
-    // Baseline = pap796_post_pap810_2026-04-29.log (pre-PAP-815). QA's
-    // PAP-815 re-submission requirement is to print these deltas so we
-    // can't repeat the chainring-gate undercount that masked -117 lost
-    // confident-correct rows in the prior submission.
     out('\n-- Per-class accuracy (after PAP-815 v2 abstain) vs pap796_post_pap810 baseline --');
     out(`  ${pad('class', 6)} ${pad('n', 4)} ${pad('correct', 22)} ${pad('wrong', 18)} ${pad('abstain', 18)}`);
     const klasses = ['Small', 'Mid', 'Large', 'XL'];
@@ -238,12 +159,14 @@ describe('PAP-815 implementation audit', () => {
     out(`-- ${XL_TARGETS.length} XL targets --`);
     const xlRows = [];
     for (const t of XL_TARGETS) {
-      const photo = path.join(DEBUG, t.stamp, 'cropped.jpg');
+      const photo = path.join(DEBUG_DIR, t.stamp, 'cropped.jpg');
       if (!fs.existsSync(photo)) {
         out(`  [MISSING] ${t.stamp}`);
         continue;
       }
-      const row = evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, photo, t.actual, t.stamp);
+      const row = enrich(runner.evalPhoto({
+        photo, actual: t.actual, stamp: t.stamp, applyMask: true,
+      }));
       xlRows.push(row);
       out('  ' + fmt(row));
     }

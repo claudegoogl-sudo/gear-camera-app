@@ -3,7 +3,10 @@
  * component calls and attribute runtime cost.
  *
  * Not part of default test run.
- * Usage: npx jest --runTestsByPath mobile/__tests__/pap555.inner.harness.js
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap555.inner.harness npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
@@ -12,8 +15,8 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-const DEBUG = path.resolve(__dirname, '..', '..', 'debug-reports');
+const runner = require('./lib/harness-runner');
+const { DEBUG_DIR } = runner;
 
 describe('PAP-555 inner profile', () => {
   jest.setTimeout(10 * 60 * 1000);
@@ -45,7 +48,7 @@ describe('PAP-555 inner profile', () => {
 
     console.log('\n=== PAP-555 analyzeImage breakdown ===');
     for (const name of photos) {
-      const p = path.join(DEBUG, name);
+      const p = path.join(DEBUG_DIR, name);
       if (!fs.existsSync(p)) { console.log(name, 'missing'); continue; }
       const buf = fs.readFileSync(p);
       const raw = jpegDecode(buf, { useTArray: true });

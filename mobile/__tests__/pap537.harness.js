@@ -11,6 +11,10 @@
  *
  * Also sweeps crop sizes (0.6× / 0.75× / 1.0× / 1.25× aim-circle width) as a
  * quick look at whether a tighter re-crop would rescue the 11T detection.
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap537.harness npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
@@ -18,10 +22,12 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const REPORTS = path.join(REPO_ROOT, 'debug-reports');
-const TARGET_DOWN = 900;
+const runner = require('./lib/harness-runner');
+// Custom crop sweep: this harness writes diagnostics through console.log —
+// don't silence; only borrow algorithm + DEBUG_DIR via the shared runner.
+const { DEBUG_DIR, TARGET_MAX_DIM } = runner;
+const { countTeethFromRgba } = runner.getAlgo();
+const TARGET_DOWN = TARGET_MAX_DIM;
 
 // Typical portrait device used during board testing.  The measured
 // `gearCenter.y` for the 14-28T cluster was ≈ 0.422-0.431 (see PAP-537 evidence
@@ -31,8 +37,6 @@ const SW = 1080, SH = 2400;
 const AIM_CIRCLE_FRAC = 0.95;
 
 function cropToAimCircleHost(rgba, W, H, fracScale = 1.0) {
-  // Simulates CameraScreen.cropToAimCircle on host.  Returns { rgba, w, h,
-  // aimCrop } where aimCrop has the original-photo offsets for reporting.
   const scale = Math.max(SW / W, SH / H);
   const visW = SW / scale;
   const visH = SH / scale;
@@ -44,9 +48,6 @@ function cropToAimCircleHost(rgba, W, H, fracScale = 1.0) {
   );
   const visOriginX = (W - SW / scale) / 2;
   const visOriginY = (H - SH / scale) / 2;
-  // Reticle is ≈ vertical midline of the visible region in b95 layout
-  // (derived from observed centerY ≈ 0.425 × fullH on 4000×3000 portrait).
-  // For the portrait SH=2400 screen, that maps to acy ≈ SH/2.
   const acx = SW / 2;
   const acy = SH / 2;
   const photoCX = visOriginX + acx / scale;
@@ -99,7 +100,6 @@ function bilinearResize(rgba, w, h, targetMaxDim) {
 }
 
 function applyCircularMaskHost(rgba, w, h) {
-  // Matches algorithm applyCircularMask used when opts.aimCrop is set.
   const cx = (w - 1) / 2;
   const cy = (h - 1) / 2;
   const R = 0.49 * Math.min(w, h);
@@ -119,12 +119,10 @@ describe('PAP-537 11T repro', () => {
   jest.setTimeout(10 * 60 * 1000);
 
   test('reproduce b95 11T failure @ 07:16:03', () => {
-    const photo = path.join(REPORTS, 'report_2026-04-24_07-16-03-083Z', 'photo.jpg');
-    const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
+    const photo = path.join(DEBUG_DIR, 'report_2026-04-24_07-16-03-083Z', 'photo.jpg');
     const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
     console.log(`\n=== PAP-537 11T repro (photo=${raw.width}×${raw.height}) ===`);
 
-    // Sweep across several crop fractions to profile behavior.
     const sweeps = [
       { label: 'b95-default (1.00×aim)',    frac: 1.00 },
       { label: 'tight 0.75×aim',            frac: 0.75 },
@@ -138,9 +136,9 @@ describe('PAP-537 11T repro', () => {
       applyCircularMaskHost(c.rgba, c.w, c.h);
       const dn = bilinearResize(c.rgba, c.w, c.h, TARGET_DOWN);
       const out = countTeethFromRgba(dn.rgba, dn.w, dn.h);
-      const radiusFracOfCrop = out.gearRadius; // fraction of cropped input width
+      const radiusFracOfCrop = out.gearRadius;
       const radiusPxInCrop = radiusFracOfCrop * dn.w;
-      const radiusPxInPhoto = (radiusFracOfCrop * dn.w / dn.w) * c.w; // i.e. * side
+      const radiusPxInPhoto = (radiusFracOfCrop * dn.w / dn.w) * c.w;
       console.log(
         `${s.label.padEnd(26)} side=${c.w}px → dn=${dn.w} ` +
         `| res=${out.toothCount}T(${(out.confidence*100).toFixed(0)}%) ` +

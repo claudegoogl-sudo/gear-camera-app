@@ -1,6 +1,10 @@
 /**
  * PAP-632 deep diagnostic — traces pre-retry vs post-retry results for XL failures
  * and traces the decision cascade for the 42T case.
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap632.deep npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
@@ -8,13 +12,11 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-// We need access to internal functions, so require directly
-const gc = require('../src/algorithm/gearCounter');
-const { countTeethFromRgba, bilinearDownsampleRgba } = gc;
-
-const DEBUG_DIR = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
+const runner = require('./lib/harness-runner');
+// NOTE: this script intentionally captures internal console.log output —
+// do NOT call runner.silenceConsole() here.
+const { DEBUG_DIR, TARGET_MAX_DIM } = runner;
+const { countTeethFromRgba, bilinearDownsampleRgba } = runner.getAlgo();
 
 const CASES = [
   { stamp: '2026-04-25_08-03-33-119Z', actual: 11, note: 'Small 11T→10T' },
@@ -22,7 +24,6 @@ const CASES = [
   { stamp: '2026-04-25_09-03-08-982Z', actual: 52, note: 'XL 52T→12T (retry regression?)' },
 ];
 
-// Monkeypatch console.log to capture internal debug output
 const logCapture = [];
 const origLog = console.log;
 

@@ -27,26 +27,21 @@
  *     42T, 48T, 50T, 52T, 36T)
  *   - 1+ WIN on b114 34T 10-09-03 (the AC1 case)
  *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
  * Run: HARNESS=pap889.candidates npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
-console.log = () => {}; console.warn = () => {};
-console.info = () => {}; console.debug = () => {};
-const out = (s) => process.stdout.write(s + '\n');
 
 const fs = require('fs');
 const path = require('path');
-const { decode: jpegDecode } = require('jpeg-js');
+const runner = require('./lib/harness-runner');
+runner.silenceConsole();
+const { out, DEBUG_DIR } = runner;
 
-const TRAINING = path.resolve(__dirname, '..', '..', 'training-data');
-const DEBUG = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
-const MIN_ACTUAL = 9;
-const MAX_ACTUAL = 60;
 const MIN_TEETH = 10;
 
-// Reuse the PAP-885 XL device target lists; expand later if needed.
 const B111_XL = [
   { stamp: 'report_2026-04-29_05-29-04-170Z', actual: 42 },
   { stamp: 'report_2026-04-29_05-31-25-376Z', actual: 42 },
@@ -69,36 +64,15 @@ const B114_XL = [
   { stamp: 'report_2026-04-30_10-23-07-161Z', actual: 36 },
 ];
 
-function classOf(actual) {
-  if (actual <= 13) return 'Small';
-  if (actual <= 20) return 'Mid';
-  if (actual <= 28) return 'Large';
-  return 'XL';
-}
-
-function evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, applyCircularMask, photoPath, actual, stamp, applyMask) {
-  const buf = fs.readFileSync(photoPath);
-  const raw = jpegDecode(buf, { useTArray: true });
-  const { rgba, width: w, height: h } =
-    bilinearDownsampleRgba(raw.data, raw.width, raw.height, TARGET_MAX_DIM);
-  if (applyMask) {
-    const cx = (w - 1) / 2; const cy = (h - 1) / 2;
-    applyCircularMask(rgba, w, h, cx, cy, 0.49 * Math.min(w, h));
-  }
-  let r;
-  try { r = countTeethFromRgba(rgba, w, h); }
-  catch (e) { return { stamp, actual, error: e.message }; }
-  const tc = r.toothCount || 0;
+function enrich(r) {
   const peak = r.peakTc || 0;
-  const fft90 = r.fft90tc || 0;
-  const op = r.opTc || 0;
+  const fft90 = r.fft90 || 0;
+  const op = r.op || 0;
   const bcTc = r.bcTc || 0;
   const bcPeaks = r.bcPeaks || 0;
-  const conf = r.confidence || 0;
-  const innerSus = !!r.innerContourSuspected;
-  const gearRadius = r.gearRadius || 0;
-  const offBy = Math.abs(tc - actual);
-  const within1 = offBy <= 1;
+  const tc = r.tc || 0;
+  const conf = r.conf || 0;
+  const gearRadius = r.gearR || 0;
 
   // Mirror countTeeth()'s rescue exemptions exactly.
   const tripleAgree = peak === fft90 && peak === op && peak === tc && peak > MIN_TEETH;
@@ -114,14 +88,10 @@ function evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, applyCircularMask
     && !tripleAgree
     && !bcStrongAgree;
 
-  return {
-    stamp, actual, tc, conf, innerSus,
-    peak, fft90, op, bcTc, bcPeaks,
-    gearRadius, offBy, within1,
+  return Object.assign({}, r, {
+    peak, fft90, op, bcTc, bcPeaks, gearRadius,
     tripleAgree, bcStrongAgree, optionAFires,
-    method: r.methodUsed || '?',
-    klass: classOf(actual),
-  };
+  });
 }
 
 function fmt(r) {
@@ -133,26 +103,10 @@ function fmt(r) {
     `method=${r.method}`;
 }
 
-// Bucket Option A fires by *would-have-been* outcome (pre-gate classification).
-// This bucketing is stable across pre-/post-implementation runs because it
-// uses within1 and tc, which are unchanged by the gate (the gate only zeros
-// confidence and sets innerContourSuspected, not toothCount or correctness).
-//
-// wouldLoss: row's tc would have committed within ±1 of actual → gate forces
-//            this previously-correct row to abstain (REGRESSION).
-// wouldWin:  row's tc would have committed wrong → gate converts confident-
-//            wrong to abstain (DESIRABLE).
-// trueNoop:  tc=0 (no candidate at all) or already abstaining via another
-//            radius-sanity / chainring gate before Option A — no behaviour
-//            change from Option A on these rows.
 function bucketOptionA(rows) {
   const wouldLoss = [];
   const wouldWin = [];
   const trueNoop = [];
-  // Code-vs-predicate consistency: post-impl, every optionAFires row should
-  // ALSO have r.innerSus=true (gate fired in algorithm).  Rows that satisfy
-  // the predicate but innerSus=false indicate the predicate is not wired
-  // into both call sites OR the gate was suppressed by another rescue.
   const inconsistent = [];
   for (const r of rows) {
     if (!r.optionAFires) continue;
@@ -170,40 +124,21 @@ function bucketOptionA(rows) {
 describe('PAP-889 Option A candidate sweep', () => {
   jest.setTimeout(180 * 60 * 1000);
   test('gearR<0.20 abstain extension', () => {
-    const { countTeethFromRgba, bilinearDownsampleRgba } =
-      require('../src/algorithm/gearCounter');
-    const { applyCircularMask } = require('../src/algorithm/imageUtils');
     out('\n=== PAP-889 Option A sweep ===');
 
     const xlOnly = process.env.PAP889_XL_ONLY === '1';
 
     // ---- Training corpus ----
-    const labeled = [];
-    for (const f of (xlOnly ? [] : fs.readdirSync(TRAINING).sort())) {
-      if (!f.endsWith('_meta.json')) continue;
-      let meta;
-      try {
-        const raw = fs.readFileSync(path.join(TRAINING, f), 'utf8')
-          .replace(/[^\x00-\x7F]+/g, '?');
-        meta = JSON.parse(raw);
-      } catch { continue; }
-      const actual = Number(meta.actual_tooth_count || meta.actualTeethCount || 0);
-      if (!actual || actual < MIN_ACTUAL || actual > MAX_ACTUAL) continue;
-      const photo = path.join(TRAINING, f.replace('_meta.json', '_photo.jpg'));
-      if (!fs.existsSync(photo)) continue;
-      labeled.push({ stamp: f.replace('_meta.json', ''), actual, photo });
+    let trainRows = [];
+    if (!xlOnly) {
+      const { rows: base } = runner.runCorpus({
+        targetRange: [9, 60],
+        label: 'pap889-train',
+        progressEvery: 50,
+      });
+      trainRows = base.map(enrich);
     }
-    out(`\n[Training] ${labeled.length} photos (9-60T)`);
-
-    const trainRows = [];
-    const t0 = Date.now();
-    for (let i = 0; i < labeled.length; i++) {
-      const { stamp, actual, photo } = labeled[i];
-      const row = evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, applyCircularMask, photo, actual, stamp, false);
-      trainRows.push(row);
-      if ((i + 1) % 50 === 0) out(`  [${i + 1}/${labeled.length}] ${((Date.now() - t0)/1000).toFixed(0)}s`);
-    }
-    out(`  done in ${((Date.now()-t0)/1000).toFixed(0)}s`);
+    out(`\n[Training] ${trainRows.length} photos (9-60T)`);
 
     // ---- XL device targets ----
     const allXl = [
@@ -213,9 +148,11 @@ describe('PAP-889 Option A candidate sweep', () => {
     ];
     const xlRows = [];
     for (const t of allXl) {
-      const photo = path.join(DEBUG, t.stamp, 'cropped.jpg');
+      const photo = path.join(DEBUG_DIR, t.stamp, 'cropped.jpg');
       if (!fs.existsSync(photo)) { out(`  [missing] ${t.stamp}`); continue; }
-      const row = evalPhoto(countTeethFromRgba, bilinearDownsampleRgba, applyCircularMask, photo, t.actual, t.stamp, true);
+      const row = enrich(runner.evalPhoto({
+        photo, actual: t.actual, stamp: t.stamp, applyMask: true,
+      }));
       row.build = t.build;
       xlRows.push(row);
     }
@@ -241,8 +178,6 @@ describe('PAP-889 Option A candidate sweep', () => {
       for (const r of trainBkt.wouldWin) out('    ' + fmt(r));
     }
 
-    // Histogram of training rows by tc bucket / gearR bucket — context for
-    // QA's [14,19] risk surface.
     const byTc = {};
     for (const r of trainRows) {
       if (!r.optionAFires) continue;
@@ -287,8 +222,6 @@ describe('PAP-889 Option A candidate sweep', () => {
     out(`  XL: LOSS=${xlBkt.wouldLoss.length} WIN=${xlBkt.wouldWin.length} ` +
         `inconsistent=${xlBkt.inconsistent.length}`);
     expect(xlRows.length).toBeGreaterThan(0);
-    // QA gate: inconsistent must be 0 — every predicate fire must result in
-    // gate firing in the algorithm (innerContourSuspected=true).
     expect(trainBkt.inconsistent.length).toBe(0);
     expect(xlBkt.inconsistent.length).toBe(0);
   });

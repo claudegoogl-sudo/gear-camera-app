@@ -4,17 +4,18 @@
  * 52T is outside the algorithm's 11-28T design range. These 3 reports are
  * tracked to monitor behaviour at the upper edge: ABSTAIN is acceptable;
  * a confident-but-wrong detection is a regression worth flagging.
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap685.chainring npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 
 const fs = require('fs');
 const path = require('path');
-const { decode: jpegDecode } = require('jpeg-js');
-const { countTeethFromRgba, bilinearDownsampleRgba } = require('../src/algorithm/gearCounter');
-
-const DEBUG_DIR = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
+const runner = require('./lib/harness-runner');
+const { DEBUG_DIR } = runner;
 
 const CASES = [
   'report_2026-04-27_13-20-54-484Z',
@@ -39,10 +40,8 @@ describe('PAP-685 52T chainring edge case', () => {
 
       const photo = path.join(DEBUG_DIR, dir, 'photo.jpg');
       if (!fs.existsSync(photo)) { process.stdout.write(`SKIP ${dir} (no photo)\n`); continue; }
-      const buf = fs.readFileSync(photo);
-      const raw = jpegDecode(buf, { useTArray: true });
-      const { rgba, width: w, height: h } = bilinearDownsampleRgba(raw.data, raw.width, raw.height, TARGET_MAX_DIM);
-      const r = countTeethFromRgba(rgba, w, h);
+      const row = runner.evalPhoto({ photo, actual, stamp: dir });
+      const r = row.raw;
 
       const abstained = r.confidence === 0 || r.innerContourSuspected;
       const ok = Math.abs(r.toothCount - actual) <= 1;

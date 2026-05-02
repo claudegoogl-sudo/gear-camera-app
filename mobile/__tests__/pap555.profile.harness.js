@@ -4,7 +4,10 @@
  * seen in b96 debug reports.
  *
  * Not part of default test run.
- * Usage: npx jest --runTestsByPath mobile/__tests__/pap555.profile.harness.js
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap555.profile.harness npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
@@ -13,10 +16,8 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-const TRAINING = path.resolve(__dirname, '..', '..', 'training-data');
-const DEBUG    = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
+const runner = require('./lib/harness-runner');
+const { DEBUG_DIR, TARGET_MAX_DIM } = runner;
 
 describe('PAP-555 profile', () => {
   jest.setTimeout(10 * 60 * 1000);
@@ -41,7 +42,7 @@ describe('PAP-555 profile', () => {
 
     const rows = [];
     for (const name of photos) {
-      const p = path.join(DEBUG, name);
+      const p = path.join(DEBUG_DIR, name);
       if (!fs.existsSync(p)) { rows.push({ name, err: 'missing' }); continue; }
       const buf = fs.readFileSync(p);
       const raw = jpegDecode(buf, { useTArray: true });

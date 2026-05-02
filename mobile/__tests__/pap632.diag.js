@@ -1,6 +1,10 @@
 /**
  * PAP-632 diagnostic — runs gearCounter on the 6 failure photos from PAP-632
  * with enhanced logging to understand inner-contour lock-on root cause.
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap632.diag npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
@@ -8,11 +12,9 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-const { countTeethFromRgba, bilinearDownsampleRgba } = require('../src/algorithm/gearCounter');
-
-const DEBUG_DIR = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
+const runner = require('./lib/harness-runner');
+const { DEBUG_DIR, TARGET_MAX_DIM } = runner;
+const { countTeethFromRgba, bilinearDownsampleRgba } = runner.getAlgo();
 
 const FAILURES = [
   { stamp: '2026-04-24_06-12-31-044Z', actual: 28, issue: 'Inner ring of sprocket' },

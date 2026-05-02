@@ -1,18 +1,21 @@
 /**
  * PAP-632 harness — runs gearCounter on ALL b94-b98 debug report photos
  * and compares against device-reported actuals. Reports accuracy by class.
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027). The
+ * b94-b98 build-window discovery loop is bespoke to this harness, so the
+ * runner is used per-stamp via evalPhoto rather than runCorpus.
+ *
+ * Run: HARNESS=pap632.harness npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 
 const fs = require('fs');
 const path = require('path');
-const { decode: jpegDecode } = require('jpeg-js');
-
-const { countTeethFromRgba, bilinearDownsampleRgba } = require('../src/algorithm/gearCounter');
-
-const DEBUG_DIR = path.resolve(__dirname, '..', '..', 'debug-reports');
-const TARGET_MAX_DIM = 900;
+const runner = require('./lib/harness-runner');
+runner.silenceConsole();
+const { out, DEBUG_DIR } = runner;
 
 function classOf(n) {
   if (n >= 10 && n <= 15) return 'Small';
@@ -44,7 +47,7 @@ describe('PAP-632 b94-b98 accuracy', () => {
       } catch { continue; }
     }
 
-    process.stdout.write(`\n[PAP-632] Running ${reports.length} b94-b98 labeled reports\n`);
+    out(`\n[PAP-632] Running ${reports.length} b94-b98 labeled reports`);
 
     const classes = { Small: { total: 0, correct: 0, abstain: 0, fails: [] },
                       Mid: { total: 0, correct: 0, abstain: 0, fails: [] },
@@ -53,10 +56,8 @@ describe('PAP-632 b94-b98 accuracy', () => {
 
     for (let i = 0; i < reports.length; i++) {
       const { stamp, actual, build, photo } = reports[i];
-      const buf = fs.readFileSync(photo);
-      const raw = jpegDecode(buf, { useTArray: true });
-      const { rgba, width: w, height: h } = bilinearDownsampleRgba(raw.data, raw.width, raw.height, TARGET_MAX_DIM);
-      const result = countTeethFromRgba(rgba, w, h);
+      const row = runner.evalPhoto({ photo, actual, stamp });
+      const result = row.raw;
 
       const cls = classOf(actual);
       if (!classes[cls]) continue;
@@ -80,26 +81,26 @@ describe('PAP-632 b94-b98 accuracy', () => {
       }
 
       const tag = correct ? 'OK' : (abstained ? 'ABSTAIN' : 'FAIL');
-      process.stdout.write(`  [${i+1}/${reports.length}] b${build} ${stamp} ${cls} actual=${actual} ` +
-        `detected=${result.toothCount} conf=${result.confidence.toFixed(2)} ${tag}\n`);
+      out(`  [${i+1}/${reports.length}] b${build} ${stamp} ${cls} actual=${actual} ` +
+        `detected=${result.toothCount} conf=${result.confidence.toFixed(2)} ${tag}`);
     }
 
-    process.stdout.write('\n=== PAP-632 Accuracy Matrix (current code vs b94-b98 corpus) ===\n');
+    out('\n=== PAP-632 Accuracy Matrix (current code vs b94-b98 corpus) ===');
     for (const [cls, d] of Object.entries(classes)) {
       if (d.total === 0) continue;
       const pct = (100 * d.correct / d.total).toFixed(0);
       const pctWithAbstain = (100 * (d.correct + d.abstain) / d.total).toFixed(0);
-      process.stdout.write(`  ${cls.padEnd(8)} ${d.correct}/${d.total} = ${pct}%` +
+      out(`  ${cls.padEnd(8)} ${d.correct}/${d.total} = ${pct}%` +
         (d.abstain > 0 ? `  (${d.abstain} abstain → ${pctWithAbstain}% incl abstain)` : '') +
-        `  fails=${d.fails.length}\n`);
+        `  fails=${d.fails.length}`);
     }
 
-    process.stdout.write('\n=== Failures ===\n');
+    out('\n=== Failures ===');
     for (const [cls, d] of Object.entries(classes)) {
       for (const f of d.fails) {
-        process.stdout.write(`  ${cls} ${f.stamp} actual=${f.actual} detected=${f.detected} ` +
+        out(`  ${cls} ${f.stamp} actual=${f.actual} detected=${f.detected} ` +
           `conf=${f.conf.toFixed(3)} method=${f.method} peak=${f.peakTc} fft90=${f.fft90tc} ` +
-          `op=${f.opTc} bc=${f.bcTc} bcPeaks=${f.bcPeaks} gearR=${f.gearRadius?.toFixed(3)}\n`);
+          `op=${f.opTc} bc=${f.bcTc} bcPeaks=${f.bcPeaks} gearR=${f.gearRadius?.toFixed(3)}`);
       }
     }
   });

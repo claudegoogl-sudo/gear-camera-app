@@ -9,6 +9,10 @@
  * yields a small-radius candidate (inner-contour lockup) vs. a well-framed
  * gear. Per-photo values-in-device were verified separately by QA
  * (PAP-556 cross-check corpus) — this harness is CI regression for the gate.
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap553.harness npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
@@ -16,10 +20,10 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const REPORTS = path.join(REPO_ROOT, 'debug-reports');
-const TARGET_DOWN = 900;
+const runner = require('./lib/harness-runner');
+const { DEBUG_DIR, TARGET_MAX_DIM } = runner;
+const { countTeethFromRgba } = runner.getAlgo();
+const TARGET_DOWN = TARGET_MAX_DIM;
 
 const SW = 1080, SH = 2400;
 const AIM_CIRCLE_FRAC = 0.95;
@@ -90,8 +94,7 @@ function applyCircularMaskHost(rgba, w, h) {
 }
 
 function runOne(stamp) {
-  const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
-  const raw = jpegDecode(fs.readFileSync(path.join(REPORTS, 'report_' + stamp, 'photo.jpg')), { useTArray: true });
+  const raw = jpegDecode(fs.readFileSync(path.join(DEBUG_DIR, 'report_' + stamp, 'photo.jpg')), { useTArray: true });
   const c = cropToAimCircleHost(raw.data, raw.width, raw.height);
   applyCircularMaskHost(c.rgba, c.w, c.h);
   const dn = bilinearResize(c.rgba, c.w, c.h, TARGET_DOWN);

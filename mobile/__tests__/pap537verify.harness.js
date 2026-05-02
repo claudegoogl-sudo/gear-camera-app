@@ -8,6 +8,10 @@
  *
  * Goal: confirm peak/fft90 values at each case so we can pick a gate that
  * preserves (2) while fixing (1).
+ *
+ * Migrated to mobile/__tests__/lib/harness-runner.js (PAP-970/PAP-1027).
+ *
+ * Run: HARNESS=pap537verify.harness npx jest --config mobile/__tests__/.jest.harness.config.js
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
@@ -15,10 +19,10 @@ jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
 const fs = require('fs');
 const path = require('path');
 const { decode: jpegDecode } = require('jpeg-js');
-
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const REPORTS = path.join(REPO_ROOT, 'debug-reports');
-const TARGET = 900;
+const runner = require('./lib/harness-runner');
+const { DEBUG_DIR, TARGET_MAX_DIM } = runner;
+const { countTeethFromRgba } = runner.getAlgo();
+const TARGET = TARGET_MAX_DIM;
 
 const SW = 1080, SH = 2400;
 const AIM_CIRCLE_FRAC = 0.95;
@@ -90,12 +94,11 @@ describe('PAP-537 proposed-fix diagnostic cross-check', () => {
   jest.setTimeout(10 * 60 * 1000);
 
   test('case 1: 11T regression via aim-crop', () => {
-    const photo = path.join(REPORTS, 'report_2026-04-24_07-16-03-083Z', 'photo.jpg');
+    const photo = path.join(DEBUG_DIR, 'report_2026-04-24_07-16-03-083Z', 'photo.jpg');
     const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
     const cr = cropToAimCircleHost(raw.data, raw.width, raw.height);
     applyCircularMaskHost(cr.rgba, cr.w, cr.h);
     const dn = bilinearResize(cr.rgba, cr.w, cr.h, TARGET);
-    const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
     const out = countTeethFromRgba(dn.rgba, dn.w, dn.h);
     console.log(`\n[case1 11T, aim-cropped 1283px→${dn.w}] actual=11 result=${out.toothCount} conf=${(out.confidence*100).toFixed(0)}% ` +
       `peak=${out.peakTc}(${(out.peakRel||0).toFixed(3)}) fft90=${out.fft90tc} ` +
@@ -104,10 +107,9 @@ describe('PAP-537 proposed-fix diagnostic cross-check', () => {
   });
 
   test('case 2: b86 19-18-26 mid-op-override target (no aim crop, raw photo)', () => {
-    const photo = path.join(REPORTS, 'report_2026-04-21_19-18-26-917Z', 'photo.jpg');
+    const photo = path.join(DEBUG_DIR, 'report_2026-04-21_19-18-26-917Z', 'photo.jpg');
     const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
     const dn = bilinearResize(raw.data, raw.width, raw.height, TARGET);
-    const { countTeethFromRgba } = require('../src/algorithm/gearCounter');
     const out = countTeethFromRgba(dn.rgba, dn.w, dn.h);
     console.log(`\n[case2 19T b86 raw ${dn.w}px] actual=19 result=${out.toothCount} conf=${(out.confidence*100).toFixed(0)}% ` +
       `peak=${out.peakTc}(${(out.peakRel||0).toFixed(3)}) fft90=${out.fft90tc} ` +
