@@ -29,6 +29,7 @@ const { decode: jpegDecode } = require('jpeg-js');
 
 const TRAINING_DIR = path.resolve(__dirname, '..', '..', '..', 'training-data');
 const DEBUG_DIR = path.resolve(__dirname, '..', '..', '..', 'debug-reports');
+const CACHE_DIR = path.resolve(__dirname, '..', '..', '..', '.cache', 'training-rgba');
 const TARGET_MAX_DIM = 900;
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -183,6 +184,79 @@ function getAlgo() {
   return _algo;
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Pre-decoded RGBA cache (PAP-971)
+//
+// JPEG decode + bilinear downsample is the bulk of per-image cost on a sweep
+// (~30-40%). Cache the post-downsample buffer keyed by source mtime so a
+// re-run skips both. CACHE=off bypasses; cache invalidates on photo touch.
+// ──────────────────────────────────────────────────────────────────────────
+
+function _cacheEnabled() {
+  return (process.env.CACHE || '').toLowerCase() !== 'off';
+}
+
+function _cachePaths(stamp) {
+  return {
+    bin: path.join(CACHE_DIR, `${stamp}_${TARGET_MAX_DIM}.bin`),
+    meta: path.join(CACHE_DIR, `${stamp}_${TARGET_MAX_DIM}.meta.json`),
+  };
+}
+
+/**
+ * Read a downsampled RGBA buffer for `photo`, using the on-disk cache when
+ * the source mtime matches. Returns { rgba: Uint8Array, w, h }.
+ */
+function loadOrDecodeRgba(photo, stamp) {
+  const { bilinearDownsampleRgba } = getAlgo();
+  const useCache = _cacheEnabled();
+  const srcMtimeMs = fs.statSync(photo).mtimeMs;
+
+  if (useCache) {
+    const { bin, meta } = _cachePaths(stamp);
+    if (fs.existsSync(meta) && fs.existsSync(bin)) {
+      try {
+        const m = JSON.parse(fs.readFileSync(meta, 'utf8'));
+        if (
+          m.sourceMtimeMs === srcMtimeMs &&
+          m.targetMaxDim === TARGET_MAX_DIM &&
+          Number.isInteger(m.width) && Number.isInteger(m.height)
+        ) {
+          const buf = fs.readFileSync(bin);
+          // Copy out of Buffer's pooled slab to a standalone Uint8Array so
+          // downstream code (and any future cache eviction) can't alias it.
+          const rgba = new Uint8Array(buf.byteLength);
+          rgba.set(buf);
+          return { rgba, w: m.width, h: m.height };
+        }
+      } catch { /* fall through to decode */ }
+    }
+  }
+
+  const buf = fs.readFileSync(photo);
+  const raw = jpegDecode(buf, { useTArray: true });
+  const { rgba, width: w, height: h } = bilinearDownsampleRgba(
+    raw.data, raw.width, raw.height, TARGET_MAX_DIM,
+  );
+
+  if (useCache) {
+    try {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+      const { bin, meta } = _cachePaths(stamp);
+      // Write atomically so a SIGINT mid-write can't leave a torn cache row.
+      fs.writeFileSync(`${bin}.tmp`, Buffer.from(rgba.buffer, rgba.byteOffset, rgba.byteLength));
+      fs.renameSync(`${bin}.tmp`, bin);
+      fs.writeFileSync(`${meta}.tmp`, JSON.stringify({
+        stamp, width: w, height: h, targetMaxDim: TARGET_MAX_DIM,
+        sourceMtimeMs: srcMtimeMs,
+      }));
+      fs.renameSync(`${meta}.tmp`, meta);
+    } catch { /* cache failures are non-fatal */ }
+  }
+
+  return { rgba, w, h };
+}
+
 /**
  * Decode a JPEG from disk, downsample to TARGET_MAX_DIM, optionally apply the
  * crop circular mask (used by debug-report cropped.jpg replay), run the
@@ -192,12 +266,8 @@ function getAlgo() {
  * a harness needs more fields it can read them straight off `row.raw`.
  */
 function evalPhoto({ photo, actual, stamp, applyMask = false, tol }) {
-  const { countTeethFromRgba, bilinearDownsampleRgba, applyCircularMask } = getAlgo();
-  const buf = fs.readFileSync(photo);
-  const raw = jpegDecode(buf, { useTArray: true });
-  const { rgba, width: w, height: h } = bilinearDownsampleRgba(
-    raw.data, raw.width, raw.height, TARGET_MAX_DIM,
-  );
+  const { countTeethFromRgba, applyCircularMask } = getAlgo();
+  const { rgba, w, h } = loadOrDecodeRgba(photo, stamp);
   if (applyMask) {
     if (!applyCircularMask) throw new Error('applyCircularMask unavailable');
     const cx = (w - 1) / 2;
@@ -382,6 +452,7 @@ module.exports = {
   // dirs / constants
   TRAINING_DIR,
   DEBUG_DIR,
+  CACHE_DIR,
   TARGET_MAX_DIM,
   PAP760_BUCKETS,
   // setup
@@ -393,6 +464,7 @@ module.exports = {
   selectCorpus,
   // execution
   getAlgo,
+  loadOrDecodeRgba,
   evalPhoto,
   runCorpus,
   // reporting
