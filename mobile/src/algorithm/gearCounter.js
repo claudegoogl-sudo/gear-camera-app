@@ -46,6 +46,23 @@ const SMALL_GEAR_CONF        = 0.65;
 // resolution at 900px, the high-res retry at 1500px gives large gears
 // ~67% more pixels for FFT analysis.
 const RETRY_MAX_DIM          = 1500;
+
+// PAP-1100: aim-circle prior on multiRadiusFftScan candidate-radii build.
+// When aimR > 0 (caller has an aim signal) the FFT sweep is constrained to
+// [α·aimR, β·aimR] — prevents inner sub-harmonic aliasing at the source
+// rather than detecting it post-hoc (PAP-961).  Defaults are calibration
+// midpoints; PAP-1108 calibration sweep (n≥80, 4×5 grid) locks final values.
+// `setAimPriorBounds(α, β)` exposed so the calibration harness can sweep
+// without forking the algorithm.  Identity behaviour when aimR===0.
+let _aimPriorAlpha = 0.85;
+let _aimPriorBeta  = 1.20;
+export function setAimPriorBounds(alpha, beta) {
+  _aimPriorAlpha = alpha;
+  _aimPriorBeta  = beta;
+}
+export function getAimPriorBounds() {
+  return { alpha: _aimPriorAlpha, beta: _aimPriorBeta };
+}
 // ────���─────────────────────────────────────────��─────────────────────────────
 
 // ── 1. Image loading ───────────��─────────────────────────────────────────────
@@ -1387,11 +1404,18 @@ function fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearRadius, edges, wid
 // Returns: { tc, rel, r } for the outermost candidate with rel >= MIN_REL,
 // plus scanResults for small-gear refinement.
 
-function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, height) {
-  const maxR = Math.min(
+function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, height, aimR = 0) {
+  // PAP-1100: aim-circle prior bounds (identity when aimR<=0).
+  const priorActive = aimR > 0;
+  const priorLo = priorActive ? Math.floor(_aimPriorAlpha * aimR) : 0;
+  const priorHi = priorActive ? Math.floor(_aimPriorBeta  * aimR) : 0;
+
+  // PAP-1100: maxR clip to β·aimR when prior active.
+  const baseMaxR = Math.min(
     Math.floor(Math.min(cx, width - cx, cy, height - cy)) - 1,
     contourRadius > 20 ? Math.floor(contourRadius * 1.35) : Math.floor(Math.min(height, width) / 3),
   );
+  const maxR = priorActive ? Math.min(baseMaxR, priorHi) : baseMaxR;
 
   // Build edge density
   const density = new Float64Array(maxR);
@@ -1413,14 +1437,31 @@ function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, heigh
   const peakThresh = Math.max(...smooth.slice(0, searchLimit)) * 0.12;
   for (let r = 1; r < searchLimit - 1; r++) {
     if (smooth[r] > smooth[r-1] && smooth[r] > smooth[r+1] && smooth[r] >= peakThresh) {
+      // PAP-1100: drop density-peak candidates outside [α·aimR, β·aimR].
+      if (priorActive && (r < priorLo || r > priorHi)) continue;
       candSet.add(r);
     }
   }
 
-  // Evenly-spaced outer radii
-  const gr = contourRadius > 20 ? contourRadius : maxR;
-  for (let pct = 65; pct < 85; pct += 4) candSet.add(Math.floor(gr * pct / 100));
-  for (let pct = 85; pct < 108; pct += 2) candSet.add(Math.floor(gr * pct / 100));
+  // Evenly-spaced outer radii — PAP-1100: when prior active, anchor on
+  // [α·aimR, β·aimR] instead of contourRadius (which is the failure mode the
+  // PAP-1078 ladder diagnosed: peakR aliasing onto inner sub-features when
+  // contourRadius is the anchor).
+  if (priorActive) {
+    const span = priorHi - priorLo;
+    if (span >= 12) {
+      // ~12 evenly-spaced samples across the prior band (matches the legacy
+      // gr*65..108 density of ~12 candidates).
+      const stride = Math.max(1, Math.floor(span / 12));
+      for (let r = priorLo; r <= priorHi; r += stride) {
+        if (r >= 10 && r < maxR) candSet.add(r);
+      }
+    }
+  } else {
+    const gr = contourRadius > 20 ? contourRadius : maxR;
+    for (let pct = 65; pct < 85; pct += 4) candSet.add(Math.floor(gr * pct / 100));
+    for (let pct = 85; pct < 108; pct += 2) candSet.add(Math.floor(gr * pct / 100));
+  }
 
   // Evaluate each candidate
   const candResults = [];
@@ -1965,7 +2006,7 @@ function radialOuterEdgeRadius(enhanced, cx, cy, bcCx, bcCy, peakR, w, h) {
  * Core analysis pipeline — operates on already-loaded pixel buffers.
  * Returns { toothCount, confidence, gearCenter, gearRadius } in pixel units.
  */
-function analyzeImage(gray, enhanced, edges, width, height) {
+function analyzeImage(gray, enhanced, edges, width, height, aimR = 0) {
   // ── Center detection (multi-candidate + FFT purity) ────────────────
   const centerResult = findGearCenter(gray, enhanced, edges, width, height);
   const cx = centerResult.cx;
@@ -2004,7 +2045,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
 
   // Always run multi-radius FFT scan (needed for confidence + cross-validation)
   let peakTc = 0, peakRel = 0, peakR = 0;
-  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(enhanced, edges, cx, cy, gearR, width, height));
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(enhanced, edges, cx, cy, gearR, width, height, aimR));
 
   // Outer-profile scan
   let opTc = 0, opRel = 0;
@@ -2466,7 +2507,7 @@ function analyzeImage(gray, enhanced, edges, width, height) {
 //   2. Fine:   ±15px step 5 around coarse-best position and radius
 //   3. Final refinement via refineCenterBySymmetry
 
-function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
+function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR = 0) {
   const h = height, w = width;
   let bestPurity = 0.0;
   let bestCx = imgCx, bestCy = imgCy, bestR = Math.floor(Math.min(h, w) / 4);
@@ -2554,14 +2595,14 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy) {
   // Temporarily override findGearCenter by passing a pre-set center
   const retryResult = analyzeImageAtCenter(
     gray, enhanced, edges, w, h,
-    refined.cx, refined.cy, bestR,
+    refined.cx, refined.cy, bestR, aimR,
   );
 
   return retryResult;
 }
 
 // Analyze image with a pre-determined center (used by retryNearCenter)
-function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, contourRadius) {
+function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, contourRadius, aimR = 0) {
   const gearR = contourRadius > 20
     ? contourRadius
     : findGearRadius(edges, cx, cy, width, height);
@@ -2569,7 +2610,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   const fft90tc = fftAtOuterRadii(enhanced, cx, cy, contourRadius, gearR, edges, width, height);
 
   let peakTc = 0, peakRel = 0, peakR = 0;
-  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(enhanced, edges, cx, cy, gearR, width, height));
+  ({ peakTc, peakRel, peakR } = multiRadiusFftScan(enhanced, edges, cx, cy, gearR, width, height, aimR));
 
   const maxRop = Math.min(cx, width - cx, cy, height - cy) - 1;
   let opTc = 0, opRel = 0;
@@ -2731,7 +2772,11 @@ export async function countTeeth(photoUri, signal, opts) {
 
   await yieldOrAbort();
 
-  let r = analyzeImage(gray, enhanced, edges, width, height);
+  // PAP-1100: aim-circle prior on FFT sweep range (pre-hoc).  aimR matches
+  // the post-hoc PAP-961 calibration (0.5 * min(W,H) when aimCrop present).
+  const aimR = aimCrop ? 0.5 * Math.min(width, height) : 0;
+
+  let r = analyzeImage(gray, enhanced, edges, width, height, aimR);
   const t3 = Date.now();
   // PAP-288: save initial radius from gear-region detection before
   // detect_teeth may shrink it to peak_r.
@@ -2751,7 +2796,7 @@ export async function countTeeth(photoUri, signal, opts) {
     // aggressively for large gears whose detected center may be close
     // to image center but still wrong (e.g. locked onto a cutout hole).
     if (cdist > Math.min(height, width) * 0.08) {
-      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy);
+      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR);
       // PAP-282: accept retry if confidence is within 0.05 of original
       // (the original may have misleadingly high confidence from cutout
       // artifacts) AND tooth-density sanity check passes (reject retry
@@ -2986,7 +3031,9 @@ export async function countTeeth(photoUri, signal, opts) {
   // 15-14-08 52T; Small/Mid/Large training 0 LOSS each; +17 XL training
   // confident-correct sacrificed — documented tradeoff for the device-panel
   // win).  Method tag: pap961-aim-circle-prior-abstain.
-  const aimR = aimCrop ? 0.5 * Math.min(width, height) : 0;
+  // PAP-1100: aimR is now hoisted to top of countTeeth (passed into the FFT
+  // sweep range as a pre-hoc prior).  The post-hoc PAP-961 abstain below is
+  // retained as defence-in-depth per QA verdict PAP-1106.
   const aimPriorAbstain = aimCrop != null
     && aimR > 0
     && (r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
@@ -3229,13 +3276,18 @@ export function countTeethFromRgba(rgba, width, height) {
   const enhanced = clahe(gray, width, height, 3.0, 8, 8);
   const blurred  = gaussianBlur5x5(enhanced, width, height);
   const edges    = cannyEdges(blurred, width, height, 50, 150);
-  let r = analyzeImage(gray, enhanced, edges, width, height);
+  // PAP-1100: harness path mirrors countTeeth's aimR convention.  Training
+  // photos have no aimCrop input but the harness applies the same circular
+  // mask convention (PAP-961 mirror at line 3383); aimR = 0.5*min(W,H)
+  // unconditionally per existing parity protocol with countTeeth().
+  const aimR = 0.5 * Math.min(width, height);
+  let r = analyzeImage(gray, enhanced, edges, width, height, aimR);
   if (r.confidence < SMALL_GEAR_CONF && r.cx !== undefined && r.cy !== undefined) {
     const imgCx = Math.floor(width / 2);
     const imgCy = Math.floor(height / 2);
     const cdist = Math.sqrt((r.cx - imgCx) ** 2 + (r.cy - imgCy) ** 2);
     if (cdist > Math.min(height, width) * 0.08) {
-      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy);
+      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR);
       const isSubharmonic = retryR !== null
           && r.toothCount > 0 && retryR.toothCount > 0
           && [2, 3].some(k => Math.abs(retryR.toothCount * k - r.toothCount) <= 1);
@@ -3335,7 +3387,9 @@ export function countTeethFromRgba(rgba, width, height) {
   // PAP-963 mirrors above.  Threshold 0.65 retained from QA verdict.  Sweep
   // log: debug-reports/pap961_sweep_2026-05-02.log.  Method tag:
   // pap961-aim-circle-prior-abstain.
-  const aimR = 0.5 * Math.min(width, height);
+  // PAP-1100: aimR is now hoisted to top of countTeethFromRgba (passed into
+  // the FFT sweep range as a pre-hoc prior).  PAP-961 abstain retained as
+  // defence-in-depth per QA verdict PAP-1106.
   const aimPriorAbstain = aimR > 0
     && (r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
         || r.bcTc >= 30 || r.bcPeaks >= 30)
