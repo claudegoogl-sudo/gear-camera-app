@@ -20,6 +20,8 @@ QA cross-check #1 verdict was **APPROVED w/ amendments**. Six amendments land in
 | **A4** | Sweep `extreme_R_abstain ∈ {off, on}` (Q3). On = also abstain when `R* ∉ [0.50, 1.00]·aimR` AND no second candidate. | §3.4, §4 |
 | **A5** | Wilson 95% UB hard-exit per PAP-1091 — descope to PAP-758 successor if best cell AC1 UB > 20% OR AC2 305-photo sweep > 0 LOSS. | §6, §9 |
 | **A6** | PAP-1483 inheritance — in-place replacement satisfies path (a). Delete module-level `_aimPriorAlpha=0.85`, `_aimPriorBeta=1.20` and `setAimPriorBounds` setter when joint-scan lands; no separate revert commit needed. | §0 |
+| **R5 (add)** | Joint-scan aggregate cost ≈2.5× via 2 call sites + `retryNearCenter`; confirm against PAP-555 budget after Phase-1 wall-clock. | §7 |
+| **R6 (add)** | At `aimR==0` (pre-b97), prior degenerates to uniform; verify no regression on pre-b97 subset of AC2 corpus (free reporter slice — already in 305 sweep). | §7 |
 
 QA Q1-Q4 answers folded into amendments above (Q1 → §3.2 unchanged, per-radius `S_rel` is the right normalization; Q2 → §3.3 default σ_R=0.20, swept up to 0.30 (A1); Q3 → A4; Q4 → A3).
 
@@ -253,6 +255,8 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 
 - **Risk: 11T cluster `peakR` data is missing today** (only 2/11 produce non-zero `peakR`). If the underlying ring signal genuinely lacks a coherent 11T harmonic at *any* radius in `[0.40, 1.10]·aimR`, joint scoring cannot rescue it either — it will abstain, which is still better than confident-wrong on AC1 metric.
 - **Risk: false abstains on XL 42T**. The PAP-861 / PAP-868 / PAP-885 / PAP-889 / PAP-1059 ladder's bypasses operate on `peakTc`/`fft90tc` agreement post-scan. If joint scoring abstains, those bypasses become inoperative on that row. **Mitigation: §4.0 pre-flight (A3) — hard-exit if any bypass row breaks**.
+- **R5 (PAP-1486 add): joint-scan aggregate cost ≈ 2.5× via 2 call sites + `retryNearCenter`**. Per-call cost is ≈1.25× per §5; multi-call amplifier pushes aggregate against the PAP-555 wall-clock budget. **Action: AE confirms against the PAP-555 budget once Phase-1 produces wall-clock numbers; not a blocker for the spec.** Deferred to Phase-1 measurement.
+- **R6 (PAP-1486 add): AC3 corpus (`aimR==0`, pre-b97) — soft prior degenerates to uniform**. Per §3.1, when `aimR` is absent the prior falls back to `gearR` as soft anchor and effectively degenerates to a uniform `P(R_k)`. Pre-b97 photos in the AC2 sweep test exactly this regime. **Action: explicitly verify on the pre-b97 corpus subset that joint-scan doesn't regress those photos; add as a Phase-1 reporter slice (no extra sweep cost — already part of AC2 305-photo corpus).**
 - **Out-of-scope** (per issue):
   - No FFT-magnitude-at-peakR resurrection (PAP-1078 ladder).
   - No aim-circle-prior expansions beyond the soft Gaussian here (PAP-961 + PAP-1100 stay as-is at code level until §0 deletion).
