@@ -1,10 +1,26 @@
-# PAP-1480 — Joint (radius × tooth-count) chainring-regime discriminator — spec v3
+# PAP-1480 — Joint (radius × tooth-count) chainring-regime discriminator — spec v4
 
-**Status**: spec only — v3 folds the PAP-1487 pre-flight FAIL recovery (Option α bc-consensus carve-out) into §3.4. Routed for QA cross-check #3 via PAP-1491. No `gearCounter.js` change before QA cross-check #2 on a chosen Phase-1 cell (still gated; cross-check #3 must clear first).
+**Status**: spec only — v4 folds QA cross-check #3 amendments B1 (gate tolerance) and B2 (γ_bc upward grid) into §3.4.6 and adds B3 instrumentation requirement on the pre-flight harness. Routed for QA cross-check #4 via PAP-1491. No `gearCounter.js` change before QA cross-check #2 on a chosen Phase-1 cell (still gated; cross-check #4 must clear first).
 
 **Author**: Algorithm Engineer
-**Date**: 2026-05-14 (v1) / 2026-05-14 (v2 amendments) / 2026-05-15 (v3 PAP-861 carve-out)
+**Date**: 2026-05-14 (v1) / 2026-05-14 (v2 amendments) / 2026-05-15 (v3 PAP-861 carve-out) / 2026-05-15 (v4 QA #3 amendments B1+B2+B3)
 **Successor to**: PAP-1102 (descoped 2026-05-14, see [project_PAP1102_descope.md](../mobile/__tests__/.cache/_unused) memory).
+
+---
+
+## v4 amendment summary (QA cross-check #3 verdict REJECTED-FOR-AMENDMENTS → PAP-1491 v4 round)
+
+QA cross-check #3 on PAP-1492 (comment authored 2026-05-15T01:17:52Z) returned **REJECTED-FOR-AMENDMENTS** with three findings (B1 blocking, B2 blocking, B3 advisory). Two algebraic flaws in the v3 Option α formulation would make the §4.0 C4 re-run guaranteed to FAIL; v4 corrects them.
+
+| # | Amendment | Section landed |
+|---|-----------|----------------|
+| **B1** (BLOCKING) | Replace strict `bcTc === bcPeaks` gate with `Math.abs(bcTc - bcPeaks) <= 2`. v3 prose claimed all 7 broken rows pass strict equality; QA's pre-flight data shows only 3/7 do — the remaining 4 have \|Δ\| ∈ {1, 2} (rows 36T `bcTc=37,bcPk=35`; 48T `bcTc=49,bcPk=48`; 47T `bcTc=47,bcPk=48`; 42T `bcTc=43,bcPk=41`). Tolerance `≤2` matches three in-tree precedents (`strongConsensusBypass` gearCounter.js:2093 uses `≤2`; PAP-396-era abstain at line 2258 uses `>3`; PAP-861 bc-isolated predicate requires no equality at all). Strict `===` was inherited verbatim from PAP-792 `bcStrongAgree` which has separate purpose (5-way isolated commit) and tighter `|bcTc-peakTc|>5` sanity margin. | §3.4.6 algorithm; §3.4.6 broken-row table |
+| **B2** (BLOCKING) | γ_bc grid `{0.6, 0.8, 1.0}` is algebraically inert. `rOuter ∈ [158, 181]px` and `aimR ∈ [290, 330]px` on the 7 broken rows → `rOuter/aimR ≈ 0.55`, inside the joint grid `[0.40, 1.10]·aimR`. Grid spacing `Δ_R = (R_hi-R_lo)/32 ≈ 0.022·aimR ≈ 6.5px` for aimR≈300px places the nearest grid radius within ±3.25px of rOuter, so `S_rel(R_grid_near, bcTc) ≈ S_rel(rOuter, bcTc)`. Therefore `J_bc(γ_bc=1.0) ≈ J(grid_cell_at_rOuter, bcTc) ≤ J*` **by definition of joint argmax** — at most a tie at γ_bc=1.0, strictly below for γ_bc<1.0. To trigger substitution requires γ_bc > 1.0; to commit (clear J_dis_new + ε_abs) requires γ_bc ≈ 1.3–2.0 given typical J* ≈ 0.07–0.10 and raw `S_rel·P` at rOuter typically ≤ J*. v4 replaces the grid with `{1.0, 1.3, 1.6, 2.0}` (4 values; total grid 2592 → **3456 cells**). The 1.0 floor anchors a tie-wins control cell; upward extension provides the head-room required for substitution. The v3 prose claim "γ_bc = 1.0 makes any bc-self-confirmed disagreement win unconditionally" is removed (inverted algebra). | §3.4.6 prose; §3.4 param table; §4.1 sweep grid |
+| **B3** (advisory) | Pre-flight harness must report `J_bc_raw := S_rel(rOuter, bcTc) · P(rOuter)` (pre-boost) per row alongside `J*` and `J_dis`. Without this column no future verdict can verify γ_bc head-room or distinguish "boost insufficient" from "gate didn't fire". | §4.0 v3 → v4 pre-flight requirements |
+
+Default γ_bc for the C4 re-run shifts from 0.8 to **1.3** (mid of new grid).
+
+QA confirmation on v3 Q1/Q3/Q5/Q6 stands (algebra placement, C3 rOuter==0 carve-out, grid math correctness, sequencing); Q2 (γ_bc range) and Q4 (AC2 risk surface) revisit after B2 lands.
 
 ---
 
@@ -188,15 +204,16 @@ The toggle is a Phase-1 sweep dimension; Phase-2 ships only the cell QA selects.
 
 PAP-1487 pre-flight FAILed on 7/19 PAP-861 bc-isolated rescue rows where joint-scan abstains at margins 0.001–0.018 (well below `ε_abs=0.020`). Root cause: bc-consensus self-confirms at the true outer ring while the joint argmax locks onto the inner alias, and the v2 abstain rule never consults `bcTc/bcPeaks` (reserved per §2 as "abstain-tie-break channel"). v3 corrects this by promoting bcTc to a tie-breaking grid injection when bc-consensus self-confirms.
 
-**Algorithm (v3, runs after §3.4 joint argmax / disagree-set computation, BEFORE the commit/abstain decision):**
+**Algorithm (v4, runs after §3.4 joint argmax / disagree-set computation, BEFORE the commit/abstain decision):**
 
 ```
-// bc-consensus self-confirmation gate
-bcSelfConfirms = (bcTc === bcPeaks) && (bcTc >= 30) && (Math.abs(bcTc - tc*) > 2)
+// bc-consensus self-confirmation gate (v4: B1 tolerance, was strict === in v3)
+bcSelfConfirms = (Math.abs(bcTc - bcPeaks) <= 2) && (bcTc >= 30) && (Math.abs(bcTc - tc*) > 2)
 
 if (bcSelfConfirms && rOuter > 0):
-    R_bc  = rOuter                                    // radial-gradient outer peak (already exposed on row)
-    J_bc  = S_rel(R_bc, bcTc) · P(R_bc) · γ_bc        // inject bc cell with boost γ_bc
+    R_bc     = rOuter                                    // radial-gradient outer peak (already exposed on row)
+    J_bc_raw = S_rel(R_bc, bcTc) · P(R_bc)               // pre-boost (instrumented per B3 in harness)
+    J_bc     = J_bc_raw · γ_bc                           // inject bc cell with boost γ_bc (γ_bc > 1.0 expected, see B2)
 
     if (J_bc >= J*):
         tc*  := bcTc
@@ -208,18 +225,38 @@ if (bcSelfConfirms && rOuter > 0):
 // Commit/abstain decision (§3.4) proceeds as usual on the (potentially substituted) (R*, tc*, J*, J_dis)
 ```
 
-**Why this works on the 7 broken rows:**
+**Why this works on the 7 broken rows (v4 — B1 corrected table):**
 
-- All 7 have `bcTc === bcPeaks`, both ≥ 35.
-- All 7 have `rOuter ∈ [158, 181] px` (non-zero, see PAP-1487 broken-row table).
-- All 7 have joint `tc*` ∈ [10, 24] (inner alias) → `|bcTc - tc*| > 11` trivially.
-- Boost γ_bc gives the bc cell competitive J even when its raw `S_rel(rOuter, bcTc)` is somewhat below the inner-alias's `S_rel(R*, tc*)`.
+| stamp                          | actual tc | bcTc | bcPk | \|Δ\| | strict `===` (v3 gate) | `≤2` (v4 gate) |
+|--------------------------------|-----------|------|------|------|------------------------|----------------|
+| 2026-04-25_08-45-07-271Z       | 36T       |   37 |   35 |   2  | ✗                      | ✓              |
+| 2026-04-30_12-31-00-766Z       | 50T       |   50 |   50 |   0  | ✓                      | ✓              |
+| 2026-05-01_08-28-38-224Z       | 50T       |   50 |   50 |   0  | ✓                      | ✓              |
+| 2026-05-01_09-04-04-917Z       | 48T       |   49 |   48 |   1  | ✗                      | ✓              |
+| 2026-05-01_15-00-55-239Z       | 48T       |   48 |   48 |   0  | ✓                      | ✓              |
+| 2026-05-01_15-04-02-875Z       | 47T       |   47 |   48 |   1  | ✗                      | ✓              |
+| 2026-05-04_11-33-56-211Z       | 42T       |   43 |   41 |   2  | ✗                      | ✓              |
 
-**Why we boost rather than just inject the cell unweighted:**
+v3 strict `===` catches **3/7**; v4 `|Δ| ≤ 2` catches **7/7**. All 7 also satisfy `bcTc ≥ 30` (range [37, 50]) and `rOuter > 0` (range [158, 181]px). Joint `tc*` for all 7 ∈ [10, 24] → `|bcTc - tc*| > 11` trivially.
 
-Without γ_bc, the bc cell would just be one more grid cell — and joint argmax already saw `(rOuter, bcTc)` (or close to it) during the §3.2 grid scan because rOuter is in the candidate radius set when aimR is the anchor. The reason bcTc didn't win on those 7 rows is that the inner-alias cell *genuinely* has higher `S_rel · P` under the v2 prior. The boost γ_bc encodes "when bc-consensus says ≥30 and self-confirms, that's strong external evidence — give the bc cell a tiebreak weight". γ_bc < 1.0 still requires the bc cell to be *close* to J*; γ_bc = 1.0 makes any bc-self-confirmed disagreement win unconditionally.
+The `≤2` tolerance is justified by three in-tree precedents (see v4 amendment B1 above): `strongConsensusBypass` (gearCounter.js:2093), PAP-396-era abstain at line 2258 (`>3` is the *abstain* threshold, so `≤3` is treated as consensus elsewhere), and PAP-861's own bc-isolated predicate (no equality required, only `bcTc≥30 && bcPeaks≥30`). Setting the tolerance at `≤2` (rather than `≤3`) keeps a margin from PAP-396's abstain threshold and matches the canonical strongConsensus rule.
 
-**Phase-1 sweep dimension γ_bc ∈ {0.6, 0.8, 1.0}** picks the tipping point where bc cell wins on all 7 broken rows without sacrificing AC2.
+**Why a multiplicative boost γ_bc > 1.0 is required (v4 — B2 corrected algebra):**
+
+`rOuter ≈ 0.55·aimR` falls inside the §3.2 joint grid (`R ∈ [0.40, 1.10]·aimR`). Grid spacing `Δ_R = (R_hi - R_lo)/32 ≈ 0.022·aimR ≈ 6.5px` for aimR≈300px → the nearest grid radius is within ±3.25px of rOuter. Because `S_rel` is computed from a savgol-smoothed ring signal whose support is much wider than 6.5px, `S_rel(R_grid_near, bcTc) ≈ S_rel(rOuter, bcTc)` to within sub-bin noise (well below ε_abs).
+
+Therefore:
+```
+J_bc_raw = S_rel(rOuter, bcTc) · P(rOuter)
+        ≈ J(R_grid_near, bcTc)
+        ≤ J*                  (by definition of joint argmax over the §3.2 grid)
+```
+
+A boost γ_bc ≤ 1.0 cannot trigger substitution (at best ties); γ_bc > 1.0 is required. The v3 prose's claim "γ_bc = 1.0 makes any bc-self-confirmed disagreement win unconditionally" inverts the algebra and is withdrawn.
+
+**Magnitude target**: empirical `J* ≈ 0.07–0.10` on broken rows; substitution + commit requires `J_bc ≥ J_dis_new + ε_abs ≈ J* + ε_abs ≈ 0.09–0.12`. If `J_bc_raw ≈ 0.5·J*` (a conservative head-room assumption pending B3 instrumentation), then γ_bc ∈ [1.8, 2.4] commits all 7 rows; tighter head-room (J_bc_raw close to J*) commits at γ_bc ≈ 1.0–1.3. Until B3 prints per-row `J_bc_raw`, the grid brackets both regimes.
+
+**Phase-1 sweep dimension γ_bc ∈ {1.0, 1.3, 1.6, 2.0}** (v4) — `1.0` anchors a tie-wins control cell (verifies substitution geometry in the absence of head-room), and the upward tail covers the worst-case head-room. The 7 broken rows must commit at some γ_bc in this range; if none does, B3 instrumentation pinpoints whether the failure is "gate doesn't fire" (B1 regression), "J_bc_raw too far below J*" (need γ_bc > 2.0, escalate to Option β), or "J_dis_new disqualifies commit" (Option γ).
 
 **Carve-out limitation (C3)**: when `rOuter == 0` on a row (no radial-gradient outer-edge signal — happens on inner-only or noise-dominated frames), Option α is inactive and joint-scan abstain holds. PAP-1487 corpus shows 19/19 PAP-861 fires have `rOuter > 0`, so empirically unreached in scope. Documented as a known limitation should it surface in future corpus expansion.
 
@@ -238,7 +275,7 @@ Without γ_bc, the bc cell would just be one more grid cell — and joint argmax
 | `R_lo/aimR` | 0.40       | {0.35, 0.40, 0.45}                  | Lower bound on cog candidates. 0.40 covers 11T-on-50T chainring case.                                 |
 | `R_hi/aimR` | 1.10       | {1.05, 1.10, 1.15}                  | Upper bound. 1.10 is current PAP-1100 ceiling.                                                       |
 | `extreme_R_abstain` | off | {off, on} (A4)                       | See above (Q3 / A4).                                                                                 |
-| `γ_bc`      | 0.8        | **{0.6, 0.8, 1.0}** (C2)             | v3 bc-cell boost factor (§3.4.6). 0.6 = bc cell must clearly win raw, 1.0 = any bc-self-confirmed disagreement wins. |
+| `γ_bc`      | 1.3        | **{1.0, 1.3, 1.6, 2.0}** (v4 B2)     | bc-cell boost factor (§3.4.6). Floor `1.0` = tie-wins control (substitution geometry sanity). Upward extension required because rOuter sits inside §3.2 grid → raw `J_bc ≤ J*` by argmax; γ_bc > 1.0 needed to substitute (B2). |
 
 ### 3.5 Integration point
 
@@ -269,17 +306,29 @@ A simulator harness (`mobile/__tests__/pap1480.preflight.js`, filed as PAP-1485 
 
 **v2 pre-flight result (PAP-1487)**: FAIL — 7 broken PAP-861 bc-isolated rows, 0 broken on the other four predicates (PAP-868 / PAP-885 / PAP-889 / PAP-1059 all clean).
 
-**v3 pre-flight (C4) — required re-run before Phase-1**:
+**v4 pre-flight (C4 + B3) — required re-run before Phase-1**:
 
-After spec v3 lands, re-run `mobile/__tests__/pap1480.preflight.js` with Option α (§3.4.6) wired into the inline simulator. Verdict criterion:
+After spec v4 lands (and QA cross-check #4 APPROVED), re-run `mobile/__tests__/pap1480.preflight.js` with Option α v4 (§3.4.6, B1 gate `|bcTc-bcPeaks|≤2`, B2 γ_bc grid) wired into the inline simulator. Verdict criterion:
 
-- 0 broken PAP-861 rows (Option α MUST close the 7 v2-broken rows).
+- 0 broken PAP-861 rows (Option α MUST close all 7 v2-broken rows; v4's `|Δ|≤2` gate catches 7/7 — see §3.4.6 table).
 - 0 broken on PAP-868 / PAP-885 / PAP-889 / PAP-1059 (Option α MUST NOT introduce new breakage on previously-clean predicates).
-- γ_bc default for the re-run: **0.8** (mid of {0.6, 0.8, 1.0}).
+- γ_bc default for the re-run: **1.3** (mid-low of {1.0, 1.3, 1.6, 2.0}).
 
-If v3 pre-flight reports any broken row, file v4 round (likely fall back to Option β or γ).
+**B3 instrumentation requirement (advisory → required for v4 re-run)**: harness output must include the following columns per row, in addition to the existing v2 fields:
 
-If v3 pre-flight is clean (0 broken bypass rows across all five predicates), proceed to §4.1 Phase-1 sweep.
+| Column         | Definition                                                          | Purpose                                                          |
+|----------------|---------------------------------------------------------------------|------------------------------------------------------------------|
+| `J_bc_raw`     | `S_rel(rOuter, bcTc) · P(rOuter)` (pre-boost)                       | Verifies γ_bc head-room (B2). Should be ≤ J* in argmax regime.    |
+| `J_star_v4`    | `max J` over (§3.2 grid ∪ injected bc cell after boost)             | Post-substitution argmax; differs from v2 `J*` iff bc cell wins. |
+| `gamma_eff`    | smallest γ_bc ∈ grid at which `J_bc ≥ J*` for this row              | Per-row substitution threshold — drives γ_bc grid tightening.    |
+| `subst_fired`  | bool: did Option α substitute on this row?                          | Distinguishes "gate didn't fire" from "boost insufficient".      |
+| `gate_passed`  | bool: did `bcSelfConfirms && rOuter>0` hold?                        | Isolates B1 regression risk independent of boost magnitude.      |
+
+For each row, the harness should sweep γ_bc ∈ {1.0, 1.3, 1.6, 2.0} and report `subst_fired` and the smallest grid value that closes the row. If `gamma_eff > 2.0` for any of the 7 v2-broken rows, the verdict is FAIL → escalate to v5 (likely Option β fallback).
+
+If v4 pre-flight reports any broken row, file v5 round.
+
+If v4 pre-flight is clean (0 broken bypass rows across all five predicates) AND `gamma_eff ≤ 2.0` for all 7 historically-broken rows, proceed to §4.1 Phase-1 sweep.
 
 ### 4.1 Phase-1 sweep grid (A1 amended)
 
@@ -291,9 +340,9 @@ If v3 pre-flight is clean (0 broken bypass rows across all five predicates), pro
 | `ε_abs`      | {0.015, 0.020, 0.025, 0.030}        | 4 |
 | `ε_floor`    | {0.06, 0.08, 0.10}                  | 3 |
 | `extreme_R_abstain` | {off, on} (A4)               | 2 |
-| `γ_bc` (v3, C2)     | {0.6, 0.8, 1.0}              | 3 |
+| `γ_bc` (v4, B2)     | **{1.0, 1.3, 1.6, 2.0}**     | 4 |
 
-Total **3·3·4·4·3·2·3 = 2592** cells. (v1: 324 → +A1 σ_R: 432 → +A4 extreme_R: 864 → +C2 γ_bc: 2592.) Recommended Phase-1 strategy: AC2-eliminate-first — reject any cell with > 0 LOSS on PAP-760/796/939/1052 corpus before scoring AC1, which prunes the dominant cost. Cell-cache + resumable design (lifted from `pap1100.aim-prior.js`) makes the sweep tractable.
+Total **3·3·4·4·3·2·4 = 3456** cells. (v1: 324 → +A1 σ_R: 432 → +A4 extreme_R: 864 → +C2 γ_bc (v3): 2592 → +B2 γ_bc upward (v4): 3456.) Recommended Phase-1 strategy: AC2-eliminate-first — reject any cell with > 0 LOSS on PAP-760/796/939/1052 corpus before scoring AC1, which prunes the dominant cost. Cell-cache + resumable design (lifted from `pap1100.aim-prior.js`) makes the sweep tractable.
 
 Each cell evaluates the current 305-photo corpus (PAP-760 / PAP-796 / PAP-939 / PAP-1052 union) plus the AC1 cohort (n=24, A2 — see §6).
 
@@ -330,7 +379,7 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 
 - **Risk: 11T cluster `peakR` data is missing today** (only 2/11 produce non-zero `peakR`). If the underlying ring signal genuinely lacks a coherent 11T harmonic at *any* radius in `[0.40, 1.10]·aimR`, joint scoring cannot rescue it either — it will abstain, which is still better than confident-wrong on AC1 metric.
 - **Risk: false abstains on XL 42T**. The PAP-861 / PAP-868 / PAP-885 / PAP-889 / PAP-1059 ladder's bypasses operate on `peakTc`/`fft90tc` agreement post-scan. If joint scoring abstains, those bypasses become inoperative on that row. **Mitigation: §4.0 pre-flight (A3) — hard-exit if any bypass row breaks**.
-- **v3 risk: Option α boost γ_bc may regress AC2** if a true small-cog row has `bcTc===bcPeaks≥30` from a misdetected outer ring. Empirically PAP-1487 corpus has 19 PAP-861 fires of which 7 are the broken set; the other 12 currently pass joint-scan and are a control. Phase-1 sweep over `γ_bc ∈ {0.6, 0.8, 1.0}` is the AC2 guard — any cell with γ_bc that introduces AC2 LOSS is rejected per the AC2-eliminate-first strategy (§4.1).
+- **v4 risk (was v3 risk, B2 elevated)**: Option α boost γ_bc > 1.0 may regress AC2 if a true small-cog row has `|bcTc-bcPeaks|≤2 && bcTc≥30` from a misdetected outer ring AND `rOuter` happens to sit at a small-cog harmonic peak. v3's grid `{0.6, 0.8, 1.0}` masked this risk (no substitution would have fired); v4's `{1.0, 1.3, 1.6, 2.0}` exposes it for the first time. Empirically PAP-1487 corpus has 19 PAP-861 fires (12 currently pass joint-scan as control); the 305-photo AC2 corpus is the broader guard. Phase-1 sweep is AC2-eliminate-first — any cell with γ_bc that introduces AC2 LOSS is rejected per §4.1. B3 instrumentation (`gamma_eff` per row) makes the safety margin between "lowest γ_bc that rescues all 7 v2-broken rows" and "lowest γ_bc that triggers an AC2 LOSS" empirically measurable.
 - **v3 carve-out limitation (C3)**: rows with `rOuter == 0` cannot benefit from Option α. PAP-1487 shows 19/19 PAP-861 fires have rOuter > 0; future corpus expansion may surface rows where this fails. Documented; no current mitigation needed.
 - **R5 (PAP-1486 add): joint-scan aggregate cost ≈ 2.5× via 2 call sites + `retryNearCenter`**. Per-call cost is ≈1.25× per §5; multi-call amplifier pushes aggregate against the PAP-555 wall-clock budget. **Action: AE confirms against the PAP-555 budget once Phase-1 produces wall-clock numbers; not a blocker for the spec.** Deferred to Phase-1 measurement.
 - **R6 (PAP-1486 add): AC3 corpus (`aimR==0`, pre-b97) — soft prior degenerates to uniform**. Per §3.1, when `aimR` is absent the prior falls back to `gearR` as soft anchor and effectively degenerates to a uniform `P(R_k)`. Pre-b97 photos in the AC2 sweep test exactly this regime. **Action: explicitly verify on the pre-b97 corpus subset that joint-scan doesn't regress those photos; add as a Phase-1 reporter slice (no extra sweep cost — already part of AC2 305-photo corpus).**
@@ -350,14 +399,16 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 
 ---
 
-## 9. Sequencing (v3)
+## 9. Sequencing (v4)
 
 1. **DONE (v2, ae28d85)**: Update `pap1480_joint_score_spec.md` → v2.
 2. **DONE (PAP-1487, 2bd05d5)**: Run pre-flight bypass-row guard (§4.0, A3) → **FAIL verdict** (7 broken PAP-861 rows). Reports at `debug-reports/pap1485_preflight_2026-05-15.{log,json}`.
-3. **THIS REVISION (v3, PAP-1491)**: Fold Option α (bc-consensus carve-out) into §3.4.6 → **route to QA cross-check #3**.
-4. **NEXT (gated on QA #3 APPROVED)**: Re-run PAP-1487 harness with Option α wired (γ_bc=0.8 default). Verdict criterion = 0 broken across all five predicates. If FAIL → v4 (likely Option β/γ).
-5. **THEN (gated on v3 PAP-1487 PASS)**: Open **Phase-1 calibration child** under PAP-1480 (2592-cell sweep with AC2-eliminate-first pruning, on union corpus + AC1 n=24 cohort). Cell-cache + resumable design lifted from `pap1100.aim-prior.js` minus the PAP-1100-specific bounds plumbing.
-6. Pick best cell maximizing AC1-pass while preserving 305-photo AC2 (0 LOSS). Apply A5 hard-exit if best cell fails AC4.
-7. **QA cross-check #2** on the chosen cell + parameter values + Phase-1 corpus diff. No `gearCounter.js` edit before this signoff.
-6. PAP-1480 v2 implementation lands as the single coherent commit described in §0 (joint-scan + PAP-1100 plumbing deletion in one diff).
+3. **DONE (v3, 361c010)**: Fold Option α (bc-consensus carve-out) into §3.4.6 → routed to QA cross-check #3 (PAP-1492).
+4. **DONE (QA #3, 2026-05-15T01:17:52Z)**: PAP-1492 returned **REJECTED-FOR-AMENDMENTS** — B1 (gate tolerance), B2 (γ_bc upward grid), B3 (instrumentation).
+5. **THIS REVISION (v4, PAP-1491)**: Fold B1 (`|bcTc-bcPeaks|≤2` gate), B2 (γ_bc ∈ {1.0, 1.3, 1.6, 2.0}), and B3 (harness J_bc_raw / gamma_eff / subst_fired columns) → **route to QA cross-check #4**.
+6. **NEXT (gated on QA #4 APPROVED)**: Wire Option α v4 into `mobile/__tests__/pap1480.preflight.js` inline simulator (γ_bc=1.3 default; B3 instrumentation rows added). Re-run on full 362-photo corpus. Verdict criterion = 0 broken across all five predicates AND `gamma_eff ≤ 2.0` on all 7 v2-broken PAP-861 rows. If FAIL → v5 round (likely Option β fallback).
+7. **THEN (gated on v4 PAP-1487 PASS)**: Open **Phase-1 calibration child** under PAP-1480 (3456-cell sweep with AC2-eliminate-first pruning, on union corpus + AC1 n=24 cohort). Cell-cache + resumable design lifted from `pap1100.aim-prior.js` minus the PAP-1100-specific bounds plumbing.
+8. Pick best cell maximizing AC1-pass while preserving 305-photo AC2 (0 LOSS). Apply A5 hard-exit if best cell fails AC4.
+9. **QA cross-check #2** on the chosen cell + parameter values + Phase-1 corpus diff. No `gearCounter.js` edit before this signoff.
+10. PAP-1480 implementation lands as the single coherent commit described in §0 (joint-scan + PAP-1100 plumbing deletion in one diff).
 7. QA full sweep + signoff post-implementation → build subtask filed by QA.
