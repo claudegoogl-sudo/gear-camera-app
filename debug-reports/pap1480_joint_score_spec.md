@@ -1,10 +1,28 @@
-# PAP-1480 — Joint (radius × tooth-count) chainring-regime discriminator — spec v6
+# PAP-1480 — Joint (radius × tooth-count) chainring-regime discriminator — spec v6.1
 
-**Status**: spec only — v6 escalates from Option α (bc-consensus carve-out) to **Option β (skip-abstain on bc-self-confirmed)** per the v5 pre-flight FAIL verdict and QA cross-check #5 endorsement (PAP-1499, 2026-05-15T19:55Z). v5 wire-up (`f417648`) confirmed Option α is structurally inadequate (`J_bc_raw / J*_v4 ∈ [2.4%, 20.0%]` vs ~50% spec assumption — boost short by 5×–25×, not borderline; required γ_bc off-grid >2.5 on 7/7 broken rows). v5 B3'+B4+B5 instrumentation and v4 B1+B2 gate carry forward as DIAGNOSTIC backdrop (Option α stays in spec as a tie-wins path with γ_bc=1.0 floor; Option β fires only when Option α did not commit). Routed for QA cross-check #6 via new child under PAP-1485. No `gearCounter.js` change before QA cross-check #2 on a chosen Phase-1 cell (still gated; cross-check #6 must clear first, then v6 PAP-1487 re-run PASS, then Phase-1 cell choice).
+**Status**: spec only — v6.1 folds QA cross-check #6 amendments B7 (Pass B B6 column taxonomy: 4-bucket → 6-bucket `beta_outcome` enum) and B8 (per-bucket hard limits for the three regression buckets) per PAP-1504 verdict APPROVED-W-AMENDMENTS. Q1/Q2/Q3/Q6 of cross-check #6 approved as-is in v6; Q4/Q5 land here. v6 escalated from Option α (bc-consensus carve-out) to **Option β (skip-abstain on bc-self-confirmed)** per the v5 pre-flight FAIL verdict and QA cross-check #5 endorsement (PAP-1499, 2026-05-15T19:55Z). v5 wire-up (`f417648`) confirmed Option α is structurally inadequate (`J_bc_raw / J*_v4 ∈ [2.4%, 20.0%]` vs ~50% spec assumption — boost short by 5×–25×, not borderline; required γ_bc off-grid >2.5 on 7/7 broken rows). v5 B3'+B4+B5 instrumentation and v4 B1+B2 gate carry forward as DIAGNOSTIC backdrop (Option α stays in spec as a tie-wins path with γ_bc=1.0 floor; Option β fires only when Option α did not commit). v6.1 mechanical (column-split + limit-split) — per PAP-1505 routing, no QA cross-check #7 required at this scope; proceed straight to PAP-1499-style wire-up subtask after this commit. No `gearCounter.js` change before QA cross-check #2 on a chosen Phase-1 cell (still gated; v6.1 must clear wire-up + v6 PAP-1487 re-run PASS, then Phase-1 cell choice).
 
 **Author**: Algorithm Engineer
-**Date**: 2026-05-14 (v1) / 2026-05-14 (v2 amendments) / 2026-05-15 (v3 PAP-861 carve-out) / 2026-05-15 (v4 QA #3 amendments B1+B2+B3) / 2026-05-15 (v5 QA #4 amendments B3'+B4+B5) / 2026-05-15 (v6 Option β skip-abstain per v5 FAIL + QA #5 endorsement)
+**Date**: 2026-05-14 (v1) / 2026-05-14 (v2 amendments) / 2026-05-15 (v3 PAP-861 carve-out) / 2026-05-15 (v4 QA #3 amendments B1+B2+B3) / 2026-05-15 (v5 QA #4 amendments B3'+B4+B5) / 2026-05-15 (v6 Option β skip-abstain per v5 FAIL + QA #5 endorsement) / 2026-05-15 (v6.1 QA #6 amendments B7+B8: 6-bucket Pass B enum + per-bucket hard limits)
 **Successor to**: PAP-1102 (descoped 2026-05-14, see [project_PAP1102_descope.md](../mobile/__tests__/.cache/_unused) memory).
+
+---
+
+## v6.1 amendment summary (QA cross-check #6 verdict APPROVED-W-AMENDMENTS → PAP-1505 mechanical fold)
+
+QA cross-check #6 on `f4f9b68` (v6) returned **APPROVED-W-AMENDMENTS** at PAP-1504. Q1/Q2/Q3/Q6 approved as-is and remain in v6 form. Q4 (Pass B B6 column taxonomy) and Q5 (split hard limits) require spec edits before v6 wire-up. v6.1 folds B7 + B8 only; no algorithm change.
+
+| # | Amendment | Section landed |
+|---|-----------|----------------|
+| **B7** (Q4 — Pass B B6 column taxonomy) | Split the v6 4-bucket `beta_outcome` enum into 6 buckets. The v6 `no_change` bucket conflates `current=correct ∧ beta=correct` (benign) with `current=CW(Δ_old) ∧ beta=CW(Δ_new) where |Δ_new|>|Δ_old|` (silent regression — Option β picked up a worse CW). New enum: `rescue` / `regress_correct→CW` / `regress_abstain→CW` / `regress_CW_worse_delta` (NEW) / `no_change_correct` / `no_change_CW_same_or_better`. The fifth implicit case (current=correct ∧ beta=correct_different_tooth_within_±1) collapses into `no_change_correct` per the existing AC2 tolerance definition. | §3.4.7 prose; §4.0 v6 Pass B column table; §4.0 aggregate counts |
+| **B8** (Q5 — split hard limits) | Replace v6's combined `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` with per-bucket caps: `regress_correct→CW ≤ 1` (loss-aversion: user previously saw the right answer); `regress_abstain→CW ≤ 2` (new noise: no answer was lost); `regress_CW_worse_delta ≤ 1` (silent regression: B7-introduced bucket). Each cap independently must pass for v6 PASS. The combined sum (correct→CW + abstain→CW ≤ 2) may stay as a sanity rollup but is no longer the binding constraint. | §4.0 v6 PASS criterion; §6 AC5 |
+
+Routing per PAP-1505: cross-check #7 is NOT required for B7+B8 at this mechanical scope (column-split + limit-split). Proceed directly to a PAP-1499-style wire-up subtask under PAP-1485 (`mobile/__tests__/pap1480.preflight.js` extension with Option β + B6 6-bucket enumeration). If the B6 6-bucket Pass B run on the 305-photo AC2 corpus surfaces an unanticipated `regress_CW_worse_delta` cluster requiring a fresh §3.4.7 conjunct, ping QA for cross-check #7 at that point.
+
+Non-blocking notes carried from cross-check #6 (advisory):
+- Pre-flight cost ~2hr at default γ_bc=1.3 single value; use PAP-997 chunked-stdout wrapper (`for i in $(seq 1 90); do sleep 60; printf '.'; done`) when running the v6 simulator.
+- Option α empirically dormant (0/19 commits at all γ_bc up to v5 sentinel 2.5 per PAP-1499 data); kept in spec correctly as diagnostic-measurability channel.
+- Keep JSON rollup alongside the per-row CSV (matches v5 dual-format output) so QA #2 can machine-parse aggregates at Phase-1 cell selection.
 
 ---
 
@@ -370,6 +388,8 @@ All 7 rows satisfy all four conjuncts. Per-row commit-delta `|bcTc − actual| �
 - C3 carry-forward (rOuter==0): Option β inactive. PAP-1487 corpus shows 19/19 PAP-861 fires have rOuter>0.
 - New (v6): if Option β commits `tc*=bcTc` but the §3.4 joint `R*` is itself extreme (R<0.50·aimR or R>1.00·aimR), PAP-961 / PAP-815 downstream gates will see (bcTc, extreme-R*) and may second-abstain. This is **intentional defence-in-depth** — Option β bypasses §3.4 abstain ONLY; it does NOT bypass downstream radius-sanity gates. Pass B B6 will report `downstream_abstain_after_beta` per row to surface this interaction.
 
+**AC2 risk surface (v6.1, B7+B8)**: AC2 risk surface for Option β is enumerated by Pass B B6 across **six outcome buckets** (`rescue` / `regress_correct→CW` / `regress_abstain→CW` / `regress_CW_worse_delta` / `no_change_correct` / `no_change_CW_same_or_better`), with **separate hard limits per regression bucket** rather than a combined cap (see §4.0 verdict criterion and §6 AC5). The v6.1 split surfaces the silent-regression case (`current=CW(Δ_old) → beta=CW(Δ_new) where |Δ_new|>|Δ_old|`) that v6's 4-bucket `no_change` enum collapsed into the benign `no_change` count, and applies loss-aversion (`regress_correct→CW ≤ 1`, the strictly worse user-visible failure) versus new-noise (`regress_abstain→CW ≤ 2`) versus silent-regression (`regress_CW_worse_delta ≤ 1`) caps independently.
+
 #### Parameter defaults (to be calibrated by Phase-1 sweep)
 
 | Parameter   | v1 default | v2 grid (Phase-1)                   | Rationale                                                                                            |
@@ -467,31 +487,47 @@ PAP-1499 QA #5 MUST-AMEND: v5 Pass B emitted count rollups only (`ac2_fp_g13=0` 
 | `beta_fires`                 | bool: did Option β §3.4.7 fire on this row? (Option α did not commit AND v6 conjuncts hold)                  | Per-row Option β activation                                                                               |
 | `beta_commit_tc`             | `bcTc` when beta_fires, else `null`                                                                          | What Option β commits                                                                                     |
 | `beta_commit_delta`          | `\|bcTc − actual\|` when beta_fires, else `null`                                                            | Per-row Option β commit error                                                                             |
-| `beta_outcome`               | ∈ {`rescue` (current=CW or abstain → beta=correct), `regress_correct→CW` (current=correct → beta=CW), `regress_abstain→CW` (current=abstain → beta=CW), `no_change` (current=correct → beta=correct OR current=CW → beta still CW with same Δ)} | AC2 outcome classification                                                                                |
+| `beta_outcome` (v6.1, B7)    | ∈ {`rescue` (current ∈ {CW, abstain} ∧ beta=correct, \|Δ_new\|≤1), `regress_correct→CW` (current=correct, \|Δ_old\|≤1 ∧ beta=CW, \|Δ_new\|>1), `regress_abstain→CW` (current=abstain ∧ beta=CW, \|Δ_new\|>1), `regress_CW_worse_delta` (current=CW, \|Δ_old\|>1 ∧ beta=CW, \|Δ_new\|>\|Δ_old\| — silent regression, NEW in v6.1), `no_change_correct` (current=correct ∧ beta=correct), `no_change_CW_same_or_better` (current=CW ∧ beta=CW, \|Δ_new\|≤\|Δ_old\|)} | AC2 outcome classification (6-bucket; v6.1 split per QA #6 B7 — surfaces silent CW→worse-CW regression that v6's 4-bucket `no_change` collapsed) |
 | `downstream_abstain_after_beta` | bool: would PAP-961 / radius-sanity / PAP-815 second-abstain on (bcTc, joint R*)?                          | Defence-in-depth verification (Option β passes through downstream gates)                                  |
 
-**Aggregate counts (B6, replaces v5 `ac2_fp_default`):**
+**Aggregate counts (v6.1 B7+B8, replaces v6 4-bucket aggregate):**
 
-- `beta_rescue` count: rows where `beta_outcome === 'rescue'`. Expected high on the 7 v2-broken rows (all 7 rescue at delta≤1).
-- `beta_regress_correct_to_CW` count: rows where `beta_outcome === 'regress_correct→CW'`. **Hard limit ≤ 2** (mirrors v5 B4 FP threshold).
-- `beta_regress_abstain_to_CW` count: rows where `beta_outcome === 'regress_abstain→CW'`. **Hard limit ≤ 2** (new CW from abstain is the cleanest AC2 regression signal).
-- `beta_no_change` count: informational only.
+- `beta_rescue` count: rows where `beta_outcome === 'rescue'`. Informational. Expected high on the 7 v2-broken rows (all 7 rescue at delta≤1).
+- `beta_regress_correct_to_CW` count: rows where `beta_outcome === 'regress_correct→CW'`. **Hard limit ≤ 1** (B8 loss-aversion: the strictly worse user-visible failure — user previously saw the right answer).
+- `beta_regress_abstain_to_CW` count: rows where `beta_outcome === 'regress_abstain→CW'`. **Hard limit ≤ 2** (B8 new noise: no answer was lost; AC2-cleanest signal).
+- `beta_regress_CW_worse_delta` count: rows where `beta_outcome === 'regress_CW_worse_delta'`. **Hard limit ≤ 1** (B8 silent regression: B7-introduced bucket — Option β picked up a worse CW than the current algorithm).
+- `beta_no_change_correct` count: rows where `beta_outcome === 'no_change_correct'`. Informational only.
+- `beta_no_change_CW_same_or_better` count: rows where `beta_outcome === 'no_change_CW_same_or_better'`. Informational only.
 
-**v6 verdict criterion (replaces v5 leg 3):**
+Sanity rollup (non-binding, may be retained for continuity with v6 wording): `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` (sum of correct→CW and abstain→CW). The binding v6.1 constraint is the per-bucket trio above.
 
-`beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` (combined hard limit; mirrors QA #5 MUST-AMEND wording "Option β AC2 regression ≤ 2"). If > 2, escalate to v7+ (likely descope under PAP-1091 A5 hard-exit since Option γ is data-ruled-out and remaining channels would require new architectural input).
+**v6.1 verdict criterion (B8, replaces v6 combined hard limit):**
+
+All three per-bucket caps must independently hold:
+
+- `beta_regress_correct_to_CW ≤ 1`
+- `beta_regress_abstain_to_CW ≤ 2`
+- `beta_regress_CW_worse_delta ≤ 1`
+
+If any cap is exceeded, escalate to v7+ (likely descope under PAP-1091 A5 hard-exit since Option γ is data-ruled-out and remaining channels would require new architectural input). A `regress_CW_worse_delta` cluster surfacing in pre-flight may also warrant a fresh §3.4.7 conjunct — if so, ping QA for cross-check #7 before drafting (per PAP-1505 routing).
 
 **Cost**: Pass B B6 scans the 305-photo AC2 corpus once per (Option α γ_bc, Option β toggle) combination. With γ_bc=1.3 default + Option β default `on`, Pass B emits exactly one per-row enumeration. ~305 simulator passes — same engine as v5 Pass B; ~5–10× cost increase vs v5 count-only output (per-row CSV serialization, not extra compute).
 
-**v6 PASS criterion (combined; replaces v5 PASS criterion):**
+**v6.1 PASS criterion (B8 — combined Pass A + per-bucket Pass B; replaces v6 combined Pass B limit):**
 
 Pass A: 0 broken across all five predicates (PAP-861/868/885/889/1059) with Option α + Option β both active at γ_bc=1.3. Specifically:
 - Of the 19 PAP-861 fires, Option α covers 0/7 v2-broken rows (per v5 data); Option β covers 7/7 v2-broken rows (per v6 §3.4.7 table). Union: 7/7 v2-broken rows rescued by Option α ∪ Option β.
 - PAP-868/885/889/1059 unchanged (v5 confirmed all 4 predicates clean post-Option α; Option β fires *after* Option α and only on rows where Option α did not commit, so it cannot regress predicates Option α didn't touch).
 
-Pass B: `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` on the 305-photo AC2 corpus.
+Pass B (v6.1, B8): all three per-bucket caps must independently hold on the 305-photo AC2 corpus:
 
-Both criteria must hold for v6 PASS. If v6 pre-flight reports any failure on the above, file v7 round or descope per PAP-1091 A5.
+- `beta_regress_correct_to_CW ≤ 1` (loss-aversion)
+- `beta_regress_abstain_to_CW ≤ 2` (new noise)
+- `beta_regress_CW_worse_delta ≤ 1` (silent regression — B7-introduced bucket)
+
+Sanity rollup `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` (the v6 combined limit) MAY be retained for continuity but is no longer the binding constraint.
+
+Both Pass A and per-bucket Pass B criteria must hold for v6.1 PASS. If v6.1 pre-flight reports any failure on the above, file v7 round or descope per PAP-1091 A5.
 
 If v6 pre-flight PASSes, proceed to §4.1 Phase-1 sweep (Phase-1 grid 3456 cells × 2 (Option β toggle) = **6912 cells**; sentinel γ_bc=2.5 does NOT enter Phase-1).
 
@@ -538,7 +574,7 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 - **AC2**: Zero new LOSS on PAP-760 / PAP-796 / PAP-939 / PAP-1052 305-photo sweep.
 - **AC3**: Functions when `aimCrop` (hence `aimR`) is absent — soft prior degenerates to uniform (`P ≡ 1`).
 - **AC4 (new — A5 hard-exit)**: per PAP-1091 protocol, if the best Phase-1 cell yields AC1 Wilson 95% **UB > 20%** (≥80% chance the underlying recovery rate is below the AC1 floor) **OR** AC2 305-sweep > 0 LOSS, **descope** PAP-1480 and file a successor under PAP-758. Do not iterate parameters past the chosen cell without a new spec round.
-- **AC5 (v6, Option β specific)**: pre-flight Pass B B6 (§4.0) `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` over the 305-photo AC2 corpus AT THE CHOSEN Phase-1 cell. Pre-flight gates v6 entry to Phase-1; this AC re-applies at Phase-1 cell selection (because the Phase-1 cell's `R_lo/R_hi/σ_R/ε_abs/ε_floor/extreme_R/γ_bc` differ from the v6 pre-flight defaults, the per-row B6 counts may shift). The Phase-1 sweep MUST surface this aggregate per cell so QA cross-check #2 can verify AC5 at the chosen cell.
+- **AC5 (v6.1, Option β specific — B8 per-bucket caps)**: pre-flight Pass B B6 (§4.0) at the chosen Phase-1 cell over the 305-photo AC2 corpus must satisfy **all three** per-bucket caps independently: `regress_correct→CW ≤ 1` AND `regress_abstain→CW ≤ 2` AND `regress_CW_worse_delta ≤ 1`. Pre-flight gates v6.1 entry to Phase-1; this AC re-applies at Phase-1 cell selection (because the Phase-1 cell's `R_lo/R_hi/σ_R/ε_abs/ε_floor/extreme_R/γ_bc` differ from the v6.1 pre-flight defaults, the per-row B6 6-bucket counts may shift). The Phase-1 sweep MUST surface all six bucket counts per cell so QA cross-check #2 can verify AC5 at the chosen cell. The v6 combined sanity rollup (`regress_correct→CW + regress_abstain→CW ≤ 2`) MAY be reported alongside but is not binding.
 
 ---
 
@@ -569,7 +605,7 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 
 ---
 
-## 9. Sequencing (v6)
+## 9. Sequencing (v6.1)
 
 1. **DONE (v2, ae28d85)**: Update `pap1480_joint_score_spec.md` → v2.
 2. **DONE (PAP-1487, 2bd05d5)**: Run pre-flight bypass-row guard (§4.0, A3) → **FAIL verdict** (7 broken PAP-861 rows). Reports at `debug-reports/pap1485_preflight_2026-05-15.{log,json}`.
@@ -580,11 +616,12 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 7. **DONE (v5, 99c4e0d)**: Fold B3'+B4+B5 → routed to QA cross-check #5 (PAP-1498 → APPROVED).
 8. **DONE (PAP-1499 wire-up, f417648)**: Option α v5 wired into `mobile/__tests__/pap1480.preflight.js`; full corpus pre-flight ran 7308.4s on 362 photos.
 9. **DONE (PAP-1499 verdict, 2026-05-15T03:58Z + QA #5 endorsement 19:55Z)**: v5 pre-flight **FAILed** legs 1+2 (`gamma_eff > 2.5` off-grid on 7/7 broken PAP-861 rows; Option α structurally inadequate — `R_bc:=rOuter` substitution targets inner bolt circle, not chainring outer ring). QA endorsed FAIL with MUST-AMEND on v6 Pass B B6 per-row enumeration.
-10. **THIS REVISION (v6)**: Fold C5 (Option β §3.4.7), C6 (chainring-band gate `bcTc≥35`), B6 (per-row Pass B B6 instrumentation), C7 (PASS criterion) → **route to QA cross-check #6** (file new child under PAP-1485). v5 B3'+B4+B5 and v4 B1+B2 instrumentation carry forward as diagnostic backdrop (Option α stays in spec as tie-wins path; Option β fires only when Option α did not commit).
-11. **NEXT (gated on QA #6 APPROVED)**: Extend `mobile/__tests__/pap1480.preflight.js` inline simulator with Option β (§3.4.7, fires after Option α with v6 conjuncts) + B6 per-row Pass B enumeration. Re-run on full 362-photo corpus + 305-photo AC2 corpus. Defaults: γ_bc=1.3, option_beta=on, all other v5 defaults carry forward.
-12. **v6 PASS criterion** = Pass A 0 broken across all five PAP-861/868/885/889/1059 predicates with Option α + β both active at γ_bc=1.3 AND Pass B B6 `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` on the 305-photo AC2 corpus. If FAIL → v7 round OR descope per PAP-1091 A5 hard-exit (Option γ is data-ruled-out per QA #5; remaining channels would need new architectural input).
-13. **THEN (gated on v6 pre-flight PASS)**: Open **Phase-1 calibration child** under PAP-1480 (**6912-cell** sweep with AC2-eliminate-first pruning, on union corpus + AC1 n=24 cohort). Cell-cache + resumable design lifted from `pap1100.aim-prior.js` minus the PAP-1100-specific bounds plumbing. Sweep dimensions include `option_beta ∈ {off, on}` so Phase-1 can measure Option β contribution at each cell.
-14. Pick best cell maximizing AC1-pass while preserving 305-photo AC2 (0 LOSS). Apply A5 hard-exit if best cell fails AC4. Apply AC5 (`beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2`) at the chosen Phase-1 cell.
-15. **QA cross-check #2** on the chosen cell + parameter values + Phase-1 corpus diff. No `gearCounter.js` edit before this signoff.
-16. PAP-1480 implementation lands as the single coherent commit described in §0 (joint-scan + Option α + Option β + PAP-1100 plumbing deletion in one diff).
-17. QA full sweep + signoff post-implementation → build subtask filed by QA.
+10. **DONE (v6, f4f9b68)**: Fold C5 (Option β §3.4.7), C6 (chainring-band gate `bcTc≥35`), B6 (per-row Pass B B6 instrumentation), C7 (PASS criterion) → routed to QA cross-check #6 (PAP-1504 → APPROVED-W-AMENDMENTS Q4+Q5). v5 B3'+B4+B5 and v4 B1+B2 instrumentation carry forward as diagnostic backdrop (Option α stays in spec as tie-wins path; Option β fires only when Option α did not commit).
+11. **THIS REVISION (v6.1, PAP-1505)**: Fold B7 (Pass B B6 column taxonomy: 4-bucket → 6-bucket `beta_outcome` enum surfacing silent `regress_CW_worse_delta` regression) and B8 (split combined hard limit into per-bucket caps: `regress_correct→CW ≤ 1` AND `regress_abstain→CW ≤ 2` AND `regress_CW_worse_delta ≤ 1`). Mechanical column-split + limit-split scope; per PAP-1505 routing, no QA cross-check #7 required. Proceed straight to wire-up.
+12. **NEXT (no further QA gate at spec scope)**: File a PAP-1499-style wire-up subtask under PAP-1485 to extend `mobile/__tests__/pap1480.preflight.js` inline simulator with Option β (§3.4.7, fires after Option α with v6 conjuncts) + B6 6-bucket Pass B enumeration (B7) + per-bucket cap evaluation (B8). Re-run on full 362-photo corpus + 305-photo AC2 corpus. Defaults: γ_bc=1.3, option_beta=on, all other v5 defaults carry forward. If the B6 6-bucket run surfaces an unanticipated `regress_CW_worse_delta` cluster requiring a fresh §3.4.7 conjunct, ping QA for cross-check #7 at that point.
+13. **v6.1 PASS criterion** = Pass A 0 broken across all five PAP-861/868/885/889/1059 predicates with Option α + β both active at γ_bc=1.3 AND Pass B B6 per-bucket caps all hold (`regress_correct→CW ≤ 1` AND `regress_abstain→CW ≤ 2` AND `regress_CW_worse_delta ≤ 1`) on the 305-photo AC2 corpus. If any cap FAILs → v7 round OR descope per PAP-1091 A5 hard-exit (Option γ is data-ruled-out per QA #5; remaining channels would need new architectural input).
+14. **THEN (gated on v6.1 pre-flight PASS)**: Open **Phase-1 calibration child** under PAP-1480 (**6912-cell** sweep with AC2-eliminate-first pruning, on union corpus + AC1 n=24 cohort). Cell-cache + resumable design lifted from `pap1100.aim-prior.js` minus the PAP-1100-specific bounds plumbing. Sweep dimensions include `option_beta ∈ {off, on}` so Phase-1 can measure Option β contribution at each cell.
+15. Pick best cell maximizing AC1-pass while preserving 305-photo AC2 (0 LOSS). Apply A5 hard-exit if best cell fails AC4. Apply AC5 (per-bucket caps `regress_correct→CW ≤ 1` AND `regress_abstain→CW ≤ 2` AND `regress_CW_worse_delta ≤ 1`) at the chosen Phase-1 cell.
+16. **QA cross-check #2** on the chosen cell + parameter values + Phase-1 corpus diff. No `gearCounter.js` edit before this signoff.
+17. PAP-1480 implementation lands as the single coherent commit described in §0 (joint-scan + Option α + Option β + PAP-1100 plumbing deletion in one diff).
+18. QA full sweep + signoff post-implementation → build subtask filed by QA.
