@@ -564,9 +564,15 @@ describe('PAP-1485 pre-flight v6.1 (A3 + Option α v5 + Option β v6 + B6+B7+B8)
     pushLine(`Spec v6.1 defaults: σ_R/aimR=${SIGMA_R_RATIO}, ε_abs=${EPS_ABS}, ε_floor=${EPS_FLOOR}, R=[${R_LO_RATIO},${R_HI_RATIO}]·aimR, extreme_R_abstain=off`);
     pushLine(`Option α γ_bc=${GAMMA_BC_DEFAULT} (single value, B5 grid retired); Option β=on, bcTc≥${BETA_BC_FLOOR}, conf=${BETA_CONF}`);
 
-    // Pass A counters
+    // Pass A counters — distinguish "rescue" (predicate stopped firing because
+    // the post-α/β tc is correct) from "broken" (predicate stopped firing AND
+    // post tc is wrong/abstain).  Spec §4.0 A3 intent: hard-exit only on
+    // regression, not on rows where the main path now arrives at the right
+    // answer without needing the bypass (which is the v6 §3.4.7 expected
+    // behaviour for Option β on bc-self-confirmed rows).
     const counters = PREDICATES.map(p => ({
-      name: p.name, fires: 0, broken: 0, brokenRows: [],
+      name: p.name, fires: 0, broken: 0, rescued: 0,
+      brokenRows: [], rescuedRows: [],
     }));
 
     // Pass B B6 — per-row enumeration + 6-bucket counts
@@ -644,43 +650,56 @@ describe('PAP-1485 pre-flight v6.1 (A3 + Option α v5 + Option β v6 + B6+B7+B8)
         for (let p = 0; p < PREDICATES.length; p++) {
           if (!preFires[p]) continue;
           counters[p].fires++;
-          if (!postFires[p]) {
+          if (postFires[p]) continue;
+          // Predicate stopped firing post-α/β: classify rescue vs break by
+          // checking whether the post tc is correct.  For PAP-861/868/885,
+          // the predicate's existence is a marker that the bypass was needed
+          // to reach the right tc; if post.tc is now correct without the
+          // bypass, this is a v6 §3.4.7 expected rescue, not a regression.
+          const postTcCorrect =
+            post.tc > 0 && Math.abs(post.tc - row.actual) <= 1;
+          const rowDetail = {
+            stamp: row.stamp,
+            actual: row.actual,
+            preTc: pre.tc,
+            postTc: post.tc,
+            peakTc: pre.peakTc,
+            fft90tc: pre.fft90,
+            opTc: pre.op,
+            bcTc: pre.bcTc,
+            bcPeaks: pre.bcPeaks,
+            peakR: pre.peakR,
+            rOuter: pre.rOuter,
+            method: pre.method,
+            conf: Number((pre.conf || 0).toFixed(3)),
+            gearRCropSpace: Number(gearRCrop.toFixed(4)),
+            joint: {
+              peakTc: joint.peakTc,
+              peakR: joint.peakR,
+              jStar: Number(joint.jStar.toFixed(4)),
+              jDis:  Number(joint.jDis.toFixed(4)),
+              abstain: joint.abstain,
+              nCells: joint.nCells,
+            },
+            alpha: {
+              committed: !!alpha.committed,
+              gate_passed: !!alpha.gate_passed,
+              J_bc_raw: Number((alpha.J_bc_raw || 0).toFixed(4)),
+              J_bc: Number((alpha.J_bc || 0).toFixed(4)),
+              commit_margin: Number((alpha.commit_margin || 0).toFixed(4)),
+            },
+            beta: {
+              fires: !!beta.fires,
+              commit_tc: beta.commit_tc,
+              reason_blocked: beta.reason_blocked,
+            },
+          };
+          if (postTcCorrect) {
+            counters[p].rescued++;
+            counters[p].rescuedRows.push(rowDetail);
+          } else {
             counters[p].broken++;
-            counters[p].brokenRows.push({
-              stamp: row.stamp,
-              actual: row.actual,
-              tc: pre.tc,
-              peakTc: pre.peakTc,
-              fft90tc: pre.fft90,
-              opTc: pre.op,
-              bcTc: pre.bcTc,
-              bcPeaks: pre.bcPeaks,
-              peakR: pre.peakR,
-              rOuter: pre.rOuter,
-              method: pre.method,
-              conf: Number((pre.conf || 0).toFixed(3)),
-              gearRCropSpace: Number(gearRCrop.toFixed(4)),
-              joint: {
-                peakTc: joint.peakTc,
-                peakR: joint.peakR,
-                jStar: Number(joint.jStar.toFixed(4)),
-                jDis:  Number(joint.jDis.toFixed(4)),
-                abstain: joint.abstain,
-                nCells: joint.nCells,
-              },
-              alpha: {
-                committed: !!alpha.committed,
-                gate_passed: !!alpha.gate_passed,
-                J_bc_raw: Number((alpha.J_bc_raw || 0).toFixed(4)),
-                J_bc: Number((alpha.J_bc || 0).toFixed(4)),
-                commit_margin: Number((alpha.commit_margin || 0).toFixed(4)),
-              },
-              beta: {
-                fires: !!beta.fires,
-                commit_tc: beta.commit_tc,
-                reason_blocked: beta.reason_blocked,
-              },
-            });
+            counters[p].brokenRows.push(rowDetail);
           }
         }
       }
@@ -730,30 +749,50 @@ describe('PAP-1485 pre-flight v6.1 (A3 + Option α v5 + Option β v6 + B6+B7+B8)
     pushLine(`Option β fired:     ${optionBetaFiresCount}`);
     pushLine(`Post (α∪β) joint abstained: ${jointAbstainCount}/${scanned || 1}`);
     pushLine('');
-    pushLine('Predicate                          fires   broken   broken%');
+    pushLine('Predicate                          fires   broken   rescued   broken%');
     let anyBroken = false;
     for (const c of counters) {
       if (c.broken > 0) anyBroken = true;
       const pct = c.fires > 0 ? ((100 * c.broken) / c.fires).toFixed(1) + '%' : '  -  ';
       pushLine(
-        `${c.name.padEnd(33)}  ${String(c.fires).padStart(5)}   ${String(c.broken).padStart(6)}   ${pct.padStart(7)}`
+        `${c.name.padEnd(33)}  ${String(c.fires).padStart(5)}   ${String(c.broken).padStart(6)}   ${String(c.rescued).padStart(7)}   ${pct.padStart(7)}`
       );
     }
 
     for (const c of counters) {
       if (c.brokenRows.length === 0) continue;
       pushLine('');
-      pushLine(`-- broken rows: ${c.name} --`);
-      pushLine('stamp                                       actual  tc  peakTc  fft90  op  bcTc  bcPk  α-commit  β-fires  β-commit  β-reason-blocked');
+      pushLine(`-- broken rows: ${c.name} (post.tc still wrong/abstain) --`);
+      pushLine('stamp                                       actual  preTc  postTc  peakTc  fft90  op  bcTc  bcPk  α-commit  β-fires  β-commit  β-reason-blocked');
       for (const br of c.brokenRows) {
         pushLine(
           `${br.stamp.padEnd(40)}  ${String(br.actual).padStart(5)}  ` +
-          `${String(br.tc).padStart(2)}  ${String(br.peakTc).padStart(5)}  ` +
+          `${String(br.preTc).padStart(4)}   ${String(br.postTc).padStart(5)}   ${String(br.peakTc).padStart(5)}  ` +
           `${String(br.fft90tc).padStart(5)}  ${String(br.opTc).padStart(3)}  ` +
           `${String(br.bcTc).padStart(4)}  ${String(br.bcPeaks).padStart(4)}  ` +
           `${br.alpha.committed ? 'Y' : 'N'}         ${br.beta.fires ? 'Y' : 'N'}        ` +
           `${br.beta.commit_tc == null ? ' - ' : String(br.beta.commit_tc).padStart(3)}      ` +
           `${br.beta.reason_blocked || '-'}`
+        );
+      }
+    }
+
+    // Rescue rows (predicate stopped firing because post.tc is correct).
+    // Reported for QA review per v6 spec §3.4.7 expected-outcome table.
+    for (const c of counters) {
+      if (c.rescuedRows.length === 0) continue;
+      pushLine('');
+      pushLine(`-- rescue rows: ${c.name} (post.tc correct — β rescue path) --`);
+      pushLine('stamp                                       actual  preTc  postTc  bcTc  bcPk  α-commit  β-fires  β-commit  β-Δ');
+      for (const rr of c.rescuedRows) {
+        const betaDelta = (rr.beta.fires && rr.beta.commit_tc != null)
+          ? Math.abs(rr.beta.commit_tc - rr.actual) : '-';
+        pushLine(
+          `${rr.stamp.padEnd(40)}  ${String(rr.actual).padStart(5)}  ` +
+          `${String(rr.preTc).padStart(4)}   ${String(rr.postTc).padStart(5)}   ` +
+          `${String(rr.bcTc).padStart(4)}  ${String(rr.bcPeaks).padStart(4)}  ` +
+          `${rr.alpha.committed ? 'Y' : 'N'}         ${rr.beta.fires ? 'Y' : 'N'}        ` +
+          `${rr.beta.commit_tc == null ? ' - ' : String(rr.beta.commit_tc).padStart(3)}      ${betaDelta}`
         );
       }
     }
@@ -838,7 +877,9 @@ describe('PAP-1485 pre-flight v6.1 (A3 + Option α v5 + Option β v6 + B6+B7+B8)
           name: c.name,
           fires: c.fires,
           broken: c.broken,
+          rescued: c.rescued,
           brokenRows: c.brokenRows,
+          rescuedRows: c.rescuedRows,
         })),
       },
       passB: {
