@@ -1,0 +1,202 @@
+{
+  "spec": "pap1480_v2_defaults",
+  "corpusSize": 362,
+  "scanned": 77,
+  "jointAbstainCount": 56,
+  "verdict": "FAIL",
+  "elapsedMs": 7586275,
+  "predicates": [
+    {
+      "name": "PAP-861 bc-isolated",
+      "fires": 19,
+      "broken": 7,
+      "brokenRows": [
+        {
+          "stamp": "2026-04-25_08-45-07-271Z",
+          "actual": 36,
+          "tc": 37,
+          "peakTc": 10,
+          "fft90tc": 20,
+          "opTc": 11,
+          "bcTc": 37,
+          "bcPeaks": 35,
+          "peakR": 304,
+          "rOuter": 158,
+          "method": "bc-consensus",
+          "conf": 0,
+          "gearRCropSpace": 0.4504,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0904,
+            "jDis": 0.0834,
+            "abstain": true,
+            "nCells": 1848
+          }
+        },
+        {
+          "stamp": "2026-04-30_12-31-00-766Z",
+          "actual": 50,
+          "tc": 50,
+          "peakTc": 11,
+          "fft90tc": 10,
+          "opTc": 13,
+          "bcTc": 50,
+          "bcPeaks": 50,
+          "peakR": 331,
+          "rOuter": 176,
+          "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+          "conf": 0.35,
+          "gearRCropSpace": 0.4904,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0879,
+            "jDis": 0.0698,
+            "abstain": true,
+            "nCells": 1904
+          }
+        },
+        {
+          "stamp": "2026-05-01_08-28-38-224Z",
+          "actual": 50,
+          "tc": 50,
+          "peakTc": 13,
+          "fft90tc": 12,
+          "opTc": 12,
+          "bcTc": 50,
+          "bcPeaks": 50,
+          "peakR": 322,
+          "rOuter": 175,
+          "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+          "conf": 1,
+          "gearRCropSpace": 0.477,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0994,
+            "jDis": 0.0814,
+            "abstain": true,
+            "nCells": 1904
+          }
+        },
+        {
+          "stamp": "2026-05-01_09-04-04-917Z",
+          "actual": 48,
+          "tc": 49,
+          "peakTc": 10,
+          "fft90tc": 10,
+          "opTc": 24,
+          "bcTc": 49,
+          "bcPeaks": 48,
+          "peakR": 322,
+          "rOuter": 180,
+          "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+          "conf": 0.33,
+          "gearRCropSpace": 0.477,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0757,
+            "jDis": 0.0504,
+            "abstain": true,
+            "nCells": 2184
+          }
+        },
+        {
+          "stamp": "2026-05-01_15-00-55-239Z",
+          "actual": 48,
+          "tc": 48,
+          "peakTc": 10,
+          "fft90tc": 13,
+          "opTc": 15,
+          "bcTc": 48,
+          "bcPeaks": 48,
+          "peakR": 286,
+          "rOuter": 181,
+          "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+          "conf": 1,
+          "gearRCropSpace": 0.4237,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0715,
+            "jDis": 0.0703,
+            "abstain": true,
+            "nCells": 1904
+          }
+        },
+        {
+          "stamp": "2026-05-01_15-04-02-875Z",
+          "actual": 48,
+          "tc": 47,
+          "peakTc": 13,
+          "fft90tc": 13,
+          "opTc": 30,
+          "bcTc": 47,
+          "bcPeaks": 48,
+          "peakR": 313,
+          "rOuter": 178,
+          "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+          "conf": 0.218,
+          "gearRCropSpace": 0.4637,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0739,
+            "jDis": 0.0556,
+            "abstain": true,
+            "nCells": 1792
+          }
+        },
+        {
+          "stamp": "2026-05-04_11-33-56-211Z",
+          "actual": 42,
+          "tc": 43,
+          "peakTc": 12,
+          "fft90tc": 15,
+          "opTc": 10,
+          "bcTc": 43,
+          "bcPeaks": 41,
+          "peakR": 286,
+          "rOuter": 175,
+          "method": "bc-consensus",
+          "conf": 0,
+          "gearRCropSpace": 0.4237,
+          "joint": {
+            "peakTc": 0,
+            "peakR": 0,
+            "jStar": 0.0739,
+            "jDis": 0.0728,
+            "abstain": true,
+            "nCells": 1904
+          }
+        }
+      ]
+    },
+    {
+      "name": "PAP-868 fft90-XL-rescue (E)",
+      "fires": 0,
+      "broken": 0,
+      "brokenRows": []
+    },
+    {
+      "name": "PAP-885 5-way-agree",
+      "fires": 0,
+      "broken": 0,
+      "brokenRows": []
+    },
+    {
+      "name": "PAP-889 xl-center-collapse",
+      "fires": 49,
+      "broken": 0,
+      "brokenRows": []
+    },
+    {
+      "name": "PAP-1059 chainring-tc",
+      "fires": 25,
+      "broken": 0,
+      "brokenRows": []
+    }
+  ]
+}
