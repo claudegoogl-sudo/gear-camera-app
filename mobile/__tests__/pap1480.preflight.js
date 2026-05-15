@@ -1,34 +1,31 @@
 /**
  * PAP-1480 v2 §4.0 / A3 — pre-flight bypass-row guard.
- * v5 (PAP-1499, QA #5 APPROVED): wires Option α v5 into the inline simulator.
+ * v6.1 (PAP-1506, QA #6 APPROVED-W-AMENDMENTS B7+B8 via PAP-1505): wires
+ * Option β (§3.4.7 skip-abstain) on top of Option α v5, and emits Pass B B6
+ * with the 6-bucket `beta_outcome` enum + per-bucket cap evaluation.
  *
- *   - γ_bc default = 1.3, grid {1.0, 1.3, 1.6, 2.0} + sentinel 2.5.
- *   - Pass A (bypass-row guard, v4 carry-forward): Option α substitution is
- *     APPLIED at γ_bc=1.3 default to the joint output BEFORE postRow / predicate
- *     replay (was read-only diagnostic in v4).  Per-row diag now includes the
- *     B3 (5 cols: J_bc_raw, J_star_v4, gamma_eff, subst_fired, gate_passed) +
- *     B3' (2 cols: J_dis_new, commit_margin) columns required by §4.0 v5.
- *     Advisory zero-cost cols: J_dis_new_R_k, J_dis_new_tc (discriminate
- *     Option β vs γ if v5 FAILs).
- *   - Pass B (AC2 substitution-FP scan, B4): on every labeled row that passes
- *     the cheap bcSelfConfirms pre-filter (|bcTc-bcPeaks|≤2 ∧ bcTc≥30 ∧
- *     rOuter>0), evaluate Option α across γ_bc ∈ {1.0, 1.3, 1.6, 2.0, 2.5},
- *     count rows where substitution commits to a tc that is >1 from `actual`
- *     (a true substitution-FP).  Emit ac2_fp_g10, _g13, _g16, _g20, _g25 +
- *     ac2_fp_default := ac2_fp_g13.
+ * v6.1 layering (Option α stays in spec as tie-wins diagnostic channel):
+ *   - Joint scan (§3) → Option α v5 (§3.4.6) → Option β v6 (§3.4.7) →
+ *     bypass-predicate re-evaluation (Pass A) / per-row outcome bucketing
+ *     (Pass B B6).
+ *   - γ_bc default = 1.3 single value (B5 sentinel grid retired for v6.1;
+ *     PAP-1499 measured 0/19 Option α commits across grid {1.0…2.5} so the
+ *     sweep carries zero signal for v6.1's Pass B Option β surface).
+ *   - option_beta=on default per §3.4 param table (binary toggle in Phase-1).
+ *   - Per-row CSV `pap1485_preflight_v6_<DATE>.csv` + JSON rollup
+ *     `pap1485_preflight_v6_<DATE>.json` for QA #2 machine-parse.
  *
- * v5 PASS criterion (gate before Phase-1, conjunction of three legs):
- *   Leg 1: Pass A 0 broken across all five PAP-861/868/885/889/1059 predicates
- *          at γ_bc=1.3.
- *   Leg 2: gamma_eff ≤ 2.5 for all 7 v2-broken rows.
- *   Leg 3: Pass B ac2_fp_g13 ≤ 2.
+ * v6.1 PASS criterion (gate before Phase-1):
+ *   Pass A: 0 broken across PAP-861/868/885/889/1059 with α + β active at
+ *           γ_bc=1.3.
+ *   Pass B: per-bucket caps all independently hold:
+ *           - regress_correct→CW ≤ 1            (B8 loss-aversion)
+ *           - regress_abstain→CW ≤ 2            (B8 new noise)
+ *           - regress_CW_worse_delta ≤ 1        (B8 silent regression, B7 enum)
+ *   Sanity rollup (non-binding): correct→CW + abstain→CW ≤ 2 (v6 continuity).
  *
  * NO `gearCounter.js` edit.  Lazy-imports __test.{sampleIntensityRing,clahe,
  * rgbaToGray} for the inline simulator.
- *
- * Output:
- *   debug-reports/pap1485_preflight_v5_<DATE>.log    human-readable
- *   debug-reports/pap1485_preflight_v5_<DATE>.json   structured summary
  *
  * Run:
  *   HARNESS=pap1480.preflight npx jest \
@@ -37,21 +34,22 @@
  * Approximations (documented for QA cross-check):
  *   - PAP-868 spec lists both Option A and Option E.  Only Option E is
  *     actively mirrored in countTeethFromRgba (Option A's `contourR` field is
- *     not exposed on the return), so the pre-flight enforces Option E only —
- *     matching what production currently bypasses.
+ *     not exposed on the return), so the pre-flight enforces Option E only.
  *   - PAP-889's predicate is the live `xlCenterCollapse` condition from the
  *     mirror block (gearRadiusCropSpace<0.20 && tc<30 && conf<0.40 && !triple
- *     && !bcStrong) — the operational form of the spec's "conf<0.40 secondary
- *     gate".
- *   - Post-substitution toothCount is approximated as `jointPeakTc` when the
- *     original toothCount was driven by peakTc (peakTc === tc); otherwise it
- *     is left unchanged.  Joint-scan only replaces peakTc/peakR, so this is
- *     the closest single-field approximation without re-running analyzeImage's
- *     full decision rule.  PAP-1059 is the only predicate that keys on `tc`.
+ *     && !bcStrong).
+ *   - Post-α/β toothCount: when Option β fires it commits tc*:=bcTc directly
+ *     and leaves joint R* unchanged (per §3.4.7); when only Option α applies
+ *     we propagate joint output through postRow() exactly as v5.
  *   - Pass B AC2 corpus: spec calls for the 305-photo PAP-760/796/939/1052
- *     union.  Implementation uses scope='full' (the full labeled set ~362
- *     photos at HEAD); this is a superset, conservatively over-counting FPs
- *     relative to the spec's 305-photo set.
+ *     union; implementation uses SCOPE='full' (~362 photos at HEAD) — a
+ *     superset of the spec set; AC2 cap evaluation is conservative.
+ *   - `downstream_abstain_after_beta` approximation: implements PAP-961
+ *     (peakR<0.65·aimR) + PAP-553 radius-sanity (cropNormR<0.13 ||
+ *     (cropNormR<0.15 && bcTc>=20)) as the canonical defence-in-depth checks
+ *     after β commit.  PAP-815 chainring-gate requires more state than the
+ *     pre-flight tracks and is not modelled here; flagged in the per-row
+ *     `downstream_abstain_after_beta_components` field for QA review.
  */
 jest.mock('expo-file-system/legacy', () => ({}), { virtual: true });
 jest.mock('expo-image-manipulator', () => ({}), { virtual: true });
@@ -62,7 +60,6 @@ const runner = require('./lib/harness-runner');
 runner.silenceConsole();
 const { out } = runner;
 
-// Lazy require below silenceConsole so module-level logs (if any) are mute.
 const algo = require('../src/algorithm/gearCounter');
 const T = algo.__test;
 const { fftMagnitude } = require('../src/algorithm/fft');
@@ -73,24 +70,25 @@ const MIN_TEETH = 10;
 const MAX_TEETH = 65;
 const N_ANGLES  = 1024;
 
-// ── Spec v2 §3 defaults (no Phase-1 sweep here) ────────────────────────────
+// ── Spec v6.1 §3 defaults (γ_bc grid retired — single γ=1.3) ───────────────
 const SIGMA_R_RATIO = 0.20;
 const EPS_ABS       = 0.020;
 const EPS_FLOOR     = 0.08;
 const R_LO_RATIO    = 0.40;
 const R_HI_RATIO    = 1.10;
 
-// ── Option α v5 parameters ─────────────────────────────────────────────────
-// γ_bc Phase-1 grid (B2, v4) + sentinel (B5, v5).  Phase-1 sweep grid stays
-// at 3456 cells — the 2.5 sentinel lives in the pre-flight harness only.
-const GAMMA_BC_GRID_V5 = [1.0, 1.3, 1.6, 2.0, 2.5];
+// ── Option α γ_bc default (single value at v6.1; was a grid at v5) ─────────
 const GAMMA_BC_DEFAULT = 1.3;
-const GAMMA_BC_SENTINEL = 2.5;
 
-// ── Inline joint-scan simulator (no gearCounter.js edit) ───────────────────
-// Replicates fftCountAtRadius math (gearCounter.js:534-569) but exposes
-// per-tc magnitudes, applies a soft Gaussian prior on R, and decides via
-// J*-J_dis margin instead of per-radius argmax.
+// ── Option β §3.4.7 conjunct (iii): bcTc ≥ 35 chainring-band floor ─────────
+const BETA_BC_FLOOR = 35;
+// ── Option β §3.4.7 conf signature: 0.97 (one ε below max) ─────────────────
+const BETA_CONF = 0.97;
+
+// ── PAP-961 downstream gate constant (peakR < 0.65·aimR abstain) ───────────
+const PAP961_RATIO = 0.65;
+
+// ── Inline joint-scan simulator (unchanged from v5) ────────────────────────
 function jointScan({ enhanced, cx, cy, w, h, aimR }) {
   const maxRGeom = Math.floor(Math.min(cx, w - cx, cy, h - cy)) - 1;
   let Rlo, Rhi;
@@ -127,7 +125,6 @@ function jointScan({ enhanced, cx, cy, w, h, aimR }) {
     for (let i = 0; i < sm.length; i++) centered[i] = sm[i] - mean;
     const mag = fftMagnitude(centered);
 
-    // Harmonic-weighted score per tc; per-radius normalisation (Q1 verdict).
     let total = 0;
     const scores = new Float64Array(MAX_TEETH + 1);
     for (let tc = MIN_TEETH; tc <= MAX_TEETH && tc < mag.length; tc++) {
@@ -161,8 +158,8 @@ function jointScan({ enhanced, cx, cy, w, h, aimR }) {
     abstain: !commit,
     peakTc: commit ? best.tc : 0,
     peakR:  commit ? best.R  : 0,
-    jStar:  best.J,             // joint argmax J (pre-substitution); always set
-    jDis,                       // disagree-set max around joint argmax tc
+    jStar:  best.J,
+    jDis,
     nCells: cells.length,
     cells,
     aimR,
@@ -170,21 +167,8 @@ function jointScan({ enhanced, cx, cy, w, h, aimR }) {
   };
 }
 
-// ── Option α v5 evaluator (B3 + B3' instrumented) ──────────────────────────
-// For the bc-cell at (rOuter, bcTc):
-//   - gate_passed := bcSelfConfirms ∧ rOuter>0 ∧ |bcTc - tc*| > 2
-//                    where bcSelfConfirms = |bcTc-bcPeaks|≤2 ∧ bcTc≥30  (v4 B1)
-//   - J_bc_raw    := S_rel(rOuter, bcTc) · P(rOuter)              (B3)
-//   - per γ ∈ grid: J_bc(γ) = J_bc_raw · γ, subst_fired = gate_passed ∧ J_bc≥J*
-//   - J_dis_new   := max J over { (R_k,tc) : |tc - bcTc| > 2 }   (B3', new tc center)
-//   - J_star_v4(γ) := substituted ? J_bc(γ) : J*                  (B3)
-//   - commit_margin(γ) := J_star_v4(γ) - J_dis_post(γ)            (B3', new)
-//        J_dis_post = J_dis_new when substituted, else original jDis from joint
-//   - gamma_eff   := smallest γ ∈ grid with subst_fired           (B3)
-//   - gamma_commit := smallest γ ∈ grid with commit_margin ≥ EPS_ABS ∧
-//                     max(J*, J_bc(γ)) ≥ EPS_FLOOR                (informational)
-//   - advisory: J_dis_new_R_k, J_dis_new_tc — coords of disagree-set winner
-function evalOptionAlpha({ joint, enhanced, cx, cy, w, h, bcTc, bcPeaks, rOuter }) {
+// ── Option α v5 evaluator (B3+B3' carries forward; single γ at v6.1) ───────
+function evalOptionAlpha({ joint, enhanced, cx, cy, w, h, bcTc, bcPeaks, rOuter, gamma }) {
   const result = {
     gate_passed: false,
     bcSelfConfirms: false,
@@ -196,13 +180,13 @@ function evalOptionAlpha({ joint, enhanced, cx, cy, w, h, bcTc, bcPeaks, rOuter 
     J_dis_new: 0,
     J_dis_new_R_k: 0,
     J_dis_new_tc: 0,
-    perGamma: {},          // γ → {J_bc, subst_fired, J_star_v4, commit_margin, committed}
-    gamma_eff: null,        // smallest γ where subst_fired
-    gamma_eff_off_grid: false,  // true if even γ=2.5 doesn't trigger
-    gamma_commit: null,    // smallest γ where committed (informational)
+    J_bc: 0,
+    subst_fired: false,
+    J_star_v4: 0,
+    commit_margin: 0,
+    committed: false,
   };
 
-  // Cheap pre-filter — bcSelfConfirms (v4 B1)
   const bcSelfConfirms =
     Number.isFinite(bcTc) && Number.isFinite(bcPeaks) &&
     bcTc >= 30 && bcTc <= MAX_TEETH &&
@@ -217,7 +201,6 @@ function evalOptionAlpha({ joint, enhanced, cx, cy, w, h, bcTc, bcPeaks, rOuter 
   const maxRGeom = Math.floor(Math.min(cx, w - cx, cy, h - cy)) - 1;
   if (Rint < 10 || Rint >= maxRGeom) return result;
 
-  // Re-sample at R_bc for bc-cell J value (rOuter typically sits at a non-grid radius)
   const halfWin = Math.max(2, Math.floor(N_ANGLES / 90));
   const ring = T.sampleIntensityRing(enhanced, cx, cy, Rint, w, h, N_ANGLES);
   const sm = savgolSmooth(ring, halfWin, true);
@@ -243,7 +226,6 @@ function evalOptionAlpha({ joint, enhanced, cx, cy, w, h, bcTc, bcPeaks, rOuter 
   result.P = P;
   result.J_bc_raw = J_bc_raw;
 
-  // J_dis_new := max J over { (R_k, tc) : |tc - bcTc| > 2 }  + advisory coords
   let jDisNew = 0, jDisNewR = 0, jDisNewTc = 0;
   for (const c of cells) {
     if (Math.abs(c.tc - bcTc) > 2 && c.J > jDisNew) {
@@ -256,64 +238,109 @@ function evalOptionAlpha({ joint, enhanced, cx, cy, w, h, bcTc, bcPeaks, rOuter 
   result.J_dis_new_R_k = jDisNewR;
   result.J_dis_new_tc = jDisNewTc;
 
-  // Joint argmax disagrees by > 2 — gate's third clause
   const disagreeWithJointArgmax = Number.isFinite(tcStar) && Math.abs(bcTc - tcStar) > 2;
-  // gate_passed requires bcSelfConfirms ∧ rOuter>0 ∧ joint argmax disagrees by >2
   const gate_passed = bcSelfConfirms && rOuter > 0 && disagreeWithJointArgmax;
   result.gate_passed = gate_passed;
 
-  // Per-γ_bc instrumentation
-  for (const gamma of GAMMA_BC_GRID_V5) {
-    const J_bc = J_bc_raw * gamma;
-    const subst_fired = gate_passed && J_bc >= jStar;
-    const J_star_v4 = subst_fired ? J_bc : jStar;
-    // J_dis_post: when substitution fires, use the new disagree set (around bcTc);
-    // otherwise the original joint's disagree set (around joint argmax tc*).
-    const J_dis_post = subst_fired ? jDisNew : joint.jDis;
-    const commit_margin = J_star_v4 - J_dis_post;
-    const committed = (commit_margin >= EPS_ABS) && (J_star_v4 >= EPS_FLOOR);
-    result.perGamma[gamma] = {
-      J_bc,
-      subst_fired,
-      J_star_v4,
-      commit_margin,
-      committed,
-    };
-    if (result.gamma_eff === null && subst_fired) result.gamma_eff = gamma;
-    if (result.gamma_commit === null && committed && subst_fired) result.gamma_commit = gamma;
-  }
-  if (result.gamma_eff === null && gate_passed) {
-    // Even γ=2.5 didn't push J_bc above J* — flag as off-grid.
-    result.gamma_eff_off_grid = true;
-  }
+  const J_bc = J_bc_raw * gamma;
+  const subst_fired = gate_passed && J_bc >= jStar;
+  const J_star_v4 = subst_fired ? J_bc : jStar;
+  const J_dis_post = subst_fired ? jDisNew : joint.jDis;
+  const commit_margin = J_star_v4 - J_dis_post;
+  const committed = (commit_margin >= EPS_ABS) && (J_star_v4 >= EPS_FLOOR);
+  result.J_bc = J_bc;
+  result.subst_fired = subst_fired;
+  result.J_star_v4 = J_star_v4;
+  result.commit_margin = commit_margin;
+  result.committed = subst_fired && committed;
   return result;
 }
 
-// Apply Option α substitution to a joint result at a chosen γ_bc.  Returns a
-// shallow-cloned joint with substituted (peakTc, peakR, jStar, jDis, abstain)
-// IF subst_fired & committed at that γ; otherwise returns the original joint.
-function applyOptionAlpha(joint, alpha, gamma) {
+// Apply Option α substitution to a joint result.
+function applyOptionAlpha(joint, alpha) {
   if (!alpha || !alpha.gate_passed) return joint;
-  const ent = alpha.perGamma[gamma];
-  if (!ent || !ent.subst_fired) return joint;
-  const committed = ent.committed;
+  if (!alpha.subst_fired) return joint;
   return {
     ...joint,
-    peakTc: committed ? alpha.bcTc : 0,
-    peakR:  committed ? alpha.R_bc : 0,
-    jStar:  ent.J_star_v4,
+    peakTc: alpha.committed ? alpha.bcTc : 0,
+    peakR:  alpha.committed ? alpha.R_bc : 0,
+    jStar:  alpha.J_star_v4,
     jDis:   alpha.J_dis_new,
-    abstain: !committed,
+    abstain: !alpha.committed,
     optionAlphaApplied: true,
-    optionAlphaCommitted: committed,
-    optionAlphaGamma: gamma,
+    optionAlphaCommitted: alpha.committed,
   };
 }
 
-// ── Bypass predicate evaluators ────────────────────────────────────────────
-// Mirror of countTeethFromRgba lines ≈3320–3470.  The harness row exposes
-// {peakTc, fft90, op, bcTc, bcPeaks, peakR, rOuter, tc, conf, method, raw};
-// gearRadiusCropSpace is `r.gearR / width` which equals `row.raw.gearRadius`.
+// ── Option β §3.4.7 evaluator (v6) ─────────────────────────────────────────
+// Fires ONLY when Option α did not commit AND v6 conjuncts hold:
+//   (i)   !subst_committed
+//   (ii)  |bcTc - bcPeaks| ≤ 2  AND  bcTc ≥ 30 (carry-forward bcSelfConfirms)
+//   (iii) bcTc ≥ 35 (chainring-band floor, v6 C6)
+//   (iv)  |bcTc - tc*| > 2 (disagree with post-α joint argmax)
+//   (v)   rOuter > 0 (C3 carry-forward)
+// On fire: tc* := bcTc; R*/J*/J_dis unchanged from joint argmax; conf:=0.97;
+//          skip §3.4 abstain.
+function evalOptionBeta({ alpha, postAlphaJoint, bcTc, bcPeaks, rOuter, optionBetaEnabled }) {
+  const result = {
+    fires: false,
+    commit_tc: null,
+    commit_delta: null,
+    R_star: postAlphaJoint.peakR || 0,
+    conf: BETA_CONF,
+    reason_blocked: null,
+  };
+  if (!optionBetaEnabled) {
+    result.reason_blocked = 'option_beta=off';
+    return result;
+  }
+  if (alpha && alpha.committed) {
+    result.reason_blocked = 'alpha_committed';
+    return result;
+  }
+  const tcStar = postAlphaJoint.peakTc || 0;  // 0 when joint abstained
+  const bcSelfConfirms =
+    Number.isFinite(bcTc) && Number.isFinite(bcPeaks) &&
+    bcTc >= 30 && Math.abs(bcTc - bcPeaks) <= 2;
+  if (!bcSelfConfirms) {
+    result.reason_blocked = 'bcSelfConfirms_fail';
+    return result;
+  }
+  if (!(bcTc >= BETA_BC_FLOOR)) {
+    result.reason_blocked = `bcTc<${BETA_BC_FLOOR}`;
+    return result;
+  }
+  // |bcTc - tc*| > 2: when joint abstained (tc*=0) bcTc≥35 trivially passes.
+  if (!(Math.abs(bcTc - tcStar) > 2)) {
+    result.reason_blocked = 'bcTc_agrees_with_tcStar';
+    return result;
+  }
+  if (!(rOuter > 0)) {
+    result.reason_blocked = 'rOuter==0';
+    return result;
+  }
+  result.fires = true;
+  result.commit_tc = bcTc;
+  return result;
+}
+
+// Apply Option β commit to a (post-α) joint result.
+function applyOptionBeta(joint, beta, actual) {
+  if (!beta || !beta.fires) return joint;
+  const commit_delta = Number.isFinite(actual) ? Math.abs(beta.commit_tc - actual) : null;
+  return {
+    ...joint,
+    peakTc: beta.commit_tc,
+    // R*, J*, J_dis intentionally unchanged from joint argmax (§3.4.7).
+    abstain: false,
+    optionBetaApplied: true,
+    optionBetaCommitTc: beta.commit_tc,
+    optionBetaCommitDelta: commit_delta,
+    confAfterBeta: BETA_CONF,
+  };
+}
+
+// ── Bypass predicate evaluators (unchanged from v5) ────────────────────────
 function methodHead(method) {
   if (!method) return '';
   return method.split('+')[0];
@@ -348,7 +375,6 @@ function predRadialChainringFires(r) {
       && Math.abs(r.peakR - r.rOuter) / r.rOuter >= 0.18;
 }
 
-// PAP-861 bc-isolated-high-delta
 function predBcIsolated(r) {
   return methodHead(r.method) === 'bc-consensus'
       && r.bcTc >= 30 && r.bcPeaks >= 30
@@ -358,7 +384,6 @@ function predBcIsolated(r) {
       && (r.bcTc - r.op)    >= 10;
 }
 
-// PAP-868 Option E (the operational mirror; Option A's contourR is not exposed)
 function predFft90OuterRescue(r, gearRCrop) {
   return predRadialChainringFires(r)
       && r.peakTc === MIN_TEETH
@@ -368,7 +393,6 @@ function predFft90OuterRescue(r, gearRCrop) {
       && gearRCrop > 0.30;
 }
 
-// PAP-885 5-way-agree
 function predFiveWayAgree(r) {
   if (!predRadialChainringFires(r)) return false;
   const ch = [r.peakTc, r.fft90, r.op, r.bcTc, r.bcPeaks];
@@ -376,7 +400,6 @@ function predFiveWayAgree(r) {
   return Math.max(...ch) - Math.min(...ch) <= 1;
 }
 
-// PAP-889 conf<0.40 secondary gate (operational form: xlCenterCollapse)
 function predXlCenterCollapse(r, gearRCrop) {
   return gearRCrop < 0.20
       && r.tc < 30
@@ -385,7 +408,6 @@ function predXlCenterCollapse(r, gearRCrop) {
       && !predBcStrongAgree(r);
 }
 
-// PAP-1059 chainring-tc-confirmed
 function predChainringTcConfirmed(r) {
   return r.tc >= 30
       && (
@@ -417,14 +439,16 @@ function pluck(row) {
   };
 }
 
-function postRow(pre, joint) {
-  // Substitute peakTc/peakR with joint output (post Option α v5 if applied).
-  // Approximate tc: when the original tc was driven by peakTc, follow joint
-  // output; otherwise leave it alone (other methods could still carry it).
+function postRow(pre, joint, beta) {
   const post = { ...pre };
   post.peakTc = joint.peakTc;
   post.peakR  = joint.peakR;
-  if (!joint.abstain && pre.peakTc === pre.tc) {
+  if (beta && beta.fires) {
+    // Option β commits tc* := bcTc; reflect into the row-level tc field so
+    // PAP-1059 / PAP-861 predicates see the bc-committed tc as the post tc.
+    post.tc = beta.commit_tc;
+    post.conf = BETA_CONF;
+  } else if (!joint.abstain && pre.peakTc === pre.tc) {
     post.tc = joint.peakTc;
   } else if (joint.abstain && pre.peakTc === pre.tc) {
     post.tc = 0;
@@ -432,43 +456,137 @@ function postRow(pre, joint) {
   return post;
 }
 
-// ── Test driver ────────────────────────────────────────────────────────────
-describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
-  jest.setTimeout(6 * 60 * 60 * 1000);  // 6h — Pass B adds bc-self-confirm rows
+// ── Outcome classifier (v6.1 B7 6-bucket enum) ─────────────────────────────
+// Disposition / outcome definitions per spec §4.0 v6.1 Pass B table.
+function dispositionFor(tc, actual) {
+  if (tc === 0 || tc == null) return 'abstain';
+  return Math.abs(tc - actual) <= 1 ? 'correct' : 'CW';
+}
 
-  test('joint-scan + Option α v5 preserves bypass rows and bounds AC2 FPs', () => {
+function classifyBetaOutcome({ currentTc, betaTc, actual }) {
+  if (betaTc == null) {
+    // β did not fire — outcome is "no_change_*" relative to the current row.
+    const cur = dispositionFor(currentTc, actual);
+    if (cur === 'correct') return 'no_change_correct';
+    if (cur === 'CW') return 'no_change_CW_same_or_better';
+    // Current abstain w/ β not firing — still no-change (no commit was added).
+    // Spec §4.0 v6.1 table covers {rescue, regress_*, no_change_*}; when β
+    // doesn't fire the row is effectively no_change.  Choose
+    // `no_change_CW_same_or_better` as the conservative bucket since current
+    // abstain is not user-visible-correct.  This row will not count toward
+    // any cap (all caps are on regress_* buckets only).
+    return 'no_change_CW_same_or_better';
+  }
+  const dOld = Math.abs((currentTc || 0) - actual);
+  const dNew = Math.abs(betaTc - actual);
+  const cur  = dispositionFor(currentTc, actual);
+  const newDisp = dispositionFor(betaTc, actual);
+  // β committed → newDisp ∈ {correct, CW} (abstain impossible after β commit).
+  if (newDisp === 'correct') {
+    if (cur === 'correct') return 'no_change_correct';
+    return 'rescue';  // current ∈ {CW, abstain} → β correct
+  }
+  // newDisp === 'CW'
+  if (cur === 'correct') return 'regress_correct→CW';
+  if (cur === 'abstain') return 'regress_abstain→CW';
+  // cur === 'CW' — silent regression iff dNew > dOld
+  if (dNew > dOld) return 'regress_CW_worse_delta';
+  return 'no_change_CW_same_or_better';
+}
+
+// ── Downstream defence-in-depth approximation ──────────────────────────────
+// Models PAP-961 (peakR<0.65·aimR) + PAP-553 radius-sanity (cropNormR-based)
+// on the (bcTc, joint R*) the post-β path would emit.  PAP-815 chainring-gate
+// requires more row state than the pre-flight tracks and is excluded — flagged
+// in the components field.
+function downstreamAbstainAfterBeta({ joint, bcTc, gearRCrop }) {
+  const components = {};
+  // PAP-961: peakR < 0.65·aimR
+  let pap961Fires = false;
+  if (joint.aimR > 0 && joint.peakR > 0) {
+    pap961Fires = joint.peakR < PAP961_RATIO * joint.aimR;
+  }
+  components.pap961 = pap961Fires;
+  // PAP-553 radius-sanity: cropNormR<0.13 || (cropNormR<0.15 && bcTc>=20).
+  // PAP-740 bumped 0.15→0.17 at b107 — keep 0.13/0.17 thresholds.
+  const radiusSanityFires =
+    gearRCrop > 0 && (gearRCrop < 0.13 || (gearRCrop < 0.17 && bcTc >= 20));
+  components.radiusSanity = radiusSanityFires;
+  components.pap815 = 'not_modelled';
+  return {
+    fires: pap961Fires || radiusSanityFires,
+    components,
+  };
+}
+
+// ── CSV serialization ──────────────────────────────────────────────────────
+const PASS_B_CSV_COLS = [
+  'stamp', 'actual', 'bcTc', 'bcPeaks',
+  'current_tc', 'current_disposition',
+  'alpha_committed',
+  'beta_fires', 'beta_commit_tc', 'beta_commit_delta',
+  'beta_outcome',
+  'downstream_abstain_after_beta',
+  'downstream_pap961', 'downstream_radiusSanity',
+];
+
+function csvEscape(v) {
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function csvRow(obj) {
+  return PASS_B_CSV_COLS.map(k => csvEscape(obj[k])).join(',');
+}
+
+// ── Test driver ────────────────────────────────────────────────────────────
+describe('PAP-1485 pre-flight v6.1 (A3 + Option α v5 + Option β v6 + B6+B7+B8)', () => {
+  jest.setTimeout(6 * 60 * 60 * 1000);  // 6h
+
+  test('joint-scan + Option α + Option β preserves bypass rows and bounds per-bucket AC2 regressions', () => {
     const { rows, elapsedMs, total } = runner.runCorpus({
-      scope: 'full',     // union corpus is the full labeled set
-      label: 'pap1485v5',
+      scope: 'full',
+      label: 'pap1485v6',
     });
 
     const today = new Date().toISOString().slice(0, 10);
-    const reportPath = path.join(runner.DEBUG_DIR, `pap1485_preflight_v5_${today}.log`);
-    const jsonPath   = path.join(runner.DEBUG_DIR, `pap1485_preflight_v5_${today}.json`);
+    const reportPath = path.join(runner.DEBUG_DIR, `pap1485_preflight_v6_${today}.log`);
+    const csvPath    = path.join(runner.DEBUG_DIR, `pap1485_preflight_v6_${today}.csv`);
+    const jsonPath   = path.join(runner.DEBUG_DIR, `pap1485_preflight_v6_${today}.json`);
     const lines = [];
     const pushLine = (s) => { lines.push(s); out(s); };
 
     pushLine('');
-    pushLine('=== PAP-1485 pre-flight v5 (A3 + Option α v5) ===');
+    pushLine('=== PAP-1485 pre-flight v6.1 (A3 + Option α v5 + Option β v6) ===');
     pushLine(`Corpus: ${rows.length}/${total} photos  Wall: ${(elapsedMs / 1000).toFixed(1)}s`);
-    pushLine(`Spec v5 defaults: σ_R/aimR=${SIGMA_R_RATIO}, ε_abs=${EPS_ABS}, ε_floor=${EPS_FLOOR}, R=[${R_LO_RATIO},${R_HI_RATIO}]·aimR, extreme_R_abstain=off`);
-    pushLine(`Option α v5: γ_bc default=${GAMMA_BC_DEFAULT}, grid=${JSON.stringify(GAMMA_BC_GRID_V5)} (last=sentinel B5)`);
+    pushLine(`Spec v6.1 defaults: σ_R/aimR=${SIGMA_R_RATIO}, ε_abs=${EPS_ABS}, ε_floor=${EPS_FLOOR}, R=[${R_LO_RATIO},${R_HI_RATIO}]·aimR, extreme_R_abstain=off`);
+    pushLine(`Option α γ_bc=${GAMMA_BC_DEFAULT} (single value, B5 grid retired); Option β=on, bcTc≥${BETA_BC_FLOOR}, conf=${BETA_CONF}`);
 
-    // Per-predicate counters: Pass A
+    // Pass A counters
     const counters = PREDICATES.map(p => ({
       name: p.name, fires: 0, broken: 0, brokenRows: [],
     }));
-    // Pass B counters: substitution-FP at each γ_bc (true FP := bcTc differs from actual by >1)
+
+    // Pass B B6 — per-row enumeration + 6-bucket counts
     const passB = {
       scanned: 0,
-      gatePassedRows: [],
-      // Per-γ_bc FP counts
-      ac2_fp: Object.fromEntries(GAMMA_BC_GRID_V5.map(g => [g, 0])),
+      rows: [],   // raw row objects, also serialised to CSV
+      counts: {
+        rescue: 0,
+        'regress_correct→CW': 0,
+        'regress_abstain→CW': 0,
+        regress_CW_worse_delta: 0,
+        no_change_correct: 0,
+        no_change_CW_same_or_better: 0,
+      },
     };
 
-    let scanned = 0;     // rows where ≥1 bypass predicate fires
+    let scanned = 0;
     let jointAbstainCount = 0;
     let optionAlphaCommittedCount = 0;
+    let optionBetaFiresCount = 0;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -478,7 +596,6 @@ describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
       const preFires = PREDICATES.map(p => p.fn(pre, gearRCrop));
       const anyFires = preFires.some(Boolean);
 
-      // Cheap pre-filter for Pass B (bcSelfConfirms gate's first two clauses)
       const bcSelfConfirms =
         pre.bcTc >= 30 && pre.bcTc <= MAX_TEETH &&
         Math.abs(pre.bcTc - pre.bcPeaks) <= 2 &&
@@ -486,9 +603,6 @@ describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
 
       if (!anyFires && !bcSelfConfirms) continue;
 
-      // Reconstruct enhanced[] for the joint-scan simulator.  Uses the same
-      // RGBA buffer the harness already decoded (PAP-971 cache makes this
-      // basically free on the second pass).
       const { rgba, w: rw, h: rh } = runner.loadOrDecodeRgba(row.photo, row.stamp);
       const gray = T.rgbaToGray(rgba, rw, rh);
       const enhanced = T.clahe(gray, rw, rh, 3.0, 8, 8);
@@ -499,21 +613,32 @@ describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
       const cy = Math.round(gc.y * rh);
       const joint = jointScan({ enhanced, cx, cy, w: rw, h: rh, aimR });
 
-      // Evaluate Option α v5 (gate + per-γ_bc) once per scanned row
       const alpha = evalOptionAlpha({
         joint, enhanced, cx, cy, w: rw, h: rh,
         bcTc: pre.bcTc, bcPeaks: pre.bcPeaks, rOuter: pre.rOuter,
+        gamma: GAMMA_BC_DEFAULT,
       });
 
-      // Apply Option α at γ_bc=DEFAULT (1.3) to produce the post-substitution joint
-      const newJoint = applyOptionAlpha(joint, alpha, GAMMA_BC_DEFAULT);
-      if (newJoint.optionAlphaCommitted) optionAlphaCommittedCount++;
-      if (newJoint.abstain) jointAbstainCount++;
+      const postAlphaJoint = applyOptionAlpha(joint, alpha);
 
-      // Pass A — bypass-row guard with Option α v5 applied
+      const beta = evalOptionBeta({
+        alpha,
+        postAlphaJoint,
+        bcTc: pre.bcTc,
+        bcPeaks: pre.bcPeaks,
+        rOuter: pre.rOuter,
+        optionBetaEnabled: true,
+      });
+
+      const finalJoint = applyOptionBeta(postAlphaJoint, beta, row.actual);
+      if (finalJoint.optionAlphaCommitted) optionAlphaCommittedCount++;
+      if (beta.fires) optionBetaFiresCount++;
+      if (finalJoint.abstain) jointAbstainCount++;
+
+      // ── Pass A — bypass-row guard with α+β applied ─────────────────────
       if (anyFires) {
         scanned++;
-        const post = postRow(pre, newJoint);
+        const post = postRow(pre, finalJoint, beta);
         const postFires = PREDICATES.map(p => p.fn(post, gearRCrop));
 
         for (let p = 0; p < PREDICATES.length; p++) {
@@ -536,90 +661,74 @@ describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
               conf: Number((pre.conf || 0).toFixed(3)),
               gearRCropSpace: Number(gearRCrop.toFixed(4)),
               joint: {
-                peakTc: joint.peakTc,        // pre-Option-α joint argmax
+                peakTc: joint.peakTc,
                 peakR: joint.peakR,
                 jStar: Number(joint.jStar.toFixed(4)),
                 jDis:  Number(joint.jDis.toFixed(4)),
                 abstain: joint.abstain,
                 nCells: joint.nCells,
               },
-              optionAlpha: {
-                gate_passed: alpha.gate_passed,
-                bcSelfConfirms: alpha.bcSelfConfirms,
-                R_bc: alpha.R_bc,
-                J_bc_raw: Number(alpha.J_bc_raw.toFixed(4)),
-                J_dis_new: Number(alpha.J_dis_new.toFixed(4)),
-                J_dis_new_R_k: alpha.J_dis_new_R_k,    // advisory (B3' extension)
-                J_dis_new_tc: alpha.J_dis_new_tc,      // advisory (B3' extension)
-                gamma_eff: alpha.gamma_eff,
-                gamma_eff_off_grid: alpha.gamma_eff_off_grid,
-                gamma_commit: alpha.gamma_commit,
-                perGamma: Object.fromEntries(
-                  GAMMA_BC_GRID_V5.map(g => {
-                    const e = alpha.perGamma[g] || {};
-                    return [g, {
-                      J_bc:           Number((e.J_bc || 0).toFixed(4)),
-                      J_star_v4:      Number((e.J_star_v4 || 0).toFixed(4)),
-                      commit_margin:  Number((e.commit_margin || 0).toFixed(4)),
-                      subst_fired:    !!e.subst_fired,
-                      committed:      !!e.committed,
-                    }];
-                  })
-                ),
-                applied_at_default: !!newJoint.optionAlphaApplied,
-                committed_at_default: !!newJoint.optionAlphaCommitted,
+              alpha: {
+                committed: !!alpha.committed,
+                gate_passed: !!alpha.gate_passed,
+                J_bc_raw: Number((alpha.J_bc_raw || 0).toFixed(4)),
+                J_bc: Number((alpha.J_bc || 0).toFixed(4)),
+                commit_margin: Number((alpha.commit_margin || 0).toFixed(4)),
+              },
+              beta: {
+                fires: !!beta.fires,
+                commit_tc: beta.commit_tc,
+                reason_blocked: beta.reason_blocked,
               },
             });
           }
         }
       }
 
-      // Pass B — AC2 substitution-FP scan (per-γ_bc)
-      // FP definition: gate_passed ∧ committed at γ ∧ |bcTc - actual| > 1.
-      // (A committed substitution at γ that gives a tc within ±1 of actual is
-      // a genuine rescue, not an FP — bcTc==actual on PAP-861 catches that.)
+      // ── Pass B B6 — per-row outcome bucketing over AC2 substrate ───────
+      // Substrate: bcSelfConfirms ∧ rOuter > 0 (≥30 floor for ii; β-fire
+      // additionally requires ≥35).  Spec §4.0 v6 prose lists this exact
+      // substrate.
       if (bcSelfConfirms) {
         passB.scanned++;
-        if (alpha.gate_passed) {
-          const wrongDirection = Math.abs(pre.bcTc - row.actual) > 1;
-          for (const gamma of GAMMA_BC_GRID_V5) {
-            const e = alpha.perGamma[gamma];
-            if (e && e.subst_fired && e.committed && wrongDirection) {
-              passB.ac2_fp[gamma]++;
-            }
-          }
-          // Capture detail rows where ANY γ_bc committed substitution — both
-          // rescues (bcTc≈actual) AND FPs (bcTc≠actual) for downstream review.
-          const anyCommitted = GAMMA_BC_GRID_V5.some(g =>
-            alpha.perGamma[g] && alpha.perGamma[g].subst_fired && alpha.perGamma[g].committed
-          );
-          if (anyCommitted) {
-            passB.gatePassedRows.push({
-              stamp: row.stamp,
-              actual: row.actual,
-              tc: pre.tc,
-              bcTc: pre.bcTc,
-              bcPeaks: pre.bcPeaks,
-              rOuter: pre.rOuter,
-              wrongDirection,
-              J_bc_raw: Number(alpha.J_bc_raw.toFixed(4)),
-              jStar: Number(joint.jStar.toFixed(4)),
-              J_dis_new: Number(alpha.J_dis_new.toFixed(4)),
-              committedAtGamma: GAMMA_BC_GRID_V5.filter(g =>
-                alpha.perGamma[g] && alpha.perGamma[g].subst_fired && alpha.perGamma[g].committed
-              ),
-            });
-          }
-        }
+        const currentTc = pre.tc;
+        const betaTc = beta.fires ? beta.commit_tc : null;
+        const outcome = classifyBetaOutcome({
+          currentTc, betaTc, actual: row.actual,
+        });
+        passB.counts[outcome] = (passB.counts[outcome] || 0) + 1;
+
+        const downstream = beta.fires
+          ? downstreamAbstainAfterBeta({ joint: finalJoint, bcTc: pre.bcTc, gearRCrop })
+          : { fires: false, components: { pap961: false, radiusSanity: false, pap815: 'not_modelled' } };
+
+        const csvObj = {
+          stamp: row.stamp,
+          actual: row.actual,
+          bcTc: pre.bcTc,
+          bcPeaks: pre.bcPeaks,
+          current_tc: currentTc,
+          current_disposition: dispositionFor(currentTc, row.actual),
+          alpha_committed: alpha.committed ? 'true' : 'false',
+          beta_fires: beta.fires ? 'true' : 'false',
+          beta_commit_tc: beta.commit_tc == null ? '' : beta.commit_tc,
+          beta_commit_delta: beta.fires ? Math.abs(beta.commit_tc - row.actual) : '',
+          beta_outcome: outcome,
+          downstream_abstain_after_beta: downstream.fires ? 'true' : 'false',
+          downstream_pap961: downstream.components.pap961 ? 'true' : 'false',
+          downstream_radiusSanity: downstream.components.radiusSanity ? 'true' : 'false',
+        };
+        passB.rows.push(csvObj);
       }
     }
 
     // ── Pass A summary ──────────────────────────────────────────────────────
     pushLine('');
-    pushLine(`-- Pass A — bypass-row guard (Option α v5 at γ_bc=${GAMMA_BC_DEFAULT}) --`);
+    pushLine(`-- Pass A — bypass-row guard (Option α + Option β at γ_bc=${GAMMA_BC_DEFAULT}) --`);
     pushLine(`Rows joint-scanned (≥1 bypass fired): ${scanned}/${rows.length}`);
-    pushLine(`Joint-scan (post Option α) abstained: ${jointAbstainCount}/${scanned || 1}`);
-    pushLine(`Option α committed at γ=${GAMMA_BC_DEFAULT}: ${optionAlphaCommittedCount}`);
+    pushLine(`Option α committed: ${optionAlphaCommittedCount}`);
+    pushLine(`Option β fired:     ${optionBetaFiresCount}`);
+    pushLine(`Post (α∪β) joint abstained: ${jointAbstainCount}/${scanned || 1}`);
     pushLine('');
     pushLine('Predicate                          fires   broken   broken%');
     let anyBroken = false;
@@ -631,137 +740,100 @@ describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
       );
     }
 
-    // Track gamma_eff for broken PAP-861 rows (Leg 2 gate)
-    const brokenPap861GammaEff = [];
     for (const c of counters) {
       if (c.brokenRows.length === 0) continue;
       pushLine('');
       pushLine(`-- broken rows: ${c.name} --`);
-      pushLine('stamp                                       actual  tc  peakTc  fft90  op  bcTc  bcPk  peakR  rOuter  conf   gR(crop)  joint(R*,tc*,J*,J_dis)  abst');
+      pushLine('stamp                                       actual  tc  peakTc  fft90  op  bcTc  bcPk  α-commit  β-fires  β-commit  β-reason-blocked');
       for (const br of c.brokenRows) {
         pushLine(
           `${br.stamp.padEnd(40)}  ${String(br.actual).padStart(5)}  ` +
           `${String(br.tc).padStart(2)}  ${String(br.peakTc).padStart(5)}  ` +
           `${String(br.fft90tc).padStart(5)}  ${String(br.opTc).padStart(3)}  ` +
           `${String(br.bcTc).padStart(4)}  ${String(br.bcPeaks).padStart(4)}  ` +
-          `${String(br.peakR).padStart(5)}  ${String(br.rOuter).padStart(6)}  ` +
-          `${String(br.conf).padStart(5)}  ${String(br.gearRCropSpace).padStart(8)}  ` +
-          `(${br.joint.peakR},${br.joint.peakTc},${br.joint.jStar},${br.joint.jDis})  ${br.joint.abstain ? 'Y' : 'N'}`
+          `${br.alpha.committed ? 'Y' : 'N'}         ${br.beta.fires ? 'Y' : 'N'}        ` +
+          `${br.beta.commit_tc == null ? ' - ' : String(br.beta.commit_tc).padStart(3)}      ` +
+          `${br.beta.reason_blocked || '-'}`
         );
-        if (c.name.startsWith('PAP-861')) {
-          brokenPap861GammaEff.push({
-            stamp: br.stamp,
-            gamma_eff: br.optionAlpha.gamma_eff,
-            gamma_eff_off_grid: br.optionAlpha.gamma_eff_off_grid,
-          });
-        }
-      }
-      // B3 + B3' instrumentation block (v5)
-      pushLine('');
-      pushLine(`   B3+B3' (Option α v5 diag, per row):  γ grid = {${GAMMA_BC_GRID_V5.join(', ')}} (last=sentinel)`);
-      pushLine('   stamp                                       bcTc  R_bc  J_bc_raw  J_dis_new  J_dis_new(R,tc)  gamma_eff  gamma_commit  gate  applied@1.3  committed@1.3');
-      for (const br of c.brokenRows) {
-        const oa = br.optionAlpha;
-        const geff = oa.gamma_eff_off_grid ? '>2.5'
-                    : (oa.gamma_eff == null ? '  -  ' : String(oa.gamma_eff));
-        const gcom = oa.gamma_commit == null ? '  -  ' : String(oa.gamma_commit);
-        const jdisRT = `(${oa.J_dis_new_R_k},${oa.J_dis_new_tc})`;
-        pushLine(
-          `   ${br.stamp.padEnd(40)}  ${String(oa.bcTc || br.bcTc).padStart(4)}  ` +
-          `${String(oa.R_bc).padStart(4)}  ${oa.J_bc_raw.toFixed(4).padStart(8)}  ` +
-          `${oa.J_dis_new.toFixed(4).padStart(9)}  ${jdisRT.padStart(15)}  ` +
-          `${String(geff).padStart(9)}  ${String(gcom).padStart(12)}  ` +
-          `${oa.gate_passed ? 'Y' : 'N'}     ${oa.applied_at_default ? 'Y' : 'N'}            ` +
-          `${oa.committed_at_default ? 'Y' : 'N'}`
-        );
-      }
-      // Per-γ_bc detail for each broken row
-      pushLine('');
-      pushLine(`   Per-γ_bc table (J_bc / J*_v4 / commit_margin / subst_fired / committed):`);
-      pushLine('   stamp                                       γ_bc   J_bc    J*_v4   margin   subst  commit');
-      for (const br of c.brokenRows) {
-        for (const gamma of GAMMA_BC_GRID_V5) {
-          const e = br.optionAlpha.perGamma[gamma];
-          if (!e) continue;
-          pushLine(
-            `   ${br.stamp.padEnd(40)}  ${String(gamma).padStart(4)}  ` +
-            `${e.J_bc.toFixed(4).padStart(6)}  ${e.J_star_v4.toFixed(4).padStart(6)}  ` +
-            `${e.commit_margin.toFixed(4).padStart(7)}  ${e.subst_fired ? 'Y' : 'N'}      ${e.committed ? 'Y' : 'N'}`
-          );
-        }
       }
     }
 
-    // ── Pass B summary ──────────────────────────────────────────────────────
+    // ── Pass B B6 summary ───────────────────────────────────────────────────
     pushLine('');
-    pushLine(`-- Pass B — AC2 substitution-FP scan (v5 B4) --`);
+    pushLine(`-- Pass B B6 — per-row Option β outcome enumeration (v6.1) --`);
     pushLine(`Rows scanned (bcSelfConfirms ∧ rOuter>0): ${passB.scanned}/${rows.length}`);
-    pushLine('FP definition: gate_passed ∧ committed at γ ∧ |bcTc - actual| > 1');
     pushLine('');
-    pushLine('γ_bc       ac2_fp');
-    for (const gamma of GAMMA_BC_GRID_V5) {
-      const isDefault = gamma === GAMMA_BC_DEFAULT ? '  *default' : '';
-      const isSentinel = gamma === GAMMA_BC_SENTINEL ? '  *sentinel' : '';
-      pushLine(`${String(gamma).padStart(4)}      ${String(passB.ac2_fp[gamma]).padStart(5)}${isDefault}${isSentinel}`);
-    }
-    const ac2_fp_default = passB.ac2_fp[GAMMA_BC_DEFAULT];
-    const ac2_fp_sentinel = passB.ac2_fp[GAMMA_BC_SENTINEL];
-    pushLine('');
-    pushLine(`ac2_fp_default (γ=${GAMMA_BC_DEFAULT}): ${ac2_fp_default}`);
-    pushLine(`ac2_fp_g25 (sentinel ceiling): ${ac2_fp_sentinel}`);
-
-    if (passB.gatePassedRows.length > 0) {
-      pushLine('');
-      pushLine(`   Pass B committed-substitution detail (rescues + FPs):`);
-      pushLine('   stamp                                       actual  tc  bcTc  bcPk  rOuter  J_bc_raw  jStar   J_dis_new  wrongDir  committedAtγ');
-      for (const r of passB.gatePassedRows) {
-        pushLine(
-          `   ${r.stamp.padEnd(40)}  ${String(r.actual).padStart(5)}  ` +
-          `${String(r.tc).padStart(2)}  ${String(r.bcTc).padStart(4)}  ` +
-          `${String(r.bcPeaks).padStart(4)}  ${String(r.rOuter).padStart(6)}  ` +
-          `${r.J_bc_raw.toFixed(4).padStart(8)}  ${r.jStar.toFixed(4).padStart(6)}  ` +
-          `${r.J_dis_new.toFixed(4).padStart(9)}  ${r.wrongDirection ? 'Y' : 'N'}        ` +
-          `[${r.committedAtGamma.join(',')}]`
-        );
-      }
+    pushLine('outcome                                count');
+    for (const [bucket, n] of Object.entries(passB.counts)) {
+      pushLine(`${bucket.padEnd(38)} ${String(n).padStart(5)}`);
     }
 
-    // ── v5 PASS gate evaluation ─────────────────────────────────────────────
-    pushLine('');
-    pushLine(`-- v5 PASS criterion --`);
-    // Leg 1: Pass A 0 broken across all 5 predicates at γ_bc=DEFAULT
-    const leg1Pass = !anyBroken;
-    // Leg 2: gamma_eff ≤ 2.5 for every broken PAP-861 row
-    // (For Leg 2, "broken at γ_bc=1.3 default" is the set we care about; we
-    // ask whether ANY γ in the v5 grid (incl. 2.5 sentinel) would have closed
-    // the row. If gamma_eff_off_grid for any row → FAIL Leg 2.)
-    const leg2OffGrid = brokenPap861GammaEff.filter(r => r.gamma_eff_off_grid);
-    const leg2Pass = leg2OffGrid.length === 0;
-    // Leg 3: ac2_fp at γ_bc=1.3 default ≤ 2
-    const AC2_FP_BUDGET = 2;
-    const leg3Pass = ac2_fp_default <= AC2_FP_BUDGET;
+    // Per-bucket caps
+    const CAP_REGRESS_CORRECT_TO_CW    = 1;
+    const CAP_REGRESS_ABSTAIN_TO_CW    = 2;
+    const CAP_REGRESS_CW_WORSE_DELTA   = 1;
+    const n_correct_to_CW   = passB.counts['regress_correct→CW']    || 0;
+    const n_abstain_to_CW   = passB.counts['regress_abstain→CW']    || 0;
+    const n_CW_worse_delta  = passB.counts['regress_CW_worse_delta'] || 0;
+    const n_rescue          = passB.counts.rescue                    || 0;
 
-    pushLine(`Leg 1 (Pass A 0 broken at γ=${GAMMA_BC_DEFAULT}):                       ${leg1Pass ? 'PASS' : 'FAIL'}`);
-    pushLine(`Leg 2 (gamma_eff ≤ ${GAMMA_BC_SENTINEL} for broken PAP-861 rows):       ${leg2Pass ? 'PASS' : 'FAIL'}` +
-             (leg2OffGrid.length ? `  (off-grid: ${leg2OffGrid.map(r=>r.stamp).join(', ')})` : ''));
-    pushLine(`Leg 3 (ac2_fp_default ≤ ${AC2_FP_BUDGET}):                              ${leg3Pass ? 'PASS' : 'FAIL'}  (ac2_fp_g${GAMMA_BC_DEFAULT.toString().replace('.','')}=${ac2_fp_default})`);
-    const overallPass = leg1Pass && leg2Pass && leg3Pass;
+    pushLine('');
+    pushLine(`-- Per-bucket caps (B8) --`);
+    pushLine(`regress_correct→CW:        ${n_correct_to_CW} / ≤ ${CAP_REGRESS_CORRECT_TO_CW}  ${n_correct_to_CW <= CAP_REGRESS_CORRECT_TO_CW ? 'PASS' : 'FAIL'}`);
+    pushLine(`regress_abstain→CW:        ${n_abstain_to_CW} / ≤ ${CAP_REGRESS_ABSTAIN_TO_CW}  ${n_abstain_to_CW <= CAP_REGRESS_ABSTAIN_TO_CW ? 'PASS' : 'FAIL'}`);
+    pushLine(`regress_CW_worse_delta:    ${n_CW_worse_delta} / ≤ ${CAP_REGRESS_CW_WORSE_DELTA}  ${n_CW_worse_delta <= CAP_REGRESS_CW_WORSE_DELTA ? 'PASS' : 'FAIL'}`);
+    pushLine(`(sanity rollup, non-binding) correct→CW + abstain→CW = ${n_correct_to_CW + n_abstain_to_CW} / ≤ 2`);
+
+    // ── v6.1 PASS gate evaluation ───────────────────────────────────────────
+    const passA_pass = !anyBroken;
+    const passB_correctToCW_pass = n_correct_to_CW <= CAP_REGRESS_CORRECT_TO_CW;
+    const passB_abstainToCW_pass = n_abstain_to_CW <= CAP_REGRESS_ABSTAIN_TO_CW;
+    const passB_worseDelta_pass  = n_CW_worse_delta <= CAP_REGRESS_CW_WORSE_DELTA;
+    const passB_pass = passB_correctToCW_pass && passB_abstainToCW_pass && passB_worseDelta_pass;
+    const overallPass = passA_pass && passB_pass;
+
+    pushLine('');
+    pushLine(`-- v6.1 PASS criterion (B8) --`);
+    pushLine(`Pass A (0 broken across all 5 predicates):           ${passA_pass ? 'PASS' : 'FAIL'}`);
+    pushLine(`Pass B regress_correct→CW ≤ ${CAP_REGRESS_CORRECT_TO_CW}:                 ${passB_correctToCW_pass ? 'PASS' : 'FAIL'}`);
+    pushLine(`Pass B regress_abstain→CW ≤ ${CAP_REGRESS_ABSTAIN_TO_CW}:                 ${passB_abstainToCW_pass ? 'PASS' : 'FAIL'}`);
+    pushLine(`Pass B regress_CW_worse_delta ≤ ${CAP_REGRESS_CW_WORSE_DELTA}:             ${passB_worseDelta_pass ? 'PASS' : 'FAIL'}`);
+
     const verdict = overallPass
-      ? 'PASS — proceed to Phase-1 calibration child under PAP-1480 (3456-cell sweep)'
-      : 'FAIL — file v6 round (Option β skip-abstain or Option γ commit-relaxation)';
-
+      ? 'PASS — proceed to Phase-1 calibration child under PAP-1480 (6912-cell sweep)'
+      : 'FAIL — file v7 round OR descope per PAP-1091 A5 hard-exit (Option γ data-ruled-out)';
     pushLine('');
     pushLine(`Verdict: ${verdict}`);
     pushLine(`Output:  ${reportPath}`);
+    pushLine(`Output:  ${csvPath}`);
     pushLine(`Output:  ${jsonPath}`);
 
+    // ── Write outputs ───────────────────────────────────────────────────────
+    fs.writeFileSync(reportPath, lines.join('\n') + '\n');
+
+    const csvLines = [PASS_B_CSV_COLS.join(',')];
+    for (const r of passB.rows) csvLines.push(csvRow(r));
+    fs.writeFileSync(csvPath, csvLines.join('\n') + '\n');
+
     const summary = {
-      spec: 'pap1480_v5',
+      spec: 'pap1480_v6.1',
       corpusSize: rows.length,
+      params: {
+        gamma_bc: GAMMA_BC_DEFAULT,
+        option_beta: 'on',
+        beta_bcTc_floor: BETA_BC_FLOOR,
+        beta_conf: BETA_CONF,
+        sigma_R_ratio: SIGMA_R_RATIO,
+        eps_abs: EPS_ABS,
+        eps_floor: EPS_FLOOR,
+        R_lo_ratio: R_LO_RATIO,
+        R_hi_ratio: R_HI_RATIO,
+      },
       passA: {
         scanned,
         jointAbstainCount,
         optionAlphaCommittedCount,
+        optionBetaFiresCount,
         predicates: counters.map(c => ({
           name: c.name,
           fires: c.fires,
@@ -771,32 +843,32 @@ describe('PAP-1485 pre-flight v5 (A3 + Option α v5)', () => {
       },
       passB: {
         scanned: passB.scanned,
-        ac2_fp_g10: passB.ac2_fp[1.0],
-        ac2_fp_g13: passB.ac2_fp[1.3],
-        ac2_fp_g16: passB.ac2_fp[1.6],
-        ac2_fp_g20: passB.ac2_fp[2.0],
-        ac2_fp_g25: passB.ac2_fp[2.5],
-        ac2_fp_default: ac2_fp_default,
-        ac2_fp_sentinel: ac2_fp_sentinel,
-        ac2_fp_budget: AC2_FP_BUDGET,
-        committed_rows: passB.gatePassedRows,
+        counts: passB.counts,
+        caps: {
+          regress_correct_to_CW:    { value: n_correct_to_CW,  cap: CAP_REGRESS_CORRECT_TO_CW,  pass: passB_correctToCW_pass },
+          regress_abstain_to_CW:    { value: n_abstain_to_CW,  cap: CAP_REGRESS_ABSTAIN_TO_CW,  pass: passB_abstainToCW_pass },
+          regress_CW_worse_delta:   { value: n_CW_worse_delta, cap: CAP_REGRESS_CW_WORSE_DELTA, pass: passB_worseDelta_pass },
+          sanity_rollup_correct_abstain_sum: { value: n_correct_to_CW + n_abstain_to_CW, cap: 2, binding: false },
+        },
+        rescue_count: n_rescue,
+        csv_path: csvPath,
       },
       gate: {
-        leg1_pass_a_broken: leg1Pass,
-        leg2_gamma_eff_in_grid: leg2Pass,
-        leg2_off_grid_rows: leg2OffGrid,
-        leg3_ac2_fp_under_budget: leg3Pass,
+        passA: passA_pass,
+        passB_per_bucket: {
+          correct_to_CW: passB_correctToCW_pass,
+          abstain_to_CW: passB_abstainToCW_pass,
+          CW_worse_delta: passB_worseDelta_pass,
+        },
+        passB_overall: passB_pass,
         overall: overallPass ? 'PASS' : 'FAIL',
       },
       verdict: overallPass ? 'PASS' : 'FAIL',
       elapsedMs,
     };
-    fs.writeFileSync(reportPath, lines.join('\n') + '\n');
     fs.writeFileSync(jsonPath, JSON.stringify(summary, null, 2));
 
     expect(rows.length).toBeGreaterThan(0);
-    // Do NOT fail the jest run on verdict=FAIL — verdict is a hand-off signal,
-    // not a test failure.  AE inspects the report; QA reads the verdict on the
-    // PAP-1499 / PAP-1485 thread.
+    // Verdict is a hand-off signal, not a jest failure.
   });
 });
