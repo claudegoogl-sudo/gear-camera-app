@@ -1,10 +1,35 @@
-# PAP-1480 — Joint (radius × tooth-count) chainring-regime discriminator — spec v5
+# PAP-1480 — Joint (radius × tooth-count) chainring-regime discriminator — spec v6
 
-**Status**: spec only — v5 folds QA cross-check #4 amendments B3' (J_dis_new / commit_margin instrumentation), B4 (AC2 pre-flight pass), and B5 (γ_bc=2.5 sentinel). v4's B1 (gate tolerance ≤2) and B2 (γ_bc upward grid) carry forward APPROVED. Routed for QA cross-check #5 via PAP-1491 (new child). No `gearCounter.js` change before QA cross-check #2 on a chosen Phase-1 cell (still gated; cross-check #5 must clear first, then v5 PAP-1487 re-run PASS, then Phase-1 cell choice).
+**Status**: spec only — v6 escalates from Option α (bc-consensus carve-out) to **Option β (skip-abstain on bc-self-confirmed)** per the v5 pre-flight FAIL verdict and QA cross-check #5 endorsement (PAP-1499, 2026-05-15T19:55Z). v5 wire-up (`f417648`) confirmed Option α is structurally inadequate (`J_bc_raw / J*_v4 ∈ [2.4%, 20.0%]` vs ~50% spec assumption — boost short by 5×–25×, not borderline; required γ_bc off-grid >2.5 on 7/7 broken rows). v5 B3'+B4+B5 instrumentation and v4 B1+B2 gate carry forward as DIAGNOSTIC backdrop (Option α stays in spec as a tie-wins path with γ_bc=1.0 floor; Option β fires only when Option α did not commit). Routed for QA cross-check #6 via new child under PAP-1485. No `gearCounter.js` change before QA cross-check #2 on a chosen Phase-1 cell (still gated; cross-check #6 must clear first, then v6 PAP-1487 re-run PASS, then Phase-1 cell choice).
 
 **Author**: Algorithm Engineer
-**Date**: 2026-05-14 (v1) / 2026-05-14 (v2 amendments) / 2026-05-15 (v3 PAP-861 carve-out) / 2026-05-15 (v4 QA #3 amendments B1+B2+B3) / 2026-05-15 (v5 QA #4 amendments B3'+B4+B5)
+**Date**: 2026-05-14 (v1) / 2026-05-14 (v2 amendments) / 2026-05-15 (v3 PAP-861 carve-out) / 2026-05-15 (v4 QA #3 amendments B1+B2+B3) / 2026-05-15 (v5 QA #4 amendments B3'+B4+B5) / 2026-05-15 (v6 Option β skip-abstain per v5 FAIL + QA #5 endorsement)
 **Successor to**: PAP-1102 (descoped 2026-05-14, see [project_PAP1102_descope.md](../mobile/__tests__/.cache/_unused) memory).
+
+---
+
+## v6 amendment summary (PAP-1499 v5 pre-flight FAIL + QA cross-check #5 ENDORSED FAIL → v6 Option β round)
+
+PAP-1499 (`debug-reports/pap1485_preflight_v5_2026-05-15.{log,json}`, 7308.4s wall, 362 photos) FAILed all three v5 verdict legs at γ_bc default 1.3:
+
+- **Leg 1**: Pass A 7/19 PAP-861 rows broken (identical to v3 baseline; PAP-868/885/889/1059 all clean — Option α did not regress any other predicate).
+- **Leg 2**: `gamma_eff > 2.5` (off-grid) for all 7 broken rows — boost magnitude **structurally** insufficient, not borderline. `J_bc_raw / J*_v4 ∈ [2.4%, 20.0%]` (mean ≈ 9%) vs spec v3/v4/v5 §3.4.6 worst-case assumption ~50%. Required γ for the 04-25 36T row alone ≈ 41×. No γ_bc in the upward grid can close the gap.
+- **Leg 3**: `ac2_fp_default=0` at γ_bc=1.3 (and at every γ ∈ {1.0, 1.3, 1.6, 2.0, 2.5}) — PASS but trivially: Option α never committed substitution on any of the 19 bcSelfConfirms ∧ rOuter>0 rows, so the FP count carries **zero predictive signal** for Option β AC2 risk.
+
+QA cross-check #5 endorsement (`412ceea3-fd3d-4799-b5dc-fe0d24dca594`, 19:55Z) confirmed the FAIL is structural, not implementation; reproduced all three legs; ruled out **Option γ** by data (`J_dis_new` `R_k` for all 7 broken rows sits at R∈[315, 333] ≈ peakR / 0.85·aimR — disagree winner is already in the outer band where Option γ would tighten, so R-band-aware disagreement set cannot move J_dis_new); endorsed **Option β** with a **MUST-AMEND** before v6 approval — the v5 Pass B harness must be extended to enumerate per-row `|bcTc − actual|` for **all 19** bcSelfConfirms ∧ rOuter>0 rows, broken out by current-algorithm prediction (correct vs CW vs abstain), so Option β AC2 risk is bound at the cheap pre-flight stage rather than waiting for Phase-1 sweep cost.
+
+QA's diagnostic root-cause finding (folded into §3.4.6 footnote and §3.4.7 prose): `rOuter ∈ [158, 181] ≈ 0.39·aimR` on all 7 broken rows vs `peakR ∈ [286, 331] ≈ 0.85·aimR`. The radial-gradient detector locks onto the **inner bolt circle**, not the chainring outer ring, on this XL-chainring cluster. Spec assumption "`R_bc := rOuter` is bcTc-coherent" is empirically false at scale. Option α cannot be repaired by parameter tuning — its substitution target is the wrong radius. Option β sidesteps the substitution entirely by committing `(bcTc, current-FFT-R*)` and skipping the abstain rule when bc self-confirms, without claiming `rOuter` is bcTc-coherent.
+
+| # | Amendment | Section landed |
+|---|-----------|----------------|
+| **C5 (Option β)** | New §3.4.7. When Option α did NOT commit (gate didn't fire OR `J_bc < J*` even at γ_bc=2.5 sentinel) AND `bcSelfConfirms && rOuter > 0`, **skip the §3.4 abstain rule** and commit `tc* := bcTc` directly. Preserves the original §3.4 (R*, J*, J_dis) from the joint-scan argmax (does NOT substitute R* with rOuter, avoiding the inner-bolt-circle trap). Conf reduced from default (1.0) to **0.97** (one ε below max) to signal "second-tier confidence" to PAP-961 / PAP-815 / PAP-889 downstream gates without disabling them. Phase-1 sweep adds a binary toggle `option_beta ∈ {off, on}` to measure Option β contribution against AC2. | §3.4 (new §3.4.7); §3.4 param table; §4.1 sweep grid |
+| **C6 (Option β fire conjuncts)** | Option β fires when **all** of: (i) Option α did not commit (`subst_committed === false`); (ii) `bcSelfConfirms` per §3.4.6 B1 (`|bcTc − bcPeaks| ≤ 2 && bcTc ≥ 30 && |bcTc − tc*| > 2`); (iii) `rOuter > 0` (carve-out C3 still applies); (iv) v6 NEW: `bcTc ≥ 35` (chainring-band gate — empirically all 7 broken rows have bcTc ∈ [37, 50]; raises the floor from C1's "≥ 30" to exclude misdetected mid-gear bc-consensus while preserving 100% of v2-broken row recovery). | §3.4.7 |
+| **B6** (BLOCKING per QA #5) | v5 Pass B emitted only count rollups (`ac2_fp_g13=0` etc.) and `committed_rows=[]` (because Option α never committed). Cannot bound Option β AC2 risk. v6 §4.0 Pass B extends instrumentation: for every row in scope (`bcSelfConfirms ∧ rOuter > 0` over the AC2 corpus), emit per-row columns `stamp`, `actual`, `bcTc`, `bcPeaks`, `current_tc` (HEAD prediction pre-v6), `current_disposition` ∈ {correct, CW, abstain}, `delta := |bcTc − actual|`, `beta_fires` (bool), `beta_commit_delta := delta when beta_fires`. Aggregate: count rows where (a) beta_fires AND current_disposition='correct' AND delta>1 (regression risk: convert correct→CW), (b) beta_fires AND current_disposition='abstain' AND delta>1 (new CW: bad commit replaces abstain), (c) beta_fires AND current_disposition='CW' AND delta=0 (Option β rescue: convert CW→correct). Verdict: **AC2 Option β regression (a+b) ≤ 2** AND **Option β rescue (c) ≥ 0** (non-regression bar). | §4.0 v6 Pass B (extended); §6 AC4 |
+| **C7 (PASS criterion v6)** | v6 PASS criterion (combined Option α + Option β over Pass A + Pass B): Pass A has 0 broken across PAP-861/868/885/889/1059 with Option α+β both active at γ_bc=1.3 (Option β covers the 7 Option-α-uncovered PAP-861 rows); AND Pass B Option β regression count (a+b) ≤ 2 over the 305-photo AC2 corpus. If FAIL → file v7 round (Option γ would need new architectural channel; otherwise descope under PAP-1091 A5 hard-exit). | §4.0, §9 |
+
+Option β prose acknowledges (per §3.4.6 v5 prose) it is "strictly weaker than α" in that it commits without verifying the bc cell beats J_dis. The v5 pre-flight data shows Option α cannot win the head-room contest on this cluster regardless of γ_bc, so the strict-α route is closed. Option β trades a head-room safety check for a chainring-band gate (C6 `bcTc ≥ 35`) + bcSelfConfirms tolerance gate (≤2) + AC2 Pass B per-row enumeration (B6). The empirical 0 ac2_fp at all γ_bc on the broader Pass B v5 corpus is supportive but not conclusive (Option α didn't commit → no signal); B6 instrumentation closes that gap before Phase-1.
+
+Default γ_bc for the v6 pre-flight stays at **1.3** (carry from v5; Option α floor `1.0` still anchors a tie-wins control cell — Option β fires when Option α didn't commit, so γ_bc 1.0/1.3 changes which cluster Option β covers but not the union outcome).
 
 ---
 
@@ -280,10 +305,70 @@ A boost γ_bc ≤ 1.0 cannot trigger substitution (at best ties); γ_bc > 1.0 is
 
 **Carve-out limitation (C3)**: when `rOuter == 0` on a row (no radial-gradient outer-edge signal — happens on inner-only or noise-dominated frames), Option α is inactive and joint-scan abstain holds. PAP-1487 corpus shows 19/19 PAP-861 fires have `rOuter > 0`, so empirically unreached in scope. Documented as a known limitation should it surface in future corpus expansion.
 
-**Fallback options** (documented in case QA cross-check #3 rejects Option α):
+**Fallback options** (Option β now PROMOTED to §3.4.7 per v6 / PAP-1499 — kept here as a historical pointer):
 
-- **Option β**: skip the entire abstain rule on bc-self-confirmed rows. Strictly weaker than α (commits even when `J*` is genuinely below `ε_floor`), risks AC2 regression.
-- **Option γ**: R-band-aware disagree-set — when `R*<0.75·aimR` (inner regime) AND `R_dis>0.85·aimR` (outer regime), prefer the outer cell unconditionally. Encodes the "true cog is outer" prior physically; may conflict with PAP-961 (which abstains when peakR<0.65·aimR).
+- **Option β**: skip the entire abstain rule on bc-self-confirmed rows. **Promoted to §3.4.7 in v6** after v5 pre-flight FAIL on Option α at γ_bc up to sentinel 2.5 (PAP-1499 endorsement, 19:55Z). Strictly weaker than α (commits without verifying the bc cell beats J_dis), but Option α's substitution target (`R_bc := rOuter`) was empirically the wrong radius (inner bolt circle, not chainring outer ring) on the XL-chainring cluster.
+- **Option γ**: R-band-aware disagree-set — when `R*<0.75·aimR` (inner regime) AND `R_dis>0.85·aimR` (outer regime), prefer the outer cell unconditionally. **Ruled out by data** in QA cross-check #5 (PAP-1499 19:55Z): `J_dis_new` `R_k` for all 7 broken rows sits at R∈[315, 333] (≈0.85·aimR) — disagree winner is already in the outer band where Option γ would tighten, so it cannot move `J_dis_new` for this cluster. Would also conflict with PAP-961 (abstains when peakR<0.65·aimR).
+
+#### v6: bc-consensus skip-abstain — Option β (§3.4.7)
+
+PAP-1499 v5 pre-flight FAILed (`gamma_eff > 2.5` off-grid on all 7 v2-broken PAP-861 rows; `J_bc_raw / J*_v4 ∈ [2.4%, 20.0%]`, mean ≈9%). Option α's substitution premise (`R_bc := rOuter` is bcTc-coherent) is empirically false at scale on the XL-chainring cluster: `rOuter ≈ 0.39·aimR` (inner bolt circle) vs `peakR ≈ 0.85·aimR` (chainring outer ring). No γ_bc multiplier can repair a substitution targeted at the wrong radius. v6 keeps Option α for the (currently empty) tie-wins regime where it would commit cleanly, and adds Option β as the chainring-band fallback that commits `bcTc` without claiming the substituted radius is bcTc-coherent.
+
+**Algorithm (v6, runs AFTER §3.4.6 Option α — fires only when Option α did not commit):**
+
+```
+// Option α §3.4.6 has run; subst_committed ∈ {true, false}.
+// If subst_committed, the (R*, tc*, J*, J_dis) used by §3.4 commit/abstain is already substituted.
+
+if (!subst_committed                                     // (i) Option α was inactive or sub-criterion failed
+    && (Math.abs(bcTc - bcPeaks) <= 2)                  // (ii) bcSelfConfirms gate (§3.4.6 B1)
+    && bcTc >= 35                                       // (iii) chainring-band floor (v6 C6; empirical [37, 50] on 7 v2-broken rows)
+    && (Math.abs(bcTc - tc*) > 2)                       //       and bc disagrees with joint argmax
+    && rOuter > 0):                                     // (iv) carve-out C3 (rOuter signal exists)
+
+    // Commit bcTc directly; preserve §3.4 (R*, J*, J_dis) from joint argmax — DO NOT substitute R* with rOuter.
+    tc*  := bcTc
+    // R*, J*, J_dis unchanged from joint-scan argmax (intentional: Option α already tried & failed to make
+    // rOuter the authoritative R; v6 declines to repeat that mistake).
+    conf := 0.97                                        // second-tier confidence (one ε below max) — visible to PAP-961/815/889
+    skip_abstain := true                                // bypass §3.4 commit/abstain decision
+
+// §3.4 commit/abstain proceeds only if skip_abstain === false.
+```
+
+**Conjunct rationale (C6):**
+
+- (i) `!subst_committed` — Option β fires *only* when Option α did not commit. Preserves Option α's tie-wins control cell as the primary path; Option β is the fallback for the structurally-inadequate regime PAP-1499 surfaced.
+- (ii) `|bcTc − bcPeaks| ≤ 2` — same tolerance as Option α B1 gate; matches `strongConsensusBypass` precedent.
+- (iii) `bcTc ≥ 35` — chainring-band floor, raises from Option α's `bcTc ≥ 30` (C1). The 7 v2-broken rows have `bcTc ∈ [37, 50]`, all comfortably above 35. The 30-floor on Option α was inherited from PAP-861's predicate where the joint argmax `tc*` was non-zero; under Option β the joint argmax is being **overridden** entirely, so a tighter chainring-band gate is justified. Empirically (v6 Pass B B6 will confirm) this floor excludes mid-gear bcSelfConfirms regions where Option β would convert correct mid-gear rows to CW.
+- (iv) `rOuter > 0` — Option α C3 carve-out carry-forward; if the radial-gradient detector returns no outer signal, the bc-self-confirmation likely lacks a chainring-band anchor and Option β does not fire.
+
+**Why Option β does NOT substitute R*:**
+
+PAP-1499 QA finding (verified against v5 B3+B3' table): for all 7 broken rows, `rOuter ∈ [158, 181]` ≈ 0.39·aimR (inner bolt-circle radius), while `peakR ∈ [286, 331]` ≈ 0.85·aimR (chainring outer ring). FFT phase-coherence at rOuter is on the bolt-circle harmonic family, not the bcTc harmonic. Option α's `R_bc := rOuter` substitution made `J_bc_raw` numerically tiny (`[0.0019, 0.0143]`) because the FFT at the wrong radius lacks bcTc coherence. Option β commits `bcTc` while keeping `R*` from the joint argmax (the chainring outer radius), so the downstream `peakR` field carries an interpretable radius for PAP-961 / radius-sanity / PAP-815 gates. The commit decision (`skip_abstain := true`) is justified by **categorical evidence** (`bcTc === bcPeaks` cross-channel agreement at chainring magnitudes) rather than the joint-grid head-room contest Option α tried to win.
+
+**Why conf=0.97 (not 1.0):**
+
+Option β commits without verifying `J*` magnitude or `J_dis` separation. Downstream gates (PAP-961 peakR<0.65·aimR abstain, PAP-815 chainring-gate, PAP-889 conf<0.40 secondary gate) treat the prediction as confident-correct in the [0.95, 1.0] band. Setting conf=0.97 keeps Option β commits in the confident band (above all current conf-threshold gates, which fire at <0.40 / <0.70 / etc.) while emitting a measurable "one ε below default" signal that future audits can distinguish from Option α commits (conf=1.0). If a future ticket needs to bias against Option β commits specifically, the conf channel is the discriminator.
+
+**Why Option β commits on the 7 v2-broken rows (v6):**
+
+| stamp                          | actual tc | bcTc | bcPeaks | `\|Δ_bc\|` ≤2 | bcTc ≥35 | `\|bcTc-tc*\|`>2 | rOuter>0 | Option α committed? | Option β fires? |
+|--------------------------------|-----------|------|---------|----------------|----------|-----------------|----------|---------------------|-----------------|
+| 2026-04-25_08-45-07-271Z       | 36T       |   37 |   35    | ✓              | ✓ (37)   | ✓ (27)          | ✓ (158)  | ✗ (γ_eff>2.5)       | ✓               |
+| 2026-04-30_12-31-00-766Z       | 50T       |   50 |   50    | ✓              | ✓ (50)   | ✓ (39)          | ✓ (176)  | ✗                   | ✓               |
+| 2026-05-01_08-28-38-224Z       | 50T       |   50 |   50    | ✓              | ✓        | ✓ (37)          | ✓ (175)  | ✗                   | ✓               |
+| 2026-05-01_09-04-04-917Z       | 48T       |   49 |   48    | ✓              | ✓        | ✓ (25)          | ✓ (180)  | ✗                   | ✓               |
+| 2026-05-01_15-00-55-239Z       | 48T       |   48 |   48    | ✓              | ✓        | ✓ (33)          | ✓ (181)  | ✗                   | ✓               |
+| 2026-05-01_15-04-02-875Z       | 47T       |   47 |   48    | ✓              | ✓        | ✓ (17)          | ✓ (178)  | ✗                   | ✓               |
+| 2026-05-04_11-33-56-211Z       | 42T       |   43 |   41    | ✓              | ✓        | ✓ (28)          | ✓ (175)  | ✗                   | ✓               |
+
+All 7 rows satisfy all four conjuncts. Per-row commit-delta `|bcTc − actual| ∈ {1, 0, 0, 1, 0, 1, 1}` — six rows commit within ±1 of ground truth (Option β converts joint-abstain → confident-correct on 6/7 rows). The 04-25 row commits bcTc=37 vs actual=36 (Δ=1) which is **within the AC2 tolerance** used by Pass B FP definition (`|bcTc − actual| > 1`); not counted as CW under v6 definition. Net: all 7 v2-broken rows become Option β rescues, 0/7 generate Option β AC2-FP on the rescue rows themselves. (AC2 risk surface is the OTHER 12 PAP-861 fires + the remaining bcSelfConfirms ∧ rOuter>0 rows over the 305-photo AC2 corpus — Pass B B6 enumerates these.)
+
+**Carve-out limitations (v6):**
+
+- C3 carry-forward (rOuter==0): Option β inactive. PAP-1487 corpus shows 19/19 PAP-861 fires have rOuter>0.
+- New (v6): if Option β commits `tc*=bcTc` but the §3.4 joint `R*` is itself extreme (R<0.50·aimR or R>1.00·aimR), PAP-961 / PAP-815 downstream gates will see (bcTc, extreme-R*) and may second-abstain. This is **intentional defence-in-depth** — Option β bypasses §3.4 abstain ONLY; it does NOT bypass downstream radius-sanity gates. Pass B B6 will report `downstream_abstain_after_beta` per row to surface this interaction.
 
 #### Parameter defaults (to be calibrated by Phase-1 sweep)
 
@@ -295,7 +380,8 @@ A boost γ_bc ≤ 1.0 cannot trigger substitution (at best ties); γ_bc > 1.0 is
 | `R_lo/aimR` | 0.40       | {0.35, 0.40, 0.45}                  | Lower bound on cog candidates. 0.40 covers 11T-on-50T chainring case.                                 |
 | `R_hi/aimR` | 1.10       | {1.05, 1.10, 1.15}                  | Upper bound. 1.10 is current PAP-1100 ceiling.                                                       |
 | `extreme_R_abstain` | off | {off, on} (A4)                       | See above (Q3 / A4).                                                                                 |
-| `γ_bc`      | 1.3        | **{1.0, 1.3, 1.6, 2.0}** (v4 B2); v5 sentinel `2.5` pre-flight-only | bc-cell boost factor (§3.4.6). Floor `1.0` = tie-wins control (substitution geometry sanity). Upward extension required because rOuter sits inside §3.2 grid → raw `J_bc ≤ J*` by argmax; γ_bc > 1.0 needed to substitute (B2). v5 (B5): γ_bc=2.5 sentinel runs in pre-flight only (path b) to gate Option β escalation; Phase-1 grid unchanged. |
+| `γ_bc`      | 1.3        | **{1.0, 1.3, 1.6, 2.0}** (v4 B2); v5 sentinel `2.5` pre-flight-only | bc-cell boost factor (§3.4.6). Floor `1.0` = tie-wins control (substitution geometry sanity). Upward extension required because rOuter sits inside §3.2 grid → raw `J_bc ≤ J*` by argmax; γ_bc > 1.0 needed to substitute (B2). v5 (B5): γ_bc=2.5 sentinel runs in pre-flight only (path b) to gate Option β escalation; Phase-1 grid unchanged. v6: Option α commits remain rare (PAP-1499 measured 0/19 at γ_bc=2.5); kept in spec as a tie-wins channel and a measurable diagnostic for future corpus expansion. |
+| `option_beta` | on       | **{off, on}** (v6 C5)                | Binary toggle in Phase-1 sweep. `on` enables §3.4.7 skip-abstain when Option α did not commit AND v6 §3.4.7 conjuncts hold. `off` retains v5 behaviour (Option α only). Measures Option β contribution against AC2 corpus during Phase-1 cell selection. Default `on` based on v6 PASS criterion expectation. |
 
 ### 3.5 Integration point
 
@@ -326,9 +412,13 @@ A simulator harness (`mobile/__tests__/pap1480.preflight.js`, filed as PAP-1485 
 
 **v2 pre-flight result (PAP-1487)**: FAIL — 7 broken PAP-861 bc-isolated rows, 0 broken on the other four predicates (PAP-868 / PAP-885 / PAP-889 / PAP-1059 all clean).
 
-**v5 pre-flight (C4 + B3 + B3' + B4 + B5) — required re-run before Phase-1**:
+**v6 pre-flight (C5 + C6 + B6 Option β + carries v5 instrumentation) — required re-run before Phase-1**:
 
-After spec v5 lands (and QA cross-check #5 APPROVED), re-run `mobile/__tests__/pap1480.preflight.js` with Option α v5 (§3.4.6, B1 gate `|bcTc-bcPeaks|≤2`, B2 γ_bc grid, B3' commit-margin instrumentation) wired into the inline simulator. The harness performs **two corpus passes**:
+After spec v6 lands (and QA cross-check #6 APPROVED), re-run `mobile/__tests__/pap1480.preflight.js` with Option α v5 + **Option β v6** (§3.4.7, fires when Option α did not commit) wired into the inline simulator. The harness performs **two corpus passes** (Pass A bypass-row guard carries forward; Pass B extends per B6).
+
+**v5 pre-flight (C4 + B3 + B3' + B4 + B5) — historical, ran 2026-05-15 (PAP-1499, FAIL)**:
+
+The v5 harness wired Option α (§3.4.6, B1 gate `|bcTc-bcPeaks|≤2`, B2 γ_bc grid, B3' commit-margin instrumentation) into the inline simulator. Verdict: FAIL. The v5 harness ran **two corpus passes** (preserved here for v6 reference):
 
 **Pass A — bypass-row guard (v4 carry-forward)**: evaluates the 19+ rows currently rescued by PAP-861/868/885/889/1059 predicates. Verdict criterion:
 
@@ -358,11 +448,52 @@ Cost: ~305 simulator passes — reuses the PAP-861/868/885/889/1059 corpus scan 
 
 For each row, the harness sweeps γ_bc ∈ {1.0, 1.3, 1.6, 2.0, **2.5 sentinel**} and reports `subst_fired` and the smallest grid value that closes the row (`gamma_eff`). If `gamma_eff > 2.5` for any of the 7 v2-broken rows, the verdict is FAIL → escalate to v6 (Option β fallback per §3.4.6).
 
-**v5 PASS criterion (combined)**: Pass A 0 broken across all five predicates AND `gamma_eff ≤ 2.5` for all 7 v2-broken rows AND Pass B AC2 substitution-FP ≤ 2 at γ_bc=1.3.
+**v5 PASS criterion (historical, ran FAIL on PAP-1499)**: Pass A 0 broken across all five predicates AND `gamma_eff ≤ 2.5` for all 7 v2-broken rows AND Pass B AC2 substitution-FP ≤ 2 at γ_bc=1.3. v5 FAILed legs 1+2 (Option α structurally inadequate; γ_eff>2.5 off-grid on all 7 broken rows); leg 3 trivially PASSed because Option α never committed.
 
-If v5 pre-flight reports any failure on the above, file v6 round (do NOT proceed to Phase-1).
+---
 
-If v5 pre-flight PASSes, proceed to §4.1 Phase-1 sweep (Phase-1 grid stays at 3456 cells; sentinel γ_bc=2.5 does NOT enter Phase-1).
+**v6 pre-flight extension (Pass B B6 — Option β AC2 risk surface; replaces v5 Pass B count-rollup)**:
+
+PAP-1499 QA #5 MUST-AMEND: v5 Pass B emitted count rollups only (`ac2_fp_g13=0` etc.) and `committed_rows=[]` (because Option α never committed). Cannot bound Option β AC2 risk. v6 Pass B B6 extends instrumentation to enumerate **all** rows where `bcSelfConfirms ∧ rOuter > 0` over the 305-photo AC2 corpus (PAP-760/796/939/1052 union), and emit per-row:
+
+| Column                       | Definition                                                                                                  | Purpose                                                                                                  |
+|------------------------------|-------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| `stamp`                      | photo id                                                                                                    | identification                                                                                            |
+| `actual`                     | labelled ground-truth tc                                                                                    | AC2 ground-truth basis                                                                                    |
+| `bcTc`, `bcPeaks`            | bc-channel detections                                                                                       | §3.4.7 conjunct (ii) substrate                                                                            |
+| `current_tc`                 | HEAD prediction (pre-v6, with all current bypass predicates active)                                         | Distinguishes Option β rescue vs Option β regression                                                      |
+| `current_disposition`        | ∈ {`correct` (\|current_tc − actual\|≤1), `CW` (\|Δ\|>1 ∧ current_tc>0), `abstain` (current_tc===0)}        | AC2 baseline                                                                                              |
+| `alpha_committed`            | bool: did Option α §3.4.6 commit on this row at γ_bc=1.3?                                                   | Distinguishes which option fires                                                                          |
+| `beta_fires`                 | bool: did Option β §3.4.7 fire on this row? (Option α did not commit AND v6 conjuncts hold)                  | Per-row Option β activation                                                                               |
+| `beta_commit_tc`             | `bcTc` when beta_fires, else `null`                                                                          | What Option β commits                                                                                     |
+| `beta_commit_delta`          | `\|bcTc − actual\|` when beta_fires, else `null`                                                            | Per-row Option β commit error                                                                             |
+| `beta_outcome`               | ∈ {`rescue` (current=CW or abstain → beta=correct), `regress_correct→CW` (current=correct → beta=CW), `regress_abstain→CW` (current=abstain → beta=CW), `no_change` (current=correct → beta=correct OR current=CW → beta still CW with same Δ)} | AC2 outcome classification                                                                                |
+| `downstream_abstain_after_beta` | bool: would PAP-961 / radius-sanity / PAP-815 second-abstain on (bcTc, joint R*)?                          | Defence-in-depth verification (Option β passes through downstream gates)                                  |
+
+**Aggregate counts (B6, replaces v5 `ac2_fp_default`):**
+
+- `beta_rescue` count: rows where `beta_outcome === 'rescue'`. Expected high on the 7 v2-broken rows (all 7 rescue at delta≤1).
+- `beta_regress_correct_to_CW` count: rows where `beta_outcome === 'regress_correct→CW'`. **Hard limit ≤ 2** (mirrors v5 B4 FP threshold).
+- `beta_regress_abstain_to_CW` count: rows where `beta_outcome === 'regress_abstain→CW'`. **Hard limit ≤ 2** (new CW from abstain is the cleanest AC2 regression signal).
+- `beta_no_change` count: informational only.
+
+**v6 verdict criterion (replaces v5 leg 3):**
+
+`beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` (combined hard limit; mirrors QA #5 MUST-AMEND wording "Option β AC2 regression ≤ 2"). If > 2, escalate to v7+ (likely descope under PAP-1091 A5 hard-exit since Option γ is data-ruled-out and remaining channels would require new architectural input).
+
+**Cost**: Pass B B6 scans the 305-photo AC2 corpus once per (Option α γ_bc, Option β toggle) combination. With γ_bc=1.3 default + Option β default `on`, Pass B emits exactly one per-row enumeration. ~305 simulator passes — same engine as v5 Pass B; ~5–10× cost increase vs v5 count-only output (per-row CSV serialization, not extra compute).
+
+**v6 PASS criterion (combined; replaces v5 PASS criterion):**
+
+Pass A: 0 broken across all five predicates (PAP-861/868/885/889/1059) with Option α + Option β both active at γ_bc=1.3. Specifically:
+- Of the 19 PAP-861 fires, Option α covers 0/7 v2-broken rows (per v5 data); Option β covers 7/7 v2-broken rows (per v6 §3.4.7 table). Union: 7/7 v2-broken rows rescued by Option α ∪ Option β.
+- PAP-868/885/889/1059 unchanged (v5 confirmed all 4 predicates clean post-Option α; Option β fires *after* Option α and only on rows where Option α did not commit, so it cannot regress predicates Option α didn't touch).
+
+Pass B: `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` on the 305-photo AC2 corpus.
+
+Both criteria must hold for v6 PASS. If v6 pre-flight reports any failure on the above, file v7 round or descope per PAP-1091 A5.
+
+If v6 pre-flight PASSes, proceed to §4.1 Phase-1 sweep (Phase-1 grid 3456 cells × 2 (Option β toggle) = **6912 cells**; sentinel γ_bc=2.5 does NOT enter Phase-1).
 
 ### 4.1 Phase-1 sweep grid (A1 amended)
 
@@ -375,8 +506,9 @@ If v5 pre-flight PASSes, proceed to §4.1 Phase-1 sweep (Phase-1 grid stays at 3
 | `ε_floor`    | {0.06, 0.08, 0.10}                  | 3 |
 | `extreme_R_abstain` | {off, on} (A4)               | 2 |
 | `γ_bc` (v4, B2)     | **{1.0, 1.3, 1.6, 2.0}**     | 4 |
+| `option_beta` (v6, C5) | **{off, on}**             | 2 |
 
-Total **3·3·4·4·3·2·4 = 3456** cells. (v1: 324 → +A1 σ_R: 432 → +A4 extreme_R: 864 → +C2 γ_bc (v3): 2592 → +B2 γ_bc upward (v4): 3456.) Recommended Phase-1 strategy: AC2-eliminate-first — reject any cell with > 0 LOSS on PAP-760/796/939/1052 corpus before scoring AC1, which prunes the dominant cost. Cell-cache + resumable design (lifted from `pap1100.aim-prior.js`) makes the sweep tractable.
+Total **3·3·4·4·3·2·4·2 = 6912** cells. (v1: 324 → +A1 σ_R: 432 → +A4 extreme_R: 864 → +C2 γ_bc (v3): 2592 → +B2 γ_bc upward (v4): 3456 → +C5 option_beta (v6): 6912.) Recommended Phase-1 strategy: AC2-eliminate-first — reject any cell with > 0 LOSS on PAP-760/796/939/1052 corpus before scoring AC1, which prunes the dominant cost. Cell-cache + resumable design (lifted from `pap1100.aim-prior.js`) makes the sweep tractable.
 
 Each cell evaluates the current 305-photo corpus (PAP-760 / PAP-796 / PAP-939 / PAP-1052 union) plus the AC1 cohort (n=24, A2 — see §6).
 
@@ -406,6 +538,7 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 - **AC2**: Zero new LOSS on PAP-760 / PAP-796 / PAP-939 / PAP-1052 305-photo sweep.
 - **AC3**: Functions when `aimCrop` (hence `aimR`) is absent — soft prior degenerates to uniform (`P ≡ 1`).
 - **AC4 (new — A5 hard-exit)**: per PAP-1091 protocol, if the best Phase-1 cell yields AC1 Wilson 95% **UB > 20%** (≥80% chance the underlying recovery rate is below the AC1 floor) **OR** AC2 305-sweep > 0 LOSS, **descope** PAP-1480 and file a successor under PAP-758. Do not iterate parameters past the chosen cell without a new spec round.
+- **AC5 (v6, Option β specific)**: pre-flight Pass B B6 (§4.0) `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` over the 305-photo AC2 corpus AT THE CHOSEN Phase-1 cell. Pre-flight gates v6 entry to Phase-1; this AC re-applies at Phase-1 cell selection (because the Phase-1 cell's `R_lo/R_hi/σ_R/ε_abs/ε_floor/extreme_R/γ_bc` differ from the v6 pre-flight defaults, the per-row B6 counts may shift). The Phase-1 sweep MUST surface this aggregate per cell so QA cross-check #2 can verify AC5 at the chosen cell.
 
 ---
 
@@ -414,7 +547,9 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 - **Risk: 11T cluster `peakR` data is missing today** (only 2/11 produce non-zero `peakR`). If the underlying ring signal genuinely lacks a coherent 11T harmonic at *any* radius in `[0.40, 1.10]·aimR`, joint scoring cannot rescue it either — it will abstain, which is still better than confident-wrong on AC1 metric.
 - **Risk: false abstains on XL 42T**. The PAP-861 / PAP-868 / PAP-885 / PAP-889 / PAP-1059 ladder's bypasses operate on `peakTc`/`fft90tc` agreement post-scan. If joint scoring abstains, those bypasses become inoperative on that row. **Mitigation: §4.0 pre-flight (A3) — hard-exit if any bypass row breaks**.
 - **v4 risk (was v3 risk, B2 elevated) — v5 mitigated by B4 pre-flight pass**: Option α boost γ_bc > 1.0 may regress AC2 if a true small-cog row has `|bcTc-bcPeaks|≤2 && bcTc≥30` from a misdetected outer ring AND `rOuter` happens to sit at a small-cog harmonic peak. v3's grid `{0.6, 0.8, 1.0}` masked this risk (no substitution would have fired); v4's `{1.0, 1.3, 1.6, 2.0}` exposes it for the first time. v5 (B4) pre-empts this by adding a 305-photo AC2 corpus pass to the §4.0 pre-flight harness *before* Phase-1 sweep cost is incurred — substitution-FP rows are surfaced at the cheap pre-flight stage rather than waiting for Phase-1 AC2-eliminate-first pruning to detect them. B3+B3' instrumentation (`gamma_eff`, `commit_margin`) makes the safety margin between "lowest γ_bc that rescues all 7 v2-broken rows" and "lowest γ_bc that triggers an AC2 LOSS" empirically measurable per-row.
-- **v5 risk (B5 — γ_bc=2.5 sentinel)**: pre-flight-only sentinel does not change Phase-1 cost (3456 cells unchanged). However, if Phase-1 selects γ_bc=2.5 as the best-cell value (it cannot, since 2.5 isn't in the sweep grid by path-(b) choice), AE re-routes to QA as an explicit v5+ amendment. Pre-flight FAIL at sentinel (`gamma_eff > 2.5` on any v2-broken row OR AC2-FP > 2 at γ_bc=2.5) is a hard descope signal — Option α is structurally inadequate for the disagree set + AC2 corpus combination, escalate to Option β/γ under v6+.
+- **v5 risk (B5 — γ_bc=2.5 sentinel)**: pre-flight-only sentinel does not change Phase-1 cost (3456 cells unchanged). However, if Phase-1 selects γ_bc=2.5 as the best-cell value (it cannot, since 2.5 isn't in the sweep grid by path-(b) choice), AE re-routes to QA as an explicit v5+ amendment. Pre-flight FAIL at sentinel (`gamma_eff > 2.5` on any v2-broken row OR AC2-FP > 2 at γ_bc=2.5) is a hard descope signal — Option α is structurally inadequate for the disagree set + AC2 corpus combination, escalate to Option β/γ under v6+. **Outcome: PAP-1499 v5 pre-flight FAILed legs 1+2 at sentinel; v6 escalation to Option β proceeded per this rule.**
+- **v6 risk (Option β AC2 substitution)**: Option β commits `bcTc` directly when bc self-confirms at chainring band, bypassing the §3.4 head-room contest. Risk: in the 305-photo AC2 corpus, a row where the current algorithm correctly predicts `actual` AND `bcSelfConfirms ∧ bcTc≥35 ∧ |bcTc−tc*|>2 ∧ |bcTc−actual|>1` would convert from correct to CW under Option β. Pre-flight Pass B B6 enumerates the AC2 surface per-row and bounds this risk at the cheap pre-flight stage (`beta_regress_correct_to_CW ≤ 2` hard limit). The v5 ac2_fp_default=0 measurement at all γ_bc on the v5 Pass B is supportive (Option α never committed but the underlying gate fired on 19/362 rows; for those 19 rows the bc cell did not displace the current correct prediction within the |Δ|≤1 tolerance), though not conclusive — Option β's commit logic differs from Option α's. B6 closes the gap before Phase-1 cost is incurred.
+- **v6 risk (downstream-gate interaction)**: Option β commits `tc*=bcTc` while keeping the joint-scan `R*`. PAP-961 (peakR<0.65·aimR abstain), radius-sanity (crop-space r<0.13 abstain), and PAP-815 chainring-gate operate on `peakR` post-commit. If joint `R*` happens to fall in those abstain bands, a second-abstain fires after Option β. Pre-flight B6 instrumentation `downstream_abstain_after_beta` quantifies the rate; this is intentional defence-in-depth (Option β bypasses §3.4 abstain only, NOT downstream gates) and reduces Option β AC2 exposure.
 - **v3 carve-out limitation (C3)**: rows with `rOuter == 0` cannot benefit from Option α. PAP-1487 shows 19/19 PAP-861 fires have rOuter > 0; future corpus expansion may surface rows where this fails. Documented; no current mitigation needed.
 - **R5 (PAP-1486 add): joint-scan aggregate cost ≈ 2.5× via 2 call sites + `retryNearCenter`**. Per-call cost is ≈1.25× per §5; multi-call amplifier pushes aggregate against the PAP-555 wall-clock budget. **Action: AE confirms against the PAP-555 budget once Phase-1 produces wall-clock numbers; not a blocker for the spec.** Deferred to Phase-1 measurement.
 - **R6 (PAP-1486 add): AC3 corpus (`aimR==0`, pre-b97) — soft prior degenerates to uniform**. Per §3.1, when `aimR` is absent the prior falls back to `gearR` as soft anchor and effectively degenerates to a uniform `P(R_k)`. Pre-b97 photos in the AC2 sweep test exactly this regime. **Action: explicitly verify on the pre-b97 corpus subset that joint-scan doesn't regress those photos; add as a Phase-1 reporter slice (no extra sweep cost — already part of AC2 305-photo corpus).**
@@ -434,7 +569,7 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 
 ---
 
-## 9. Sequencing (v5)
+## 9. Sequencing (v6)
 
 1. **DONE (v2, ae28d85)**: Update `pap1480_joint_score_spec.md` → v2.
 2. **DONE (PAP-1487, 2bd05d5)**: Run pre-flight bypass-row guard (§4.0, A3) → **FAIL verdict** (7 broken PAP-861 rows). Reports at `debug-reports/pap1485_preflight_2026-05-15.{log,json}`.
@@ -442,11 +577,14 @@ Two call sites doubles this; still well within budget. No new sampling primitive
 4. **DONE (QA #3, 2026-05-15T01:17:52Z)**: PAP-1492 returned **REJECTED-FOR-AMENDMENTS** — B1 (gate tolerance), B2 (γ_bc upward grid), B3 (instrumentation).
 5. **DONE (v4, 6a0d2b6)**: Fold B1 (`|bcTc-bcPeaks|≤2` gate), B2 (γ_bc ∈ {1.0, 1.3, 1.6, 2.0}), and B3 (harness J_bc_raw / gamma_eff / subst_fired columns) → routed to QA cross-check #4 (PAP-1494).
 6. **DONE (QA #4, PAP-1494)**: APPROVED-W-AMENDMENTS — B3' (J_dis_new / commit_margin), B4 (AC2 pre-flight pass), B5 (γ_bc=2.5 sentinel before Option β escalation).
-7. **THIS REVISION (v5, PAP-1497)**: Fold B3'+B4+B5 → **route to QA cross-check #5** (file new child under PAP-1491). v4 B1+B2 carry forward APPROVED; QA #5 should be brief — only validates the three v5 amendments land cleanly.
-8. **NEXT (gated on QA #5 APPROVED)**: Wire Option α v5 into `mobile/__tests__/pap1480.preflight.js` inline simulator (γ_bc=1.3 default; B3 + B3' instrumentation rows; sentinel γ_bc=2.5; Pass B 305-photo AC2 corpus added). Re-run on full 362-photo corpus + 305-photo AC2 corpus.
-9. **v5 PASS criterion** = 0 broken across all five PAP-861/868/885/889/1059 predicates AND `gamma_eff ≤ 2.5` on all 7 v2-broken PAP-861 rows AND AC2 substitution-FP count ≤ 2 at γ_bc=1.3. If FAIL → v6 round (likely Option β fallback).
-10. **THEN (gated on v5 PAP-1487 PASS)**: Open **Phase-1 calibration child** under PAP-1480 (3456-cell sweep with AC2-eliminate-first pruning, on union corpus + AC1 n=24 cohort). Cell-cache + resumable design lifted from `pap1100.aim-prior.js` minus the PAP-1100-specific bounds plumbing.
-11. Pick best cell maximizing AC1-pass while preserving 305-photo AC2 (0 LOSS). Apply A5 hard-exit if best cell fails AC4.
-12. **QA cross-check #2** on the chosen cell + parameter values + Phase-1 corpus diff. No `gearCounter.js` edit before this signoff.
-13. PAP-1480 implementation lands as the single coherent commit described in §0 (joint-scan + PAP-1100 plumbing deletion in one diff).
-14. QA full sweep + signoff post-implementation → build subtask filed by QA.
+7. **DONE (v5, 99c4e0d)**: Fold B3'+B4+B5 → routed to QA cross-check #5 (PAP-1498 → APPROVED).
+8. **DONE (PAP-1499 wire-up, f417648)**: Option α v5 wired into `mobile/__tests__/pap1480.preflight.js`; full corpus pre-flight ran 7308.4s on 362 photos.
+9. **DONE (PAP-1499 verdict, 2026-05-15T03:58Z + QA #5 endorsement 19:55Z)**: v5 pre-flight **FAILed** legs 1+2 (`gamma_eff > 2.5` off-grid on 7/7 broken PAP-861 rows; Option α structurally inadequate — `R_bc:=rOuter` substitution targets inner bolt circle, not chainring outer ring). QA endorsed FAIL with MUST-AMEND on v6 Pass B B6 per-row enumeration.
+10. **THIS REVISION (v6)**: Fold C5 (Option β §3.4.7), C6 (chainring-band gate `bcTc≥35`), B6 (per-row Pass B B6 instrumentation), C7 (PASS criterion) → **route to QA cross-check #6** (file new child under PAP-1485). v5 B3'+B4+B5 and v4 B1+B2 instrumentation carry forward as diagnostic backdrop (Option α stays in spec as tie-wins path; Option β fires only when Option α did not commit).
+11. **NEXT (gated on QA #6 APPROVED)**: Extend `mobile/__tests__/pap1480.preflight.js` inline simulator with Option β (§3.4.7, fires after Option α with v6 conjuncts) + B6 per-row Pass B enumeration. Re-run on full 362-photo corpus + 305-photo AC2 corpus. Defaults: γ_bc=1.3, option_beta=on, all other v5 defaults carry forward.
+12. **v6 PASS criterion** = Pass A 0 broken across all five PAP-861/868/885/889/1059 predicates with Option α + β both active at γ_bc=1.3 AND Pass B B6 `beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2` on the 305-photo AC2 corpus. If FAIL → v7 round OR descope per PAP-1091 A5 hard-exit (Option γ is data-ruled-out per QA #5; remaining channels would need new architectural input).
+13. **THEN (gated on v6 pre-flight PASS)**: Open **Phase-1 calibration child** under PAP-1480 (**6912-cell** sweep with AC2-eliminate-first pruning, on union corpus + AC1 n=24 cohort). Cell-cache + resumable design lifted from `pap1100.aim-prior.js` minus the PAP-1100-specific bounds plumbing. Sweep dimensions include `option_beta ∈ {off, on}` so Phase-1 can measure Option β contribution at each cell.
+14. Pick best cell maximizing AC1-pass while preserving 305-photo AC2 (0 LOSS). Apply A5 hard-exit if best cell fails AC4. Apply AC5 (`beta_regress_correct_to_CW + beta_regress_abstain_to_CW ≤ 2`) at the chosen Phase-1 cell.
+15. **QA cross-check #2** on the chosen cell + parameter values + Phase-1 corpus diff. No `gearCounter.js` edit before this signoff.
+16. PAP-1480 implementation lands as the single coherent commit described in §0 (joint-scan + Option α + Option β + PAP-1100 plumbing deletion in one diff).
+17. QA full sweep + signoff post-implementation → build subtask filed by QA.
