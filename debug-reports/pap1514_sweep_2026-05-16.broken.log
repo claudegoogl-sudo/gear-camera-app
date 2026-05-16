@@ -1,0 +1,170 @@
+
+=== PAP-1514 Phase-1 calibration sweep (v6.1 §4.1) ===
+Baseline corpus: 362/362 photos  Wall: 7322.6s
+AC2 corpus: 362 photos
+AC1 cohort (11T cluster, baseline not-correct): 29 photos
+
+-- Per-photo prep (decode + CLAHE + scoreSpec union) --
+  [25/362] prepared (2387 (photo,R) entries, 19s)
+  [50/362] prepared (4758 (photo,R) entries, 39s)
+  [75/362] prepared (7062 (photo,R) entries, 58s)
+  [100/362] prepared (9423 (photo,R) entries, 76s)
+  [125/362] prepared (11640 (photo,R) entries, 95s)
+  [150/362] prepared (13949 (photo,R) entries, 114s)
+  [175/362] prepared (16255 (photo,R) entries, 133s)
+  [200/362] prepared (18530 (photo,R) entries, 151s)
+  [225/362] prepared (20898 (photo,R) entries, 171s)
+  [250/362] prepared (23207 (photo,R) entries, 189s)
+  [275/362] prepared (25493 (photo,R) entries, 208s)
+  [300/362] prepared (27821 (photo,R) entries, 227s)
+  [325/362] prepared (30078 (photo,R) entries, 246s)
+  [350/362] prepared (32337 (photo,R) entries, 264s)
+Prep complete: 362 photos / 33377 (photo,R) cache entries / 273s
+
+-- Cell sweep: 6912 cells (cache hits will be skipped) --
+  [50/6912] cells run; 0 AC2-pass, 50 eliminated; 0s
+  [100/6912] cells run; 0 AC2-pass, 100 eliminated; 0s
+  [150/6912] cells run; 0 AC2-pass, 150 eliminated; 0s
+  [200/6912] cells run; 0 AC2-pass, 200 eliminated; 1s
+  [250/6912] cells run; 0 AC2-pass, 250 eliminated; 1s
+  [300/6912] cells run; 0 AC2-pass, 300 eliminated; 1s
+  [350/6912] cells run; 0 AC2-pass, 350 eliminated; 1s
+  [400/6912] cells run; 0 AC2-pass, 400 eliminated; 1s
+  [450/6912] cells run; 0 AC2-pass, 450 eliminated; 1s
+  [500/6912] cells run; 0 AC2-pass, 500 eliminated; 1s
+  [550/6912] cells run; 0 AC2-pass, 550 eliminated; 1s
+  [600/6912] cells run; 0 AC2-pass, 600 eliminated; 1s
+  [650/6912] cells run; 0 AC2-pass, 650 eliminated; 2s
+  [700/6912] cells run; 0 AC2-pass, 700 eliminated; 2s
+  [750/6912] cells run; 0 AC2-pass, 750 eliminated; 2s
+  [800/6912] cells run; 0 AC2-pass, 800 eliminated; 2s
+  [850/6912] cells run; 0 AC2-pass, 850 eliminated; 2s
+  [900/6912] cells run; 0 AC2-pass, 900 eliminated; 2s
+  [950/6912] cells run; 0 AC2-pass, 950 eliminated; 2s
+  [1000/6912] cells run; 0 AC2-pass, 1000 eliminated; 2s
+  [1050/6912] cells run; 0 AC2-pass, 1050 eliminated; 2s
+  [1100/6912] cells run; 0 AC2-pass, 1100 eliminated; 3s
+  [1150/6912] cells run; 0 AC2-pass, 1150 eliminated; 3s
+  [1200/6912] cells run; 0 AC2-pass, 1200 eliminated; 3s
+  [1250/6912] cells run; 0 AC2-pass, 1250 eliminated; 3s
+  [1300/6912] cells run; 0 AC2-pass, 1300 eliminated; 3s
+  [1350/6912] cells run; 0 AC2-pass, 1350 eliminated; 3s
+  [1400/6912] cells run; 0 AC2-pass, 1400 eliminated; 3s
+  [1450/6912] cells run; 0 AC2-pass, 1450 eliminated; 3s
+  [1500/6912] cells run; 0 AC2-pass, 1500 eliminated; 3s
+  [1550/6912] cells run; 0 AC2-pass, 1550 eliminated; 3s
+  [1600/6912] cells run; 0 AC2-pass, 1600 eliminated; 4s
+  [1650/6912] cells run; 0 AC2-pass, 1650 eliminated; 4s
+  [1700/6912] cells run; 0 AC2-pass, 1700 eliminated; 4s
+  [1750/6912] cells run; 0 AC2-pass, 1750 eliminated; 4s
+  [1800/6912] cells run; 0 AC2-pass, 1800 eliminated; 4s
+  [1850/6912] cells run; 0 AC2-pass, 1850 eliminated; 4s
+  [1900/6912] cells run; 0 AC2-pass, 1900 eliminated; 4s
+  [1950/6912] cells run; 0 AC2-pass, 1950 eliminated; 4s
+  [2000/6912] cells run; 0 AC2-pass, 2000 eliminated; 4s
+  [2050/6912] cells run; 0 AC2-pass, 2050 eliminated; 5s
+  [2100/6912] cells run; 0 AC2-pass, 2100 eliminated; 5s
+  [2150/6912] cells run; 0 AC2-pass, 2150 eliminated; 5s
+  [2200/6912] cells run; 0 AC2-pass, 2200 eliminated; 5s
+  [2250/6912] cells run; 0 AC2-pass, 2250 eliminated; 5s
+  [2300/6912] cells run; 0 AC2-pass, 2300 eliminated; 5s
+  [2350/6912] cells run; 0 AC2-pass, 2350 eliminated; 5s
+  [2400/6912] cells run; 0 AC2-pass, 2400 eliminated; 5s
+  [2450/6912] cells run; 0 AC2-pass, 2450 eliminated; 5s
+  [2500/6912] cells run; 0 AC2-pass, 2500 eliminated; 6s
+  [2550/6912] cells run; 0 AC2-pass, 2550 eliminated; 6s
+  [2600/6912] cells run; 0 AC2-pass, 2600 eliminated; 6s
+  [2650/6912] cells run; 0 AC2-pass, 2650 eliminated; 6s
+  [2700/6912] cells run; 0 AC2-pass, 2700 eliminated; 6s
+  [2750/6912] cells run; 0 AC2-pass, 2750 eliminated; 6s
+  [2800/6912] cells run; 0 AC2-pass, 2800 eliminated; 6s
+  [2850/6912] cells run; 0 AC2-pass, 2850 eliminated; 6s
+  [2900/6912] cells run; 0 AC2-pass, 2900 eliminated; 6s
+  [2950/6912] cells run; 0 AC2-pass, 2950 eliminated; 7s
+  [3000/6912] cells run; 0 AC2-pass, 3000 eliminated; 7s
+  [3050/6912] cells run; 0 AC2-pass, 3050 eliminated; 7s
+  [3100/6912] cells run; 0 AC2-pass, 3100 eliminated; 7s
+  [3150/6912] cells run; 0 AC2-pass, 3150 eliminated; 7s
+  [3200/6912] cells run; 0 AC2-pass, 3200 eliminated; 7s
+  [3250/6912] cells run; 0 AC2-pass, 3250 eliminated; 7s
+  [3300/6912] cells run; 0 AC2-pass, 3300 eliminated; 7s
+  [3350/6912] cells run; 0 AC2-pass, 3350 eliminated; 8s
+  [3400/6912] cells run; 0 AC2-pass, 3400 eliminated; 8s
+  [3450/6912] cells run; 0 AC2-pass, 3450 eliminated; 8s
+  [3500/6912] cells run; 0 AC2-pass, 3500 eliminated; 8s
+  [3550/6912] cells run; 0 AC2-pass, 3550 eliminated; 8s
+  [3600/6912] cells run; 0 AC2-pass, 3600 eliminated; 8s
+  [3650/6912] cells run; 0 AC2-pass, 3650 eliminated; 8s
+  [3700/6912] cells run; 0 AC2-pass, 3700 eliminated; 8s
+  [3750/6912] cells run; 0 AC2-pass, 3750 eliminated; 8s
+  [3800/6912] cells run; 0 AC2-pass, 3800 eliminated; 9s
+  [3850/6912] cells run; 0 AC2-pass, 3850 eliminated; 9s
+  [3900/6912] cells run; 0 AC2-pass, 3900 eliminated; 9s
+  [3950/6912] cells run; 0 AC2-pass, 3950 eliminated; 9s
+  [4000/6912] cells run; 0 AC2-pass, 4000 eliminated; 9s
+  [4050/6912] cells run; 0 AC2-pass, 4050 eliminated; 9s
+  [4100/6912] cells run; 0 AC2-pass, 4100 eliminated; 9s
+  [4150/6912] cells run; 0 AC2-pass, 4150 eliminated; 9s
+  [4200/6912] cells run; 0 AC2-pass, 4200 eliminated; 9s
+  [4250/6912] cells run; 0 AC2-pass, 4250 eliminated; 10s
+  [4300/6912] cells run; 0 AC2-pass, 4300 eliminated; 10s
+  [4350/6912] cells run; 0 AC2-pass, 4350 eliminated; 10s
+  [4400/6912] cells run; 0 AC2-pass, 4400 eliminated; 10s
+  [4450/6912] cells run; 0 AC2-pass, 4450 eliminated; 10s
+  [4500/6912] cells run; 0 AC2-pass, 4500 eliminated; 10s
+  [4550/6912] cells run; 0 AC2-pass, 4550 eliminated; 10s
+  [4600/6912] cells run; 0 AC2-pass, 4600 eliminated; 10s
+  [4650/6912] cells run; 0 AC2-pass, 4650 eliminated; 11s
+  [4700/6912] cells run; 0 AC2-pass, 4700 eliminated; 11s
+  [4750/6912] cells run; 0 AC2-pass, 4750 eliminated; 12s
+  [4800/6912] cells run; 0 AC2-pass, 4800 eliminated; 13s
+  [4850/6912] cells run; 0 AC2-pass, 4850 eliminated; 13s
+  [4900/6912] cells run; 0 AC2-pass, 4900 eliminated; 14s
+  [4950/6912] cells run; 0 AC2-pass, 4950 eliminated; 14s
+  [5000/6912] cells run; 0 AC2-pass, 5000 eliminated; 16s
+  [5050/6912] cells run; 0 AC2-pass, 5050 eliminated; 16s
+  [5100/6912] cells run; 0 AC2-pass, 5100 eliminated; 17s
+  [5150/6912] cells run; 0 AC2-pass, 5150 eliminated; 18s
+  [5200/6912] cells run; 0 AC2-pass, 5200 eliminated; 19s
+  [5250/6912] cells run; 0 AC2-pass, 5250 eliminated; 19s
+  [5300/6912] cells run; 0 AC2-pass, 5300 eliminated; 20s
+  [5350/6912] cells run; 0 AC2-pass, 5350 eliminated; 21s
+  [5400/6912] cells run; 0 AC2-pass, 5400 eliminated; 22s
+  [5450/6912] cells run; 0 AC2-pass, 5450 eliminated; 22s
+  [5500/6912] cells run; 0 AC2-pass, 5500 eliminated; 23s
+  [5550/6912] cells run; 0 AC2-pass, 5550 eliminated; 23s
+  [5600/6912] cells run; 0 AC2-pass, 5600 eliminated; 24s
+  [5650/6912] cells run; 0 AC2-pass, 5650 eliminated; 24s
+  [5700/6912] cells run; 0 AC2-pass, 5700 eliminated; 25s
+  [5750/6912] cells run; 0 AC2-pass, 5750 eliminated; 26s
+  [5800/6912] cells run; 0 AC2-pass, 5800 eliminated; 27s
+  [5850/6912] cells run; 0 AC2-pass, 5850 eliminated; 28s
+  [5900/6912] cells run; 0 AC2-pass, 5900 eliminated; 28s
+  [5950/6912] cells run; 0 AC2-pass, 5950 eliminated; 30s
+  [6000/6912] cells run; 0 AC2-pass, 6000 eliminated; 30s
+  [6050/6912] cells run; 0 AC2-pass, 6050 eliminated; 31s
+  [6100/6912] cells run; 0 AC2-pass, 6100 eliminated; 31s
+  [6150/6912] cells run; 0 AC2-pass, 6150 eliminated; 33s
+  [6200/6912] cells run; 0 AC2-pass, 6200 eliminated; 33s
+  [6250/6912] cells run; 0 AC2-pass, 6250 eliminated; 34s
+  [6300/6912] cells run; 0 AC2-pass, 6300 eliminated; 34s
+  [6350/6912] cells run; 0 AC2-pass, 6350 eliminated; 35s
+  [6400/6912] cells run; 0 AC2-pass, 6400 eliminated; 35s
+  [6450/6912] cells run; 0 AC2-pass, 6450 eliminated; 36s
+  [6500/6912] cells run; 0 AC2-pass, 6500 eliminated; 37s
+  [6550/6912] cells run; 0 AC2-pass, 6550 eliminated; 38s
+  [6600/6912] cells run; 0 AC2-pass, 6600 eliminated; 38s
+  [6650/6912] cells run; 0 AC2-pass, 6650 eliminated; 39s
+  [6700/6912] cells run; 0 AC2-pass, 6700 eliminated; 40s
+  [6750/6912] cells run; 0 AC2-pass, 6750 eliminated; 41s
+  [6800/6912] cells run; 0 AC2-pass, 6800 eliminated; 41s
+  [6850/6912] cells run; 0 AC2-pass, 6850 eliminated; 42s
+  [6900/6912] cells run; 0 AC2-pass, 6900 eliminated; 43s
+
+Sweep done: 6912 cells run / 0 cached / 43.796s
+AC2 pass:        0
+AC2 eliminated:  6912
+CSV: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1514_sweep_2026-05-16.csv
+
+-- Top 10 AC2-pass cells by AC1 Wilson 95% UB --
+rank  idx   R_lo  R_hi  σR     εabs   εfl    extR  γ_bc  β    rec/N    UB%     a→CW  abs→CW  CW.Δ  rescue
