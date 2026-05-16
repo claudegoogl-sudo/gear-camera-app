@@ -295,22 +295,28 @@ function disposition(tc, actual) {
   if (!tc) return 'abstain';
   return Math.abs(tc - actual) <= 1 ? 'correct' : 'CW';
 }
-function classifyBetaOutcome(currentTc, betaTc, actual) {
-  if (betaTc == null) {
-    const cur = disposition(currentTc, actual);
-    if (cur === 'correct') return 'no_change_correct';
+// F1 (PAP-1526 A1): classify joint α+β+downstream outcome (baseline → final),
+// not β-in-isolation. Compares the production HEAD `baselineTc` against the
+// cell's end-to-end `finalTc`, regardless of which stage changed it.
+function classifyOutcome(baselineTc, finalTc, actual) {
+  const cur = disposition(baselineTc, actual);
+  const nd  = disposition(finalTc, actual);
+  if (nd === 'correct') {
+    return cur === 'correct' ? 'no_change_correct' : 'rescue';
+  }
+  if (nd === 'CW') {
+    if (cur === 'correct') return 'regress_correct→CW';
+    if (cur === 'abstain') return 'regress_abstain→CW';
+    // CW → CW
+    const dOld = Math.abs((baselineTc || 0) - actual);
+    const dNew = Math.abs((finalTc   || 0) - actual);
+    if (dNew > dOld) return 'regress_CW_worse_delta';
     return 'no_change_CW_same_or_better';
   }
-  const cur = disposition(currentTc, actual);
-  const nd  = disposition(betaTc, actual);
-  if (nd === 'correct') return cur === 'correct' ? 'no_change_correct' : 'rescue';
-  // newDisp === 'CW'
-  if (cur === 'correct') return 'regress_correct→CW';
-  if (cur === 'abstain') return 'regress_abstain→CW';
-  const dOld = Math.abs((currentTc || 0) - actual);
-  const dNew = Math.abs(betaTc - actual);
-  if (dNew > dOld) return 'regress_CW_worse_delta';
-  return 'no_change_CW_same_or_better';
+  // nd === 'abstain' — final does NOT produce a confident wrong.
+  // correct→abstain is a soft regression (no CW); falls into the catch-all
+  // along with abstain→abstain and CW→abstain (improvement).
+  return cur === 'correct' ? 'no_change_CW_same_or_better' : 'no_change_CW_same_or_better';
 }
 
 // Downstream abstain after β commit (PAP-961 + PAP-553 mirror).
@@ -366,8 +372,9 @@ function evaluateCellOnPhoto(prep, pre, baseline, actual, cell) {
     if (downstream.fires) finalTc = 0;
   }
   const newDisp = disposition(finalTc, actual);
-  const betaTc = beta.fires ? finalTc : null;
-  const b6Bucket = classifyBetaOutcome(baseline.tc, betaTc, actual);
+  // F1: classify on joint baseline → final transition (α+β+downstream),
+  // not on β-in-isolation.
+  const b6Bucket = classifyOutcome(baseline.tc, finalTc, actual);
   const ac2Loss = baseline.disposition === 'correct' && newDisp === 'CW';
   const recovered = baseline.disposition !== 'correct' && newDisp === 'correct';
   return { newDisp, finalTc, ac2Loss, recovered, b6Bucket, alpha_committed: alphaCommitted, beta_fires: beta.fires };
@@ -483,8 +490,12 @@ describe('PAP-1514 Phase-1 calibration sweep (6912 cells, v6.1 §4.1)', () => {
         gearRCrop: (r.raw && r.raw.gearRadius) ? r.raw.gearRadius : 0,
       };
       photoPre.set(r.stamp, pre);
+      // F3 (PAP-1526 A3): baseline disposition uses strict ±1 via the same
+      // `disposition()` function the classifier uses, not the runner's
+      // bucket-aware `r.correct` (which can permit ±2 / chainring-aware).
+      // Treat `r.abstain` as `r.tc === 0` (disposition() handles it).
       photoBaseline.set(r.stamp, {
-        tc: r.tc, disposition: r.abstain ? 'abstain' : (r.correct ? 'correct' : 'CW'),
+        tc: r.tc, disposition: disposition(r.tc, r.actual),
       });
       // Compute union of all radii for this photo across the 9 (R_lo, R_hi) combos.
       const { rgba, w, h } = runner.loadOrDecodeRgba(r.photo, r.stamp);
@@ -573,8 +584,9 @@ describe('PAP-1514 Phase-1 calibration sweep (6912 cells, v6.1 §4.1)', () => {
         regress_CW_worse_delta: 0, no_change_correct: 0, no_change_CW_same_or_better: 0,
       };
       let alpha_commits = 0, beta_fires = 0;
-      let ac2_eliminated = false;
-      // AC2-eliminate-first.
+      // F2 (PAP-1526 A2): evaluate ALL photos (no eliminate-first break);
+      // ac2_LOSS stays as a diagnostic total. Per-bucket caps below decide
+      // elimination per spec v6.1 §6 AC5.
       for (const r of ac2Photos) {
         const prep = photoPreps.get(r.stamp);
         const pre  = photoPre.get(r.stamp);
@@ -586,10 +598,13 @@ describe('PAP-1514 Phase-1 calibration sweep (6912 cells, v6.1 §4.1)', () => {
         if (ev.ac2Loss) {
           ac2_LOSS++;
           if (!ac2_first_loss_stamp) ac2_first_loss_stamp = r.stamp;
-          ac2_eliminated = true;
-          break;
         }
       }
+      // F2: elimination = any per-bucket cap exceeded (spec v6.1 §6 AC5).
+      const cap_correct = b6['regress_correct→CW']    <= 1;
+      const cap_abstain = b6['regress_abstain→CW']    <= 2;
+      const cap_worse   = b6.regress_CW_worse_delta    <= 1;
+      const ac2_eliminated = !(cap_correct && cap_abstain && cap_worse);
       let ac1_N = 0, ac1_recovered = 0, ac1_wilson_ub_pct = 0;
       if (!ac2_eliminated) {
         for (const r of ac1Photos) {
@@ -636,23 +651,87 @@ describe('PAP-1514 Phase-1 calibration sweep (6912 cells, v6.1 §4.1)', () => {
     pushLine(`AC2 eliminated:  ${cellsAC2Eliminated}`);
     pushLine(`CSV: ${csvPath}`);
 
-    // ── Step 4: rank AC2-pass cells by AC1 Wilson UB ─────────────────
-    bestAc1.sort((a, b) => (b.ac1_wilson_ub_pct || 0) - (a.ac1_wilson_ub_pct || 0));
+    // ── A5: distribution-first reporting (PAP-1106/PAP-1494 precedent) ──
+    // Survivor marginals lead. If 0 survivors, full-grid b6 histogram so
+    // we can see which cap hit hardest (architectural signal).
+    const allEntries = Object.values(cellsCache);
+    const survivors  = allEntries.filter(e => !e.ac2_eliminated);
     pushLine('');
-    pushLine('-- Top 10 AC2-pass cells by AC1 Wilson 95% UB --');
-    pushLine('rank  idx   R_lo  R_hi  σR     εabs   εfl    extR  γ_bc  β    rec/N    UB%     a→CW  abs→CW  CW.Δ  rescue');
-    for (let i = 0; i < Math.min(10, bestAc1.length); i++) {
-      const e = bestAc1[i];
-      pushLine(
-        `  ${String(i+1).padStart(2)}  ${String(e.cell_idx).padStart(4)}  ` +
-        `${e.R_lo.toFixed(2)}  ${e.R_hi.toFixed(2)}  ${e.sigma_R.toFixed(2)}  ` +
-        `${e.eps_abs.toFixed(3)} ${e.eps_floor.toFixed(2)}   ${e.extremeR}     ${e.gamma_bc.toFixed(1)}   ${e.option_beta}    ` +
-        `${String(e.ac1_recovered).padStart(2)}/${String(e.ac1_N).padStart(2)}    ${(e.ac1_wilson_ub_pct).toFixed(1).padStart(5)}    ` +
-        `${String(e.b6_regress_correct_to_CW).padStart(3)}    ${String(e.b6_regress_abstain_to_CW).padStart(3)}    ${String(e.b6_regress_CW_worse_delta).padStart(3)}    ${String(e.b6_rescue).padStart(3)}`
-      );
+    pushLine('-- A5 marginal distribution of surviving cells by axis --');
+    pushLine(`  total cells in grid: ${allEntries.length}   survivors: ${survivors.length}`);
+    if (survivors.length > 0) {
+      const printAxis = (label, key, fmt = (v)=>String(v)) => {
+        const counts = new Map();
+        for (const s of survivors) {
+          const k = s[key];
+          counts.set(k, (counts.get(k) || 0) + 1);
+        }
+        const keys = [...counts.keys()].sort((a,b)=>(a>b?1:a<b?-1:0));
+        const parts = keys.map(k => `${fmt(k)}:${counts.get(k)}`);
+        pushLine(`  ${label.padEnd(13)} ${parts.join('  ')}`);
+      };
+      printAxis('R_lo',         'R_lo',        v => v.toFixed(2));
+      printAxis('R_hi',         'R_hi',        v => v.toFixed(2));
+      printAxis('sigma_R',      'sigma_R',     v => v.toFixed(2));
+      printAxis('eps_abs',      'eps_abs',     v => v.toFixed(3));
+      printAxis('eps_floor',    'eps_floor',   v => v.toFixed(2));
+      printAxis('extremeR',     'extremeR');
+      printAxis('gamma_bc',     'gamma_bc',    v => v.toFixed(1));
+      printAxis('option_beta',  'option_beta');
+    } else {
+      pushLine('  (no survivors — see full-grid b6 histogram below for cap-pressure signal)');
     }
 
-    // ── Step 5: AC5 per-bucket cap evaluation on top cell ─────────────
+    // Full-grid b6 histogram (always emitted; critical when 0 survivors).
+    pushLine('');
+    pushLine('-- A5 full-grid b6 bucket histogram (all evaluated cells) --');
+    const grid = { rescue: 0, 'regress_correct→CW': 0, 'regress_abstain→CW': 0,
+                   regress_CW_worse_delta: 0, no_change_correct: 0, no_change_CW_same_or_better: 0 };
+    // Track cells failing each cap.
+    let fail_correct = 0, fail_abstain = 0, fail_worse = 0;
+    let ac2_loss_sum = 0;
+    for (const e of allEntries) {
+      grid.rescue                        += e.b6_rescue || 0;
+      grid['regress_correct→CW']         += e.b6_regress_correct_to_CW || 0;
+      grid['regress_abstain→CW']         += e.b6_regress_abstain_to_CW || 0;
+      grid.regress_CW_worse_delta        += e.b6_regress_CW_worse_delta || 0;
+      grid.no_change_correct             += e.b6_no_change_correct || 0;
+      grid.no_change_CW_same_or_better   += e.b6_no_change_CW_same_or_better || 0;
+      if ((e.b6_regress_correct_to_CW || 0)  > 1) fail_correct++;
+      if ((e.b6_regress_abstain_to_CW || 0)  > 2) fail_abstain++;
+      if ((e.b6_regress_CW_worse_delta || 0) > 1) fail_worse++;
+      ac2_loss_sum += e.ac2_LOSS || 0;
+    }
+    for (const [k, v] of Object.entries(grid)) {
+      pushLine(`  ${k.padEnd(34)} ${String(v).padStart(8)}`);
+    }
+    pushLine('');
+    pushLine('-- A5 cells failing each AC5 cap (cap-pressure ranking) --');
+    pushLine(`  regress_correct→CW   > 1  (worst cap):  ${fail_correct} / ${allEntries.length}`);
+    pushLine(`  regress_abstain→CW   > 2:               ${fail_abstain} / ${allEntries.length}`);
+    pushLine(`  regress_CW_worse_delta > 1:             ${fail_worse} / ${allEntries.length}`);
+    pushLine(`  diagnostic ac2_LOSS sum across grid:    ${ac2_loss_sum}`);
+
+    // ── Top-N AC2-pass cells by AC1 Wilson UB (only when >0 survivors) ──
+    bestAc1.sort((a, b) => (b.ac1_wilson_ub_pct || 0) - (a.ac1_wilson_ub_pct || 0));
+    if (bestAc1.length > 0) {
+      const N = bestAc1.length > 50 ? 5 : 10;
+      pushLine('');
+      pushLine(`-- Top ${N} AC2-pass cells by AC1 Wilson 95% UB --`);
+      pushLine('rank  idx   R_lo  R_hi  σR     εabs   εfl    extR  γ_bc  β    rec/N    UB%     a→CW  abs→CW  CW.Δ  rescue');
+      for (let i = 0; i < Math.min(N, bestAc1.length); i++) {
+        const e = bestAc1[i];
+        pushLine(
+          `  ${String(i+1).padStart(2)}  ${String(e.cell_idx).padStart(4)}  ` +
+          `${e.R_lo.toFixed(2)}  ${e.R_hi.toFixed(2)}  ${e.sigma_R.toFixed(2)}  ` +
+          `${e.eps_abs.toFixed(3)} ${e.eps_floor.toFixed(2)}   ${e.extremeR}     ${e.gamma_bc.toFixed(1)}   ${e.option_beta}    ` +
+          `${String(e.ac1_recovered).padStart(2)}/${String(e.ac1_N).padStart(2)}    ${(e.ac1_wilson_ub_pct).toFixed(1).padStart(5)}    ` +
+          `${String(e.b6_regress_correct_to_CW).padStart(3)}    ${String(e.b6_regress_abstain_to_CW).padStart(3)}    ${String(e.b6_regress_CW_worse_delta).padStart(3)}    ${String(e.b6_rescue).padStart(3)}`
+        );
+      }
+    }
+
+    // ── AC5 per-bucket cap evaluation on top cell ─────────────
     if (bestAc1.length > 0) {
       const top = bestAc1[0];
       const ac5_correct = top.b6_regress_correct_to_CW <= 1;
