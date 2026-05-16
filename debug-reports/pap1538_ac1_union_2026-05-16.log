@@ -1,0 +1,81 @@
+
+=== PAP-1537 / PAP-1538 — chainring-abstain AC1 fire-rate sweep ===
+predicate A (regime):  peakTc>=30 OR fft90tc>=30 OR opTc>=30 OR bcTc>=30 OR bcPeaks>=30
+predicate B (union):   A OR methodUsed ⊇ {pap961,pap963,pap1059}  ← PAP-1538 production gate
+
+[pap1537-ac1] SCOPE=targeted running 80/362 labeled photos
+  [20/80] 420s
+  [40/80] 841s
+  [60/80] 1268s
+  [80/80] 1683s
+
+[Chainring corpus] 80 photos (actual >= 30T)
+
+[A] regime alone : 41/80  (51.2%)
+[B] union (PAP-1538): 41/80  (51.2%)
+
+=== per-bucket fire rate (A=regime / B=union) ===
+   32T  A=2/2 (100%)  B=2/2 (100%)
+   34T  A=2/4 (50%)  B=2/4 (50%)
+   36T  A=7/10 (70%)  B=7/10 (70%)
+   42T  A=15/27 (56%)  B=15/27 (56%)
+   48T  A=7/7 (100%)  B=7/7 (100%)
+   50T  A=6/7 (86%)  B=6/7 (86%)
+   51T  A=0/1 (0%)  B=0/1 (0%)
+   52T  A=2/22 (9%)  B=2/22 (9%)
+
+=== rows rescued by method-tag union (A miss → B fire) ===
+
+=== final miss rows (union DID NOT fire) ===
+  2026-04-24_10-54-55-930Z  actual=42  tc=12  conf=0.36  peak=12 fft90=12 op=14 bc=13(pk=14)  m=fft90-fallback
+  2026-04-25_09-03-13-830Z  actual=51  tc=14  conf=0.04  peak=0 fft90=14 op=26 bc=11(pk=4)  m=fft90-fallback
+  2026-04-26_08-54-51-262Z  actual=52  tc=28  conf=0.68  peak=0 fft90=28 op=15 bc=28(pk=28)  m=bc-consensus
+  2026-04-27_13-21-00-705Z  actual=52  tc=0  conf=0.00  peak=10 fft90=10 op=15 bc=11(pk=12)  m=fft-agreement+pap474-abstain
+  2026-04-27_13-24-12-798Z  actual=52  tc=0  conf=0.00  peak=10 fft90=10 op=10 bc=11(pk=15)  m=low-conf-consensus+pap474-abstain
+  2026-04-27_13-27-43-775Z  actual=52  tc=0  conf=0.00  peak=10 fft90=10 op=10 bc=12(pk=12)  m=fft-agreement+pap474-abstain
+  2026-04-28_06-50-20-391Z  actual=42  tc=11  conf=0.36  peak=11 fft90=10 op=12 bc=10(pk=1)  m=low-conf-consensus
+  2026-04-28_06-52-14-899Z  actual=42  tc=10  conf=0.07  peak=0 fft90=10 op=15 bc=10(pk=1)  m=fft90-fallback
+  2026-04-28_06-54-24-694Z  actual=42  tc=0  conf=0.00  peak=10 fft90=10 op=12 bc=10(pk=2)  m=fft90-fallback+pap474-abstain
+  2026-04-28_06-56-36-143Z  actual=52  tc=11  conf=0.16  peak=0 fft90=11 op=10 bc=11(pk=10)  m=bc-consensus
+  2026-04-28_06-58-55-390Z  actual=52  tc=0  conf=0.00  peak=10 fft90=12 op=26 bc=12(pk=18)  m=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-28_07-01-23-211Z  actual=52  tc=0  conf=0.00  peak=10 fft90=10 op=13 bc=10(pk=3)  m=fft90-fallback+pap474-abstain
+  2026-04-28_07-03-25-120Z  actual=42  tc=0  conf=0.00  peak=10 fft90=10 op=13 bc=10(pk=3)  m=fft-agreement+pap474-abstain
+  2026-04-28_14-00-29-906Z  actual=42  tc=13  conf=0.00  peak=12 fft90=10 op=14 bc=10(pk=13)  m=low-conf-consensus
+  2026-04-28_18-27-23-983Z  actual=52  tc=10  conf=0.11  peak=0 fft90=10 op=14 bc=11(pk=4)  m=fft90-fallback
+  2026-04-28_18-29-55-917Z  actual=52  tc=11  conf=0.20  peak=11 fft90=10 op=11 bc=10(pk=16)  m=low-conf-consensus
+  2026-04-28_18-34-58-887Z  actual=42  tc=12  conf=0.01  peak=16 fft90=12 op=10 bc=10(pk=4)  m=fft90-fallback
+  2026-04-29_05-33-41-732Z  actual=52  tc=11  conf=0.41  peak=13 fft90=11 op=10 bc=12(pk=5)  m=fft90-fallback
+  2026-04-29_05-35-39-053Z  actual=52  tc=10  conf=0.04  peak=0 fft90=10 op=15 bc=10(pk=1)  m=fft90-fallback
+  2026-04-29_05-37-44-380Z  actual=52  tc=10  conf=0.25  peak=0 fft90=10 op=11 bc=10(pk=1)  m=fft90-fallback
+  2026-04-30_05-29-59-315Z  actual=52  tc=0  conf=0.00  peak=10 fft90=10 op=14 bc=10(pk=1)  m=fft90-fallback+pap474-abstain
+  2026-04-30_05-31-33-683Z  actual=52  tc=11  conf=0.40  peak=11 fft90=11 op=15 bc=11(pk=5)  m=fft-agreement
+  2026-04-30_05-34-26-023Z  actual=42  tc=10  conf=0.06  peak=0 fft90=10 op=12 bc=10(pk=4)  m=fft90-fallback
+  2026-04-30_05-37-41-094Z  actual=42  tc=10  conf=0.12  peak=11 fft90=10 op=10 bc=11(pk=4)  m=low-conf-consensus
+  2026-04-30_10-09-16-909Z  actual=34  tc=11  conf=0.51  peak=11 fft90=11 op=12 bc=13(pk=6)  m=fft-agreement
+  2026-04-30_10-14-55-670Z  actual=34  tc=11  conf=0.00  peak=14 fft90=11 op=24 bc=10(pk=5)  m=fft90-fallback
+  2026-04-30_11-31-00-084Z  actual=42  tc=0  conf=0.00  peak=10 fft90=10 op=15 bc=18(pk=11)  m=fft-agreement+pap474-abstain
+  2026-04-30_11-35-41-631Z  actual=42  tc=0  conf=0.00  peak=10 fft90=10 op=10 bc=11(pk=13)  m=bc-consensus+pap632-fft-floor-abstain
+  2026-04-30_20-03-52-567Z  actual=52  tc=10  conf=0.15  peak=15 fft90=10 op=13 bc=10(pk=1)  m=fft90-fallback
+  2026-04-30_20-09-43-249Z  actual=50  tc=16  conf=0.32  peak=14 fft90=16 op=10 bc=10(pk=10)  m=fft90-fallback
+  2026-05-01_08-22-17-365Z  actual=52  tc=11  conf=0.00  peak=0 fft90=11 op=17 bc=10(pk=1)  m=fft90-fallback
+  2026-05-01_08-24-07-480Z  actual=52  tc=13  conf=0.07  peak=0 fft90=13 op=10 bc=15(pk=1)  m=fft90-fallback
+  2026-05-01_08-26-39-688Z  actual=52  tc=10  conf=0.00  peak=0 fft90=10 op=17 bc=11(pk=3)  m=fft90-fallback
+  2026-05-01_09-07-12-086Z  actual=42  tc=11  conf=0.00  peak=0 fft90=11 op=10 bc=10(pk=0)  m=fft90-fallback
+  2026-05-01_15-12-33-142Z  actual=52  tc=13  conf=0.06  peak=0 fft90=13 op=13 bc=11(pk=4)  m=fft90-fallback
+  2026-05-01_15-14-13-835Z  actual=52  tc=13  conf=0.07  peak=0 fft90=13 op=10 bc=11(pk=4)  m=fft90-fallback
+  2026-05-04_11-44-37-757Z  actual=36  tc=28  conf=0.17  peak=11 fft90=12 op=28 bc=12(pk=23)  m=fft90-fallback+large-op-override
+  2026-05-04_11-46-43-304Z  actual=36  tc=22  conf=0.02  peak=0 fft90=10 op=22 bc=16(pk=15)  m=fft90-fallback+large-op-override
+  2026-05-04_11-58-49-079Z  actual=36  tc=10  conf=0.00  peak=0 fft90=10 op=15 bc=10(pk=3)  m=fft90-fallback
+
+=== AC1 GATE (PAP-1538 production gate is B) ===
+  [A] regime alone   >= 90% : 51.2% → FAIL
+  [B] union          >= 90% : 51.2% → FAIL
+PASS mobile/__tests__/pap1537.ac1.js (1683.283 s)
+  PAP-1537 chainring-abstain AC1 sweep
+    ✓ fire rate on 80-photo chainring (>=30T) corpus (1683073 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        1683.343 s
+Ran all test suites.

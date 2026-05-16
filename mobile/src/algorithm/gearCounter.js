@@ -3226,6 +3226,26 @@ export async function countTeeth(photoUri, signal, opts) {
     );
   }
 
+  // PAP-1538 (PAP-1536 amendment): mirror the harness path's methodUsed
+  // enrichment (see countTeethFromRgba ~line 3471) so the production UX can
+  // OR chainringRegime with chainring-specific abstain tags.  PAP-1537
+  // cross-check measured chainringRegime alone fires on only 51.2% of the
+  // 80-photo chainring corpus (big-cluster 42T/52T misses have all 5 FFT
+  // channels collapsed to small-cassette range); the union with method
+  // tags is needed to hit the AC1 ≥90% gate.  No algorithm change —
+  // both the predicates and console.log fires above already exist.
+  let methodUsed = r.methodUsed;
+  if (radiusSanityAbstain && campaBoltAbstain) {
+    methodUsed = `${methodUsed}+pap963-campa-bolt-abstain`;
+  }
+  if (radiusSanityAbstain && aimPriorAbstain) {
+    methodUsed = `${methodUsed}+pap961-aim-circle-prior-abstain`;
+  }
+  if (chainringTcConfirmed
+      && (radiusSanityFires || radialChainringFires || bcIsolatedHighDelta)) {
+    methodUsed = `${methodUsed}+pap1059-chainring-tc-confirmed`;
+  }
+
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
@@ -3248,10 +3268,12 @@ export async function countTeeth(photoUri, signal, opts) {
     // so the UX layer can show a "Chainring not supported in v1" abstain
     // screen and emit telemetry.  No algorithm behaviour change — this is
     // a read-only export of internals already computed above.  Consumers:
-    //   • ResultScreen.jsx renders chainring abstain when chainringRegime.
+    //   • ResultScreen.jsx renders chainring abstain when chainringRegime
+    //     OR methodUsed includes pap961/pap963/pap1059 (PAP-1538 union).
     //   • chainringAbstainTelemetry uploads {aimR, peakR, ratio, channels}.
     chainringRegime,
     aimR,
+    methodUsed,
   };
 }
 

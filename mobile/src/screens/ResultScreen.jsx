@@ -76,7 +76,29 @@ function useCountUp(target) {
  */
 export default function ResultScreen({ navigation, route }) {
   const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected, algoDiag } = route.params ?? {};
-  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset, chainringRegime, aimR, peakR } = useGearStore();
+  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset, chainringRegime, aimR, peakR, methodUsed } = useGearStore();
+
+  // PAP-1538 (PAP-1536 amendment): chainringRegime alone fires on only
+  // 51.2% of the 80-photo chainring (≥30T) training corpus (PAP-1537
+  // cross-check FAIL on AC1 ≥90% gate). The big-cluster misses (42T,
+  // 52T) have every FFT channel collapsed to small-cassette range, so no
+  // threshold tuning rescues them — but the chainring-specific abstain
+  // method tags (pap961-aim-circle-prior-abstain / pap963-campa-bolt-
+  // abstain / pap1059-chainring-tc-confirmed) fire orthogonally. OR
+  // them with chainringRegime to surface the chainring abstain UX on
+  // any chainring-scale evidence (regime threshold OR method-level
+  // abstain decision). Mechanical, no algorithm change.
+  //
+  // PAP-1538: AC1 (≥90% chainring fire rate) deferred to D-track —
+  // CEO routing in flight under PAP-1534/PAP-1535. Today this union is
+  // mathematically identical to chainringRegime alone (each method tag
+  // already contains a ≥30 channel gate, so they are subsets); the
+  // plumbing is intentional so a future D-track rescue method tag can
+  // lift AC1 without re-touching the UI.
+  const chainringAbstain = chainringRegime
+    || methodUsed?.includes('pap961-aim-circle-prior-abstain')
+    || methodUsed?.includes('pap963-campa-bolt-abstain')
+    || methodUsed?.includes('pap1059-chainring-tc-confirmed');
 
   // PAP-622: Transform algorithm coordinates (relative to original uncropped
   // photo) into aim-circle-crop space for the overlay.  The displayed photo is
@@ -116,7 +138,7 @@ export default function ResultScreen({ navigation, route }) {
   // Fire once per result via toothCount-keyed effect — re-renders during
   // animation must not re-emit.
   useEffect(() => {
-    if (!chainringRegime) return;
+    if (!chainringAbstain) return;
     if (toothCount == null) return;
     emitChainringAbstainTelemetry({
       aimR,
@@ -125,7 +147,7 @@ export default function ResultScreen({ navigation, route }) {
       confidence,
       channels: algoDiag ?? null,
     });
-  }, [chainringRegime, toothCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chainringAbstain, toothCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Low-confidence + out-of-range toasts
   // PAP-1536: suppress generic abstain toasts when chainring regime is the
@@ -133,7 +155,7 @@ export default function ResultScreen({ navigation, route }) {
   // situation, and the low-conf toast would double-message.
   const [briefToast, setBriefToast] = useState(null);
   useEffect(() => {
-    if (chainringRegime) return;
+    if (chainringAbstain) return;
     if (lowConf) {
       setBriefToast('Low confidence — try better lighting or a straighter angle');
       const t = setTimeout(() => setBriefToast(null), 1000);
@@ -141,7 +163,7 @@ export default function ResultScreen({ navigation, route }) {
     } else if (outOfRange) {
       showToast('Tooth count outside expected range (10–65T) — verify manually');
     }
-  }, [lowConf, outOfRange, chainringRegime]);
+  }, [lowConf, outOfRange, chainringAbstain]);
 
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: panelY.value }],
@@ -215,7 +237,7 @@ export default function ResultScreen({ navigation, route }) {
           {/* PAP-1536: suppress the tick overlay when chainring abstain
               fires — drawing N ticks over a chainring image while telling
               the user "chainring not supported" sends mixed signals. */}
-          {toothCount != null && overlayContour && !chainringRegime && (
+          {toothCount != null && overlayContour && !chainringAbstain && (
             <GearContourOverlay
               width={width}
               height={imageHeight}
@@ -245,14 +267,17 @@ export default function ResultScreen({ navigation, route }) {
             <Text style={styles.errorHint}>Centre the gear and try again in good lighting.</Text>
           </View>
 
-        ) : chainringRegime ? (
+        ) : chainringAbstain ? (
           // PAP-1536: chainring (30–60T) descoped from v1. Per PAP-1535
           // routing variant (a): show an explicit "not supported" screen
           // instead of a count so the user knows v1 supports cassettes only.
+          // PAP-1538 (AC3): unify floor with the outOfSupportedBox copy
+          // (PAP-554 already shipped "Reliable detection: 11–28T") — pick
+          // 11T as the single supported-range floor across both panels.
           <View style={styles.chainringAbstainBox} testID="chainring-abstain-panel">
             <Text style={styles.chainringTitle}>Chainring not supported in v1</Text>
             <Text style={styles.chainringBody}>
-              This looks like a chainring (the larger gear at the front). v1 of the gear counter supports cassettes (rear gears) only — tooth counts 9–28T.
+              This looks like a chainring (the larger gear at the front). v1 of the gear counter supports cassettes (rear gears) only — tooth counts 11–28T.
             </Text>
             <Text style={styles.chainringHint}>
               Try aiming at one of the rear gears, or come back in a future version for chainring support.
@@ -306,7 +331,7 @@ export default function ResultScreen({ navigation, route }) {
           <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
             {/* PAP-1536: relabel Reset → "Try a different gear" when in the
                 chainring abstain UX so the CTA matches the abstain copy. */}
-            <Text style={styles.resetText}>{chainringRegime ? 'Try a different gear' : 'Reset'}</Text>
+            <Text style={styles.resetText}>{chainringAbstain ? 'Try a different gear' : 'Reset'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

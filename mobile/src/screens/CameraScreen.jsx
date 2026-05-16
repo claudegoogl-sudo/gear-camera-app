@@ -341,6 +341,10 @@ export default function CameraScreen({ navigation }) {
         chainringRegime: result.chainringRegime ?? false,
         aimR: result.aimR ?? null,
         peakR: result.peakR ?? null,
+        // PAP-1538: enriched methodUsed tag — ResultScreen ORs
+        // chainringRegime with pap961/pap963/pap1059 tags to lift the
+        // chainring abstain fire rate ≥90% on the 80-photo corpus.
+        methodUsed: result.methodUsed ?? null,
       });
 
       navigation.navigate('Result', {
@@ -363,6 +367,9 @@ export default function CameraScreen({ navigation }) {
           // surfaced for the chainring abstain UX gate and telemetry.
           chainringRegime: result.chainringRegime ?? false,
           aimR: result.aimR ?? null,
+          // PAP-1538: methodUsed tag carried into algoDiag for downstream
+          // telemetry / debug JSON consumers that don't read the store.
+          methodUsed: result.methodUsed ?? null,
         },
       });
     } catch (e) {

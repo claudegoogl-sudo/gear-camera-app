@@ -18,13 +18,20 @@ const useGearStore = create((set) => ({
   // PAP-1536: aim-circle prior reading + chosen-radius for telemetry payload.
   aimR: null,
   peakR: null,
+  // PAP-1538: enriched methodUsed tag from countTeeth so the chainring
+  // abstain UX can OR chainringRegime with pap961/pap963/pap1059 method
+  // tags.  PAP-1537 cross-check measured chainringRegime alone fires on
+  // 51.2% of the 80-photo chainring corpus (42T/52T misses have all 5
+  // FFT channels collapsed to small-cassette range); union with method
+  // tags is needed to hit the AC1 ≥90% gate.
+  methodUsed: null,
   isProcessing: false,    // true while algorithm is running
   error: null,            // string | null
 
   // Actions
   setProcessing: (value) => set({ isProcessing: value, error: null }),
 
-  setResult: ({ toothCount, confidence, gearContour, algorithmRuntimeMs, innerContourSuspected, chainringRegime, aimR, peakR }) =>
+  setResult: ({ toothCount, confidence, gearContour, algorithmRuntimeMs, innerContourSuspected, chainringRegime, aimR, peakR, methodUsed }) =>
     set({
       toothCount,
       confidence,
@@ -34,6 +41,7 @@ const useGearStore = create((set) => ({
       chainringRegime: chainringRegime ?? false,
       aimR: aimR ?? null,
       peakR: peakR ?? null,
+      methodUsed: methodUsed ?? null,
       isProcessing: false,
       error: null,
     }),
@@ -42,7 +50,7 @@ const useGearStore = create((set) => ({
     set({ error: message, isProcessing: false }),
 
   reset: () =>
-    set({ toothCount: null, confidence: null, gearContour: null, algorithmRuntimeMs: null, innerContourSuspected: false, chainringRegime: false, aimR: null, peakR: null, isProcessing: false, error: null }),
+    set({ toothCount: null, confidence: null, gearContour: null, algorithmRuntimeMs: null, innerContourSuspected: false, chainringRegime: false, aimR: null, peakR: null, methodUsed: null, isProcessing: false, error: null }),
 }));
 
 export default useGearStore;
