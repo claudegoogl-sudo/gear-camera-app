@@ -88,8 +88,8 @@ if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJEC
     "$SENTRY_CLI" sourcemaps upload \
       --release "$BUILD_LABEL" \
       --strip-prefix "$MOBILE_DIR" \
-      "$ANDROID_DIR/app/build/generated/assets/createBundleReleaseJsAndAssets" \
-      "$ANDROID_DIR/app/build/intermediates/sourcemaps/react/release" 2>&1
+      "$ANDROID_DIR/app/build/generated/assets/createBundleDebugJsAndAssets" \
+      "$ANDROID_DIR/app/build/intermediates/sourcemaps/react/debug" 2>&1
   ) || echo "[build] WARNING: Sentry sourcemap upload failed (non-fatal)." >&2
 else
   echo "[build] Skipping Sentry sourcemap upload (SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT or sentry-cli missing)."
