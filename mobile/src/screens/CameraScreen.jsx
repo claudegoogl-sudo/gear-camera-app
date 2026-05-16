@@ -173,7 +173,17 @@ export default function CameraScreen({ navigation }) {
   const mainDevice = useCameraDevice('back');
   const [wideAngleFailed, setWideAngleFailed] = useState(false);
   const wideAngleFailedRef = useRef(false);
-  const device = (!wideAngleFailed && wideAngleDevice) ? wideAngleDevice : mainDevice;
+  // PAP-1551: prefer wide-angle for FOV, but fall back to main camera when the
+  // wide-angle physical device doesn't expose the flash unit and the main
+  // camera does.  On several Android OEMs (b125 board feedback) the wide-angle
+  // lens reports hasTorch=false while the standard back camera supports torch
+  // — torch is required for low-light cassette aiming so torch availability
+  // wins over FOV in that asymmetric case.  When both have or both lack torch
+  // we keep the original wide-angle preference.
+  const wideAngleHasTorch = wideAngleDevice?.hasTorch === true;
+  const mainHasTorch = mainDevice?.hasTorch === true;
+  const wideAngleUsable = !wideAngleFailed && wideAngleDevice && (wideAngleHasTorch || !mainHasTorch);
+  const device = wideAngleUsable ? wideAngleDevice : mainDevice;
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -618,7 +628,20 @@ export default function CameraScreen({ navigation }) {
         outputOrientation="preview"
         frameProcessor={frameProcessor}
         onInitialized={() => {
-          cameraEventsRef.current.push({ type: 'initialized', ts: new Date().toISOString(), retryKey, deviceId: device?.id ?? null, alreadyReady: isCameraReadyRef.current, hasTorch: !!device?.hasTorch, hasFlash: !!device?.hasFlash });
+          cameraEventsRef.current.push({
+            type: 'initialized',
+            ts: new Date().toISOString(),
+            retryKey,
+            deviceId: device?.id ?? null,
+            alreadyReady: isCameraReadyRef.current,
+            hasTorch: !!device?.hasTorch,
+            hasFlash: !!device?.hasFlash,
+            // PAP-1551: capture both device capabilities so QA can confirm
+            // which branch of the wide-vs-main torch-aware selection fired.
+            wideAngleHasTorch: !!wideAngleDevice?.hasTorch,
+            mainHasTorch: !!mainDevice?.hasTorch,
+            selectedWideAngle: !!(wideAngleUsable && wideAngleDevice && device?.id === wideAngleDevice.id),
+          });
           // Guard against spurious duplicate onInitialized from VisionCamera.
           // All state updates are inside the guard to avoid re-renders that
           // would recreate the frameProcessor reference and trigger another
