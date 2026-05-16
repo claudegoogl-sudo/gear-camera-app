@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 # build-debug.sh — Stamp build metadata, run Gradle debug build, archive APK,
-#                   and upload to GitHub Releases.
+#                   upload source maps to Sentry, and publish APK to GitHub
+#                   Releases.
 #
 # Usage: ./scripts/build-debug.sh
 # Run from the repo root.
 #
-# Env: GITHUB_PAT or EXPO_PUBLIC_GITHUB_TOKEN — GitHub personal access token
-#      for release uploads. Loaded from .env if present. If unset, the build
-#      succeeds locally but the release upload is skipped.
+# Env (loaded from .env if present):
+#   - GITHUB_PAT / GITHUB_TOKEN  Operator-side PAT for `gh release create`.
+#                                Only used here on the build host — NEVER
+#                                shipped in the APK (PAP-1543/PAP-1463).
+#   - SENTRY_AUTH_TOKEN          sentry-cli source-map upload auth.
+#   - SENTRY_ORG / SENTRY_PROJECT  org/project slugs for sentry-cli.
 
 set -euo pipefail
 
@@ -26,8 +30,11 @@ if [[ -f "$REPO_ROOT/.env" ]]; then
   set +a
 fi
 
-# Resolve GitHub token (GITHUB_PAT takes precedence)
-GH_TOKEN="${GITHUB_PAT:-${EXPO_PUBLIC_GITHUB_TOKEN:-${GITHUB_TOKEN:-}}}"
+# Resolve GitHub token for release uploads (operator-side only — the on-device
+# upload path moved to Sentry in PAP-1543).  EXPO_PUBLIC_GITHUB_TOKEN is no
+# longer the canonical name but kept here for backwards-compat with older .env
+# files.
+GH_TOKEN="${GITHUB_PAT:-${GITHUB_TOKEN:-${EXPO_PUBLIC_GITHUB_TOKEN:-}}}"
 
 # ── Derive version + build number ────────────────────────────────────────────
 VERSION=$(node -p "require('$MOBILE_DIR/package.json').version")
@@ -65,6 +72,27 @@ APK_SRC=$(find "$ANDROID_DIR/app/build/outputs/apk/debug" -name "*.apk" | head -
 if [[ -z "$APK_SRC" ]]; then
   echo "[build] ERROR: No APK found after build" >&2
   exit 1
+fi
+
+# ── Sentry source-map upload (PAP-1543) ───────────────────────────────────────
+# Lets the Sentry stack trace UI map minified bundle frames back to source.
+# Non-fatal if creds are missing or the upload fails — the APK still ships.
+SENTRY_CLI="$MOBILE_DIR/node_modules/@sentry/cli/bin/sentry-cli"
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" && -x "$SENTRY_CLI" ]]; then
+  echo "[build] Uploading source maps to Sentry (release=$BUILD_LABEL)…"
+  (
+    cd "$MOBILE_DIR"
+    SENTRY_AUTH_TOKEN="$SENTRY_AUTH_TOKEN" \
+    SENTRY_ORG="$SENTRY_ORG" \
+    SENTRY_PROJECT="$SENTRY_PROJECT" \
+    "$SENTRY_CLI" sourcemaps upload \
+      --release "$BUILD_LABEL" \
+      --strip-prefix "$MOBILE_DIR" \
+      "$ANDROID_DIR/app/build/generated/assets/createBundleReleaseJsAndAssets" \
+      "$ANDROID_DIR/app/build/intermediates/sourcemaps/react/release" 2>&1
+  ) || echo "[build] WARNING: Sentry sourcemap upload failed (non-fatal)." >&2
+else
+  echo "[build] Skipping Sentry sourcemap upload (SENTRY_AUTH_TOKEN / SENTRY_ORG / SENTRY_PROJECT or sentry-cli missing)."
 fi
 
 # ── Archive APK ───────────────────────────────────────────────────────────────

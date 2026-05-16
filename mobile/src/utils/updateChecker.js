@@ -5,8 +5,12 @@
  * locally-compiled BUILD_NUMBER so the app can prompt users to upgrade.
  */
 
-import { GITHUB_TOKEN, GITHUB_REPO } from '../config';
 import { BUILD_NUMBER } from '../buildInfo';
+
+// PAP-1543: switched to unauthenticated GitHub REST after the embedded-PAT
+// model was rejected.  60 req/hr/IP is plenty for an update check on app
+// open; releases are public so no auth is required for read access.
+const GITHUB_REPO = 'claudegoogl-sudo/gear-camera-app';
 
 // per_page=100 is GitHub's max for the releases listing endpoint. Without it
 // the default of 30 silently truncates older builds, and any release that
@@ -44,14 +48,10 @@ function findApkUrl(assets) {
 }
 
 function buildHeaders() {
-  const headers = {
+  return {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  if (GITHUB_TOKEN) {
-    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
-  }
-  return headers;
 }
 
 function releaseToBuild(release) {

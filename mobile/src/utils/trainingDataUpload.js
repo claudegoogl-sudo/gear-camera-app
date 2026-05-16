@@ -1,30 +1,16 @@
 /**
- * Training data upload via GitHub Contents API.
+ * Training-sample upload via Sentry (PAP-1543 / PAP-1463).
  *
- * Uploads captured photos and gear detection metadata to a `training-data/`
- * folder in the GitHub repo for use as CV training data.
- *
- * Runs as fire-and-forget after each capture — failures are logged but
- * never surface to the user or block the UI.
+ * Mirrors debugShare but emits a `training_sample` event with a distinct
+ * `kind` tag so the triage routine can filter the two streams apart.
+ * Fire-and-forget — failures are logged and never block the UI.
  */
 
 import * as FileSystem from 'expo-file-system/legacy';
-import { GITHUB_TOKEN, GITHUB_REPO } from '../config';
+import { Sentry, SENTRY_ENABLED } from '../sentry';
 import { BUILD_LABEL } from '../buildInfo';
-import { makeSlug } from './timestamp';
-
-const CONTENTS_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents`;
-
-const HEADERS = {
-  'Content-Type': 'application/json',
-  Accept: 'application/vnd.github+json',
-  'X-GitHub-Api-Version': '2022-11-28',
-  Authorization: `Bearer ${GITHUB_TOKEN}`,
-};
 
 /**
- * Upload a captured photo and its detection metadata to `training-data/`.
- *
  * @param {{
  *   photoPath: string,
  *   toothCount: number|null,
@@ -34,85 +20,49 @@ const HEADERS = {
  * }} params
  */
 export async function uploadTrainingData({ photoPath, toothCount, confidence, gearContour, actualTeethCount }) {
-  if (!GITHUB_TOKEN || !photoPath) return;
-
-  // Quick auth check — skip upload entirely if token is expired.
-  const authCheck = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-    },
-  });
-  if (authCheck.status === 401 || authCheck.status === 403) {
-    console.warn('[TrainingData] GitHub token expired/revoked — skipping upload');
-    return;
-  }
-
-  const timestamp = new Date().toISOString();
-  const slug = makeSlug(timestamp);
+  if (!SENTRY_ENABLED || !photoPath) return;
 
   try {
-    // Ensure file:// URI — expo-file-system/legacy requires it.
     const fileUri = photoPath.startsWith('file://') ? photoPath : `file://${photoPath}`;
+    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    if (!fileInfo.exists) {
+      console.warn('[TrainingData] Photo not found:', fileUri);
+      return;
+    }
+    // 20MB matches Sentry init's maxAttachmentSize ceiling — skip oversized
+    // captures rather than have the SDK silently drop the attachment.
+    if (fileInfo.size > 20 * 1024 * 1024) {
+      console.warn('[TrainingData] Photo too large, skipping upload:', fileInfo.size, 'bytes');
+      return;
+    }
+
     const base64 = await FileSystem.readAsStringAsync(fileUri, {
       encoding: FileSystem.EncodingType.Base64,
     });
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-    // Check approximate file size (base64 is ~4/3 of original).
-    // GitHub Contents API limit is 100 MB; reject anything over 50 MB to be safe.
-    const approxBytes = (base64.length * 3) / 4;
-    if (approxBytes > 50 * 1024 * 1024) {
-      console.warn('[TrainingData] Photo too large, skipping upload:', approxBytes, 'bytes');
-      return;
-    }
-
-    // Upload photo.
-    const photoGitPath = `training-data/${slug}_photo.jpg`;
-    const photoRes = await fetch(`${CONTENTS_URL}/${photoGitPath}`, {
-      method: 'PUT',
-      headers: HEADERS,
-      body: JSON.stringify({
-        message: `training-data: photo ${slug}`,
-        content: base64,
-      }),
-    });
-
-    if (!photoRes.ok) {
-      const body = await photoRes.text();
-      console.warn('[TrainingData] Photo upload failed:', photoRes.status, body);
-      return;
-    }
-
-    // Upload metadata JSON alongside the photo.
-    const metadata = {
-      timestamp,
-      build: BUILD_LABEL,
-      photoFile: photoGitPath,
-      result: {
-        toothCount,
+    Sentry.withScope((scope) => {
+      scope.addAttachment({
+        filename: 'photo.jpg',
+        data: bytes,
+        contentType: 'image/jpeg',
+      });
+      scope.setTags({
+        kind: 'training_sample',
+        buildLabel: BUILD_LABEL,
+        ...(toothCount != null ? { toothCount: String(toothCount) } : {}),
+        ...(actualTeethCount != null ? { actualTeethCount: String(actualTeethCount) } : {}),
+      });
+      scope.setContext('gear', {
+        toothCount: toothCount ?? null,
         confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
-        gearContour,
-      },
-      actualTeethCount: actualTeethCount ?? toothCount,
-    };
-
-    const metaGitPath = `training-data/${slug}_meta.json`;
-    const metaRes = await fetch(`${CONTENTS_URL}/${metaGitPath}`, {
-      method: 'PUT',
-      headers: HEADERS,
-      body: JSON.stringify({
-        message: `training-data: meta ${toothCount ?? '?'}T @ ${timestamp}`,
-        content: btoa(JSON.stringify(metadata, null, 2)),
-      }),
+        gearContour: gearContour ?? null,
+        actualTeethCount: actualTeethCount ?? toothCount ?? null,
+      });
+      Sentry.captureMessage('training_sample', 'info');
     });
-
-    if (!metaRes.ok) {
-      const body = await metaRes.text();
-      console.warn('[TrainingData] Metadata upload failed:', metaRes.status, body);
-      return;
-    }
-
-    console.log('[TrainingData] Uploaded:', photoGitPath);
   } catch (e) {
     console.warn('[TrainingData] Upload error (non-fatal):', e.message);
   }
