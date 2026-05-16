@@ -3080,6 +3080,17 @@ export async function countTeeth(photoUri, signal, opts) {
   // agreement at 20-25T which would need a separate corpus sweep before
   // adding.  Sacrificed back to baseline-equivalent confident-wrong.
   // Threshold 0.18 retained from pre-flight.
+  //
+  // PAP-1554 (PAP-1552 D3-equivalent lift): the generic chainringRegime arm
+  // of the eligibility disjunction is removed — board accepts the
+  // trust-via-confidence/overlay model for ≥30T results, so the v1
+  // chainring-scale conf=0 gate is dropped.  The `chainringRegime` flag
+  // is still computed below and surfaced in the return value for
+  // telemetry consumers (see ResultScreen.jsx pap1554 lift).  Only the
+  // narrow AC1 5-way-collapse rescue (peak/fft90/op/bc all ≤ MIN_TEETH+2
+  // with bcPeaks ∈ [20,30]) retains the abstain — that targets the
+  // specific 52T 05-35-33 confidently-wrong pattern and is the only
+  // "known-wrong" signature this radial gate was buying us.
   const chainringRegime =
     r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
     || r.bcTc >= 30 || r.bcPeaks >= 30;
@@ -3089,7 +3100,7 @@ export async function countTeeth(photoUri, signal, opts) {
     && r.opTc <= MIN_TEETH + 2
     && r.bcTc <= MIN_TEETH + 2
     && r.bcPeaks >= 20 && r.bcPeaks <= 30;
-  const radialChainringEligible = chainringRegime || ac1RescuePattern;
+  const radialChainringEligible = ac1RescuePattern;
   const radialChainringFires =
     radialChainringEligible
     && r.peakR > 0 && r.rOuter > 0
@@ -3434,9 +3445,10 @@ export function countTeethFromRgba(rgba, width, height) {
     || aimPriorAbstain;
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree
     && !chainringTcConfirmed;
-  // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): chainring-regime gate
-  // OR ac1-rescue narrow override; mirror of countTeeth() — see there for
-  // full rationale and threshold provenance.
+  // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): ac1-rescue narrow
+  // override.  PAP-1554 (PAP-1552 D3 lift): generic chainringRegime arm
+  // dropped — mirror of countTeeth() — see there for full rationale.
+  // chainringRegime stays computed for the (telemetry-only) return.
   const chainringRegime =
     r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
     || r.bcTc >= 30 || r.bcPeaks >= 30;
@@ -3446,7 +3458,7 @@ export function countTeethFromRgba(rgba, width, height) {
     && r.opTc <= MIN_TEETH + 2
     && r.bcTc <= MIN_TEETH + 2
     && r.bcPeaks >= 20 && r.bcPeaks <= 30;
-  const radialChainringEligible = chainringRegime || ac1RescuePattern;
+  const radialChainringEligible = ac1RescuePattern;
   const radialChainringFires =
     radialChainringEligible
     && r.peakR > 0 && r.rOuter > 0
