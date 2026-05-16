@@ -25,6 +25,7 @@ import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
 import { shareDebugReport } from '../utils/debugShare';
 import { uploadTrainingData } from '../utils/trainingDataUpload';
+import { emitChainringAbstainTelemetry } from '../utils/chainringAbstainTelemetry';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -75,7 +76,7 @@ function useCountUp(target) {
  */
 export default function ResultScreen({ navigation, route }) {
   const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected, algoDiag } = route.params ?? {};
-  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset } = useGearStore();
+  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset, chainringRegime, aimR, peakR } = useGearStore();
 
   // PAP-622: Transform algorithm coordinates (relative to original uncropped
   // photo) into aim-circle-crop space for the overlay.  The displayed photo is
@@ -109,9 +110,30 @@ export default function ResultScreen({ navigation, route }) {
     panelOpac.value = withDelay(200, withTiming(1.0, { duration: 350, easing: Easing.out(Easing.quad) }));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // PAP-1536: chainring (30–60T) is descoped from v1.  When the algorithm
+  // flags chainring regime, emit a telemetry event (AC4) and show the
+  // "Chainring not supported in v1" abstain UX (AC2) instead of the count.
+  // Fire once per result via toothCount-keyed effect — re-renders during
+  // animation must not re-emit.
+  useEffect(() => {
+    if (!chainringRegime) return;
+    if (toothCount == null) return;
+    emitChainringAbstainTelemetry({
+      aimR,
+      peakR,
+      toothCount,
+      confidence,
+      channels: algoDiag ?? null,
+    });
+  }, [chainringRegime, toothCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Low-confidence + out-of-range toasts
+  // PAP-1536: suppress generic abstain toasts when chainring regime is the
+  // root cause — the dedicated abstain panel above already explains the
+  // situation, and the low-conf toast would double-message.
   const [briefToast, setBriefToast] = useState(null);
   useEffect(() => {
+    if (chainringRegime) return;
     if (lowConf) {
       setBriefToast('Low confidence — try better lighting or a straighter angle');
       const t = setTimeout(() => setBriefToast(null), 1000);
@@ -119,7 +141,7 @@ export default function ResultScreen({ navigation, route }) {
     } else if (outOfRange) {
       showToast('Tooth count outside expected range (10–65T) — verify manually');
     }
-  }, [lowConf, outOfRange]);
+  }, [lowConf, outOfRange, chainringRegime]);
 
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: panelY.value }],
@@ -190,7 +212,10 @@ export default function ResultScreen({ navigation, route }) {
             </View>
           )}
 
-          {toothCount != null && overlayContour && (
+          {/* PAP-1536: suppress the tick overlay when chainring abstain
+              fires — drawing N ticks over a chainring image while telling
+              the user "chainring not supported" sends mixed signals. */}
+          {toothCount != null && overlayContour && !chainringRegime && (
             <GearContourOverlay
               width={width}
               height={imageHeight}
@@ -218,6 +243,20 @@ export default function ResultScreen({ navigation, route }) {
             <Text style={styles.errorTitle}>Detection failed</Text>
             <Text style={styles.errorBody}>{error}</Text>
             <Text style={styles.errorHint}>Centre the gear and try again in good lighting.</Text>
+          </View>
+
+        ) : chainringRegime ? (
+          // PAP-1536: chainring (30–60T) descoped from v1. Per PAP-1535
+          // routing variant (a): show an explicit "not supported" screen
+          // instead of a count so the user knows v1 supports cassettes only.
+          <View style={styles.chainringAbstainBox} testID="chainring-abstain-panel">
+            <Text style={styles.chainringTitle}>Chainring not supported in v1</Text>
+            <Text style={styles.chainringBody}>
+              This looks like a chainring (the larger gear at the front). v1 of the gear counter supports cassettes (rear gears) only — tooth counts 9–28T.
+            </Text>
+            <Text style={styles.chainringHint}>
+              Try aiming at one of the rear gears, or come back in a future version for chainring support.
+            </Text>
           </View>
 
         ) : toothCount != null ? (
@@ -265,7 +304,9 @@ export default function ResultScreen({ navigation, route }) {
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
-            <Text style={styles.resetText}>Reset</Text>
+            {/* PAP-1536: relabel Reset → "Try a different gear" when in the
+                chainring abstain UX so the CTA matches the abstain copy. */}
+            <Text style={styles.resetText}>{chainringRegime ? 'Try a different gear' : 'Reset'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -439,6 +480,12 @@ const styles = StyleSheet.create({
   outOfSupportedTitle: { fontSize: 22, fontWeight: '700', color: '#FF9800', textAlign: 'center' },
   outOfSupportedBody:  { fontSize: 15, color: '#ccc', textAlign: 'center' },
   outOfSupportedHint:  { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 4 },
+
+  // PAP-1536: chainring (30–60T) descope abstain UX.
+  chainringAbstainBox: { alignItems: 'center', gap: 10, paddingHorizontal: 16 },
+  chainringTitle: { fontSize: 22, fontWeight: '700', color: '#FF9800', textAlign: 'center' },
+  chainringBody:  { fontSize: 15, color: '#ddd', textAlign: 'center', lineHeight: 21 },
+  chainringHint:  { fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 18, marginTop: 4 },
 
   errorBox:  { alignItems: 'center', gap: 6 },
   errorTitle:{ fontSize: 17, fontWeight: '700', color: '#f44336' },

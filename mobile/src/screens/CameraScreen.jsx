@@ -337,6 +337,10 @@ export default function CameraScreen({ navigation }) {
         },
         algorithmRuntimeMs: result.algorithmRuntimeMs,
         innerContourSuspected: result.innerContourSuspected ?? false,
+        // PAP-1536: chainring (30–60T) abstain inputs.
+        chainringRegime: result.chainringRegime ?? false,
+        aimR: result.aimR ?? null,
+        peakR: result.peakR ?? null,
       });
 
       navigation.navigate('Result', {
@@ -355,6 +359,10 @@ export default function CameraScreen({ navigation }) {
           peakR: result.peakR ?? null,
           rOuter: result.rOuter ?? null,
           radialRelDisagree: result.radialRelDisagree ?? null,
+          // PAP-1536: chainring regime cue + aim-circle prior reading
+          // surfaced for the chainring abstain UX gate and telemetry.
+          chainringRegime: result.chainringRegime ?? false,
+          aimR: result.aimR ?? null,
         },
       });
     } catch (e) {
