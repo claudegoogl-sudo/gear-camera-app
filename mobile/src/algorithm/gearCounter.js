@@ -3081,16 +3081,36 @@ export async function countTeeth(photoUri, signal, opts) {
   // adding.  Sacrificed back to baseline-equivalent confident-wrong.
   // Threshold 0.18 retained from pre-flight.
   //
-  // PAP-1554 (PAP-1552 D3-equivalent lift): the generic chainringRegime arm
-  // of the eligibility disjunction is removed — board accepts the
-  // trust-via-confidence/overlay model for ≥30T results, so the v1
-  // chainring-scale conf=0 gate is dropped.  The `chainringRegime` flag
-  // is still computed below and surfaced in the return value for
-  // telemetry consumers (see ResultScreen.jsx pap1554 lift).  Only the
-  // narrow AC1 5-way-collapse rescue (peak/fft90/op/bc all ≤ MIN_TEETH+2
-  // with bcPeaks ∈ [20,30]) retains the abstain — that targets the
-  // specific 52T 05-35-33 confidently-wrong pattern and is the only
-  // "known-wrong" signature this radial gate was buying us.
+  // PAP-1554 v2 (post-QA narrowing on 60355bc): the v1 lift dropped the
+  // chainringRegime arm entirely, which over-shot scope — PAP-760 audit
+  // showed Small −16.8pp / Mid −15.1pp / Large −11.0pp regressions (+37
+  // sub-30 confidently-wrong rows) because the gate was also acting as a
+  // cross-channel-disagreement safety net for sub-30T commits where some
+  // FFT channel transiently signals ≥30 (bolt artefacts, op aliasing).
+  //
+  // v2 narrowing: the chainringRegime arm is restored ONLY when the
+  // final committed r.toothCount is sub-30.  For ≥30T commits the board
+  // wants the natural confidence + overlay (PAP-1552 D3 directive), so
+  // eligibility stays false and the radial test cannot abstain.  This:
+  //   - Restores the baseline safety net for sub-30 channel-disagreement
+  //     rows (PAP-1052 Small 75.6% / Mid 81.8% / Large 44.6% no-regression
+  //     target per PAP-1555 cross-check AC).
+  //   - Preserves the XL lift for true chainring imaging (tc≥30 commits
+  //     flow with natural conf; v1 chainring-abstain panel goes away).
+  //
+  // (QA's literal recommendation text on the v1 FAIL verdict was
+  // `r.toothCount >= 30`, which would have abstained ALL chainring-scale
+  // commits — opposite of the XL goal.  Polarity flipped to `< 30` here
+  // matches both AC4 no-regression and the task's XL directive; flagged
+  // explicitly in the PAP-1554 handoff comment for QA re-validation on
+  // the PAP-1555 audit.)
+  //
+  // The narrow AC1 5-way-collapse rescue is unchanged: peak/fft90/op/bc
+  // ≤ MIN_TEETH+2 with bcPeaks ∈ [20,30] still abstains regardless of
+  // committed tc — that targets the specific 52T 05-35-33 confidently-
+  // wrong pattern.  The chainringRegime flag itself remains computed and
+  // surfaced in the return value for UX telemetry consumers (see
+  // ResultScreen.jsx emitChainringAbstainTelemetry).
   const chainringRegime =
     r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
     || r.bcTc >= 30 || r.bcPeaks >= 30;
@@ -3100,7 +3120,9 @@ export async function countTeeth(photoUri, signal, opts) {
     && r.opTc <= MIN_TEETH + 2
     && r.bcTc <= MIN_TEETH + 2
     && r.bcPeaks >= 20 && r.bcPeaks <= 30;
-  const radialChainringEligible = ac1RescuePattern;
+  const radialChainringEligible =
+    ac1RescuePattern
+    || (chainringRegime && r.toothCount < 30);
   const radialChainringFires =
     radialChainringEligible
     && r.peakR > 0 && r.rOuter > 0
@@ -3446,8 +3468,10 @@ export function countTeethFromRgba(rgba, width, height) {
   const radiusSanityAbstain = radiusSanityFires && !tripleAgree && !bcStrongAgree
     && !chainringTcConfirmed;
   // PAP-815 v2 (Option 4 per QA verdict 2026-04-29): ac1-rescue narrow
-  // override.  PAP-1554 (PAP-1552 D3 lift): generic chainringRegime arm
-  // dropped — mirror of countTeeth() — see there for full rationale.
+  // override.  PAP-1554 v2 (post-QA narrowing): chainringRegime arm
+  // restored only when r.toothCount < 30 so XL chainring commits still
+  // flow (board D3 directive) while the sub-30 cross-channel safety net
+  // stays — mirror of countTeeth(), see there for full rationale.
   // chainringRegime stays computed for the (telemetry-only) return.
   const chainringRegime =
     r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
@@ -3458,7 +3482,9 @@ export function countTeethFromRgba(rgba, width, height) {
     && r.opTc <= MIN_TEETH + 2
     && r.bcTc <= MIN_TEETH + 2
     && r.bcPeaks >= 20 && r.bcPeaks <= 30;
-  const radialChainringEligible = ac1RescuePattern;
+  const radialChainringEligible =
+    ac1RescuePattern
+    || (chainringRegime && r.toothCount < 30);
   const radialChainringFires =
     radialChainringEligible
     && r.peakR > 0 && r.rOuter > 0
