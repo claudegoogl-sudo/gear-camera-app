@@ -1415,7 +1415,7 @@ function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, heigh
     Math.floor(Math.min(cx, width - cx, cy, height - cy)) - 1,
     contourRadius > 20 ? Math.floor(contourRadius * 1.35) : Math.floor(Math.min(height, width) / 3),
   );
-  const maxR = priorActive ? Math.min(baseMaxR, priorHi) : baseMaxR;
+  const maxR = baseMaxR;
 
   // Build edge density
   const density = new Float64Array(maxR);
@@ -1437,31 +1437,14 @@ function multiRadiusFftScan(enhanced, edges, cx, cy, contourRadius, width, heigh
   const peakThresh = Math.max(...smooth.slice(0, searchLimit)) * 0.12;
   for (let r = 1; r < searchLimit - 1; r++) {
     if (smooth[r] > smooth[r-1] && smooth[r] > smooth[r+1] && smooth[r] >= peakThresh) {
-      // PAP-1100: drop density-peak candidates outside [α·aimR, β·aimR].
-      if (priorActive && (r < priorLo || r > priorHi)) continue;
       candSet.add(r);
     }
   }
 
-  // Evenly-spaced outer radii — PAP-1100: when prior active, anchor on
-  // [α·aimR, β·aimR] instead of contourRadius (which is the failure mode the
-  // PAP-1078 ladder diagnosed: peakR aliasing onto inner sub-features when
-  // contourRadius is the anchor).
-  if (priorActive) {
-    const span = priorHi - priorLo;
-    if (span >= 12) {
-      // ~12 evenly-spaced samples across the prior band (matches the legacy
-      // gr*65..108 density of ~12 candidates).
-      const stride = Math.max(1, Math.floor(span / 12));
-      for (let r = priorLo; r <= priorHi; r += stride) {
-        if (r >= 10 && r < maxR) candSet.add(r);
-      }
-    }
-  } else {
-    const gr = contourRadius > 20 ? contourRadius : maxR;
-    for (let pct = 65; pct < 85; pct += 4) candSet.add(Math.floor(gr * pct / 100));
-    for (let pct = 85; pct < 108; pct += 2) candSet.add(Math.floor(gr * pct / 100));
-  }
+  // Evenly-spaced outer radii (legacy gr*65..108).
+  const gr = contourRadius > 20 ? contourRadius : maxR;
+  for (let pct = 65; pct < 85; pct += 4) candSet.add(Math.floor(gr * pct / 100));
+  for (let pct = 85; pct < 108; pct += 2) candSet.add(Math.floor(gr * pct / 100));
 
   // Evaluate each candidate
   const candResults = [];
