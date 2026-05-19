@@ -35,6 +35,7 @@ import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Sentry, SENTRY_ENABLED } from '../sentry';
 
 // PAP-476: aim-circle reticle now ≈ full screen width.  Computed from
 // Dimensions at module load (camera screen is portrait-locked elsewhere in
@@ -184,6 +185,15 @@ export default function CameraScreen({ navigation }) {
   const mainHasTorch = mainDevice?.hasTorch === true;
   const wideAngleUsable = !wideAngleFailed && wideAngleDevice && (wideAngleHasTorch || !mainHasTorch);
   const device = wideAngleUsable ? wideAngleDevice : mainDevice;
+  // PAP-1592: torch prop is the literal value passed to the <Camera> reactive
+  // `torch` prop.  Computed into a local so the same value can be (a) bound
+  // on the JSX below and (b) recorded into the cameraEvents telemetry stream
+  // / Sentry breadcrumb whenever it changes — the board on b126 reported the
+  // aim-time torch never lights even though the PAP-1551 selector should
+  // have preferred the main lens.  Surfacing the resolved prop value next
+  // to the underlying `hasTorch` capability lets us tell the (1)-(4)
+  // hypotheses in PAP-1592 apart from a single debug-share / Sentry event.
+  const torchProp = device?.hasTorch ? 'on' : 'off';
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -281,6 +291,54 @@ export default function CameraScreen({ navigation }) {
     });
   }, []);
 
+  // ── PAP-1592: torch-state observability ────────────────────────────────
+  // Fire a `torchState` cameraEvent + Sentry breadcrumb every time the
+  // resolved torch prop changes — covers mount (first non-null device), the
+  // wide→main PAP-1551 selector flip, and the wide-angle onError fallback.
+  // Board's b126 feedback says torch is off during aim; this trace lets us
+  // separate "selector picked a device without torch" from "prop set but
+  // vision-camera ignored it" without requiring a debug-share roundtrip.
+  useEffect(() => {
+    const payload = {
+      type: 'torchState',
+      ts: new Date().toISOString(),
+      deviceId: device?.id ?? null,
+      position: device?.position ?? null,
+      physicalDevices: device?.physicalDevices ?? null,
+      hasTorch: !!device?.hasTorch,
+      hasFlash: !!device?.hasFlash,
+      torchProp,
+      wideAngleHasTorch: !!wideAngleDevice?.hasTorch,
+      mainHasTorch: !!mainDevice?.hasTorch,
+      selectedWideAngle: !!(wideAngleUsable && wideAngleDevice && device?.id === wideAngleDevice.id),
+      wideAngleFailed,
+    };
+    cameraEventsRef.current.push(payload);
+    if (SENTRY_ENABLED) {
+      try {
+        Sentry.addBreadcrumb({
+          category: 'camera.torch',
+          level: 'info',
+          message: 'torchState',
+          data: payload,
+        });
+      } catch (e) {
+        // Telemetry must never break the camera screen.
+      }
+    }
+  }, [
+    torchProp,
+    device?.id,
+    device?.hasTorch,
+    device?.hasFlash,
+    wideAngleDevice?.id,
+    wideAngleDevice?.hasTorch,
+    mainDevice?.id,
+    mainDevice?.hasTorch,
+    wideAngleFailed,
+    wideAngleUsable,
+  ]);
+
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
     // Guard against capturing while a download is in progress — navigating
@@ -295,10 +353,42 @@ export default function CameraScreen({ navigation }) {
     setProcessing(true);
 
     try {
+      // PAP-1592: resolve the flash prop into a local so the capture-time
+      // value can be (a) passed to takePhoto and (b) recorded next to the
+      // aim-time torchState event for correlation.  Captured BEFORE the
+      // takePhoto await so the event is on the stream even if takePhoto
+      // throws — capture-time flash failures are exactly what we want to see.
+      const captureFlashProp = device?.hasFlash ? 'on' : 'off';
+      const captureTelemetry = {
+        type: 'capture',
+        ts: new Date().toISOString(),
+        deviceId: device?.id ?? null,
+        flash: captureFlashProp,
+        hasFlash: !!device?.hasFlash,
+        hasTorch: !!device?.hasTorch,
+        torchProp,
+      };
+      cameraEventsRef.current.push(captureTelemetry);
+
       const photo = await camera.current.takePhoto({
-        flash: device?.hasFlash ? 'on' : 'off',
+        flash: captureFlashProp,
         qualityPrioritization: 'quality',
       });
+
+      // PAP-1592: post-takePhoto breadcrumb so a Sentry error event after
+      // this point is self-describing without requiring a debug-share.
+      if (SENTRY_ENABLED) {
+        try {
+          Sentry.addBreadcrumb({
+            category: 'camera.capture',
+            level: 'info',
+            message: 'takePhotoCompleted',
+            data: captureTelemetry,
+          });
+        } catch (e) {
+          // Telemetry must never break capture.
+        }
+      }
 
       // Pause the live preview now that the frame is in-hand — the algorithm
       // runs on the saved file, so the sensor can go idle during counting
@@ -617,7 +707,7 @@ export default function CameraScreen({ navigation }) {
         photo={true}
         video={true}
         pixelFormat="yuv"
-        torch={device?.hasTorch ? 'on' : 'off'}
+        torch={torchProp}
         // PAP-732: lock photo output to the (portrait-locked) preview
         // orientation.  vision-camera's default `outputOrientation` is
         // `'device'`, which rotates the photo with the physical phone
