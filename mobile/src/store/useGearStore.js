@@ -11,19 +11,19 @@ const useGearStore = create((set) => ({
   gearContour: null,      // array of {x,y} points for SVG overlay | null
   algorithmRuntimeMs: null, // number | null — total algorithm execution time
   innerContourSuspected: false, // PAP-553: radius-sanity abstain flag
-  // PAP-1536: chainring (30-60T) abstain. True when the algorithm detected
-  // chainring-scale signal (any of peakTc/fft90tc/opTc/bcTc/bcPeaks >= 30).
-  // Drives the "Chainring not supported in v1" UX screen.
+  // PAP-1591 (revokes PAP-1536 UX descope): chainring-scale signal flag from
+  // the algorithm (any of peakTc/fft90tc/opTc/bcTc/bcPeaks >= 30).  No
+  // longer gates UX — v1 surfaces the tooth count across the full 11–60T
+  // range.  Kept on the result so ResultScreen can fire the Sentry
+  // chainring-regime telemetry event (used by the cassette-FP work under
+  // PAP-1538).
   chainringRegime: false,
   // PAP-1536: aim-circle prior reading + chosen-radius for telemetry payload.
   aimR: null,
   peakR: null,
-  // PAP-1538: enriched methodUsed tag from countTeeth so the chainring
-  // abstain UX can OR chainringRegime with pap961/pap963/pap1059 method
-  // tags.  PAP-1537 cross-check measured chainringRegime alone fires on
-  // 51.2% of the 80-photo chainring corpus (42T/52T misses have all 5
-  // FFT channels collapsed to small-cassette range); union with method
-  // tags is needed to hit the AC1 ≥90% gate.
+  // PAP-1538: enriched methodUsed tag from countTeeth.  Carried through
+  // the store for debug-share / algoDiag consumers; no longer read by the
+  // result-screen UX gate (PAP-1591 revoked the chainring abstain panel).
   methodUsed: null,
   isProcessing: false,    // true while algorithm is running
   error: null,            // string | null

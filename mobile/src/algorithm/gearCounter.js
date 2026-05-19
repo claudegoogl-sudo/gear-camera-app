@@ -3279,13 +3279,12 @@ export async function countTeeth(photoUri, signal, opts) {
     peakR: r.peakR,
     rOuter: r.rOuter,
     radialRelDisagree: radialRel,
-    // PAP-1536 (PAP-758 v1 chainring descope): surface the existing PAP-961
-    // / PAP-815 chainring-regime cue and the aim-circle prior radius (aimR)
-    // so the UX layer can show a "Chainring not supported in v1" abstain
-    // screen and emit telemetry.  No algorithm behaviour change — this is
-    // a read-only export of internals already computed above.  Consumers:
-    //   • ResultScreen.jsx renders chainring abstain when chainringRegime
-    //     OR methodUsed includes pap961/pap963/pap1059 (PAP-1538 union).
+    // PAP-1591 (revokes the PAP-1536 v1 UX descope): surface the PAP-961 /
+    // PAP-815 chainring-regime cue and the aim-circle prior radius (aimR)
+    // so the result-screen telemetry can fire a chainring-regime-detected
+    // Sentry event (no longer used to gate UX — v1 now supports 11–60T).
+    // No algorithm behaviour change — read-only export of internals
+    // already computed above.  Consumers:
     //   • chainringAbstainTelemetry uploads {aimR, peakR, ratio, channels}.
     chainringRegime,
     aimR,
