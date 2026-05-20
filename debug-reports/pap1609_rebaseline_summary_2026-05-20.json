@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-05-20T15:07:52.138Z",
+  "headRepoHead": "8b4d7afa1cc0c7b0e9f497dcb6a9df5bb75904a4",
+  "headAlgoFileSha": "8971e8b875d7",
+  "prevRepoHead": "8b4d7afa1cc0c7b0e9f497dcb6a9df5bb75904a4",
+  "prevAlgoFileSha": "1b17053a31b5",
+  "pairs_in_each": {
+    "head": 72,
+    "prev": 72
+  },
+  "paired": 72,
+  "ac1_csv": "debug-reports/pap1609_rebaseline_2026-05-20.csv",
+  "ac2": {
+    "head_correct": 39,
+    "head_pct": 54.2,
+    "prev_correct": 40,
+    "prev_pct": 55.6,
+    "net_delta_pp": -1.4,
+    "WIN": 0,
+    "LOSS": 1,
+    "NO_CHANGE_CORRECT": 39,
+    "NO_CHANGE_WRONG": 12,
+    "NO_CHANGE_ABSTAIN": 20,
+    "direction_flip": 0,
+    "direction_flip_pct": 0,
+    "conf_band_violations": 2
+  },
+  "ac3": {
+    "verdict": "AMBIGUOUS",
+    "reason": "|XL net Δ| 1.4pp ≤ 5pp — neither HOLD nor REOPEN threshold met"
+  }
+}
