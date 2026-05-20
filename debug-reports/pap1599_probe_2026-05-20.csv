@@ -1,0 +1,10 @@
+event,actual,devicePred,deviceMethod,deviceConf,fullTC,fullConf,fullMethod,fullPeakR,fullROuter,fullGearR,fullPeakTc,fullFft90,fullBcTc,fullW,fullH,fullMs,crmTC,crmConf,crmMethod,crmPeakR,crmROuter,crmGearR,crmPeakTc,crmFft90,crmBcTc,crmW,crmH,crmMs,deviceMatchFull,deviceMatchCrm
+0959928d,32,32,bc-consensus+fft-agree,0.808,32,1.000,bc-consensus+pap1059-chainring-tc-confirmed,79,113,0,18,11,32,675,900,18763,32,0.808,bc-consensus+fft-agree,385,305,0,32,32,32,900,900,29086,N,Y
+3219e927,36,16,fft90-fallback,0.175,11,0.000,fft-agreement,102,141,0,11,11,11,675,900,23860,16,0.175,fft90-fallback,338,264,0,12,16,10,900,900,30167,N,Y
+d6b831de,36,36,bc-consensus+peak,1.000,36,0.768,bc-consensus+pap1059-chainring-tc-confirmed,129,175,0,16,22,36,675,900,17937,36,1.000,bc-consensus+peak,403,430,0,36,36,36,900,900,24085,N,Y
+dd25a498,36,28,fft90-fallback,0.000,12,0.000,bc-consensus+pap961-aim-circle-prior-abstain,76,110,0,18,24,12,675,900,18197,28,0.202,fft90-fallback,284,195,0,10,28,10,900,900,31317,N,N
+5b3a13d8,48,48,bc-consensus+peak,0.882,48,0.761,bc-consensus+peak+pap1059-chainring-tc-confirmed,172,172,0,48,12,48,675,900,17189,48,0.882,bc-consensus+peak,385,379,0,48,12,48,900,900,24147,N,Y
+01fdccfd,50,50,bc-consensus,1.000,12,0.000,fft90-fallback,55,79,0,10,12,10,675,900,23995,50,1.000,bc-consensus,295,208,0,12,50,50,900,900,21670,N,Y
+625fd85d,52,51,retry-bc-consensus+chainring-pk,0.967,52,0.000,fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain,194,196,0,52,10,14,675,900,24270,51,0.967,retry-bc-consensus+chainring-pk,321,350,0,12,12,52,900,900,35332,N,Y
+93bab076,52,12,peak,0.000,0,0.000,fft90-fallback+pap474-abstain,222,149,0,10,10,53,675,900,23188,12,0.000,peak,322,230,0,12,52,52,900,900,24811,N,Y
+b17133f8,52,30,retry-bc-peaks,0.469,0,0.000,low-conf-consensus+pap632-fft-floor-abstain,160,237,0,10,11,13,675,900,17891,30,0.469,retry-bc-peaks,298,363,0,12,12,51,900,900,30435,N,Y
