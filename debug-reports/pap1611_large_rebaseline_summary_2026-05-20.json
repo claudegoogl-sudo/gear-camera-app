@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-05-20T22:02:41.055Z",
+  "slice": "large",
+  "band": {
+    "lo": 20,
+    "hi": 28
+  },
+  "headRepoHead": "867973862c359bc3acd08bceff33bbb5fe720b0e",
+  "headAlgoFileSha": "8971e8b875d7",
+  "prevRepoHead": "867973862c359bc3acd08bceff33bbb5fe720b0e",
+  "prevAlgoFileSha": "1b17053a31b5",
+  "pairs_in_each": {
+    "head": 8,
+    "prev": 8
+  },
+  "paired": 8,
+  "ac1_csv": "debug-reports/pap1611_large_rebaseline_2026-05-20.csv",
+  "ac2": {
+    "head_correct": 8,
+    "head_pct": 100,
+    "prev_correct": 8,
+    "prev_pct": 100,
+    "net_delta_pp": 0,
+    "WIN": 0,
+    "LOSS": 0,
+    "NO_CHANGE_CORRECT": 8,
+    "NO_CHANGE_WRONG": 0,
+    "NO_CHANGE_ABSTAIN": 0,
+    "direction_flip": 0,
+    "direction_flip_pct": 0,
+    "conf_band_violations": 0
+  },
+  "ac3": {
+    "verdict": "AMBIGUOUS",
+    "reason": "large net Δ +0.0pp — between AMBIGUOUS band and ±thresholds"
+  }
+}

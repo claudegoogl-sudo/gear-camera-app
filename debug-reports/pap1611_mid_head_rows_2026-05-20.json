@@ -1,0 +1,62 @@
+{
+  "slice": "mid",
+  "band": {
+    "lo": 14,
+    "hi": 19
+  },
+  "label": "head",
+  "generatedAt": "2026-05-20T21:45:28.992Z",
+  "repoHead": "867973862c359bc3acd08bceff33bbb5fe720b0e",
+  "algoFileSha": "8971e8b875d7",
+  "pairs": 4,
+  "rows": [
+    {
+      "tdStamp": "2026-04-28_14-36-56-005Z",
+      "drDir": "report_2026-04-28_14-36-49-371Z",
+      "deltaMs": 6634,
+      "actual": 18,
+      "build": "107",
+      "tc": 18,
+      "conf": 1,
+      "method": "bc-consensus+peak",
+      "peakR": 380,
+      "rOuter": 190
+    },
+    {
+      "tdStamp": "2026-04-28_18-37-51-496Z",
+      "drDir": "report_2026-04-28_18-37-45-316Z",
+      "deltaMs": 6180,
+      "actual": 14,
+      "build": "107",
+      "tc": 14,
+      "conf": 1,
+      "method": "bc-consensus+fft-agree",
+      "peakR": 363,
+      "rOuter": 233
+    },
+    {
+      "tdStamp": "2026-04-29_05-41-47-931Z",
+      "drDir": "report_2026-04-29_05-41-42-038Z",
+      "deltaMs": 5893,
+      "actual": 18,
+      "build": "110",
+      "tc": 18,
+      "conf": 1,
+      "method": "bc-consensus",
+      "peakR": 293,
+      "rOuter": 429
+    },
+    {
+      "tdStamp": "2026-04-30_05-42-47-207Z",
+      "drDir": "report_2026-04-30_05-42-41-155Z",
+      "deltaMs": 6052,
+      "actual": 14,
+      "build": "112",
+      "tc": 14,
+      "conf": 1,
+      "method": "bc-consensus+peak",
+      "peakR": 354,
+      "rOuter": 423
+    }
+  ]
+}

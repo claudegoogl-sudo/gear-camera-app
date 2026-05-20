@@ -1,0 +1,9 @@
+tdStamp,drDir,deltaMs,actual,build,head_tc,head_conf,head_method,head_peakR,head_rOuter,prev_tc,prev_conf,prev_method,prev_peakR,prev_rOuter,head_correct,prev_correct,delta_state,dir_flip,conf_delta
+2026-04-28_14-33-47-405Z,report_2026-04-28_14-33-41-543Z,5862,11,107,11,1,bc-consensus+peak,357,385,11,1,bc-consensus+peak,357,385,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-04-29_05-15-43-455Z,report_2026-04-29_05-15-37-079Z,6376,11,109,11,0.5335,fft-agreement,376,424,11,0.5335,fft-agreement,376,424,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-04-29_05-17-07-868Z,report_2026-04-29_05-17-02-454Z,5414,11,109,11,0.8767,bc-consensus+peak,385,310,11,0.8767,bc-consensus+peak,385,310,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-04-29_05-18-37-310Z,report_2026-04-29_05-18-31-389Z,5921,12,109,12,1,bc-consensus+peak,377,296,12,1,bc-consensus+peak,377,296,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-04-29_05-20-55-642Z,report_2026-04-29_05-20-49-673Z,5969,11,110,11,0.8469,bc-consensus+fft-agree,401,417,11,0.8469,bc-consensus+fft-agree,401,417,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-04-30_05-39-33-414Z,report_2026-04-30_05-39-27-761Z,5653,11,112,11,0.7247,bc-consensus+peak,338,427,11,0.7247,bc-consensus+peak,338,427,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-04-30_05-41-00-183Z,report_2026-04-30_05-40-55-291Z,4892,12,112,12,1,bc-consensus+peak,355,285,12,1,bc-consensus+peak,355,285,Y,Y,NO_CHANGE_CORRECT,N,0
+2026-05-04_11-42-28-074Z,report_2026-05-04_11-42-16-970Z,11104,13,120,13,1,bc-consensus+peak,301,226,13,1,bc-consensus+peak,301,226,Y,Y,NO_CHANGE_CORRECT,N,0

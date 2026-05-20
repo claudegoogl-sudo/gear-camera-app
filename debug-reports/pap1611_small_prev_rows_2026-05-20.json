@@ -1,0 +1,110 @@
+{
+  "slice": "small",
+  "band": {
+    "lo": 10,
+    "hi": 13
+  },
+  "label": "prev",
+  "generatedAt": "2026-05-20T21:52:01.445Z",
+  "repoHead": "867973862c359bc3acd08bceff33bbb5fe720b0e",
+  "algoFileSha": "1b17053a31b5",
+  "pairs": 8,
+  "rows": [
+    {
+      "tdStamp": "2026-04-28_14-33-47-405Z",
+      "drDir": "report_2026-04-28_14-33-41-543Z",
+      "deltaMs": 5862,
+      "actual": 11,
+      "build": "107",
+      "tc": 11,
+      "conf": 1,
+      "method": "bc-consensus+peak",
+      "peakR": 357,
+      "rOuter": 385
+    },
+    {
+      "tdStamp": "2026-04-29_05-15-43-455Z",
+      "drDir": "report_2026-04-29_05-15-37-079Z",
+      "deltaMs": 6376,
+      "actual": 11,
+      "build": "109",
+      "tc": 11,
+      "conf": 0.5335,
+      "method": "fft-agreement",
+      "peakR": 376,
+      "rOuter": 424
+    },
+    {
+      "tdStamp": "2026-04-29_05-17-07-868Z",
+      "drDir": "report_2026-04-29_05-17-02-454Z",
+      "deltaMs": 5414,
+      "actual": 11,
+      "build": "109",
+      "tc": 11,
+      "conf": 0.8767,
+      "method": "bc-consensus+peak",
+      "peakR": 385,
+      "rOuter": 310
+    },
+    {
+      "tdStamp": "2026-04-29_05-18-37-310Z",
+      "drDir": "report_2026-04-29_05-18-31-389Z",
+      "deltaMs": 5921,
+      "actual": 12,
+      "build": "109",
+      "tc": 12,
+      "conf": 1,
+      "method": "bc-consensus+peak",
+      "peakR": 377,
+      "rOuter": 296
+    },
+    {
+      "tdStamp": "2026-04-29_05-20-55-642Z",
+      "drDir": "report_2026-04-29_05-20-49-673Z",
+      "deltaMs": 5969,
+      "actual": 11,
+      "build": "110",
+      "tc": 11,
+      "conf": 0.8469,
+      "method": "bc-consensus+fft-agree",
+      "peakR": 401,
+      "rOuter": 417
+    },
+    {
+      "tdStamp": "2026-04-30_05-39-33-414Z",
+      "drDir": "report_2026-04-30_05-39-27-761Z",
+      "deltaMs": 5653,
+      "actual": 11,
+      "build": "112",
+      "tc": 11,
+      "conf": 0.7247,
+      "method": "bc-consensus+peak",
+      "peakR": 338,
+      "rOuter": 427
+    },
+    {
+      "tdStamp": "2026-04-30_05-41-00-183Z",
+      "drDir": "report_2026-04-30_05-40-55-291Z",
+      "deltaMs": 4892,
+      "actual": 12,
+      "build": "112",
+      "tc": 12,
+      "conf": 1,
+      "method": "bc-consensus+peak",
+      "peakR": 355,
+      "rOuter": 285
+    },
+    {
+      "tdStamp": "2026-05-04_11-42-28-074Z",
+      "drDir": "report_2026-05-04_11-42-16-970Z",
+      "deltaMs": 11104,
+      "actual": 13,
+      "build": "120",
+      "tc": 13,
+      "conf": 1,
+      "method": "bc-consensus+peak",
+      "peakR": 301,
+      "rOuter": 226
+    }
+  ]
+}
