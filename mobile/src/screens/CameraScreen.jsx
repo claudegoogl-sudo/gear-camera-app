@@ -193,7 +193,24 @@ export default function CameraScreen({ navigation }) {
   // have preferred the main lens.  Surfacing the resolved prop value next
   // to the underlying `hasTorch` capability lets us tell the (1)-(4)
   // hypotheses in PAP-1592 apart from a single debug-share / Sentry event.
-  const torchProp = device?.hasTorch ? 'on' : 'off';
+  // PAP-1596: defer the ON transition until *after* the first onInitialized.
+  // Vision-camera 4.7.3 (Android/CameraX) only invokes
+  // `camera.cameraControl.enableTorch(true)` when its session's
+  // `currentTorch != newTorch` guard fires (see
+  // node_modules/.../CameraSession+Configuration.kt:326).  On Xiaomi
+  // 21081111RG's logical multi-camera (id="0", both wide- and main- physicals
+  // share the same logical device — confirmed in the b127 PAP-1592 breadcrumb
+  // dump: see debug-reports/pap1596_torch_timeline_2026-05-20.csv), the first
+  // session-bind silently coalesces the initial torch="on" prop into the
+  // CaptureSession config without engaging the LED.  Forcing a deliberate
+  // off→on transition AFTER onInitialized fires kicks the CameraX state
+  // machine into actually calling enableTorch on the bound CaptureSession,
+  // which is the path that propagates to the OEM HAL.  On devices where the
+  // initial bind already engaged the torch (every non-Xiaomi report through
+  // b126) the only observable difference is a ~50ms delay before the LED
+  // lights — imperceptible during aim.
+  const [torchEngaged, setTorchEngaged] = useState(false);
+  const torchProp = device?.hasTorch && torchEngaged ? 'on' : 'off';
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -290,6 +307,49 @@ export default function CameraScreen({ navigation }) {
       });
     });
   }, []);
+
+  // ── PAP-1596: torch off→on transition cycle ────────────────────────────
+  // See the torchEngaged declaration above for the root-cause rationale.
+  // This effect drives the cycle exactly once per camera-ready transition:
+  // start at OFF, flip to ON ~50ms after onInitialized fires.  On retry
+  // (wide→main fallback, AppState policy retry) isCameraReady drops to false
+  // → torchEngaged resets to false → next ready event re-arms the cycle.
+  // AC5: the torchCycleApplied breadcrumb provides the empirical assertion
+  // that this code path runs on device — QA can grep for `category=
+  // camera.torch.cycle` in the next b128 debug-share to confirm.
+  useEffect(() => {
+    if (!isCameraReady || !device?.hasTorch) {
+      if (torchEngaged) setTorchEngaged(false);
+      return undefined;
+    }
+    if (torchEngaged) return undefined;
+    const t = setTimeout(() => {
+      setTorchEngaged(true);
+      cameraEventsRef.current.push({
+        type: 'torchCycleApplied',
+        ts: new Date().toISOString(),
+        deviceId: device?.id ?? null,
+        hasTorch: !!device?.hasTorch,
+      });
+      if (SENTRY_ENABLED) {
+        try {
+          Sentry.addBreadcrumb({
+            category: 'camera.torch.cycle',
+            level: 'info',
+            message: 'torchCycleApplied',
+            data: {
+              deviceId: device?.id ?? null,
+              hasTorch: !!device?.hasTorch,
+              ts: new Date().toISOString(),
+            },
+          });
+        } catch (e) {
+          // Telemetry must never break the camera screen.
+        }
+      }
+    }, 50);
+    return () => clearTimeout(t);
+  }, [isCameraReady, device?.id, device?.hasTorch, torchEngaged]);
 
   // ── PAP-1592: torch-state observability ────────────────────────────────
   // Fire a `torchState` cameraEvent + Sentry breadcrumb every time the

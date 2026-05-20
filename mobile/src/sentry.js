@@ -26,6 +26,12 @@ if (DSN) {
     tracesSampleRate: 0,
     // 20 MB ceiling sits comfortably above any single photo we attach.
     maxAttachmentSize: 20 * 1024 * 1024,
+    // PAP-1596: bump from default 3 so `contexts.camera.cameraEvents[*].field`
+    // (depth 4) is preserved instead of being normalized to the string
+    // `'[Object]'` in the Sentry UI.  Without this the AC1 telemetry path
+    // (torchState / capture cameraEvents in debugShare.js) is unreadable on
+    // the dashboard — exactly the loss seen on b127's 9 Xiaomi reports.
+    normalizeDepth: 10,
     // Avoid the SDK's default global handler swallowing dev-only React errors;
     // we already surface those through the existing error boundary / Alerts.
     enableNativeCrashHandling: true,
