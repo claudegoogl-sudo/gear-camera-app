@@ -552,6 +552,23 @@ export default function CameraScreen({ navigation }) {
     setPreviewPaused(false); // resume live preview after cancel
     setProcessedThumbUri(null);
     motionResetRef.current?.();
+    // PAP-1617 / PAP-1618: re-arm the PAP-1596 torch cycle on Cancel.
+    // The reset-after-success path works because the focus listener
+    // (below) drops isCameraReady=false, which forces the cycle effect to
+    // reset torchEngaged=false and then re-engage on the next ready event.
+    // Cancel does NOT remount/unfocus the camera, so isCameraReady stays
+    // true and the cycle effect never re-fires.  Manually flipping
+    // torchEngaged=false here triggers the cycle effect (torchEngaged is
+    // in its dependency array) which schedules the 50ms off→on transition
+    // and emits the existing `torchCycleApplied` breadcrumb (AC3).  On
+    // non-Xiaomi devices this is a 50ms LED blink during cancel — invisible
+    // in practice (AC4).
+    cameraEventsRef.current.push({
+      type: 'torchCancelReset',
+      ts: new Date().toISOString(),
+      reason: 'PAP-1617 re-arm torch cycle after Cancel',
+    });
+    setTorchEngaged(false);
   }, [setProcessing]);
 
   // ── Motion detection ───────────────────────────────────────────────────
