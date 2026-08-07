@@ -179,36 +179,65 @@ function morphClose(mask, width, height, radius, _tmp, _out) {
   const nOff = offsets.length;
 
   // Dilate
-  for (let y = radius; y < height - radius; y++) {
-    const row = y * width;
-    for (let x = radius; x < width - radius; x++) {
-      const idx = row + x;
-      let val = 0;
-      for (let k = 0; k < nOff; k++) {
-        if (mask[idx + offsets[k]]) { val = 1; break; }
+  if (radius === 1) {
+    // PAP-1635: radius 1 is the only radius the sweep uses, and its offset set
+    // is exactly the 5-point cross. Unrolling it removes an inner loop over a
+    // boxed JS array from the hottest path in the pipeline.
+    for (let y = 1; y < height - 1; y++) {
+      const row = y * width;
+      for (let x = 1; x < width - 1; x++) {
+        const idx = row + x;
+        tmp[idx] = (mask[idx] | mask[idx - 1] | mask[idx + 1]
+                  | mask[idx - width] | mask[idx + width]) ? 1 : 0;
       }
-      tmp[idx] = val;
+    }
+  } else {
+    for (let y = radius; y < height - radius; y++) {
+      const row = y * width;
+      for (let x = radius; x < width - radius; x++) {
+        const idx = row + x;
+        let val = 0;
+        for (let k = 0; k < nOff; k++) {
+          if (mask[idx + offsets[k]]) { val = 1; break; }
+        }
+        tmp[idx] = val;
+      }
     }
   }
-  // Handle border pixels conservatively (copy mask)
+  // Handle border pixels conservatively (copy mask).
+  // PAP-1635: touch only the border frame instead of scanning every pixel to
+  // test whether it is on the border — same writes, width*height fewer reads.
   for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (y < radius || y >= height - radius || x < radius || x >= width - radius) {
-        tmp[y * width + x] = mask[y * width + x];
-      }
+    const row = y * width;
+    if (y < radius || y >= height - radius) {
+      for (let x = 0; x < width; x++) tmp[row + x] = mask[row + x];
+    } else {
+      for (let x = 0; x < radius && x < width; x++) tmp[row + x] = mask[row + x];
+      for (let x = Math.max(radius, width - radius); x < width; x++) tmp[row + x] = mask[row + x];
     }
   }
 
   // Erode
-  for (let y = radius; y < height - radius; y++) {
-    const row = y * width;
-    for (let x = radius; x < width - radius; x++) {
-      const idx = row + x;
-      let val = 1;
-      for (let k = 0; k < nOff; k++) {
-        if (!tmp[idx + offsets[k]]) { val = 0; break; }
+  if (radius === 1) {
+    for (let y = 1; y < height - 1; y++) {
+      const row = y * width;
+      for (let x = 1; x < width - 1; x++) {
+        const idx = row + x;
+        out[idx] = (tmp[idx] && tmp[idx - 1] && tmp[idx + 1]
+                 && tmp[idx - width] && tmp[idx + width]) ? 1 : 0;
       }
-      out[idx] = val;
+    }
+  } else {
+    for (let y = radius; y < height - radius; y++) {
+      const row = y * width;
+      for (let x = radius; x < width - radius; x++) {
+        const idx = row + x;
+        let val = 1;
+        for (let k = 0; k < nOff; k++) {
+          if (!tmp[idx + offsets[k]]) { val = 0; break; }
+        }
+        out[idx] = val;
+      }
     }
   }
   return out;
@@ -226,28 +255,53 @@ function morphOpen(mask, width, height, radius, _tmp, _out) {
   const nOff = offsets.length;
 
   // Erode
-  for (let y = radius; y < height - radius; y++) {
-    const row = y * width;
-    for (let x = radius; x < width - radius; x++) {
-      const idx = row + x;
-      let val = 1;
-      for (let k = 0; k < nOff; k++) {
-        if (!mask[idx + offsets[k]]) { val = 0; break; }
+  // PAP-1635: radius 1 (the only radius the threshold sweep uses) has the
+  // 5-point cross as its offset set; unrolling it drops a boxed-array inner
+  // loop from the hot path. Bounds and writes are unchanged.
+  if (radius === 1) {
+    for (let y = 1; y < height - 1; y++) {
+      const row = y * width;
+      for (let x = 1; x < width - 1; x++) {
+        const idx = row + x;
+        tmp[idx] = (mask[idx] && mask[idx - 1] && mask[idx + 1]
+                 && mask[idx - width] && mask[idx + width]) ? 1 : 0;
       }
-      tmp[idx] = val;
+    }
+  } else {
+    for (let y = radius; y < height - radius; y++) {
+      const row = y * width;
+      for (let x = radius; x < width - radius; x++) {
+        const idx = row + x;
+        let val = 1;
+        for (let k = 0; k < nOff; k++) {
+          if (!mask[idx + offsets[k]]) { val = 0; break; }
+        }
+        tmp[idx] = val;
+      }
     }
   }
 
   // Dilate
-  for (let y = radius; y < height - radius; y++) {
-    const row = y * width;
-    for (let x = radius; x < width - radius; x++) {
-      const idx = row + x;
-      let val = 0;
-      for (let k = 0; k < nOff; k++) {
-        if (tmp[idx + offsets[k]]) { val = 1; break; }
+  if (radius === 1) {
+    for (let y = 1; y < height - 1; y++) {
+      const row = y * width;
+      for (let x = 1; x < width - 1; x++) {
+        const idx = row + x;
+        out[idx] = (tmp[idx] | tmp[idx - 1] | tmp[idx + 1]
+                  | tmp[idx - width] | tmp[idx + width]) ? 1 : 0;
       }
-      out[idx] = val;
+    }
+  } else {
+    for (let y = radius; y < height - radius; y++) {
+      const row = y * width;
+      for (let x = radius; x < width - radius; x++) {
+        const idx = row + x;
+        let val = 0;
+        for (let k = 0; k < nOff; k++) {
+          if (tmp[idx + offsets[k]]) { val = 1; break; }
+        }
+        out[idx] = val;
+      }
     }
   }
   return out;
@@ -255,30 +309,45 @@ function morphOpen(mask, width, height, radius, _tmp, _out) {
 
 // ── 5. Connected-component labelling (BFS) ──────────────────────────────────
 
+// PAP-1635: BFS frontier buffers, grown on demand and reused across calls.
+// Every pixel is enqueued at most once (its label is written on enqueue), so
+// `width * height` entries is a hard capacity bound. labelComponents does not
+// recurse, so a single shared pair is safe.
+let _lcQx = null;
+let _lcQy = null;
+
 function labelComponents(mask, width, height, targetVal, _labels) {
   const n = width * height;
   const labels = _labels || new Int32Array(n);
   if (_labels) labels.fill(0);
+  if (_lcQx === null || _lcQx.length < n) {
+    _lcQx = new Int32Array(n);
+    _lcQy = new Int32Array(n);
+  }
+  const qx = _lcQx, qy = _lcQy;
+  const lastX = width - 1, lastY = height - 1;
+  const borderX = width - 2, borderY = height - 2;
   let nextLabel = 1;
   const components = [];
 
   for (let y = 0; y < height; y++) {
+    const rowBase = y * width;
     for (let x = 0; x < width; x++) {
-      const idx = y * width + x;
+      const idx = rowBase + x;
       if (mask[idx] !== targetVal || labels[idx] !== 0) continue;
 
       const id = nextLabel++;
-      const queue = [idx];
       labels[idx] = id;
+      qx[0] = x; qy[0] = y;
+      let head = 0, tail = 1;
       let area = 0, sx = 0, sy = 0;
       let minX = x, minY = y, maxX = x, maxY = y;
       let touchesBorder = false;
-      let head = 0;
 
-      while (head < queue.length) {
-        const ci = queue[head++];
-        const cx = ci % width;
-        const cy = (ci - cx) / width;
+      while (head < tail) {
+        const cx = qx[head], cy = qy[head];
+        head++;
+        const ci = cy * width + cx;
         area++;
         sx += cx;
         sy += cy;
@@ -286,18 +355,35 @@ function labelComponents(mask, width, height, targetVal, _labels) {
         if (cx > maxX) maxX = cx;
         if (cy < minY) minY = cy;
         if (cy > maxY) maxY = cy;
-        if (cx <= 1 || cy <= 1 || cx >= width - 2 || cy >= height - 2) {
+        if (cx <= 1 || cy <= 1 || cx >= borderX || cy >= borderY) {
           touchesBorder = true;
         }
 
-        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-          const nx = cx + dx, ny = cy + dy;
-          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-            const ni = ny * width + nx;
-            if (mask[ni] === targetVal && labels[ni] === 0) {
-              labels[ni] = id;
-              queue.push(ni);
-            }
+        // 4-neighbours visited in the original (+x, -x, +y, -y) order, so the
+        // BFS traversal — and therefore every component statistic and label
+        // id — is bit-for-bit what the array-of-pairs version produced.
+        if (cx < lastX) {
+          const ni = ci + 1;
+          if (mask[ni] === targetVal && labels[ni] === 0) {
+            labels[ni] = id; qx[tail] = cx + 1; qy[tail] = cy; tail++;
+          }
+        }
+        if (cx > 0) {
+          const ni = ci - 1;
+          if (mask[ni] === targetVal && labels[ni] === 0) {
+            labels[ni] = id; qx[tail] = cx - 1; qy[tail] = cy; tail++;
+          }
+        }
+        if (cy < lastY) {
+          const ni = ci + width;
+          if (mask[ni] === targetVal && labels[ni] === 0) {
+            labels[ni] = id; qx[tail] = cx; qy[tail] = cy + 1; tail++;
+          }
+        }
+        if (cy > 0) {
+          const ni = ci - width;
+          if (mask[ni] === targetVal && labels[ni] === 0) {
+            labels[ni] = id; qx[tail] = cx; qy[tail] = cy - 1; tail++;
           }
         }
       }
@@ -518,12 +604,37 @@ function fitEllipseCenter(coords) {
 
 // ── 7. Sample intensity ring ────────────────────────────────────────────────
 
+// PAP-1635: the angle set depends only on nAngles, but a single FFT purity
+// check re-samples ~20 radii at the same nAngles — so ~40k cos/sin calls where
+// only 2 × nAngles distinct values exist. Cached per nAngles; the expression is
+// unchanged, so the values are bit-identical to recomputing them.
+const _ringTrig = new Map();
+
+function _ringTrigFor(nAngles) {
+  let t = _ringTrig.get(nAngles);
+  if (!t) {
+    const cos = new Float64Array(nAngles);
+    const sin = new Float64Array(nAngles);
+    for (let i = 0; i < nAngles; i++) {
+      const angle = (2 * Math.PI * i) / nAngles;
+      cos[i] = Math.cos(angle);
+      sin[i] = Math.sin(angle);
+    }
+    t = { cos, sin };
+    _ringTrig.set(nAngles, t);
+  }
+  return t;
+}
+
 function sampleIntensityRing(gray, cx, cy, r, width, height, nAngles) {
   const samples = new Float64Array(nAngles);
+  const { cos, sin } = _ringTrigFor(nAngles);
+  const lastX = width - 1, lastY = height - 1;
   for (let i = 0; i < nAngles; i++) {
-    const angle = (2 * Math.PI * i) / nAngles;
-    const px = Math.min(Math.max(Math.round(cx + r * Math.cos(angle)), 0), width - 1);
-    const py = Math.min(Math.max(Math.round(cy + r * Math.sin(angle)), 0), height - 1);
+    let px = Math.round(cx + r * cos[i]);
+    if (px < 0) px = 0; else if (px > lastX) px = lastX;
+    let py = Math.round(cy + r * sin[i]);
+    if (py < 0) py = 0; else if (py > lastY) py = lastY;
     samples[i] = gray[py * width + px];
   }
   return samples;
@@ -834,7 +945,6 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   // ~350MB of short-lived Uint8Array/Int32Array allocations (36 iterations
   // × ~8 arrays each).  Reuse across iterations — zero accuracy change.
   const sweepBufA = new Uint8Array(n);
-  const sweepBufC = new Uint8Array(n);
   const sweepLabels = new Int32Array(n);
 
   // PAP-588 Phase 2 (Option E): run morphological close/open at half
@@ -851,33 +961,46 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   const halfBufB = new Uint8Array(halfN);
   const halfBufC = new Uint8Array(halfN);
 
+  // PAP-1635: per-2×2-block min/max of `gray`, computed once instead of
+  // re-thresholding the full-resolution image on all 36 sweep iterations.
+  // The sweep only ever consumes the OR-downsample of the threshold mask, and
+  //   OR over block of (gray  > t)  ==  (blockMax > t)
+  //   OR over block of (gray <= t)  ==  (blockMin <= t)
+  // so this is an exact rewrite: it drops 36 × (n threshold writes + n mask
+  // reads) down to 36 × halfN, at the cost of one halfN-sized pass here.
+  const blockMax = new Uint8Array(halfN);
+  const blockMin = new Uint8Array(halfN);
+  for (let y = 0; y < halfH; y++) {
+    const r0 = y * 2 * w;
+    const r1 = r0 + w;
+    const dstRow = y * halfW;
+    for (let x = 0; x < halfW; x++) {
+      const s0 = x * 2;
+      const p0 = gray[r0 + s0], p1 = gray[r0 + s0 + 1];
+      const p2 = gray[r1 + s0], p3 = gray[r1 + s0 + 1];
+      let mx = p0; if (p1 > mx) mx = p1; if (p2 > mx) mx = p2; if (p3 > mx) mx = p3;
+      let mn = p0; if (p1 < mn) mn = p1; if (p2 < mn) mn = p2; if (p3 < mn) mn = p3;
+      blockMax[dstRow + x] = mx;
+      blockMin[dstRow + x] = mn;
+    }
+  }
+
   // Sweep thresholds 40–220 in steps of 10 (PAP-346: reduced from 15 to
   // improve contour candidate coverage for large gears — Python uses
   // step=5 but 10 is a reasonable mobile compromise.  18 iterations vs
   // the previous 12, matching Python more closely without the full 36).
   for (let thresh = 40; thresh < 220; thresh += 10) {
     for (const invert of [true, false]) {
-      // Build full-res mask in sweepBufA, then OR-downsample 2× to halfBufA.
-      // OR-downsample (any of the 2×2 block is foreground) is more
-      // conservative for thin-stroke features than top-left NN, which
-      // matters because the threshold sweep relies on foreground continuity
-      // for the morphClose chain to bridge gear-tooth gaps reliably.
-      for (let i = 0; i < n; i++) {
-        sweepBufA[i] = invert ? (gray[i] <= thresh ? 1 : 0) : (gray[i] > thresh ? 1 : 0);
-      }
-      for (let y = 0; y < halfH; y++) {
-        const sy0 = y * 2;
-        const sy1 = sy0 + 1;
-        const r0 = sy0 * w;
-        const r1 = sy1 * w;
-        const dstRow = y * halfW;
-        for (let x = 0; x < halfW; x++) {
-          const sx0 = x * 2;
-          const sx1 = sx0 + 1;
-          halfBufA[dstRow + x] =
-            (sweepBufA[r0 + sx0] | sweepBufA[r0 + sx1] |
-             sweepBufA[r1 + sx0] | sweepBufA[r1 + sx1]) ? 1 : 0;
-        }
+      // Half-res mask via the block min/max above. This is the OR-downsample
+      // of the full-res threshold mask: OR (any of the 2×2 block is
+      // foreground) is more conservative for thin-stroke features than
+      // top-left NN, which matters because the threshold sweep relies on
+      // foreground continuity for the morphClose chain to bridge gear-tooth
+      // gaps reliably.
+      if (invert) {
+        for (let i = 0; i < halfN; i++) halfBufA[i] = blockMin[i] <= thresh ? 1 : 0;
+      } else {
+        for (let i = 0; i < halfN; i++) halfBufA[i] = blockMax[i] > thresh ? 1 : 0;
       }
 
       // Morphological close (×2) then open at half-resolution.
@@ -3326,6 +3449,13 @@ export const __test = {
   // and FFT-at-radius rescue without changing production behavior.
   fftCountAtRadius,
   radialOuterEdgeRadius,
+  // PAP-1635: the per-stage bodies of analyzeImage, so a profiler can time
+  // each independently instead of only seeing one `detect` total.
+  findGearRadius,
+  fftAtOuterRadii,
+  multiRadiusFftScan,
+  outerProfileScan,
+  clahePeakCounting,
 };
 
 export function countTeethFromRgba(rgba, width, height) {
