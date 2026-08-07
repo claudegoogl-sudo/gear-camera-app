@@ -10,8 +10,13 @@
 #   - GITHUB_PAT / GITHUB_TOKEN  Operator-side PAT for `gh release create`.
 #                                Only used here on the build host — NEVER
 #                                shipped in the APK (PAP-1543/PAP-1463).
+#                                Optional: a token that does not authenticate is
+#                                ignored in favour of the `gh` keyring login.
+#   - SKIP_RELEASE_UPLOAD        Set to build a deliberately local-only artifact.
 #   - SENTRY_AUTH_TOKEN          sentry-cli source-map upload auth.
 #   - SENTRY_ORG / SENTRY_PROJECT  org/project slugs for sentry-cli.
+#
+# Exits non-zero if the APK cannot be published (PAP-1655).
 
 set -euo pipefail
 
@@ -21,7 +26,8 @@ ANDROID_DIR="$MOBILE_DIR/android"
 BUILD_INFO="$MOBILE_DIR/src/buildInfo.js"
 TEST_BUILDS_DIR="$REPO_ROOT/test-builds"
 README="$TEST_BUILDS_DIR/README.md"
-GH_REPO="claudegoogl-sudo/gear-camera-app"
+
+source "$REPO_ROOT/scripts/lib/gh-release.sh"
 
 # ── Load .env if present ─────────────────────────────────────────────────────
 if [[ -f "$REPO_ROOT/.env" ]]; then
@@ -30,11 +36,9 @@ if [[ -f "$REPO_ROOT/.env" ]]; then
   set +a
 fi
 
-# Resolve GitHub token for release uploads (operator-side only — the on-device
-# upload path moved to Sentry in PAP-1543).  EXPO_PUBLIC_GITHUB_TOKEN is no
-# longer the canonical name but kept here for backwards-compat with older .env
-# files.
-GH_TOKEN="${GITHUB_PAT:-${GITHUB_TOKEN:-${EXPO_PUBLIC_GITHUB_TOKEN:-}}}"
+# Resolve publishing credentials up front (PAP-1655). Operator-side only — the
+# on-device upload path moved to Sentry in PAP-1543.
+gh_preflight_auth
 
 # ── Derive version + build number ────────────────────────────────────────────
 VERSION=$(node -p "require('$MOBILE_DIR/package.json').version")
@@ -185,27 +189,22 @@ APK_SIZE_MB=$(du -m "$APK_DEST" | cut -f1)
 echo "[build] APK → $APK_DEST (${APK_SIZE_MB}MB)"
 
 # ── Upload to GitHub Releases ────────────────────────────────────────────────
-DOWNLOAD_LINK="local"
 TAG="b${BUILD_NUMBER}"
 # Sanitize APK name for upload — GitHub strips/replaces both spaces and colons
 # in release asset filenames, so the README link must use the same dots.
 UPLOAD_APK_NAME="${APK_NAME// /.}"
 UPLOAD_APK_NAME="${UPLOAD_APK_NAME//:/.}"
 
-if [[ -n "$GH_TOKEN" ]]; then
-  echo "[build] Uploading to GitHub Releases as tag $TAG…"
-  if GITHUB_TOKEN="$GH_TOKEN" gh release create "$TAG" \
-       --repo "$GH_REPO" \
-       --title "Debug Build b${BUILD_NUMBER}" \
-       --notes "Build b${BUILD_NUMBER} — v${VERSION} — ${BUILD_DATE}" \
-       "$APK_DEST#$UPLOAD_APK_NAME" 2>&1; then
-    DOWNLOAD_LINK="[Download](https://github.com/$GH_REPO/releases/download/$TAG/$UPLOAD_APK_NAME)"
-    echo "[build] Release $TAG uploaded successfully."
-  else
-    echo "[build] WARNING: GitHub release upload failed. Build succeeded locally." >&2
-  fi
+UPLOAD_FAILED=0
+if [[ -n "${SKIP_RELEASE_UPLOAD:-}" ]]; then
+  DOWNLOAD_LINK="local only — SKIP_RELEASE_UPLOAD"
+elif gh_publish_release "$TAG" "Debug Build b${BUILD_NUMBER}" \
+       "Build b${BUILD_NUMBER} — v${VERSION} — ${BUILD_DATE}" \
+       "$APK_DEST" "$UPLOAD_APK_NAME"; then
+  DOWNLOAD_LINK="$GH_DOWNLOAD_LINK"
 else
-  echo "[build] WARNING: No GitHub token found (set GITHUB_PAT or EXPO_PUBLIC_GITHUB_TOKEN in .env). Skipping release upload." >&2
+  DOWNLOAD_LINK="**UPLOAD FAILED — not delivered**"
+  UPLOAD_FAILED=1
 fi
 
 # ── Update test-builds/README.md ──────────────────────────────────────────────
@@ -234,5 +233,12 @@ with open(path, 'w') as f:
     f.writelines(result)
 print(f"[build] Updated {path}")
 PYEOF
+
+# The README row is written first so the build is still recorded, then the
+# failed delivery is reported as the terminal state of the script (PAP-1655).
+if (( UPLOAD_FAILED )); then
+  gh_upload_failed_banner "$TAG" "$APK_DEST"
+  exit 1
+fi
 
 echo "[build] Done. Build label: $BUILD_LABEL"
