@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# written by the @sentry/react-native Expo plugin at prebuild time from
+# EXPO_PUBLIC_SENTRY_DSN (PAP-1653) — regenerate with `expo prebuild`
+/sentry.options.json

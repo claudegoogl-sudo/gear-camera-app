@@ -81,6 +81,12 @@ cd "$ANDROID_DIR"
 # generated and gitignored.
 ABIS="armeabi-v7a,arm64-v8a"
 
+# PAP-1653: applying sentry.gradle (needed for the sentry.options.json → assets
+# copy) also turns on its Gradle-side source-map auto-upload. Keep the explicit
+# sentry-cli step below as the single upload path so upload behaviour is
+# unchanged from b134.
+export SENTRY_DISABLE_AUTO_UPLOAD=true
+
 echo "[build] Running assembleRelease (ABIs: $ABIS)…"
 ./gradlew assembleRelease -PreactNativeArchitectures="$ABIS"
 
@@ -150,6 +156,45 @@ assert_sentry_dsn_bundled() {
   fi
 }
 assert_sentry_dsn_bundled "$APK_SRC"
+
+# ── Verify native Sentry is configured (PAP-1653) ─────────────────────────────
+# The check above only proves JS can reach Sentry. The native SDK is started
+# separately by `RNSentrySDK.init(this)` in MainApplication.onCreate, which
+# reads its DSN from `assets/sentry.options.json`. Without that asset, JVM/NDK
+# crashes and ANRs that happen before the JS bundle loads have no telemetry
+# path. Both halves are produced by the @sentry/react-native Expo plugin at
+# `expo prebuild` time, so a stale `android/` tree silently drops them —
+# assert against the artifact, same as the bundle check.
+#
+# NOTE: `io.sentry.dsn` manifest meta-data is deliberately NOT used. The SDK
+# ships `io.sentry.auto-init=false` in its own manifest, so sentry-android's
+# SentryInitProvider ignores any DSN meta-data. The options-file path is the
+# only one that actually starts the native SDK.
+assert_sentry_native_configured() {
+  local apk="$1" main_application tmp
+  tmp=$(mktemp -d)
+  if unzip -o -q "$apk" assets/sentry.options.json -d "$tmp" \
+     && grep -q -a -F "$EXPO_PUBLIC_SENTRY_DSN" "$tmp/assets/sentry.options.json"; then
+    rm -rf "$tmp"
+    echo "[build] Verified Sentry DSN is baked into the packaged native options file"
+  else
+    rm -rf "$tmp"
+    echo "[build] ERROR: assets/sentry.options.json is missing from the APK or does not" >&2
+    echo "[build] carry the DSN — native crashes before JS init would go unreported." >&2
+    echo "[build] Re-run 'npx expo prebuild -p android' from mobile/ with .env sourced." >&2
+    exit 1
+  fi
+
+  # The options file is inert unless MainApplication actually starts the SDK.
+  main_application=$(find "$ANDROID_DIR/app/src/main/java" -name 'MainApplication.kt' | head -1)
+  if [[ -z "$main_application" ]] || ! grep -q 'RNSentrySDK.init' "$main_application"; then
+    echo "[build] ERROR: MainApplication.kt does not call RNSentrySDK.init — the packaged" >&2
+    echo "[build] sentry.options.json would never be read. Re-run 'npx expo prebuild'." >&2
+    exit 1
+  fi
+  echo "[build] Verified MainApplication starts the native Sentry SDK"
+}
+assert_sentry_native_configured "$APK_SRC"
 
 # ── Sentry source-map upload (PAP-1543) ───────────────────────────────────────
 # Lets the Sentry stack trace UI map minified bundle frames back to source.
