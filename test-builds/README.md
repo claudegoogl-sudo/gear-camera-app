@@ -3,20 +3,22 @@
 Debug APK builds are versioned and timestamped. Filename format: `gear-camera-debug-YYYY-MM-DD-b<build>.apk`.
 Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are committed directly.
 
-b133 is the first `release`-variant build in this table; every prior entry is a `debug` build despite
-some being tagged "release" on GitHub. The `release` buildType currently signs with the **debug
-keystore** (`mobile/android/app/build.gradle`), so b133 is installable and shareable but not
-publishable to Play.
+**b134 is the current release artifact.** It supersedes b133, which is telemetry-dead — do not
+validate against b133. b133 and b134 are the only `release`-variant builds in this table; every
+prior entry is a `debug` build despite some being tagged "release" on GitHub. The `release`
+buildType currently signs with the **debug keystore** (`mobile/android/app/build.gradle`), so these
+are installable and shareable but not publishable to Play.
 
-Release builds now go through `scripts/build-release.sh` (added in PAP-1649). b133 predates it and
-was produced by hand with `./gradlew assembleRelease -PreactNativeArchitectures="armeabi-v7a,arm64-v8a"`.
+Release builds go through `scripts/build-release.sh` (added in PAP-1649). b133 predates it and was
+produced by hand with `./gradlew assembleRelease -PreactNativeArchitectures="armeabi-v7a,arm64-v8a"`.
 **b133 is telemetry-dead as a result** — a bare `gradlew` invocation never sources the repo-root
 `.env`, so `EXPO_PUBLIC_SENTRY_DSN` was empty at bundle time and Sentry is never initialised
-(PAP-1650). Always use the build scripts; both now refuse to publish an artifact whose bundle is
-missing the DSN.
+(PAP-1650). Zero reports from b133 is that defect, not a clean run. Always use the build scripts;
+both now refuse to publish an artifact whose bundle is missing the DSN.
 
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
+| 2026-08-07 19:32 | gear-camera-release-2026-08-07 19:30-b134.apk (47MB) — **release variant**, debug-keystore signed | b134 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b134/gear-camera-release-2026-08-07.19.30-b134.apk) |
 | 2026-08-07 12:54 | gear-camera-release-2026-08-07 12:54-b133.apk (47MB) — **release variant**, debug-keystore signed — **⚠️ TELEMETRY-DEAD, do not validate (PAP-1650)** | b133 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b133/gear-camera-release-2026-08-07.12.54-b133.apk) |
 | 2026-08-07 12:30 | gear-camera-debug-2026-08-07 12:29-b132.apk (97MB) | b132 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b132/gear-camera-debug-2026-08-07.12.29-b132.apk) |
 | 2026-08-07 11:39 | gear-camera-debug-2026-08-07 11:29-b130.apk (94MB) | b130 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b130/gear-camera-debug-2026-08-07.11.29-b130.apk) |
