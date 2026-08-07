@@ -65,8 +65,15 @@ echo "[build] Stamped $BUILD_INFO"
 
 # ── Run Gradle assembleDebug ──────────────────────────────────────────────────
 cd "$ANDROID_DIR"
-echo "[build] Running assembleDebug…"
-./gradlew assembleDebug
+
+# Ship only the two physical-device ABIs. x86/x86_64 are emulator-only, cannot
+# execute on any test handset, and cost ~94MB of the artifact. QA validation is
+# physical-device only (PAP-1637). Passed on the CLI rather than edited into
+# android/gradle.properties because that directory is generated and gitignored.
+ABIS="armeabi-v7a,arm64-v8a"
+
+echo "[build] Running assembleDebug (ABIs: $ABIS)…"
+./gradlew assembleDebug -PreactNativeArchitectures="$ABIS"
 
 APK_SRC=$(find "$ANDROID_DIR/app/build/outputs/apk/debug" -name "*.apk" | head -1)
 if [[ -z "$APK_SRC" ]]; then
