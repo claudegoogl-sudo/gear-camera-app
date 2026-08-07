@@ -3,8 +3,15 @@
 Debug APK builds are versioned and timestamped. Filename format: `gear-camera-debug-YYYY-MM-DD-b<build>.apk`.
 Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are committed directly.
 
+b133 is the first `release`-variant build in this table; every prior entry is a `debug` build despite
+some being tagged "release" on GitHub. The `release` buildType currently signs with the **debug
+keystore** (`mobile/android/app/build.gradle`), so b133 is installable and shareable but not
+publishable to Play. There is no `scripts/build-release.sh` — b133 was produced with
+`./gradlew assembleRelease -PreactNativeArchitectures="armeabi-v7a,arm64-v8a"`.
+
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
+| 2026-08-07 12:54 | gear-camera-release-2026-08-07 12:54-b133.apk (47MB) — **release variant**, debug-keystore signed | b133 | local |
 | 2026-08-07 12:30 | gear-camera-debug-2026-08-07 12:29-b132.apk (97MB) | b132 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b132/gear-camera-debug-2026-08-07.12.29-b132.apk) |
 | 2026-08-07 11:39 | gear-camera-debug-2026-08-07 11:29-b130.apk (94MB) | b130 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b130/gear-camera-debug-2026-08-07.11.29-b130.apk) |
 | 2026-05-21 12:42 | gear-camera-debug-2026-05-21 12:40-b129.apk (194MB) | b129 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b129/gear-camera-debug-2026-05-21.12.40-b129.apk) |
