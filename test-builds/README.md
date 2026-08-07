@@ -6,8 +6,14 @@ Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are com
 b133 is the first `release`-variant build in this table; every prior entry is a `debug` build despite
 some being tagged "release" on GitHub. The `release` buildType currently signs with the **debug
 keystore** (`mobile/android/app/build.gradle`), so b133 is installable and shareable but not
-publishable to Play. There is no `scripts/build-release.sh` — b133 was produced with
-`./gradlew assembleRelease -PreactNativeArchitectures="armeabi-v7a,arm64-v8a"`.
+publishable to Play.
+
+Release builds now go through `scripts/build-release.sh` (added in PAP-1649). b133 predates it and
+was produced by hand with `./gradlew assembleRelease -PreactNativeArchitectures="armeabi-v7a,arm64-v8a"`.
+**b133 is telemetry-dead as a result** — a bare `gradlew` invocation never sources the repo-root
+`.env`, so `EXPO_PUBLIC_SENTRY_DSN` was empty at bundle time and Sentry is never initialised
+(PAP-1650). Always use the build scripts; both now refuse to publish an artifact whose bundle is
+missing the DSN.
 
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|

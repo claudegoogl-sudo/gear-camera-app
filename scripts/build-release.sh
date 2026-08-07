@@ -121,6 +121,36 @@ else
   echo "[build] No prior debug APK found in $TEST_BUILDS_DIR to diff against — skipping byte-identity check."
 fi
 
+# ── Verify the Sentry DSN reached the packaged bundle (PAP-1650) ─────────────
+# `.env` lives at the REPO root, but the Expo project root is `mobile/`, so
+# Expo CLI never auto-loads it. The DSN reaches the bundle only via the
+# `set -a; source .env` step above. A bare `./gradlew assembleRelease`
+# therefore produces an APK where sentry.js sees an empty DSN, never calls
+# Sentry.init, and every telemetry path is dead — debug reports, training
+# upload, chainring events and native crash handling. That is exactly how b133
+# shipped dark. Assert against the artifact, not the environment, because only
+# the artifact ships.
+assert_sentry_dsn_bundled() {
+  local apk="$1" tmp
+  if [[ -z "${EXPO_PUBLIC_SENTRY_DSN:-}" ]]; then
+    echo "[build] ERROR: EXPO_PUBLIC_SENTRY_DSN is unset — this build would ship with all" >&2
+    echo "[build] telemetry disabled. Set it in $REPO_ROOT/.env (repo root, not mobile/)." >&2
+    exit 1
+  fi
+  tmp=$(mktemp -d)
+  if unzip -o -q "$apk" assets/index.android.bundle -d "$tmp" \
+     && grep -q -a -F "$EXPO_PUBLIC_SENTRY_DSN" "$tmp/assets/index.android.bundle"; then
+    rm -rf "$tmp"
+    echo "[build] Verified Sentry DSN is baked into the packaged JS bundle"
+  else
+    rm -rf "$tmp"
+    echo "[build] ERROR: EXPO_PUBLIC_SENTRY_DSN is set but is absent from the packaged" >&2
+    echo "[build] bundle — the artifact would ship telemetry-dead. Refusing to publish." >&2
+    exit 1
+  fi
+}
+assert_sentry_dsn_bundled "$APK_SRC"
+
 # ── Sentry source-map upload (PAP-1543) ───────────────────────────────────────
 # Lets the Sentry stack trace UI map minified bundle frames back to source.
 # Non-fatal if creds are missing or the upload fails — the APK still ships.
