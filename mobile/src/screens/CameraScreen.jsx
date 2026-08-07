@@ -530,6 +530,9 @@ export default function CameraScreen({ navigation }) {
           // PAP-1538: methodUsed tag carried into algoDiag for downstream
           // telemetry / debug JSON consumers that don't read the store.
           methodUsed: result.methodUsed ?? null,
+          // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
+          // says a count was slow, never which stage was slow.
+          stageMs: result.stageMs ?? null,
         },
       });
     } catch (e) {

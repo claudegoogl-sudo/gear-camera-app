@@ -3268,6 +3268,17 @@ export async function countTeeth(photoUri, signal, opts) {
     gearCenter,
     gearRadius,
     algorithmRuntimeMs: t4 - t0,
+    // PAP-1636: the four stage marks already computed for the console
+    // breakdown, promoted into the return so they reach the debug report.
+    // Without these a slow count is only ever visible as a single total.
+    stageMs: {
+      load: t1 - t0,
+      preprocess: t2 - t1,
+      detect: t3 - t2,
+      methods: t4 - t3,
+      total: t4 - t0,
+      px: width * height,
+    },
     innerContourSuspected,
     // PAP-815 instrumentation: outer-edge anchor diagnostic surfaced for
     // debug JSON capture (per QA PAP-818 implementation gate 3).  peakR is
