@@ -60,6 +60,13 @@ const RETRY_MAX_DIM          = 1500;
 // time. A budget-triggered stop returns whatever candidate the truncated
 // pipeline already holds (or lets the existing abstain gates reject it) —
 // it never blocks past the deadline.
+// PAP-1659 AC1 follow-up: the entry-time gate around retryNearCenter() was not
+// sufficient by itself — once entered (deadline not yet passed), its own
+// coarse-to-fine search loop (~2000 fftPurityCheck calls) had no internal
+// checkpoint and could still blow the budget on a slow device. retryNearCenter
+// now takes the same `deadline`/`budgetState` and checks once per outer-r
+// iteration in both its coarse and fine passes, mirroring findGearCenter's
+// per-(thresh,invert) checkpoint.
 // 5000ms is the PAP-758 ceiling ("max 5s, better 1-2"). Evidence for going
 // tighter is thin (n=2 freeze reports, one device), so this ships at the
 // ceiling rather than guessing lower; AC2's budgetExhausted telemetry is
@@ -2715,7 +2722,15 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
 //   2. Fine:   ±15px step 5 around coarse-best position and radius
 //   3. Final refinement via refineCenterBySymmetry
 
-function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR = 0) {
+// PAP-1659: `deadline`/`budgetState` mirror findGearCenter's contract (see
+// comment there) — this coarse-then-fine search is its own ~2000-call
+// fftPurityCheck loop (517-789ms measured on desktop, worst-case 8-20s on a
+// slow device per PAP-1659 QA follow-up) with no prior internal checkpoint,
+// so it could run the full budget over again on top of an already-truncated
+// base pass. Checked once per outer-`r` iteration in each pass — bounds the
+// overshoot to one r-step's worth of dx/dy work, same granularity findGearCenter
+// uses per (thresh, invert) pair.
+function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR = 0, deadline = Infinity, budgetState = null) {
   const h = height, w = width;
   let bestPurity = 0.0;
   let bestCx = imgCx, bestCy = imgCy, bestR = Math.floor(Math.min(h, w) / 4);
@@ -2727,7 +2742,12 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aim
   // PAP-313 port: coarse pass tracks top candidates by purity so we can
   // later filter by frequency plausibility (matching Python behavior).
   const coarseCandidates = []; // { purity, cx, cy, r }
+  coarseSweep:
   for (let r = minR; r < maxR; r += 20) {
+    if (Date.now() >= deadline) {
+      if (budgetState) budgetState.hit = true;
+      break coarseSweep;
+    }
     for (let dx = -90; dx <= 90; dx += 30) {
       for (let dy = -90; dy <= 90; dy += 30) {
         const tcx = Math.min(Math.max(imgCx + dx, 10), w - 10);
@@ -2773,7 +2793,12 @@ function retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aim
   let finePurity = bestPurity;
   const rLo = Math.max(minR, bestR - 15);
   const rHi = Math.min(maxR, bestR + 16);
+  fineSweep:
   for (let r = rLo; r < rHi; r += 5) {
+    if (Date.now() >= deadline) {
+      if (budgetState) budgetState.hit = true;
+      break fineSweep;
+    }
     for (let dx = -10; dx <= 10; dx += 5) {
       for (let dy = -10; dy <= 10; dy += 5) {
         const tcx = Math.min(Math.max(bestCx + dx, 10), w - 10);
@@ -3016,7 +3041,7 @@ export async function countTeeth(photoUri, signal, opts) {
     if (cdist > Math.min(height, width) * 0.08 && Date.now() >= deadline) {
       budgetState.hit = true;
     } else if (cdist > Math.min(height, width) * 0.08) {
-      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR);
+      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR, deadline, budgetState);
       // PAP-282: accept retry if confidence is within 0.05 of original
       // (the original may have misleadingly high confidence from cutout
       // artifacts) AND tooth-density sanity check passes (reject retry
@@ -3621,7 +3646,7 @@ export function countTeethFromRgba(rgba, width, height) {
     if (cdist > Math.min(height, width) * 0.08 && Date.now() >= deadline) {
       budgetState.hit = true;
     } else if (cdist > Math.min(height, width) * 0.08) {
-      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR);
+      const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR, deadline, budgetState);
       const isSubharmonic = retryR !== null
           && r.toothCount > 0 && retryR.toothCount > 0
           && [2, 3].some(k => Math.abs(retryR.toothCount * k - r.toothCount) <= 1);

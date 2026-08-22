@@ -14,6 +14,14 @@
  *      the very first sweep iteration) instead of running the full
  *      36-iteration threshold sweep, and set budgetState.hit.
  *
+ *   1b. RETRY DIRECT CHECKPOINT — the AC1 gap flagged in QA's PAP-1659
+ *      follow-up review: retryNearCenter() had no internal checkpoint, so an
+ *      already-in-flight budget could still be blown by its own ~2000-call
+ *      coarse-to-fine fftPurityCheck search once entered. Same technique as
+ *      check 1, applied directly to retryNearCenter() with an expired
+ *      deadline — it must return almost immediately and set budgetState.hit
+ *      instead of running the full coarse+fine sweep.
+ *
  *   2. SIMULATED SLOW DEVICE — monkey-patch the global Date.now() clock so
  *      it reports elapsed time inflated by SLOWDOWN_FACTOR (PAP-1647
  *      measured 15-25x FP5-vs-desktop; this uses 20x, the midpoint). Run
@@ -47,7 +55,7 @@ const BUDGET_MS = 5000; // must match WALL_CLOCK_BUDGET_MS in gearCounter.js
 
 const gc = await import('../src/algorithm/gearCounter.js');
 const { __test, countTeethFromRgba, bilinearDownsampleRgba } = gc;
-const { rgbaToGray, clahe, cannyEdges, gaussianBlur5x5, findGearCenter } = __test;
+const { rgbaToGray, clahe, cannyEdges, gaussianBlur5x5, findGearCenter, retryNearCenter } = __test;
 
 console.log = () => {};
 const out = (s) => process.stdout.write(s + '\n');
@@ -86,6 +94,30 @@ function checkDirectCheckpoint(stamp) {
   const truncatedMs = Date.now() - t1;
 
   const ok = truncatedMs < baselineMs && budgetState.hit === true && truncated != null;
+  out(`  ${stamp}: baseline=${baselineMs}ms truncated=${truncatedMs}ms budgetState.hit=${budgetState.hit} -> ${ok ? 'PASS' : 'FAIL'}`);
+  return ok;
+}
+
+// ── Check 1b: retryNearCenter direct checkpoint (AC1 follow-up gap) ────────
+function checkRetryDirectCheckpoint(stamp) {
+  const { rgba, w, h } = loadRgba(stamp);
+  const gray = rgbaToGray(rgba, w, h);
+  const enhanced = clahe(gray, w, h, 3.0, 8, 8);
+  const blurred = gaussianBlur5x5(enhanced, w, h);
+  const edges = cannyEdges(blurred, w, h, 50, 150);
+  const imgCx = Math.floor(w / 2);
+  const imgCy = Math.floor(h / 2);
+
+  const t0 = Date.now();
+  retryNearCenter(gray, enhanced, edges, w, h, imgCx, imgCy, 0); // no deadline = Infinity
+  const baselineMs = Date.now() - t0;
+
+  const budgetState = { hit: false };
+  const t1 = Date.now();
+  retryNearCenter(gray, enhanced, edges, w, h, imgCx, imgCy, 0, Date.now() - 1, budgetState);
+  const truncatedMs = Date.now() - t1;
+
+  const ok = truncatedMs < baselineMs && budgetState.hit === true;
   out(`  ${stamp}: baseline=${baselineMs}ms truncated=${truncatedMs}ms budgetState.hit=${budgetState.hit} -> ${ok ? 'PASS' : 'FAIL'}`);
   return ok;
 }
@@ -153,6 +185,9 @@ const SLOWEST = [
 out('=== PAP-1659 AC1: direct checkpoint (deadline already expired) ===');
 let allOk = true;
 for (const [stamp] of SLOWEST) allOk = checkDirectCheckpoint(stamp) && allOk;
+
+out('\n=== PAP-1659 AC1: retryNearCenter direct checkpoint (deadline already expired) ===');
+for (const [stamp] of SLOWEST) allOk = checkRetryDirectCheckpoint(stamp) && allOk;
 
 out('\n=== PAP-1659 AC1: simulated slow device (20x clock, PAP-1647 midpoint) ===');
 for (const [stamp, actual] of SLOWEST) allOk = checkSimulatedSlowDevice(stamp, actual, 20) && allOk;
