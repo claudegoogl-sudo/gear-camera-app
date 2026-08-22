@@ -46,6 +46,19 @@ const SMALL_GEAR_CONF        = 0.65;
 // resolution at 900px, the high-res retry at 1500px gives large gears
 // ~67% more pixels for FFT analysis.
 const RETRY_MAX_DIM          = 1500;
+// PAP-1647: wall-clock budget for the optional 1500px small-gear hi-res retry.
+// The retry re-decodes the full JPEG and runs a second analyzeImage at 1500px
+// (~2.5-3.5x the base-pass cost on desktop V8; on the Fairphone FP5, Sentry
+// debug_report payloads showed single counts of 70-93s — the hi-res retry is
+// the dominant multiplier). It is a pure refinement (accepted only when it
+// raises confidence). This budget skips it when the base pass has ALREADY
+// consumed more wall-clock than a healthy device ever should, trading a
+// possible refinement for a bounded response instead of a minute-plus freeze.
+// Chosen well above the labeled-corpus worst full path (~3.5s desktop incl.
+// hi-res) so it NEVER fires on the corpus: accuracy is byte-identical there,
+// and on the corpus only 1/362 photos in the hi-res regime is a large gear
+// (already conf=0), so the retry effectively never helps chainrings anyway.
+const RETRY_HIRES_BUDGET_MS  = 8000;
 
 // PAP-1100: aim-circle prior on multiRadiusFftScan candidate-radii build.
 // When aimR > 0 (caller has an aim signal) the FFT sweep is constrained to
@@ -2937,9 +2950,16 @@ export async function countTeeth(photoUri, signal, opts) {
   // When the gear is small in the frame and confidence is low, re-run
   // at 1500 px to give the FFT more pixels per tooth.
   await yieldOrAbort();
+  // PAP-1647: skip the hi-res retry when the base pass already blew the
+  // wall-clock budget (pathological slow device). Never fires on the labeled
+  // corpus (worst full path ~3.5s ≪ 8s), so corpus outputs are byte-identical;
+  // on-device it caps the 70-93s freeze instead of doubling it.
+  const hiresElapsed = Date.now() - t0;
+  const hiresOverBudget = hiresElapsed >= RETRY_HIRES_BUDGET_MS;
   if (r.confidence < SMALL_GEAR_CONF
       && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
-      && r.toothCount > 0) {
+      && r.toothCount > 0
+      && !hiresOverBudget) {
     const hi = await loadAndDecodeImage(photoUri, RETRY_MAX_DIM);
     const hiGray     = rgbaToGray(hi.rgba, hi.width, hi.height);
     const hiEnhanced = clahe(hiGray, hi.width, hi.height, 3.0, 8, 8);
@@ -2952,6 +2972,13 @@ export async function countTeeth(photoUri, signal, opts) {
         `${r2.toothCount}T(${(r2.confidence*100).toFixed(0)}%)`);
       r = r2;
     }
+  } else if (hiresOverBudget
+      && r.confidence < SMALL_GEAR_CONF
+      && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
+      && r.toothCount > 0) {
+    // PAP-1647: eligible for hi-res retry but skipped on the wall-clock budget.
+    console.log(`[GearCounter] hi-res retry skipped: base pass took ` +
+      `${hiresElapsed}ms >= ${RETRY_HIRES_BUDGET_MS}ms budget (PAP-1647)`);
   }
   // ──────────────────────────────────────────────────────────────────
 
