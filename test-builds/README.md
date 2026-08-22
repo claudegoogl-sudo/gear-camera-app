@@ -18,6 +18,11 @@ produced by hand with `./gradlew assembleRelease -PreactNativeArchitectures="arm
 (PAP-1650). Zero reports from b133 is that defect, not a clean run. Always use the build scripts;
 both now refuse to publish an artifact whose bundle is missing the DSN.
 
+The b135 run double-fired: a second `assembleRelease` started at 18:56 and produced a second,
+*non-identical* APK (`...18:56-b135.apk`) whose upload never delivered — the PAP-1655 guard caught
+it. Only `...18:52-b135.apk` (sha256 `646296a3…f02f4b`) was published under tag `b135`; the
+undelivered duplicate has been removed so there is exactly one artifact per build number.
+
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
 | 2026-08-22 18:56 | gear-camera-release-2026-08-22 18:52-b135.apk (47MB) — **release variant**, debug-keystore signed | b135 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b135/gear-camera-release-2026-08-22.18.52-b135.apk) |
