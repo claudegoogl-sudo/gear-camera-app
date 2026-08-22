@@ -29,6 +29,7 @@ README="$TEST_BUILDS_DIR/README.md"
 
 source "$REPO_ROOT/scripts/lib/gh-release.sh"
 source "$REPO_ROOT/scripts/lib/gradle-constraints.sh"
+source "$REPO_ROOT/scripts/lib/sentry-options.sh"
 
 # ── Load .env if present ─────────────────────────────────────────────────────
 if [[ -f "$REPO_ROOT/.env" ]]; then
@@ -67,6 +68,11 @@ export const BUILD_LABEL   = '$BUILD_LABEL';
 EOF
 
 echo "[build] Stamped $BUILD_INFO"
+
+# ── Stamp native Sentry release/dist (PAP-1662) ─────────────────
+# src/sentry.js no longer re-inits native Sentry from JS, so the native layer
+# gets its release/dist from this file rather than from the JS options.
+stamp_sentry_options "$MOBILE_DIR/sentry.options.json" "$BUILD_LABEL" "$BUILD_NUMBER"
 
 # ── Pin a Gradle-compatible JDK ───────────────────────────────────────────────
 # The scripts used to inherit whatever `java` the host defaulted to. On

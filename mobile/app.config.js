@@ -40,8 +40,15 @@ module.exports = ({ config }) => ({
         useNativeInit: true,
         options: {
           dsn: SENTRY_DSN,
-          // Kept in sync with src/sentry.js — the native SDK reads these before
-          // JS runs, then src/sentry.js re-inits with the same values.
+          // Kept in sync with src/sentry.js — the native SDK reads these
+          // before JS runs and now OWNS native init: as of PAP-1662,
+          // src/sentry.js passes `autoInitializeNativeSdk: false` in release
+          // builds, so it no longer re-inits native with the JS values.
+          //
+          // `release`/`dist` are deliberately absent here: prebuild cannot know
+          // the build number. scripts/lib/sentry-options.sh stamps them into
+          // the generated mobile/sentry.options.json on every build, before
+          // sentry.gradle copies it into assets/.
           tracesSampleRate: 0,
           enableAutoSessionTracking: false,
         },
