@@ -533,6 +533,12 @@ export default function CameraScreen({ navigation }) {
           // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
           // says a count was slow, never which stage was slow.
           stageMs: result.stageMs ?? null,
+          // PAP-1659 AC2: budget-triggered stop is a first-class outcome —
+          // surfaced separately from an ordinary abstain so telemetry can
+          // count how often the wall-clock deadline actually fires in the
+          // field (methodUsed also carries a '+pap1659-budget-exhausted'
+          // suffix for grep-based consumers).
+          budgetExhausted: result.budgetExhausted ?? false,
         },
       });
     } catch (e) {

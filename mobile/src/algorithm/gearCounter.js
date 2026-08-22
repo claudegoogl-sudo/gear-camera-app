@@ -46,19 +46,28 @@ const SMALL_GEAR_CONF        = 0.65;
 // resolution at 900px, the high-res retry at 1500px gives large gears
 // ~67% more pixels for FFT analysis.
 const RETRY_MAX_DIM          = 1500;
-// PAP-1647: wall-clock budget for the optional 1500px small-gear hi-res retry.
-// The retry re-decodes the full JPEG and runs a second analyzeImage at 1500px
-// (~2.5-3.5x the base-pass cost on desktop V8; on the Fairphone FP5, Sentry
-// debug_report payloads showed single counts of 70-93s — the hi-res retry is
-// the dominant multiplier). It is a pure refinement (accepted only when it
-// raises confidence). This budget skips it when the base pass has ALREADY
-// consumed more wall-clock than a healthy device ever should, trading a
-// possible refinement for a bounded response instead of a minute-plus freeze.
-// Chosen well above the labeled-corpus worst full path (~3.5s desktop incl.
-// hi-res) so it NEVER fires on the corpus: accuracy is byte-identical there,
-// and on the corpus only 1/362 photos in the hi-res regime is a large gear
-// (already conf=0), so the retry effectively never helps chainrings anyway.
-const RETRY_HIRES_BUDGET_MS  = 8000;
+// PAP-1659 (CEO ruling, supersedes the PAP-1647 hi-res-only budget): PAP-758's
+// <=5s wall-clock speed target is a hard bound on the WHOLE count, not a
+// figure to optimise toward. PAP-1647 found the FP5 70-93s freezes were NOT
+// caused by the optional hi-res retry below: on the flagged fft-agreement /
+// retry-bc-consensus+chainring-pk cases, the base pass (findGearCenter's
+// 36-iteration threshold sweep — the dominant cost, ~61% of frame time per
+// corpus profiling) had already blown any retry-level budget before a retry
+// was even considered. So the checkpoint lives inside findGearCenter's sweep
+// loop itself (its `deadline` param), not just around the optional retries —
+// every retry/consensus stage in countTeeth() is additionally gated on the
+// same deadline so nothing downstream of a truncated base pass can add more
+// time. A budget-triggered stop returns whatever candidate the truncated
+// pipeline already holds (or lets the existing abstain gates reject it) —
+// it never blocks past the deadline.
+// 5000ms is the PAP-758 ceiling ("max 5s, better 1-2"). Evidence for going
+// tighter is thin (n=2 freeze reports, one device), so this ships at the
+// ceiling rather than guessing lower; AC2's budgetExhausted telemetry is
+// what tells us whether field data supports tightening it later.
+// Chosen well above the labeled-corpus worst full path (plain-node, ~3.5s
+// incl. hi-res retry per PAP-1647 re-measurement) so it should never fire on
+// the corpus — see debug-reports/pap1659_* for the before/after diff.
+const WALL_CLOCK_BUDGET_MS = 5000;
 
 // PAP-1100: aim-circle prior on multiRadiusFftScan candidate-radii build.
 // When aimR > 0 (caller has an aim signal) the FFT sweep is constrained to
@@ -895,9 +904,16 @@ function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
   const gridStep = Math.max(15, Math.floor(Math.min(w, h) / 20));
   const raw = [];
 
+  // PAP-1666: hoist the per-cell radius histogram out of the grid loop and
+  // clear it in place instead of allocating a fresh Int32Array(maxRadius+1)
+  // per grid cell — this runs only when purity < 0.15 (large chainring /
+  // spider-arm images per PAP-282), where maxRadius and the grid-cell count
+  // are both largest. Same values in, same values read back out per cell.
+  const rBins = new Int32Array(maxRadius + 1);
+
   for (let cy = gridStep; cy < h - gridStep; cy += gridStep) {
     for (let cx = gridStep; cx < w - gridStep; cx += gridStep) {
-      const rBins = new Int32Array(maxRadius + 1);
+      rBins.fill(0);
       for (let i = 0; i < edgeX.length; i += step) {
         const dx = edgeX[i] - cx;
         const dy = edgeY[i] - cy;
@@ -945,7 +961,13 @@ function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
 // finds contour candidates, deduplicates by proximity, validates with FFT
 // purity, and picks the best candidate.
 
-function findGearCenter(gray, enhanced, edges, width, height) {
+// PAP-1659: `deadline` is an absolute Date.now() timestamp (default Infinity
+// preserves existing behavior for direct/harness callers that don't pass
+// one). `budgetState`, when given, gets `.hit = true` set the first time any
+// checkpoint below actually cuts work short — a real stop, not just "ran
+// long" — so callers can tell a budget-triggered outcome apart from a normal
+// abstain (PAP-1659 AC2).
+function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinity, budgetState = null) {
   const h = height, w = width;
   const n = w * h;
 
@@ -1002,8 +1024,21 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   // improve contour candidate coverage for large gears — Python uses
   // step=5 but 10 is a reasonable mobile compromise.  18 iterations vs
   // the previous 12, matching Python more closely without the full 36).
+  thresholdSweep:
   for (let thresh = 40; thresh < 220; thresh += 10) {
+    // PAP-1659: this 36-iteration threshold×invert sweep (with morphology at
+    // each step) is the single dominant cost in findGearCenter — the one
+    // PAP-1647 found already exceeds any retry-level budget on a slow device
+    // for the flagged chainring freeze cases. Checked once per (thresh,
+    // invert) pair — not just once per thresh — so the worst-case overshoot
+    // past `deadline` is bounded by one half-iteration's cost rather than a
+    // full one; whatever candidates were collected in completed iterations
+    // are used as-is (same scoring/dedup path below), just fewer of them.
     for (const invert of [true, false]) {
+      if (Date.now() >= deadline) {
+        if (budgetState) budgetState.hit = true;
+        break thresholdSweep;
+      }
       // Half-res mask via the block min/max above. This is the OR-downsample
       // of the full-res threshold mask: OR (any of the 2×2 block is
       // foreground) is more conservative for thin-stroke features than
@@ -1160,7 +1195,11 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     // large cassette cogs where contour detection picks up cutout holes
     // with moderate purity (0.08–0.12).  Hough detects actual circular gear
     // outlines that contours miss due to teeth lowering circularity.
-    if (bestPurity < 0.15) {
+    // PAP-1659: skip the Hough sweep (another full-edge-image scan) once the
+    // budget is spent — bestPurity's contour-based candidate stands as-is.
+    if (bestPurity < 0.15 && Date.now() >= deadline) {
+      if (budgetState) budgetState.hit = true;
+    } else if (bestPurity < 0.15) {
       const maxContourR = Math.max(...topCandidates.map(c => c.r), 0);
       // PAP-288: lowered minRadius from /4 to /6 so Hough detects large
       // cassette cogs (28T) that fill ~20-25% of image width.
@@ -1277,61 +1316,82 @@ function findGearCenter(gray, enhanced, edges, width, height) {
     resultPurity = purities[bestIdx] || 0;
   }
 
-  // Fallback: single Otsu + donut detection (original JS approach)
-  const otsuT = otsuThreshold(gray, w, h);
-  const darkMask = new Uint8Array(n);
-  for (let i = 0; i < n; i++) darkMask[i] = gray[i] <= otsuT ? 1 : 0;
+  // Fallback: single Otsu + donut detection (original JS approach).
+  // PAP-1666: this whole block only feeds `bestComp` into the `!result`
+  // check below, but was previously computed unconditionally — a full-res
+  // otsuThreshold + darkMask + morphClose(r=2) + two labelComponents passes
+  // on every call, even though the multi-threshold sweep above already sets
+  // `result` on nearly every real photo. Gating it on `!result` removes
+  // that dead work with no output change (bestComp/darkComps/etc. are local
+  // to this block and unused elsewhere).
+  // PAP-1659: this fallback only runs when the sweep above found nothing
+  // (rare on real photos), but it's still a full-res otsuThreshold +
+  // morphClose + two labelComponents pass — skip it once the budget is
+  // spent and fall through to the cheaper edge-centroid fallback below.
+  if (!result && Date.now() >= deadline) {
+    if (budgetState) budgetState.hit = true;
+  } else if (!result) {
+    const otsuT = otsuThreshold(gray, w, h);
+    const darkMask = new Uint8Array(n);
+    for (let i = 0; i < n; i++) darkMask[i] = gray[i] <= otsuT ? 1 : 0;
 
-  const closedDark = morphClose(darkMask, w, h, 2);
-  const { labels: darkLabels, components: darkComps } =
-    labelComponents(closedDark, w, h, 1);
-  const { components: lightComps } = labelComponents(closedDark, w, h, 0);
+    const closedDark = morphClose(darkMask, w, h, 2);
+    const { labels: darkLabels, components: darkComps } =
+      labelComponents(closedDark, w, h, 1);
+    const { components: lightComps } = labelComponents(closedDark, w, h, 0);
 
-  const darkHasHole = new Set();
-  for (const lc of lightComps) {
-    if (lc.touchesBorder || lc.area < 50) continue;
-    const checkX = Math.max(0, lc.minX - 1);
-    const checkY = Math.max(0, lc.minY - 1);
-    const parentId = darkLabels[checkY * w + checkX];
-    if (parentId > 0) darkHasHole.add(parentId);
-  }
-
-  let bestComp = null, bestScore = -1;
-  for (const dc of darkComps) {
-    if (dc.area < 300 || dc.area > 0.5 * n || dc.touchesBorder) continue;
-    const peri = componentPerimeter(darkLabels, w, h, dc.id, dc.minX, dc.minY, dc.maxX, dc.maxY);
-    const circ = peri > 0 ? (4 * Math.PI * dc.area) / (peri * peri) : 0;
-    const hasHole = darkHasHole.has(dc.id);
-    // Center-of-frame bias for Otsu fallback too
-    const dcCx = dc.sx / dc.area;
-    const dcCy = dc.sy / dc.area;
-    const ddx = (dcCx - w / 2) / (w / 2);
-    const ddy = (dcCy - h / 2) / (h / 2);
-    const cBias = Math.exp(-1.5 * (ddx * ddx + ddy * ddy));
-    const score = circ * (hasHole ? 1.5 : 1.0) * cBias;
-    if (score > bestScore) {
-      bestScore = score;
-      bestComp = dc;
+    const darkHasHole = new Set();
+    for (const lc of lightComps) {
+      if (lc.touchesBorder || lc.area < 50) continue;
+      const checkX = Math.max(0, lc.minX - 1);
+      const checkY = Math.max(0, lc.minY - 1);
+      const parentId = darkLabels[checkY * w + checkX];
+      if (parentId > 0) darkHasHole.add(parentId);
     }
-  }
 
-  if (!result && bestComp) {
-    // Use bbox radius for annular shapes (area-based underestimates)
-    const dcBw = bestComp.maxX - bestComp.minX + 1;
-    const dcBh = bestComp.maxY - bestComp.minY + 1;
-    const areaR = Math.sqrt(bestComp.area / Math.PI);
-    const bboxR2 = Math.max(dcBw, dcBh) / 2;
-    result = {
-      cx: Math.round(bestComp.sx / bestComp.area),
-      cy: Math.round(bestComp.sy / bestComp.area),
-      radius: Math.round(Math.max(areaR, bboxR2 * 0.90)),
-      method: 'otsu-contour',
-    };
+    let bestComp = null, bestScore = -1;
+    for (const dc of darkComps) {
+      if (dc.area < 300 || dc.area > 0.5 * n || dc.touchesBorder) continue;
+      const peri = componentPerimeter(darkLabels, w, h, dc.id, dc.minX, dc.minY, dc.maxX, dc.maxY);
+      const circ = peri > 0 ? (4 * Math.PI * dc.area) / (peri * peri) : 0;
+      const hasHole = darkHasHole.has(dc.id);
+      // Center-of-frame bias for Otsu fallback too
+      const dcCx = dc.sx / dc.area;
+      const dcCy = dc.sy / dc.area;
+      const ddx = (dcCx - w / 2) / (w / 2);
+      const ddy = (dcCy - h / 2) / (h / 2);
+      const cBias = Math.exp(-1.5 * (ddx * ddx + ddy * ddy));
+      const score = circ * (hasHole ? 1.5 : 1.0) * cBias;
+      if (score > bestScore) {
+        bestScore = score;
+        bestComp = dc;
+      }
+    }
+
+    if (bestComp) {
+      // Use bbox radius for annular shapes (area-based underestimates)
+      const dcBw = bestComp.maxX - bestComp.minX + 1;
+      const dcBh = bestComp.maxY - bestComp.minY + 1;
+      const areaR = Math.sqrt(bestComp.area / Math.PI);
+      const bboxR2 = Math.max(dcBw, dcBh) / 2;
+      result = {
+        cx: Math.round(bestComp.sx / bestComp.area),
+        cy: Math.round(bestComp.sy / bestComp.area),
+        radius: Math.round(Math.max(areaR, bboxR2 * 0.90)),
+        method: 'otsu-contour',
+      };
+    }
   }
 
   // Final fallback: center-weighted edge centroid with tight Gaussian
   // Use a narrow sigma to strongly bias toward center and reject corner artifacts
-  if (!result) {
+  // PAP-1659: this is a two-pass O(w*h) scan with no candidates to fall back
+  // to beyond it — if the budget is already spent here, stop for real and
+  // return a zero-confidence stub instead of running it anyway.
+  if (!result && Date.now() >= deadline) {
+    if (budgetState) budgetState.hit = true;
+    result = { cx: Math.floor(w / 2), cy: Math.floor(h / 2), radius: 0, method: 'deadline-fallback' };
+  } else if (!result) {
     const cx0 = w / 2, cy0 = h / 2;
     const sigX = w * 0.18, sigY = h * 0.18;
     let wsx = 0, wsy = 0, wsum = 0;
@@ -1380,7 +1440,9 @@ function findGearCenter(gray, enhanced, edges, width, height) {
   //   - purity < 0.20 at current pick (QA condition #4 — protects
   //     11–15T tight-aimCrop edge cases from noisy outer-edge overrides)
   const normR = result.radius / Math.min(h, w);
-  if (normR < 0.15 && resultPurity < 0.20) {
+  if (normR < 0.15 && resultPurity < 0.20 && Date.now() >= deadline) {
+    if (budgetState) budgetState.hit = true;
+  } else if (normR < 0.15 && resultPurity < 0.20) {
     // QA condition #3: try candidate center first, image center as 2nd pass
     const centers = [
       { cx: result.cx, cy: result.cy },
@@ -2125,12 +2187,39 @@ function radialOuterEdgeRadius(enhanced, cx, cy, bcCx, bcCy, peakR, w, h) {
  * Core analysis pipeline — operates on already-loaded pixel buffers.
  * Returns { toothCount, confidence, gearCenter, gearRadius } in pixel units.
  */
-function analyzeImage(gray, enhanced, edges, width, height, aimR = 0) {
+function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline = Infinity, budgetState = null) {
   // ── Center detection (multi-candidate + FFT purity) ────────────────
-  const centerResult = findGearCenter(gray, enhanced, edges, width, height);
+  const centerResult = findGearCenter(gray, enhanced, edges, width, height, deadline, budgetState);
   const cx = centerResult.cx;
   const cy = centerResult.cy;
   const contourRadius = centerResult.radius || 0;
+
+  // PAP-1659: findGearCenter's checkpoints only bound center detection
+  // itself. The five count methods below it (fftAtOuterRadii,
+  // multiRadiusFftScan, outerProfileScan, binaryContourCount,
+  // clahePeakCounting) plus radialOuterEdgeRadius are each individually
+  // bounded (no 36-iteration sweep), but together they're still real,
+  // uncapped work (binaryContourCount alone is ~17% of total pipeline time
+  // per profiling) with nothing gating them. If findGearCenter already hit
+  // the deadline — meaning the base pass itself ran long enough on this
+  // device to exhaust the budget — running five more methods on top of a
+  // pass that already returned a truncated/low-quality center candidate
+  // both adds more wall time AND builds on a shaky center. Stop here and
+  // abstain: this is the "return the best answer we hold — or abstain — and
+  // we stop" case from PAP-1659, not a case with a trustworthy answer to
+  // hold onto.
+  if (budgetState && budgetState.hit) {
+    return {
+      toothCount: 0, confidence: 0,
+      cx, cy, gearR: contourRadius, initialGearR: contourRadius,
+      contourRadius, centerResult,
+      fft90tc: 0, peakTc: 0, peakRel: 0, peakR: 0, opTc: 0, opRel: 0,
+      bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0,
+      claheTc: 0, claheConf: 0,
+      rOuter: 0,
+      methodUsed: 'pap1659-budget-exhausted',
+    };
+  }
 
   // Always compute edge-density radius as independent cross-check (PAP-266).
   // When findGearCenter locks onto an inner feature (cutout holes, splines)
@@ -2841,6 +2930,12 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
 
 export async function countTeeth(photoUri, signal, opts) {
   const t0 = Date.now();
+  // PAP-1659: hard wall-clock deadline for the whole count (see
+  // WALL_CLOCK_BUDGET_MS above). `budgetState.hit` becomes true the first
+  // time any checkpoint downstream — inside findGearCenter's sweep, or one
+  // of the retry gates below — actually cuts work short.
+  const deadline = t0 + WALL_CLOCK_BUDGET_MS;
+  const budgetState = { hit: false };
 
   // Yield to the event loop so pending UI events (e.g. cancel press) can
   // be processed, then check if the caller aborted.
@@ -2895,7 +2990,7 @@ export async function countTeeth(photoUri, signal, opts) {
   // the post-hoc PAP-961 calibration (0.5 * min(W,H) when aimCrop present).
   const aimR = aimCrop ? 0.5 * Math.min(width, height) : 0;
 
-  let r = analyzeImage(gray, enhanced, edges, width, height, aimR);
+  let r = analyzeImage(gray, enhanced, edges, width, height, aimR, deadline, budgetState);
   const t3 = Date.now();
   // PAP-288: save initial radius from gear-region detection before
   // detect_teeth may shrink it to peak_r.
@@ -2914,7 +3009,13 @@ export async function countTeeth(photoUri, signal, opts) {
     // PAP-282: lowered from 0.15 → 0.08 so the retry fires more
     // aggressively for large gears whose detected center may be close
     // to image center but still wrong (e.g. locked onto a cutout hole).
-    if (cdist > Math.min(height, width) * 0.08) {
+    // PAP-1659: off-center retry re-runs the count-methods (fixed center, no
+    // sweep — cheap on its own) but is still additional work on top of a
+    // base pass that may have already spent the budget; skip it once the
+    // deadline has passed rather than adding more time to a truncated pass.
+    if (cdist > Math.min(height, width) * 0.08 && Date.now() >= deadline) {
+      budgetState.hit = true;
+    } else if (cdist > Math.min(height, width) * 0.08) {
       const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR);
       // PAP-282: accept retry if confidence is within 0.05 of original
       // (the original may have misleadingly high confidence from cutout
@@ -2950,12 +3051,13 @@ export async function countTeeth(photoUri, signal, opts) {
   // When the gear is small in the frame and confidence is low, re-run
   // at 1500 px to give the FFT more pixels per tooth.
   await yieldOrAbort();
-  // PAP-1647: skip the hi-res retry when the base pass already blew the
-  // wall-clock budget (pathological slow device). Never fires on the labeled
-  // corpus (worst full path ~3.5s ≪ 8s), so corpus outputs are byte-identical;
-  // on-device it caps the 70-93s freeze instead of doubling it.
+  // PAP-1647 / PAP-1659: skip the hi-res retry when earlier stages already
+  // spent the shared wall-clock budget (pathological slow device). Never
+  // fires on the labeled corpus (worst full path ~3.5s ≪ 5s), so corpus
+  // outputs are byte-identical; on-device it caps the 70-93s freeze instead
+  // of doubling it.
   const hiresElapsed = Date.now() - t0;
-  const hiresOverBudget = hiresElapsed >= RETRY_HIRES_BUDGET_MS;
+  const hiresOverBudget = Date.now() >= deadline;
   if (r.confidence < SMALL_GEAR_CONF
       && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
       && r.toothCount > 0
@@ -2965,7 +3067,7 @@ export async function countTeeth(photoUri, signal, opts) {
     const hiEnhanced = clahe(hiGray, hi.width, hi.height, 3.0, 8, 8);
     const hiBlurred  = gaussianBlur5x5(hiEnhanced, hi.width, hi.height);
     const hiEdges    = cannyEdges(hiBlurred, hi.width, hi.height, 50, 150);
-    const r2 = analyzeImage(hiGray, hiEnhanced, hiEdges, hi.width, hi.height);
+    const r2 = analyzeImage(hiGray, hiEnhanced, hiEdges, hi.width, hi.height, 0, deadline, budgetState);
     if (r2.confidence > r.confidence) {
       console.log(`[GearCounter] small-gear retry: ${width}→${hi.width}px, ` +
         `${r.toothCount}T(${(r.confidence*100).toFixed(0)}%)→` +
@@ -2976,9 +3078,10 @@ export async function countTeeth(photoUri, signal, opts) {
       && r.confidence < SMALL_GEAR_CONF
       && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
       && r.toothCount > 0) {
-    // PAP-1647: eligible for hi-res retry but skipped on the wall-clock budget.
-    console.log(`[GearCounter] hi-res retry skipped: base pass took ` +
-      `${hiresElapsed}ms >= ${RETRY_HIRES_BUDGET_MS}ms budget (PAP-1647)`);
+    // PAP-1659: eligible for hi-res retry but skipped on the wall-clock budget.
+    budgetState.hit = true;
+    console.log(`[GearCounter] hi-res retry skipped: elapsed ` +
+      `${hiresElapsed}ms >= ${WALL_CLOCK_BUDGET_MS}ms budget (PAP-1659)`);
   }
   // ──────────────────────────────────────────────────────────────────
 
@@ -3411,12 +3514,20 @@ export async function countTeeth(photoUri, signal, opts) {
       && (radiusSanityFires || radialChainringFires || bcIsolatedHighDelta)) {
     methodUsed = `${methodUsed}+pap1059-chainring-tc-confirmed`;
   }
+  // PAP-1659 AC2: budget-triggered stop is a first-class outcome, distinct
+  // from an ordinary abstain — tag it in both the method string (so it shows
+  // up in existing log/harness readers keyed off methodUsed) and a dedicated
+  // boolean (so a telemetry consumer doesn't have to string-match).
+  if (budgetState.hit && !methodUsed.includes('pap1659-budget-exhausted')) {
+    methodUsed = `${methodUsed}+pap1659-budget-exhausted`;
+  }
 
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter,
     gearRadius,
+    budgetExhausted: budgetState.hit,
     algorithmRuntimeMs: t4 - t0,
     // PAP-1636: the four stage marks already computed for the console
     // breakdown, promoted into the return so they reach the debug report.
@@ -3486,6 +3597,13 @@ export const __test = {
 };
 
 export function countTeethFromRgba(rgba, width, height) {
+  // PAP-1659: harness path mirrors countTeeth's wall-clock deadline so
+  // corpus measurement (pap760.audit.js and friends) exercises the same
+  // budget gates production does — required to measure AC1/AC3 honestly
+  // rather than only on-device.
+  const t0 = Date.now();
+  const deadline = t0 + WALL_CLOCK_BUDGET_MS;
+  const budgetState = { hit: false };
   const gray     = rgbaToGray(rgba, width, height);
   const enhanced = clahe(gray, width, height, 3.0, 8, 8);
   const blurred  = gaussianBlur5x5(enhanced, width, height);
@@ -3495,12 +3613,14 @@ export function countTeethFromRgba(rgba, width, height) {
   // mask convention (PAP-961 mirror at line 3383); aimR = 0.5*min(W,H)
   // unconditionally per existing parity protocol with countTeeth().
   const aimR = 0.5 * Math.min(width, height);
-  let r = analyzeImage(gray, enhanced, edges, width, height, aimR);
+  let r = analyzeImage(gray, enhanced, edges, width, height, aimR, deadline, budgetState);
   if (r.confidence < SMALL_GEAR_CONF && r.cx !== undefined && r.cy !== undefined) {
     const imgCx = Math.floor(width / 2);
     const imgCy = Math.floor(height / 2);
     const cdist = Math.sqrt((r.cx - imgCx) ** 2 + (r.cy - imgCy) ** 2);
-    if (cdist > Math.min(height, width) * 0.08) {
+    if (cdist > Math.min(height, width) * 0.08 && Date.now() >= deadline) {
+      budgetState.hit = true;
+    } else if (cdist > Math.min(height, width) * 0.08) {
       const retryR = retryNearCenter(gray, enhanced, edges, width, height, imgCx, imgCy, aimR);
       const isSubharmonic = retryR !== null
           && r.toothCount > 0 && retryR.toothCount > 0
@@ -3689,12 +3809,18 @@ export function countTeethFromRgba(rgba, width, height) {
       && (radiusSanityFires || radialChainringFires || bcIsolatedHighDelta)) {
     methodUsed = `${methodUsed}+pap1059-chainring-tc-confirmed`;
   }
+  // PAP-1659 AC2: mirror countTeeth()'s budget-exhausted tag so corpus
+  // harnesses (pap760.audit.js etc.) can measure how often it would fire.
+  if (budgetState.hit && !methodUsed.includes('pap1659-budget-exhausted')) {
+    methodUsed = `${methodUsed}+pap1659-budget-exhausted`;
+  }
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter: { x: r.cx / width, y: r.cy / height },
     gearRadius: r.gearR / width,
     innerContourSuspected,
+    budgetExhausted: budgetState.hit,
     methodUsed,
     bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,
     // PAP-810 / PAP-811: peakR is diagnostic-only (consumed by pap810.preflight).
