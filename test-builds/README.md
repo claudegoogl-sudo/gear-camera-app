@@ -3,9 +3,11 @@
 Debug APK builds are versioned and timestamped. Filename format: `gear-camera-debug-YYYY-MM-DD-b<build>.apk`.
 Large files (>100MB) are uploaded as GitHub Release assets; smaller ones are committed directly.
 
-**b134 is the current release artifact.** It supersedes b133, which is telemetry-dead — do not
-validate against b133. b133 and b134 are the only `release`-variant builds in this table; every
-prior entry is a `debug` build despite some being tagged "release" on GitHub. The `release`
+**b135 is the current release artifact.** It is the first build with native Sentry started
+before the JS bundle loads (PAP-1653), so pre-JS crashes and ANRs now report. It supersedes b134
+and b133; b133 is telemetry-dead — do not validate against it. b133, b134 and b135 are the only
+`release`-variant builds in this table; every prior entry is a `debug` build despite some being
+tagged "release" on GitHub. The `release`
 buildType currently signs with the **debug keystore** (`mobile/android/app/build.gradle`), so these
 are installable and shareable but not publishable to Play.
 
@@ -18,6 +20,7 @@ both now refuse to publish an artifact whose bundle is missing the DSN.
 
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
+| 2026-08-22 18:56 | gear-camera-release-2026-08-22 18:52-b135.apk (47MB) — **release variant**, debug-keystore signed | b135 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b135/gear-camera-release-2026-08-22.18.52-b135.apk) |
 | 2026-08-07 19:32 | gear-camera-release-2026-08-07 19:30-b134.apk (47MB) — **release variant**, debug-keystore signed | b134 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b134/gear-camera-release-2026-08-07.19.30-b134.apk) |
 | 2026-08-07 12:54 | gear-camera-release-2026-08-07 12:54-b133.apk (47MB) — **release variant**, debug-keystore signed — **⚠️ TELEMETRY-DEAD, do not validate (PAP-1650)** | b133 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b133/gear-camera-release-2026-08-07.12.54-b133.apk) |
 | 2026-08-07 12:30 | gear-camera-debug-2026-08-07 12:29-b132.apk (97MB) | b132 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b132/gear-camera-debug-2026-08-07.12.29-b132.apk) |
