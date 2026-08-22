@@ -67,6 +67,29 @@ EOF
 
 echo "[build] Stamped $BUILD_INFO"
 
+# ── Pin a Gradle-compatible JDK ───────────────────────────────────────────────
+# The scripts used to inherit whatever `java` the host defaulted to. On
+# 2026-08-22 that default moved to JDK 25 and every build died at
+# `Error resolving plugin [id: 'com.facebook.react.settings'] > 25.0.3` —
+# Gradle 8.14.3 and the React Native Gradle plugin do not support 25. Resolve a
+# supported JDK explicitly so the toolchain cannot drift underneath us again.
+# An operator-set JAVA_HOME still wins, so this is overridable.
+if [[ -z "${JAVA_HOME:-}" ]]; then
+  for candidate in /usr/lib/jvm/java-17-openjdk-amd64 /usr/lib/jvm/java-21-openjdk-amd64; do
+    if [[ -x "$candidate/bin/java" ]]; then
+      export JAVA_HOME="$candidate"
+      break
+    fi
+  done
+fi
+if [[ -z "${JAVA_HOME:-}" ]]; then
+  echo "[build] ERROR: no supported JDK found. Gradle 8.14.3 needs JDK 17 or 21;" >&2
+  echo "[build] the host default is $(java -version 2>&1 | head -1). Set JAVA_HOME." >&2
+  exit 1
+fi
+export PATH="$JAVA_HOME/bin:$PATH"
+echo "[build] JDK: $("$JAVA_HOME/bin/java" -version 2>&1 | head -1) ($JAVA_HOME)"
+
 # ── Run Gradle assembleDebug ──────────────────────────────────────────────────
 cd "$ANDROID_DIR"
 
