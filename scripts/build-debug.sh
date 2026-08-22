@@ -28,6 +28,7 @@ TEST_BUILDS_DIR="$REPO_ROOT/test-builds"
 README="$TEST_BUILDS_DIR/README.md"
 
 source "$REPO_ROOT/scripts/lib/gh-release.sh"
+source "$REPO_ROOT/scripts/lib/gradle-constraints.sh"
 
 # ── Load .env if present ─────────────────────────────────────────────────────
 if [[ -f "$REPO_ROOT/.env" ]]; then
@@ -105,8 +106,13 @@ ABIS="armeabi-v7a,arm64-v8a"
 # unchanged from b134.
 export SENTRY_DISABLE_AUTO_UPLOAD=true
 
+# Constrain the build's thread footprint (PAP-1661). These used to live in
+# android/gradle.properties, which is gitignored and wiped by `expo prebuild`;
+# passing them here makes them version-controlled and prebuild-proof.
+gradle_constraint_flags
+
 echo "[build] Running assembleDebug (ABIs: $ABIS)…"
-./gradlew assembleDebug -PreactNativeArchitectures="$ABIS"
+./gradlew assembleDebug -PreactNativeArchitectures="$ABIS" "${GRADLE_CONSTRAINT_FLAGS[@]}"
 
 APK_SRC=$(find "$ANDROID_DIR/app/build/outputs/apk/debug" -name "*.apk" | head -1)
 if [[ -z "$APK_SRC" ]]; then
