@@ -17,7 +17,7 @@
  *   - `options` is written to `mobile/sentry.options.json` at prebuild time and
  *     copied into `assets/sentry.options.json` by sentry.gradle at build time.
  *     That asset is what `RNSentrySDK.init` reads, and it is what the
- *     `assert_sentry_options_bundled` guard in scripts/build-*.sh asserts on —
+ *     `assert_sentry_native_configured` guard in scripts/build-*.sh asserts on —
  *     the native counterpart to the existing JS-bundle DSN check.
  *
  * Note: adding `io.sentry.dsn` meta-data to AndroidManifest.xml — the approach

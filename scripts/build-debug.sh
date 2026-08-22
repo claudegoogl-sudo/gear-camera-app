@@ -126,8 +126,11 @@ assert_sentry_dsn_bundled "$APK_SRC"
 # reads its DSN from `assets/sentry.options.json`. Without that asset, JVM/NDK
 # crashes and ANRs that happen before the JS bundle loads have no telemetry
 # path. Both halves are produced by the @sentry/react-native Expo plugin at
-# `expo prebuild` time, so a stale `android/` tree silently drops them —
-# assert against the artifact, same as the bundle check.
+# `expo prebuild` time, so a stale `android/` tree silently drops them.
+# The DSN half asserts against the artifact, same as the bundle check; the
+# RNSentrySDK.init half asserts against the android/ source tree the APK was
+# just assembled from, because proving it from the artifact would mean
+# dexdump'ing classes.dex.
 #
 # NOTE: `io.sentry.dsn` manifest meta-data is deliberately NOT used. The SDK
 # ships `io.sentry.auto-init=false` in its own manifest, so sentry-android's
