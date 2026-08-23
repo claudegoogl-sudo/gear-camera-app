@@ -7,7 +7,7 @@ against another, say that too — the trade is a CEO call, not an engineering on
 | # | Target | Bar | Where it stands | Last measured |
 |---|---|---|---|---|
 | 1 | **Gear range** | 9T–60T counted, not just abstained | 11–20T usable; 21–60T is the gap. 52T is **1/22 = 4.5%** — the top of the declared range does not work | PAP-1658, 2026-08-22 |
-| 2 | **Accuracy** | **>99%** exact tooth count | **58.0%** (210/362). 126 abstains (34.8%), 26 confidently wrong (7.2%) | PAP-1658, 2026-08-22, HEAD `49a7498` |
+| 2 | **Accuracy** | **>99%** exact tooth count — *denominator pending board ruling, see [PAP-1673](/PAP/issues/PAP-1673)* | **58.0%** of all photos (210/362) — or **89.0%** of answers given (210/236). 126 abstains (34.8%), 26 confidently wrong (7.2%) | PAP-1658, 2026-08-22, HEAD `49a7498` |
 | 3 | **Speed** | **≤5s hard, 1–2s goal**, per count | **No trustworthy number.** Two host measurements of the same corpus disagree ~6× (audit median 5757ms vs stage-profiler p50 977ms). On-device worst case **70–93s** on chainring retry | PAP-1658 / PAP-1639 (host, contradictory) / PAP-1647 (FP5, n=2) |
 
 ## Current accuracy, per bucket — PAP-1658 @ `49a7498`, 2026-08-22
@@ -28,7 +28,8 @@ they are the binding constraint, and both trip the harness's own `<50% — likel
 ## What each target actually means
 
 **1. Range.** "Supported" means we return a correct count, not that we abstain safely.
-An abstain is a non-answer; it is not partial credit. The single-image-cue ladder for
+An abstain is a non-answer for *range* purposes: a size we only ever decline on is not
+supported, under either reading of target 2. The single-image-cue ladder for
 30–60T discrimination is empirically exhausted (PAP-1532; QA-endorsed on PAP-1527/1528),
 so the next XL move is a product decision, currently open with the board on PAP-758.
 
@@ -45,6 +46,28 @@ must be reported separately:
 Host harness timings are a proxy for ranking optimisations, never a claim about the
 device. A count that takes 70s is a defect at any accuracy.
 
+## Measurement convention — report the triple, not a rate (CEO, 2026-08-23)
+
+The **>99%** bar has two readings and the board has not yet picked one
+([PAP-1673](/PAP/issues/PAP-1673), interaction open):
+
+| Reading | Formula | Today | The programme it implies |
+|---|---|---|---|
+| **1 — of all photos** | 210/362 | **58.0%** | Abstain is failure. Loosen gates, answer more photos. Distance: +148 photos. |
+| **2 — of answers given** | 210/236 | **89.0%** | Abstain is free; only confident wrongness counts. Tighten gates. Distance: conf-wrong 7.2% → <1%. |
+
+These are **opposite instructions to the same engineers**, so until the ruling lands:
+
+- **Every corpus audit reports the triple** — `correct` / `abstain` / `confidently-wrong`,
+  per bucket and total. This is already the PAP-1052 schema; keep it.
+- **Quote both derived rates** whenever you quote a headline: `correct/N` *and*
+  `correct/(N − abstain)`. One number alone silently picks a reading.
+- **No ticket may assert that an abstain-shifting change "helped" or "hurt" accuracy.**
+  State the triple delta. PAP-1659's wall-clock deadline gate is the live case: it is
+  strictly negative under Reading 1 and strictly positive under Reading 2, same commit.
+- The triple is reading-agnostic — both rates fall out of it. **Nothing about
+  measurement is blocked by the ruling; only prioritisation is.**
+
 ## Standing rules that follow from these
 
 - **No accuracy claim without a corpus number** at a named commit. "Should improve X" is
@@ -60,9 +83,15 @@ device. A count that takes 70s is a defect at any accuracy.
   clock on device; any proposal that bounds wall clock must state its abstain cost in pp.
 - **Full-corpus audits go stale.** Re-audit at HEAD after any cluster of
   accuracy-relevant commits; do not quote a months-old table as current.
-- **Abstain is a floor, not a finish.** Shipping an abstain closes a *confidently-wrong*
-  defect. It does not advance target 1 or 2.
+- **Abstain is a floor, not a finish — for target 1.** Shipping an abstain closes a
+  *confidently-wrong* defect and does not advance target 1 (range). Whether it advances
+  or damages **target 2** depends on the denominator the board picks in PAP-1673; until
+  that lands, do not claim either sign. Report the triple and let the ruling do the
+  arithmetic.
 
 _Maintained by the CEO. Last reviewed 2026-08-23 against the PAP-1658 audit at `49a7498`._
-_Known gap: HEAD has since moved to `1aa95cc`; PAP-1659's wall-clock deadline gate landed
-after the audited SHA and is not priced into the 58.0% figure._
+_Known gap: HEAD has since moved to `768d877`; PAP-1659's wall-clock deadline gate landed
+after the audited SHA and is not priced into the 58.0% figure — re-audit tracked on PAP-1675,
+pricing on PAP-1674._
+_Known open decision: the target-2 denominator (PAP-1673). Both rates are quoted above on
+purpose; do not collapse them to one until the board rules._
