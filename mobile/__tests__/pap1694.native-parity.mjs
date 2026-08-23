@@ -14,6 +14,13 @@
  * not NDK / arm64 — the toolchain-level check is a separate on-device step.
  *
  * Usage: node mobile/__tests__/pap1694.native-parity.mjs [stride] [--bench]
+ *
+ * PAP1694_STD / PAP1694_OPT override the language standard and optimisation
+ * level the CLI is built at (defaults c++17 / -O2).  They exist because the
+ * Android target is built at c++20 and, in release, -O3: `-std=c++20 -O3`
+ * has to be shown to produce the same bytes as the c++17/-O2 build this
+ * harness has always used, or the parity claim only covers a toolchain
+ * configuration the app does not ship.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -36,8 +43,10 @@ const cli = path.join(tmp, 'parity_cli');
 // -ffp-contract=off is load-bearing: FMA contraction would fuse a*b+c in the
 // CLAHE bilinear sum and change the rounding, breaking parity for reasons that
 // have nothing to do with the port.  android/app/CMakeLists mirrors this flag.
+const STD = process.env.PAP1694_STD || 'c++17';
+const OPT = process.env.PAP1694_OPT || 'O2';
 execFileSync('g++', [
-  '-std=c++17', '-O2', '-ffp-contract=off', '-o', cli,
+  `-std=${STD}`, `-${OPT}`, '-ffp-contract=off', '-o', cli,
   path.join(MOBILE, 'cpp', 'gear_kernels.cpp'),
   path.join(MOBILE, 'cpp', 'tools', 'parity_cli.cpp'),
 ], { stdio: 'inherit' });
@@ -117,7 +126,12 @@ const summary = {
   imagesByteIdentical: rows.length - failed.length,
   allIdentical: failed.length === 0,
   firstMismatch,
-  host: { node: process.version, gpp: execFileSync('g++', ['--version'], { encoding: 'utf8' }).split('\n')[0] },
+  host: {
+    node: process.version,
+    gpp: execFileSync('g++', ['--version'], { encoding: 'utf8' }).split('\n')[0],
+    std: STD,
+    opt: OPT,
+  },
   rows,
 };
 if (bench) {
@@ -134,7 +148,10 @@ if (bench) {
   };
 }
 
-const outPath = path.join(ROOT, 'debug-reports', 'pap1694_native_parity.json');
+// Suffixed by toolchain config so a second run at a different std/opt is kept
+// beside the first rather than overwriting the evidence for it.
+const suffix = (STD === 'c++17' && OPT === 'O2') ? '' : `_${STD.replace('+', 'x').replace('+', 'x')}_${OPT}`;
+const outPath = path.join(ROOT, 'debug-reports', `pap1694_native_parity${suffix}.json`);
 fs.writeFileSync(outPath, JSON.stringify(summary, null, 1));
 console.log(`images=${rows.length} byte-identical=${summary.imagesByteIdentical} ` +
             `allIdentical=${summary.allIdentical}`);

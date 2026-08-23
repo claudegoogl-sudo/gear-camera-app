@@ -80,6 +80,23 @@ by the NDK's clang 18.0.2 (`--target=x86_64-unknown-linux-gnu`) and compared
 directly — identical. So parity is a property of the port, not of one compiler's
 codegen.
 
+**Toolchain-config-invariance.** The harness had always built at `c++17 -O2`,
+but the Android target builds at `c++20` and, in release, `-O3`. A parity claim
+that only covers a configuration the app does not ship is not a parity claim, so
+`PAP1694_STD` / `PAP1694_OPT` were added to the harness and the whole corpus was
+re-run at the shipping configuration:
+
+```
+PAP1694_STD=c++20 PAP1694_OPT=O3 node mobile/__tests__/pap1694.native-parity.mjs 1
+images=431  byte-identical=431  allIdentical=true
+```
+
+Rows: `debug-reports/pap1694_native_parity_cxx20_O3.json` (the c++17/-O2 run
+keeps the unsuffixed filename, so the two sit side by side). This is what makes
+it safe for the generated CMake to pin `CXX_STANDARD 20` to match the
+framework's own `-std=c++20`, instead of inheriting whatever the NDK's clang
+happens to default to.
+
 **AC1 (C++ half) — compiles for every shipped ABI.** `gear_kernels.cpp` compiles
 clean under NDK 27.1.12297006 for `aarch64`, `armv7a` and `x86_64`, and the full
 `gearkernels` target (kernels + JSI + JNI) builds through the real Gradle/CMake
@@ -90,6 +107,44 @@ attempt failed with `'createArrayBuffer' is a protected member of
 facebook::jsi::Runtime`. The public route is `jsi::ArrayBuffer`'s
 `(Runtime&, shared_ptr<MutableBuffer>)` constructor, which is what the code now
 uses — a mistake no amount of reading the port would have caught.
+
+**AC1 (Gradle half) — both libraries configure, and fast-opencv is in the
+graph.** `:app:configureCMakeDebug` now emits, per ABI:
+
+```
+libraries:
+  appmodules::@…  -> libappmodules.so
+  gearkernels::@… -> libgearkernels.so
+buildFiles: app/src/main/cpp/CMakeLists.txt, app/src/main/jni/CMakeLists.txt,
+            node_modules/react-native-fast-opencv/android/generated/jni/CMakeLists.txt, …
+```
+
+(`app/.cxx/Debug/<hash>/<abi>/android_gradle_build.json`; configure log in
+`debug-reports/pap1694_cmake_configure_2026-08-23.log`.) That JSON is the direct
+disproof of the appmodules trap below: before the fix it listed
+`gearkernels` **and nothing else**, and `buildFiles` named only our own
+CMakeLists — no `libappmodules.so`, no autolinked codegen. It is the cheapest
+check that the wiring is right and is worth re-reading after any change to
+`withGearKernelsPlugin.js`.
+
+**Hermes really does implement external ArrayBuffers.** `VectorBuffer` hands JS
+a zero-copy `jsi::ArrayBuffer` over C++-owned memory, which only works if the
+engine implements `Runtime::createArrayBuffer(shared_ptr<MutableBuffer>)`
+— historically a spotty area, and notably *not* the route
+`react-native-fast-opencv` takes (its `TypedArray.cpp` goes through the JS
+`new Uint8Array(n)` constructor instead). Checked rather than assumed:
+`hermes-android-0.81.5`'s `libhermes.so` string table contains
+`InternalPropertyArrayBufferExternalFinalizer`, the internal property Hermes
+uses to hold the finaliser for an externally-backed ArrayBuffer. Present ⇒
+implemented. If it ever were not, the failure is a throw at first call, which
+the seam degrades to `js-fallback`.
+
+**Running Gradle by hand needs JDK 17.** A bare `./gradlew …` picks up the
+host's default `java` (25.0.3) and dies with a misleading
+`Error resolving plugin [id: 'com.facebook.react.settings'] > 25.0.3` — really
+`JavaVersion.parse` in Gradle 8.14.3's embedded Kotlin compiler. Prefix
+`JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`; `scripts/build-debug.sh` already
+pins this, so only hand-run tasks are affected.
 
 **Test suite.** 53/53 jest tests pass, including 9 new ones covering the install
 path — no native module linked, `install()` returning false, `install()`
@@ -134,12 +189,66 @@ on PAP-1696 (detect port) and on the load stage.
 native wiring lives in `mobile/plugins/withGearKernelsPlugin.js`:
 
 1. copies `mobile/cpp/*.{h,cpp}` into `android/app/src/main/cpp/`
-2. writes `CMakeLists.txt` (links `ReactAndroid::jsi` via prefab, sets the
-   `-ffp-contract=off` flag)
-3. adds `buildFeatures { prefab true }` + `externalNativeBuild` to
-   `android/app/build.gradle`
+2. writes **two** `CMakeLists.txt`: `app/src/main/cpp/` builds `libgearkernels.so`
+   (links `ReactAndroid::jsi` via prefab, sets `-ffp-contract=off`), and
+   `app/src/main/jni/` is the app's own `appmodules` target which pulls the
+   first one in via `add_subdirectory`. See "The appmodules trap" below — this
+   split is load-bearing, not tidiness.
+3. adds `buildFeatures { prefab true }` + `externalNativeBuild` pointing at
+   `src/main/jni/CMakeLists.txt` to `android/app/build.gradle`
 4. writes `GearKernelsModule.kt` / `GearKernelsPackage.kt`
 5. registers the package in `MainApplication.kt`
+
+### The appmodules trap
+
+The first cut of this plugin pointed `externalNativeBuild.cmake.path` straight
+at our own `src/main/cpp/CMakeLists.txt`, which built `libgearkernels.so` and
+nothing else. That would not have produced a working APK, for a reason that is
+invisible until the app launches.
+
+`externalNativeBuild.cmake.path` is winner-takes-all. React Native's Gradle
+plugin installs its own app CMake setup **only if the app has not set one**:
+
+```kotlin
+// @react-native/gradle-plugin .../utils/NdkConfiguratorUtils.kt:34
+if (ext.externalNativeBuild.cmake.path == null) {
+  ext.externalNativeBuild.cmake.path =
+      File(extension.reactNativeDir.get().asFile,
+           "ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt")
+}
+```
+
+That default setup is `project(appmodules)` +
+`include(ReactNative-application.cmake)`, and it is what produces
+`libappmodules.so` — the library `MainApplication.loadReactNative()` loads under
+`newArchEnabled=true`, and the one whose `OnLoad.cpp` registers every autolinked
+C++ TurboModule (react-native-fast-opencv's included). Setting our own path did
+not *add* a library, it *replaced* the app's: no `libappmodules.so` would have
+been built at all.
+
+So the app-level CMakeLists is now the framework's documented customisation
+recipe, with our library added beside `appmodules` rather than instead of it.
+
+It lives in `src/main/jni/` and deliberately contains no `.cpp` of its own,
+because of a second trap in the same file:
+
+```cmake
+# ReactAndroid/cmake-utils/ReactNative-application.cmake:50
+file(GLOB override_cpp_SRC CONFIGURE_DEPENDS *.cpp)
+# if the user provides *.cpp next to their CMakeLists, those become appmodules'
+# sources — and the framework's own OnLoad.cpp is not compiled
+```
+
+Had the app CMakeLists sat next to `gear_kernels.cpp`, that glob would have
+compiled our three kernel sources *as* `appmodules` and dropped `OnLoad.cpp`,
+breaking autolinking registration instead. Keeping our sources in
+`src/main/cpp/` and the app CMakeLists alone in `src/main/jni/` avoids both.
+
+One consequence for repeat prebuilds: `android/` survives `expo prebuild`
+without `--clean`, so the plugin now *removes* any block a previous revision of
+itself injected (exact string match, `LEGACY_GRADLE_BLOCKS`) before inserting
+the current one. Skipping on the marker alone would have pinned the stale cmake
+path forever.
 
 `GearKernelsModule.install()` is a blocking synchronous method that hands the
 `jsi::Runtime` pointer to C++, which sets `globalThis.__gearKernels`.
@@ -163,8 +272,8 @@ without the `.so` must still count teeth:
 
 | AC | State |
 |---|---|
-| AC1 debug+release variants | C++ cross-compiles for all ABIs; plugin verified to generate correct gradle/CMake/Kotlin via `expo prebuild`. **Full `assembleDebug`/`assembleRelease` not yet run** — that is the build gated on QA review. |
-| AC2 byte-parity | **Met.** 431/431 images byte-identical, two compilers. |
+| AC1 debug+release variants | C++ cross-compiles for all ABIs; plugin verified to generate correct gradle/CMake/Kotlin via `expo prebuild`, and the `appmodules` defect above was caught and fixed before any build. **Full `assembleDebug`/`assembleRelease` not yet run** — that is the build gated on QA review. |
+| AC2 byte-parity | **Met.** 431/431 images byte-identical, two compilers, and at both `c++17 -O2` and the shipping `c++20 -O3`. |
 | AC3 ≥10x on device | **Open.** Projection is 11-22x; needs `stageMs.preprocessBackend == 'native-cpp'` from a real FP5 session. |
 | AC4 detect port | Filed as PAP-1696, not blocking this ticket. |
 | AC5 no accuracy regression | **Follows from AC2** — byte-identical inputs to `analyzeImage` cannot change the count. No re-baseline needed. |

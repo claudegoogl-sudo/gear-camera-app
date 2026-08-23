@@ -3611,7 +3611,8 @@ export async function countTeeth(photoUri, signal, opts) {
       total: t4 - t0,
       px: width * height,
       // PAP-1694: which preprocess backend produced this stage.  'js' is the
-      // pure-JS default; 'native-opencv-*' is the OpenCV port; 'js-fallback'
+      // pure-JS default; 'native-cpp' is the exact-semantics C++ port that
+      // option A actually shipped; 'js-fallback'
       // means the native backend threw and we degraded mid-run.  AC3 compares
       // stageMs.preprocess across this field, so it has to travel with it.
       preprocessBackend,
