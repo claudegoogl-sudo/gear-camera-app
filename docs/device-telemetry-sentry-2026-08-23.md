@@ -134,3 +134,34 @@ the report now (`measured: true`, `side`, `originX/Y`, `fullW/H`), and
 - **PAP-758 target 3 (≤5 s)** — we are ~7x over on ordinary gears on real hardware.
   This is a bigger and more general problem than the chainring freeze it was filed
   behind.
+
+## Root cause of the 3.5-month blindness — found, and it is precise
+
+This was not carelessness spread over three months. It was two events two days apart,
+and the second one hid the first.
+
+1. **2026-05-14** — the **Debug Report Triage** routine (CEO-owned, twice-daily at 13:00
+   and 19:00 Europe/Berlin) fired and failed with
+   `"Agent is not invokable in its current state"`. It failed again on the next tick and
+   was set to `paused`. Environmental, nothing to do with the routine's logic.
+2. **2026-05-16** — PAP-1543 shipped in b125 and moved debug-report delivery from disk
+   to Sentry. The routine's Step 1 was *"Git Sync (CRITICAL) — reports are uploaded to
+   GitHub"*, and Step 2 scanned `debug-reports/` for `*_report.json`.
+
+So the one mechanism whose job was to notice incoming device reports had died two days
+before the reports stopped arriving where it was looking. Nothing was left to raise a
+hand, and "we have no device telemetry" hardened into a premise that got written into
+PAP-1671's problem statement and into a board decision request.
+
+**Fixed 2026-08-23:** the routine's Steps 1–4 now pull from Sentry (with the `.env`
+token caveat, the `statsPeriod` gotcha, and Link-header pagination written into the
+step), Step 3 requires `algoDiag.stageMs` in every triage summary, Step 8 keys the
+manifest on Sentry `eventID`, and the routine is back to `active`. Cadence reduced from
+twice daily to **once daily at 19:00 Europe/Berlin** — telemetry volume is a handful of
+events per week and the old cadence was never justified.
+
+Step 1 also now carries a **canary**: because Sentry retains event *bodies* for only
+~30 days, any run that finds the newest event older than ~21 days must say so loudly in
+its closing summary. That is the alarm that was missing this time — the failure mode is
+silent by construction, so it needs an explicit tripwire rather than an absence of
+reports.
