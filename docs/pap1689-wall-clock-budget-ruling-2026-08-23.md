@@ -98,3 +98,32 @@ photos, raise the value to 55 000 — do not remove the gate, and do not reopen 
 45 000 ms is a **freeze clip, not a latency target**. PAP-758 target 3 (≤ 5 s per photo)
 remains **open and unmet** — the device is at ~36 s p50, ~7x over. Nothing here changes that
 number, and no document should read 45 s as an accepted product latency.
+
+## 7. Addendum — QA cross-check (PAP-1690), read after the ruling was written
+
+QA's independent cross-check landed the same day and reaches the same two conclusions (A over
+C; D inapplicable), on partly different reasoning. Recording both, and one correction.
+
+**D — QA's argument is the primary one, mine is secondary.** QA read every checkpoint site
+(`findGearCenter` 1045/1207/1338/1398/1450, `retryNearCenter` 2747/2798) and established that
+`budgetState.hit` is set *only* there, and that the early return at `:2218` fires immediately
+after `findGearCenter` returns and **before any of the five count methods run**. So a fired
+budget at `:2218` always means the center sweep itself ran out the clock, and the center on
+hand is at best a truncated-sweep candidate or the `radius: 0` image-center stub from
+`:1398-1400`. There is no code path where a good center is found and a *later independent*
+stage aborts — the premise D is built on does not exist. That is a cleaner disqualification
+than §3's cost argument; §3 stands as a description of what D would *cost* if adopted anyway,
+not as the main reason to reject it.
+
+**Correction to QA's residual-risk figure.** QA puts headroom at "~15-25 %", comparing the 45 s
+bound against device *totals* of 36-39 s. That comparison predates fix B. Since `4f244d7` the
+budget governs `t2 -> t4` only, so the right comparison is against post-preprocess cost: worst
+observed **32.4 s vs 45 s = 39 % headroom**, not 15-25 %. The ~7 s of load+preprocess is no
+longer charged and must not be counted against the bound.
+
+**QA's underlying concern still stands and is not dismissed:** n=7 self-selected samples,
+thermal throttling, colder or slower handsets, and the fact that **no device has ever run b137**.
+No fixed number survives an arbitrarily slower device; that is what §4's telemetry hatch is for.
+Making it concrete: the first b138 device session must report the `budgetExhausted` rate **split
+by chainring / non-chainring**. Any non-chainring fire triggers the pre-authorised bump to
+55 000 (headroom 1.70x, still clipping at ~62 s) without reopening this decision.
