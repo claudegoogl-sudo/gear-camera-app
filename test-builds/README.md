@@ -25,6 +25,8 @@ undelivered duplicate has been removed so there is exactly one artifact per buil
 
 | Timestamp | File | Build | Download |
 |-----------|------|-------|----------|
+| 2026-08-23 17:37 | gear-camera-debug-2026-08-23 17:35-b142.apk (136MB) | b142 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b142/gear-camera-debug-2026-08-23.17.35-b142.apk) |
+| 2026-08-23 17:35 | gear-camera-debug-2026-08-23 17:33-b141.apk (136MB) | b141 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b141/gear-camera-debug-2026-08-23.17.33-b141.apk) |
 | 2026-08-23 11:43 | gear-camera-debug-2026-08-23 11:40-b140.apk (136MB) | b140 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b140/gear-camera-debug-2026-08-23.11.40-b140.apk) |
 | 2026-08-23 09:00 | gear-camera-debug-2026-08-23 08:47-b138.apk (97MB) | b138 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b138/gear-camera-debug-2026-08-23.08.47-b138.apk) |
 | 2026-08-23 01:22 | gear-camera-release-2026-08-23 01:19-b137.apk (47MB) — **release variant**, debug-keystore signed | b137 | [Download](https://github.com/claudegoogl-sudo/gear-camera-app/releases/download/b137/gear-camera-release-2026-08-23.01.19-b137.apk) |
