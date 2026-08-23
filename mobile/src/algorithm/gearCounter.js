@@ -2231,19 +2231,23 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
   const cy = centerResult.cy;
   const contourRadius = centerResult.radius || 0;
 
-  // PAP-1686/PAP-1688 CEO ruling (supersedes the PAP-1659 comment this
-  // replaced): a fired budget may never convert a held answer into a
-  // non-answer. findGearCenter's own truncation still returns whatever
-  // candidate its completed sweep iterations produced — `deadline-fallback`
-  // and the wsum===0 `fallback` path are the only two cases with no real
-  // candidate at all, and both are tagged with radius 0 (see their call
-  // sites). Abstain only then. Otherwise fall through: the five count
-  // methods below are each individually bounded (no 36-iteration sweep),
-  // so running them on a real-but-truncated center is bounded extra work,
-  // not another open-ended sweep — and a wall-clock budget is a crash-bound,
-  // not a performance target. `budgetState.hit` still propagates as
-  // telemetry (see countTeeth/countTeethFromRgba's methodUsed suffixing).
-  if (budgetState && budgetState.hit && contourRadius <= 0) {
+  // PAP-1689 CEO ruling (final — supersedes PAP-1688 point 2, which had
+  // adopted "fix D" here; that adoption was reverted the same day once QA's
+  // cross-check and a corrected cost read landed on PAP-1689): option D
+  // ("never abstain when the base pass completed") was rejected. QA's
+  // disqualification: this checkpoint fires immediately after
+  // findGearCenter() returns and before any of the five count methods run,
+  // so a fired budget here always means the center *sweep itself* ran out
+  // the clock — there is no code path where a good center was found and a
+  // later *independent* stage aborted for D to rescue. Independently, the
+  // five count methods below are not the cheap "29-67ms tail" they were
+  // assumed to be — PAP-1666 priced findGearCenter at ~60% of the base pass,
+  // leaving ~40% for these methods, so running them after an already-fired
+  // 45s budget could add enough to hand PAP-1647's 70-93s freeze back. The
+  // correct number (45000ms, sized to the freeze/ordinary-gear gap) makes an
+  // early abstain rare in practice; D at the wrong number would have papered
+  // over that instead of fixing it.
+  if (budgetState && budgetState.hit) {
     return {
       toothCount: 0, confidence: 0,
       cx, cy, gearR: contourRadius, initialGearR: contourRadius,

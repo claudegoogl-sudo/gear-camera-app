@@ -22,17 +22,38 @@
  *      deadline — it must return almost immediately and set budgetState.hit
  *      instead of running the full coarse+fine sweep.
  *
- *   2. SIMULATED SLOW DEVICE — monkey-patch the global Date.now() clock so
- *      it reports elapsed time inflated by SLOWDOWN_FACTOR (PAP-1647
- *      measured 15-25x FP5-vs-desktop; this uses 20x, the midpoint). Run
+ *   2. SIMULATED ORDINARY-DEVICE (AC1) — monkey-patch the global Date.now()
+ *      clock so it reports elapsed time inflated by a device-realistic
+ *      multiplier (~30x: corpus plain-node median 1167ms vs the PAP-1677
+ *      device median ~36s ≈ 31x — per the PAP-1689 CEO ruling, §5). Run
  *      countTeethFromRgba() through the *public* entry point on the eight
  *      slowest corpus photos from this session's pap1659_pre snapshot
  *      (including two flagged-method matches: fft-agreement, retry-bc-
- *      consensus+fft-agree). Because the algorithm's internal `deadline`
- *      is computed from Date.now() at call time, the checkpoints see the
- *      same 20x-inflated clock a real slow device would produce — this is
- *      the same technique used to test any wall-clock timeout without
- *      the real slow hardware in hand.
+ *      consensus+fft-agree). Asserts a non-zero toothCount and that the
+ *      base pass was never hard-truncated — PAP-1689 rejected "fix D"
+ *      (never abstain on a completed base pass) as a companion change, so
+ *      the only thing keeping AC1 honest is the budget value itself
+ *      (45000ms) being sized correctly, not a fallback behavior.
+ *
+ *   3. SIMULATED HIGH-MULTIPLIER (telemetry check, NOT AC3 evidence) — same
+ *      technique at ~70x. None of these 8 corpus photos are the actual
+ *      PAP-1647 chainring-freeze cases (those are pathologically slow even
+ *      on desktop; this list is just the slowest *ordinary* photos), so
+ *      even at 70-80x none of them make findGearCenter's own sweep hit its
+ *      internal checkpoint — only the optional retry/hi-res-retry gates
+ *      fire, correctly preserving a real non-zero count with a telemetry
+ *      suffix. This check exists to show that mechanism holds at a higher
+ *      multiplier too. It is NOT the evidence for AC3 (the freeze bound):
+ *      that's checks 1/1b (the checkpoint fires and returns almost
+ *      immediately, deterministically, regardless of multiplier) plus real
+ *      device stageMs — per PAP-1689 §5's evidence rule, a desktop corpus
+ *      sweep at any multiplier can't price a runtime-triggered gate on its
+ *      own.
+ *
+ * Because the algorithm's internal `deadline` is computed from Date.now()
+ * at call time, the checkpoints see the same inflated clock a real slow
+ * device would produce — this is the same technique used to test any
+ * wall-clock timeout without the real slow hardware in hand.
  *
  * Usage:
  *   node --import ./mobile/__tests__/lib/node-esm-stubs.mjs \
@@ -139,7 +160,7 @@ function withInflatedClock(factor, fn) {
   }
 }
 
-function checkSimulatedSlowDevice(stamp, actual, factor) {
+function runSimulated(stamp, factor) {
   const { rgba, w, h } = loadRgba(stamp);
   const realT0 = Date.now();
   let r;
@@ -147,38 +168,49 @@ function checkSimulatedSlowDevice(stamp, actual, factor) {
     r = countTeethFromRgba(rgba, w, h);
   });
   const realElapsed = Date.now() - realT0;
-  // The algorithm believes SLOWDOWN_FACTOR*realElapsed have passed; that
-  // simulated elapsed time is what must stay <= BUDGET_MS. Real elapsed is
-  // reported too, since it's what this test actually measures directly.
   const simulatedElapsed = realElapsed * factor;
-  // This is a checkpoint-based bound, not preemptive: the worst-case
-  // overshoot past BUDGET_MS is bounded by the real-device cost of ONE
-  // (thresh, invert) sweep iteration, which varies per photo (a photo
-  // whose deadline happens to land just before its single most expensive
-  // iteration overshoots more than one where it lands before a cheap one).
-  // 3x BUDGET_MS is the documented worst case observed on this corpus's
-  // slowest photos under a 20x clock — see PAP-1659 handoff notes for why
-  // tighter isn't achievable without finer-grained (and costlier-on-every-
-  // count) instrumentation inside the sweep's per-iteration morphology.
-  // PAP-1683 AC2: the old predicate only checked that a fired budget was
-  // *truncated* (simulatedElapsed bounded, budgetExhausted===true) and never
-  // asserted anything was actually *returned* — 8/8 corpus photos returning
-  // tc=0 via the 'pap1659-budget-exhausted' hard-abstain path (analyzeImage's
-  // early return when findGearCenter's own base pass never completed) passed
-  // this check every time, which is precisely the device-fatal bug PAP-1683
-  // found. Split by whether the base pass completed:
-  //   - exact 'pap1659-budget-exhausted' methodUsed = analyzeImage's early
-  //     return = findGearCenter itself was truncated = no center to report.
-  //     This is the failure mode PAP-1683 filed; it must not occur here.
-  //   - a '<method>+pap1659-budget-exhausted' suffix = the base pass DID
-  //     complete and only later optional work (e.g. the retry gate) was
-  //     skipped for budget; toothCount must be non-zero in that case.
+  // exact 'pap1659-budget-exhausted' methodUsed = analyzeImage's early
+  // return = findGearCenter itself was truncated = no center to report =
+  // the hard-abstain PAP-1683 found firing on 100% of real device photos.
+  // A '<method>+pap1659-budget-exhausted' suffix = the base pass DID
+  // complete and only later optional work (e.g. a retry gate) was skipped
+  // for budget — telemetry only, toothCount is still whatever the base
+  // pass found.
   const basePassTruncated = r.methodUsed === 'pap1659-budget-exhausted';
-  const ok = simulatedElapsed <= BUDGET_MS * 3
-    && !basePassTruncated
-    && (!r.budgetExhausted || r.toothCount > 0);
+  return { r, realElapsed, simulatedElapsed, basePassTruncated };
+}
+
+// PAP-1689 CEO ruling §5, AC1: at a device-realistic multiplier (~30x —
+// corpus plain-node median 1167ms vs the PAP-1677 device median ~36s ≈
+// 31x), all 8 photos must return toothCount > 0 and must not have hit the
+// hard-abstain path. PAP-1689 rejected "fix D" as a companion change, so
+// this is pure evidence that 45000ms (fix A) is sized correctly on its
+// own — there is no fallback behavior papering over a bad value here.
+function checkOrdinaryDevice(stamp, actual, factor) {
+  const { r, realElapsed, simulatedElapsed, basePassTruncated } = runSimulated(stamp, factor);
+  const ok = !basePassTruncated && r.toothCount > 0;
   out(
-    `  ${stamp} (actual=${actual}T, ${factor}x clock): real=${realElapsed}ms ` +
+    `  ${stamp} (actual=${actual}T, ${factor}x clock, AC1): real=${realElapsed}ms ` +
+    `simulated=${Math.round(simulatedElapsed)}ms (${(simulatedElapsed / BUDGET_MS).toFixed(1)}x budget) ` +
+    `tc=${r.toothCount} conf=${r.confidence.toFixed(2)} ` +
+    `method=${r.methodUsed} budgetExhausted=${r.budgetExhausted} -> ${ok ? 'PASS' : 'FAIL'}`,
+  );
+  return ok;
+}
+
+// Higher-multiplier telemetry check (NOT PAP-1689 §5 AC3 evidence — see
+// file header). At 70x, none of these 8 (ordinary, not chainring-freeze)
+// photos make findGearCenter's own sweep hit its internal checkpoint; only
+// the optional retry/hi-res-retry gates fire. This asserts that mechanism
+// still preserves a real, non-zero count under a telemetry suffix rather
+// than silently degrading — it does not assert the hard-abstain path
+// itself stays bounded, because these photos never reach it. That's what
+// checks 1/1b are for.
+function checkHighMultiplierTelemetry(stamp, actual, factor) {
+  const { r, realElapsed, simulatedElapsed, basePassTruncated } = runSimulated(stamp, factor);
+  const ok = !basePassTruncated && (!r.budgetExhausted || r.toothCount > 0);
+  out(
+    `  ${stamp} (actual=${actual}T, ${factor}x clock, telemetry): real=${realElapsed}ms ` +
     `simulated=${Math.round(simulatedElapsed)}ms (${(simulatedElapsed / BUDGET_MS).toFixed(1)}x budget) ` +
     `tc=${r.toothCount} conf=${r.confidence.toFixed(2)} ` +
     `method=${r.methodUsed} budgetExhausted=${r.budgetExhausted} -> ${ok ? 'PASS' : 'FAIL'}`,
@@ -205,8 +237,11 @@ for (const [stamp] of SLOWEST) allOk = checkDirectCheckpoint(stamp) && allOk;
 out('\n=== PAP-1659 AC1: retryNearCenter direct checkpoint (deadline already expired) ===');
 for (const [stamp] of SLOWEST) allOk = checkRetryDirectCheckpoint(stamp) && allOk;
 
-out('\n=== PAP-1659 AC1: simulated slow device (20x clock, PAP-1647 midpoint) ===');
-for (const [stamp, actual] of SLOWEST) allOk = checkSimulatedSlowDevice(stamp, actual, 20) && allOk;
+out('\n=== PAP-1689 AC1: simulated ordinary device (30x clock, device-realistic) ===');
+for (const [stamp, actual] of SLOWEST) allOk = checkOrdinaryDevice(stamp, actual, 30) && allOk;
+
+out('\n=== telemetry check only, NOT AC3 evidence (70x clock — see file header) ===');
+for (const [stamp, actual] of SLOWEST) allOk = checkHighMultiplierTelemetry(stamp, actual, 70) && allOk;
 
 out(`\n${allOk ? 'ALL CHECKS PASSED' : 'SOME CHECKS FAILED'}`);
 process.exitCode = allOk ? 0 : 1;
