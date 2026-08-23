@@ -1,0 +1,82 @@
+PAP-1703 / PAP-1694 AC3 — b140 artifact verification
+=====================================================
+Date:    2026-08-23 ~11:42Z
+Commit:  5b6ca66 (main, tracked tree clean; only untracked debug-reports)
+Build:   v1.0.0 (140) · 2026-08-23 11:40   BUILD SUCCESSFUL in 2m 15s
+APK:     test-builds/gear-camera-debug-2026-08-23 11:40-b140.apk  (142,076,624 B)
+Release: https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b140
+Log:     debug-reports/pap1703_b140_build_2026-08-23.log
+
+All checks below are run against the PACKAGED APK, not against
+mobile/android/app/build/intermediates/cxx/**. Reading the intermediates is how
+PAP-1694 nearly shipped a wrong answer twice (partial ABI matrix; stale variant
+hash 26i2a284). See feedback_verify_native_artifacts_per_abi.
+
+1. libgearkernels.so present per ABI, inside the APK
+---------------------------------------------------
+  lib/arm64-v8a/libgearkernels.so       122,344 B     <- FP5 target ABI
+  lib/armeabi-v7a/libgearkernels.so      54,484 B
+  (lib/ contains exactly these two ABI dirs; x86* deliberately not shipped.)
+
+  Bundled OpenCV runtime, per ABI:
+  lib/arm64-v8a/libopencv_java4.so   23,465,088 B
+  lib/armeabi-v7a/libopencv_java4.so 15,622,192 B
+
+2. Per-ABI ELF identity — distinct machine types, not one lib copied twice
+-------------------------------------------------------------------------
+  arm64-v8a    Class ELF64   Machine AArch64   Type DYN
+  armeabi-v7a  Class ELF32   Machine ARM       Type DYN
+
+3. Exported symbols present in BOTH ABIs (nm -D --defined-only)
+--------------------------------------------------------------
+  Java_com_gearcounter_app_GearKernelsModule_nativeInstall   (JNI entry point)
+  gearkernels::installGearKernels(facebook::jsi::Runtime&)   (JSI install)
+  gearkernels::preprocess(const unsigned char*, int, int, unsigned char*, ...)
+  gearkernels::rgbaToGray / gaussianBlur5x5 / clahe / cannyEdges
+
+  So the library is not a stub: every kernel the JS path would otherwise run is
+  exported on both ABIs.
+
+  NEEDED (both ABIs): libjsi.so, libandroid.so, liblog.so, libm.so,
+                      libc++_shared.so, libdl.so
+
+4. PAP-1700/6972385 telemetry IS in the shipped Hermes bundle
+------------------------------------------------------------
+  assets/index.android.bundle is Hermes bytecode (3,474,928 B), so these are
+  string-table hits, contrasted against the previous release b138:
+
+    string                b140   b138
+    preprocess_backend       1      0
+    algo.nativeKernels       1      0
+    native-cpp               1      0
+
+  b138 also carries ZERO libgearkernels entries — b140 is the first APK with the
+  native module at all. That independently corroborates QA's clean-baseline
+  check on PAP-1703 (the `preprocess_backend` Sentry tag has never had a value),
+  so any value observed after installing b140 is unambiguously from this build.
+
+5. Native Sentry transport — the guard that killed b139
+-------------------------------------------------------
+  Packaged assets/sentry.options.json:
+    dsn      95 chars, non-empty, byte-identical to .env EXPO_PUBLIC_SENTRY_DSN
+    release  "v1.0.0 (140) · 2026-08-23 11:40"
+    dist     "140"
+  Build log confirms all three guards:
+    [build] Verified Sentry DSN is baked into the packaged JS bundle
+    [build] Verified Sentry DSN is baked into the packaged native options file
+    [build] Verified MainApplication starts the native Sentry SDK
+
+NOT PROVEN HERE — and not provable from this host
+-------------------------------------------------
+AC3 asks for >=10x on device. Everything above proves the native library SHIPS
+and CAN load. It does not prove it DOES load on the FP5, nor how fast it is.
+That needs stageMs.preprocessBackend == 'native-cpp' from a real photo session.
+No adb, no emulator, no device in this sandbox.
+
+Known risk on the >=10x bar (flagged before the session, not after):
+host JS preprocess mean 106.2ms -> host native 66.2ms = 1.60x
+(debug-reports/pap1694_native_parity.json, n=431, byte-identical 431/431).
+Host JS is V8-JIT'd so C++ has little headroom there. The >=10x bar rests
+entirely on the device's Hermes penalty (~33-38x, project_PAP1682_*), which is
+what makes the device JS baseline ~2.9-3.0s. A 7x or 8x device result would be
+a real measurement, not a broken build.

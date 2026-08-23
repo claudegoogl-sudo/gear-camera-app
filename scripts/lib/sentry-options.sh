@@ -24,12 +24,27 @@
 # again (it cannot know the build number), which is fine: this stamp runs on
 # every build and re-adds them before Gradle copies the file into assets/.
 
+# PAP-1703: prebuild also owns the `dsn` key, and it writes an EMPTY string when
+# `npx expo prebuild` runs without .env sourced (app.config.js reads the DSN from
+# EXPO_PUBLIC_SENTRY_DSN). Because this file is gitignored, nothing in the repo
+# protects it, and the empty value survives until the next build dies on
+# build-debug.sh's assert_sentry_native_configured. That is exactly how b139 was
+# lost. The env var is the authoritative source in every other place we consume
+# it, so stamp it here too rather than depending on a generated artifact being
+# in the right state.
+#
+# This does NOT weaken assert_sentry_native_configured. That guard asserts
+# against the APK's *packaged* assets/sentry.options.json, so it still catches
+# the failure it exists for: a stale android/ tree where Gradle never copied the
+# file into assets at all.
+
 # stamp_sentry_options <options-json-path> <release> <dist>
 #
-# Merges release/dist into the existing options file, preserving every other
-# key. Fails loudly if the file is missing — a silent skip here would ship an
-# APK whose native crashes are misattributed, which is the whole failure mode
-# this guard exists to prevent.
+# Merges release/dist — and the DSN, when EXPO_PUBLIC_SENTRY_DSN is set — into
+# the existing options file, preserving every other key. Fails loudly if the
+# file is missing — a silent skip here would ship an APK whose native crashes
+# are misattributed, which is the whole failure mode this guard exists to
+# prevent.
 stamp_sentry_options() {
   local options_file="$1" release="$2" dist="$3"
 
@@ -43,17 +58,34 @@ stamp_sentry_options() {
   SENTRY_OPTIONS_FILE="$options_file" \
   SENTRY_STAMP_RELEASE="$release" \
   SENTRY_STAMP_DIST="$dist" \
+  SENTRY_STAMP_DSN="${EXPO_PUBLIC_SENTRY_DSN:-}" \
   node -e '
     const fs = require("fs");
     const file = process.env.SENTRY_OPTIONS_FILE;
     const options = JSON.parse(fs.readFileSync(file, "utf8"));
     options.release = process.env.SENTRY_STAMP_RELEASE;
     options.dist = process.env.SENTRY_STAMP_DIST;
+    const dsn = process.env.SENTRY_STAMP_DSN;
+    if (dsn) options.dsn = dsn;
     fs.writeFileSync(file, JSON.stringify(options, null, 2) + "\n");
   ' || {
     echo "[build] ERROR: failed to stamp release/dist into $options_file" >&2
     return 1
   }
 
-  echo "[build] Stamped release/dist into $options_file"
+  # An empty dsn here means neither prebuild nor the env var supplied one, so
+  # the packaged asset would start the native SDK with no transport. Catch it
+  # at the stamp rather than 3 minutes later at the APK assertion.
+  if ! SENTRY_OPTIONS_FILE="$options_file" node -e '
+    const fs = require("fs");
+    const o = JSON.parse(fs.readFileSync(process.env.SENTRY_OPTIONS_FILE, "utf8"));
+    process.exit(o.dsn ? 0 : 1);
+  '; then
+    echo "[build] ERROR: $options_file has an empty dsn and EXPO_PUBLIC_SENTRY_DSN" >&2
+    echo "[build] is unset, so the native SDK would start with no transport." >&2
+    echo "[build] Source mobile/.env (or export EXPO_PUBLIC_SENTRY_DSN) and re-run." >&2
+    return 1
+  fi
+
+  echo "[build] Stamped release/dist${EXPO_PUBLIC_SENTRY_DSN:+ + dsn} into $options_file"
 }
