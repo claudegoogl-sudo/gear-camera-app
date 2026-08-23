@@ -1,0 +1,25 @@
+[pap1672-jest] measure label=head_4399380_s6 photos=61 stride=6
+  [25/61] 202s
+  [50/61] 378s
+
+=== PAP-1672 jest-side speed [head_4399380_s6] ===
+Corpus: 61 photos   Wall: 464.2s
+Budget-exhausted (pap1659-budget-exhausted): 0/61 (0.0%)
+total          p50=6974  p95=9332  max=10301
+
+Per-bucket total runtime (matches PAP-760 buckets):
+Small  9-15T   N= 22  p50= 6344  p95= 7621  max= 7721  budgetHit=0
+Mid    16-20T  N=  6  p50= 7152  p95= 9280  max= 9280  budgetHit=0
+Large  21-28T  N= 18  p50= 7396  p95=10301  max=10301  budgetHit=0
+XL     29-60T  N= 15  p50= 7743  p95= 9339  max= 9339  budgetHit=0
+
+[pap1672-jest] snapshot -> /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1672_speed_jest_head_4399380_s6.json
+PASS mobile/__tests__/pap1672.speed.js (465.711 s)
+  PAP-1672 jest-side speed probe
+    ✓ per-photo runtime + stageMs + budgetExhausted, same boundary as node side (464184 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        465.761 s
+Ran all test suites.
