@@ -67,14 +67,44 @@ const RETRY_MAX_DIM          = 1500;
 // now takes the same `deadline`/`budgetState` and checks once per outer-r
 // iteration in both its coarse and fine passes, mirroring findGearCenter's
 // per-(thresh,invert) checkpoint.
-// 5000ms is the PAP-758 ceiling ("max 5s, better 1-2"). Evidence for going
-// tighter is thin (n=2 freeze reports, one device), so this ships at the
-// ceiling rather than guessing lower; AC2's budgetExhausted telemetry is
-// what tells us whether field data supports tightening it later.
-// Chosen well above the labeled-corpus worst full path (plain-node, ~3.5s
-// incl. hi-res retry per PAP-1647 re-measurement) so it should never fire on
-// the corpus — see debug-reports/pap1659_* for the before/after diff.
-const WALL_CLOCK_BUDGET_MS = 5000;
+// PAP-1686/PAP-1688 CEO ruling (2026-08-23, supersedes the 5000ms figure
+// below and the "PAP-758's <=5s is a hard bound on the count" premise): the
+// 5000ms figure was picked against a corpus median that PAP-1682 later
+// showed was a host-contention artifact (clean desktop p50 is ~980ms), while
+// the real FP5 device median is ~36.7s (PAP-1677) — b137 shipped this at
+// 100% device abstain (PAP-1683). This guard exists to clip the PAP-1647
+// freeze (69989ms / 93502ms on b129), not to enforce PAP-758 target 3 (that
+// target is unmet at ~36.7s p50 and this change does not move it).
+// 45000ms, anchored at t2 (post-preprocess — see countTeeth/
+// countTeethFromRgba): 39% above the worst observed ordinary-gear t2-anchored
+// window (28690-32388ms, b132 FP5 stageMs, n=5, pre-PAP-1635) and ~29% below
+// the cheapest observed freeze. Headroom deliberately biased toward
+// not-firing (a false fire costs an answer; a late clip costs a few seconds
+// of an already-bad UX). These are pre-PAP-1635 numbers, the only device
+// numbers that exist — if PAP-1635's cut holds on device this simply never
+// fires, which is correct for a crash-bound.
+// Re-derivation trigger (binding): once post-PAP-1635 device stageMs exists
+// at n>=10, reset to min(ordinary-gear device p99 * 1.25, freeze-floor / 1.5)
+// and record the arithmetic in the ticket. Do not re-pick this from a
+// desktop/corpus run — PAP-1686 standing policy: a runtime-triggered gate
+// cannot be accepted or re-tuned on corpus evidence, only on device stageMs.
+const WALL_CLOCK_BUDGET_MS = 45000;
+// PAP-1688: split from WALL_CLOCK_BUDGET_MS. The hi-res small-gear retry
+// below re-decodes the source photo at RETRY_MAX_DIM and runs a second full
+// preprocess+analyze pass with no checkpoint of its own before its inner
+// analyzeImage() call — i.e. it has the exact same uninterruptible-cost
+// shape PAP-1683 found in the main pipeline's decode+preprocess, stacked on
+// top of the main budget. Before this split, this gate happened to compare
+// total elapsed against the same 5000ms figure as the main budget, which in
+// practice always skipped the retry on a real device (ordinary total time
+// already exceeds 5s). Raising the shared constant to 45000 would silently
+// re-enable this retry on every eligible photo with no device cost data to
+// justify it — a pipeline change riding on a budget change. This constant
+// freezes this gate's real-world firing behavior exactly as it was before
+// the ruling (effectively never, on current device data) rather than
+// guessing a new value; expected device-cost delta of enabling it is
+// intentionally ~0 until it gets its own profiling pass.
+const HIRES_RETRY_BUDGET_MS = 5000;
 
 // PAP-1100: aim-circle prior on multiRadiusFftScan candidate-radii build.
 // When aimR > 0 (caller has an aim signal) the FFT sweep is constrained to
@@ -2201,21 +2231,19 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
   const cy = centerResult.cy;
   const contourRadius = centerResult.radius || 0;
 
-  // PAP-1659: findGearCenter's checkpoints only bound center detection
-  // itself. The five count methods below it (fftAtOuterRadii,
-  // multiRadiusFftScan, outerProfileScan, binaryContourCount,
-  // clahePeakCounting) plus radialOuterEdgeRadius are each individually
-  // bounded (no 36-iteration sweep), but together they're still real,
-  // uncapped work (binaryContourCount alone is ~17% of total pipeline time
-  // per profiling) with nothing gating them. If findGearCenter already hit
-  // the deadline — meaning the base pass itself ran long enough on this
-  // device to exhaust the budget — running five more methods on top of a
-  // pass that already returned a truncated/low-quality center candidate
-  // both adds more wall time AND builds on a shaky center. Stop here and
-  // abstain: this is the "return the best answer we hold — or abstain — and
-  // we stop" case from PAP-1659, not a case with a trustworthy answer to
-  // hold onto.
-  if (budgetState && budgetState.hit) {
+  // PAP-1686/PAP-1688 CEO ruling (supersedes the PAP-1659 comment this
+  // replaced): a fired budget may never convert a held answer into a
+  // non-answer. findGearCenter's own truncation still returns whatever
+  // candidate its completed sweep iterations produced — `deadline-fallback`
+  // and the wsum===0 `fallback` path are the only two cases with no real
+  // candidate at all, and both are tagged with radius 0 (see their call
+  // sites). Abstain only then. Otherwise fall through: the five count
+  // methods below are each individually bounded (no 36-iteration sweep),
+  // so running them on a real-but-truncated center is bounded extra work,
+  // not another open-ended sweep — and a wall-clock budget is a crash-bound,
+  // not a performance target. `budgetState.hit` still propagates as
+  // telemetry (see countTeeth/countTeethFromRgba's methodUsed suffixing).
+  if (budgetState && budgetState.hit && contourRadius <= 0) {
     return {
       toothCount: 0, confidence: 0,
       cx, cy, gearR: contourRadius, initialGearR: contourRadius,
@@ -3081,13 +3109,17 @@ export async function countTeeth(photoUri, signal, opts) {
   // When the gear is small in the frame and confidence is low, re-run
   // at 1500 px to give the FFT more pixels per tooth.
   await yieldOrAbort();
-  // PAP-1647 / PAP-1659: skip the hi-res retry when earlier stages already
-  // spent the shared wall-clock budget (pathological slow device). Never
-  // fires on the labeled corpus (worst full path ~3.5s ≪ 5s), so corpus
-  // outputs are byte-identical; on-device it caps the 70-93s freeze instead
-  // of doubling it.
+  // PAP-1647 / PAP-1659 / PAP-1688: skip the hi-res retry when total elapsed
+  // (from decode start, t0 — not the t2-anchored main `deadline`) already
+  // exceeds its own dedicated HIRES_RETRY_BUDGET_MS. See that constant's
+  // comment: this is deliberately decoupled from WALL_CLOCK_BUDGET_MS so
+  // raising the main crash-bound doesn't silently re-enable an uncapped
+  // second decode+preprocess+analyze pass with no device cost data behind
+  // it. Never fires on the labeled corpus (worst full path ~3.5s ≪ 5s), so
+  // corpus outputs are byte-identical; on-device it caps the 70-93s freeze
+  // instead of doubling it.
   const hiresElapsed = Date.now() - t0;
-  const hiresOverBudget = Date.now() >= deadline;
+  const hiresOverBudget = hiresElapsed >= HIRES_RETRY_BUDGET_MS;
   if (r.confidence < SMALL_GEAR_CONF
       && r.gearR / width <= SMALL_GEAR_RADIUS_FRAC
       && r.toothCount > 0
@@ -3111,7 +3143,7 @@ export async function countTeeth(photoUri, signal, opts) {
     // PAP-1659: eligible for hi-res retry but skipped on the wall-clock budget.
     budgetState.hit = true;
     console.log(`[GearCounter] hi-res retry skipped: elapsed ` +
-      `${hiresElapsed}ms >= ${WALL_CLOCK_BUDGET_MS}ms budget (PAP-1659)`);
+      `${hiresElapsed}ms >= ${HIRES_RETRY_BUDGET_MS}ms budget (PAP-1688)`);
   }
   // ──────────────────────────────────────────────────────────────────
 

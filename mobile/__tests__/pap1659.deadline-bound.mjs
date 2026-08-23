@@ -51,7 +51,7 @@ const ROOT = path.resolve(HERE, '..', '..');
 const TRAINING_DIR = path.join(ROOT, 'training-data');
 const CACHE_DIR = path.join(ROOT, '.cache', 'training-rgba');
 const TARGET_MAX_DIM = 900;
-const BUDGET_MS = 5000; // must match WALL_CLOCK_BUDGET_MS in gearCounter.js
+const BUDGET_MS = 45000; // PAP-1686/1688 CEO ruling — must match WALL_CLOCK_BUDGET_MS in gearCounter.js
 
 const gc = await import('../src/algorithm/gearCounter.js');
 const { __test, countTeethFromRgba, bilinearDownsampleRgba } = gc;
