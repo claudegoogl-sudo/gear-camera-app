@@ -6,24 +6,40 @@ against another, say that too — the trade is a CEO call, not an engineering on
 
 | # | Target | Bar | Where it stands | Last measured |
 |---|---|---|---|---|
-| 1 | **Gear range** | 9T–60T counted, not just abstained | 11–28T solid; 29–60T (chainring) unresolved | PAP-1591 raised the v1 floor to **11–60T** (board, 2026-05-19) |
-| 2 | **Accuracy** | **>99%** exact tooth count | **50.8%** (181/356) — and that number is stale | PAP-1052, 2026-05-02, HEAD `141cffb` |
-| 3 | **Speed** | **≤5s hard, 1–2s goal**, per count | Host p50 **2.28s** pre-optimisation; on-device **70–93s** on chainring retry paths | PAP-1639 profile (host) / PAP-1647 (FP5, n=2) |
+| 1 | **Gear range** | 9T–60T counted, not just abstained | 11–20T usable; 21–60T is the gap. 52T is **1/22 = 4.5%** — the top of the declared range does not work | PAP-1658, 2026-08-22 |
+| 2 | **Accuracy** | **>99%** exact tooth count | **58.0%** (210/362). 126 abstains (34.8%), 26 confidently wrong (7.2%) | PAP-1658, 2026-08-22, HEAD `49a7498` |
+| 3 | **Speed** | **≤5s hard, 1–2s goal**, per count | **No trustworthy number.** Two host measurements of the same corpus disagree ~6× (audit median 5757ms vs stage-profiler p50 977ms). On-device worst case **70–93s** on chainring retry | PAP-1658 / PAP-1639 (host, contradictory) / PAP-1647 (FP5, n=2) |
+
+## Current accuracy, per bucket — PAP-1658 @ `49a7498`, 2026-08-22
+
+| Bucket | Tol | N | Correct | Acc% | Abstain | Conf-wrong |
+|---|---|---|---|---|---|---|
+| Small 9–15T | exact | 136 | 102 | 75.0% | 31 | 3 |
+| Mid 16–20T | exact | 33 | 27 | 81.8% | 5 | 1 |
+| Large 21–28T | ±1 | 113 | 51 | 45.1% | 52 | 10 |
+| XL 29–60T | ±1 | 80 | 30 | 37.5% | 38 | 12 |
+| **TOTAL** | | **362** | **210** | **58.0%** | **126** | **26** |
+
+**Distance to target 2 is 148 photos.** We need 358/362; we have 210. Over the 3.5 months
+since PAP-1052 (181/356 = 50.8% @ `141cffb`) we moved **+7.2pp**, and effectively all of it
+is one commit's XL gain (PAP-1554). Large + XL are 53% of the corpus at ~41% combined —
+they are the binding constraint, and both trip the harness's own `<50% — likely regression` warning.
 
 ## What each target actually means
 
 **1. Range.** "Supported" means we return a correct count, not that we abstain safely.
-An abstain is a non-answer; it is not a partial credit. The single-image-cue ladder for
+An abstain is a non-answer; it is not partial credit. The single-image-cue ladder for
 30–60T discrimination is empirically exhausted (PAP-1532; QA-endorsed on PAP-1527/1528),
 so the next XL move is a product decision, currently open with the board on PAP-758.
 
 **2. Accuracy.** Exact match against the labelled corpus, reported per bucket
 (Small 9–15T / Mid 16–20T / Large 21–28T / XL 29–60T) plus total, using
-`mobile/__tests__/pap760.audit.js` on the shared harness runner. Two numbers matter and
+`mobile/__tests__/pap760.audit.js` on the shared harness runner. Three numbers matter and
 must be reported separately:
 - **correct** — committed and right,
-- **confidently wrong** — committed and wrong. This is the one that burns users.
-Abstains are a third bucket and are *not* correct.
+- **confidently wrong** — committed and wrong. This is the one that burns users,
+- **abstain** — refused to answer. Not correct. Today this is our *dominant* failure
+  mode: we decline on a third of all inputs.
 
 **3. Speed.** Wall clock from shutter to answer, on a real handset, not host wall time.
 Host harness timings are a proxy for ranking optimisations, never a claim about the
@@ -33,12 +49,20 @@ device. A count that takes 70s is a defect at any accuracy.
 
 - **No accuracy claim without a corpus number** at a named commit. "Should improve X" is
   a hypothesis; the audit table is the evidence.
-- **No accuracy win is free if it costs time.** Retry/consensus paths are the current
-  worst offender (PAP-1647). Any proposal that re-runs the pipeline N times must state
-  its worst-case wall clock on device.
+- **Claimed per-commit deltas do not sum.** PAP-1658 AC4: six commits each claimed a gain;
+  the measured total is fully explained by one of them. Overlapping gates double-count.
+  Treat any "claimed effect" table as directional only — never add tickets together.
+- **A change to *when we abstain* is accuracy-relevant.** Deadline gates, confidence gates
+  and sanity gates all convert correct answers into non-answers. They must be re-audited,
+  not asserted neutral (PAP-1659 is the open case).
+- **No accuracy win is free if it costs time**, and no speed win is free if it costs
+  answers. Any proposal that re-runs the pipeline N times must state its worst-case wall
+  clock on device; any proposal that bounds wall clock must state its abstain cost in pp.
 - **Full-corpus audits go stale.** Re-audit at HEAD after any cluster of
   accuracy-relevant commits; do not quote a months-old table as current.
 - **Abstain is a floor, not a finish.** Shipping an abstain closes a *confidently-wrong*
   defect. It does not advance target 1 or 2.
 
-_Maintained by the CEO. Last reviewed 2026-08-22 against HEAD `5c80b48` (b135)._
+_Maintained by the CEO. Last reviewed 2026-08-23 against the PAP-1658 audit at `49a7498`._
+_Known gap: HEAD has since moved to `1aa95cc`; PAP-1659's wall-clock deadline gate landed
+after the audited SHA and is not priced into the 58.0% figure._
