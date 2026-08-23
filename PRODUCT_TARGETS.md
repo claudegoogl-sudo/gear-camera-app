@@ -54,7 +54,20 @@ The **>99%** bar has two readings and the board has not yet picked one
 | Reading | Formula | Today | The programme it implies |
 |---|---|---|---|
 | **1 — of all photos** | 210/362 | **58.0%** | Abstain is failure. Loosen gates, answer more photos. Distance: +148 photos. |
-| **2 — of answers given** | 210/236 | **89.0%** | Abstain is free; only confident wrongness counts. Tighten gates. Distance: conf-wrong 7.2% → <1%. |
+| **2 — of answers given** | 210/236 | **89.0%** | Abstain is free; only confident wrongness counts. Tighten gates. Distance: conf-wrong **11.0% of answers** (26/236) → <1%, an **11× reduction**. |
+
+**Watch the denominator on the error rate too.** 26 confident errors is **7.2% of photos**
+but **11.0% of answers**. Reading 2 scores correctness against answers, so it must score
+errors against answers: the bar is 11.0% → <1%, i.e. **at most 2 confident errors in the
+whole corpus**. Quoting 7.2% inside a Reading-2 argument understates the job.
+
+**Both readings are one predicate with one free variable.** Write the test as
+`correct ÷ answered ≥ 99%` **AND** `answered ÷ total ≥ F`. Reading 1 is `F = 100%`
+(abstaining banned); Reading 2 is `F = 0%` (abstaining unlimited); tiered is the board's
+number. Today **F = 65.2%** (236/362). Both endpoints are unusable in isolation — at
+`F = 0%` an app that answers only the ten easiest photos scores 100%, and at `F = 100%`
+the app is required to bluff on a photo too blurred to count. The likely answer is
+interior, so **the open question is a single number, not a philosophy**.
 
 These are **opposite instructions to the same engineers**, so until the ruling lands:
 
@@ -63,8 +76,13 @@ These are **opposite instructions to the same engineers**, so until the ruling l
 - **Quote both derived rates** whenever you quote a headline: `correct/N` *and*
   `correct/(N − abstain)`. One number alone silently picks a reading.
 - **No ticket may assert that an abstain-shifting change "helped" or "hurt" accuracy.**
-  State the triple delta. PAP-1659's wall-clock deadline gate is the live case: it is
-  strictly negative under Reading 1 and strictly positive under Reading 2, same commit.
+  State the triple delta. PAP-1659's wall-clock deadline gate is the live case: under
+  Reading 1 its delta is **≤ 0 by construction** (it converts slow answers into abstains,
+  so it can remove correct answers and never create one); under Reading 2 the sign is
+  **genuinely open** and plausibly positive, since the answers it discards are the slow
+  low-confidence ones likeliest to be wrong. Same commit, opposite verdicts — which is
+  why the audit ([PAP-1674](/PAP/issues/PAP-1674)) reports the triple and both rates and
+  names which reading its recommendation rests on.
 - The triple is reading-agnostic — both rates fall out of it. **Nothing about
   measurement is blocked by the ruling; only prioritisation is.**
 
