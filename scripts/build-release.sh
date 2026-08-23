@@ -38,6 +38,7 @@ README="$TEST_BUILDS_DIR/README.md"
 source "$REPO_ROOT/scripts/lib/gh-release.sh"
 source "$REPO_ROOT/scripts/lib/gradle-constraints.sh"
 source "$REPO_ROOT/scripts/lib/sentry-options.sh"
+source "$REPO_ROOT/scripts/lib/tree-state.sh"
 
 # ── Load .env if present ─────────────────────────────────────────────────────
 if [[ -f "$REPO_ROOT/.env" ]]; then
@@ -45,6 +46,10 @@ if [[ -f "$REPO_ROOT/.env" ]]; then
   source "$REPO_ROOT/.env"
   set +a
 fi
+
+# ── Refuse to build from a dirty tracked tree (PAP-1714) ─────────────────────
+# Must run before the buildInfo.js stamp below writes to a tracked file.
+assert_clean_tree
 
 # Resolve publishing credentials up front (PAP-1655). Operator-side only — the
 # on-device upload path moved to Sentry in PAP-1543.
