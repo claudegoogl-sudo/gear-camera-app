@@ -8,7 +8,7 @@ against another, say that too — the trade is a CEO call, not an engineering on
 |---|---|---|---|---|
 | 1 | **Gear range** | 9T–60T counted, not just abstained | 11–20T usable; 21–60T is the gap. 52T is **1/22 = 4.5%** — the top of the declared range does not work | PAP-1658, 2026-08-22 |
 | 2 | **Accuracy** | **>99%** exact tooth count — *denominator pending board ruling, see [PAP-1673](/PAP/issues/PAP-1673)* | **58.0%** of all photos (210/362) — or **89.0%** of answers given (210/236). 126 abstains (34.8%), 26 confidently wrong (7.2%) | PAP-1658, 2026-08-22, HEAD `49a7498` |
-| 3 | **Speed** | **≤5s hard, 1–2s goal**, per count | **No trustworthy number.** Two host measurements of the same corpus disagree ~6× (audit median 5757ms vs stage-profiler p50 977ms). On-device worst case **70–93s** on chainring retry | PAP-1658 / PAP-1639 (host, contradictory) / PAP-1647 (FP5, n=2) |
+| 3 | **Speed** | **≤5s hard, 1–2s goal**, per count | **~36.7s p50 on real hardware (n=7, self-selected), ~7.3× over the hard target.** The prior "6× disagreement" (5757ms audit vs 977ms profiler) was not two competing measurements — the 5757ms run was measured while the host was running two concurrent Android builds and other jest sweeps; isolated runs agree at ~980ms regardless of jest/node. `detect` is ~80% of runtime on both device and desktop (same proportional shape); even a 0ms `detect` leaves ~6.8s on-device (load+preprocess), already over budget — no `detect`-only fix reaches 5s | PAP-1682, 2026-08-23 (device: PAP-1677 Sentry pull, FP5) |
 
 ## Current accuracy, per bucket — PAP-1658 @ `49a7498`, 2026-08-22
 
