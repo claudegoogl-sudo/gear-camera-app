@@ -12,6 +12,30 @@ import { Sentry } from './src/sentry';
 import { installNativeKernels } from './src/algorithm/nativeKernels';
 reportNativeKernelInstall(installNativeKernels());
 
+// PAP-1696: install the native `cv::dft` backend for fftMagnitude(), if this
+// build has react-native-fast-opencv linked. Unlike the kernels above, this
+// swap carries no accuracy risk (docs/pap1696-detect-fft-dft-parity.md,
+// QA-confirmed on PAP-1698) — it is a speed change only, and installNativeFft
+// never throws: a build without the binding stays on the JS FFT.
+import { installNativeFft } from './src/algorithm/nativeFft';
+reportNativeFftInstall(installNativeFft());
+
+function reportNativeFftInstall(r) {
+  try {
+    Sentry.setTag('fft_backend', r.backend);
+    Sentry.addBreadcrumb({
+      category: 'algo.nativeFft',
+      level: r.installed ? 'info' : 'warning',
+      message: r.installed
+        ? 'native cv::dft fft backend installed'
+        : `native fft backend unavailable — staying on JS: ${r.reason}`,
+      data: { backend: r.backend, reason: r.reason ?? null },
+    });
+  } catch {
+    // no-op: Sentry may be uninitialised (no DSN) or absent (Expo Go).
+  }
+}
+
 // PAP-1700 (QA fast-follow): the downgrade above is deliberately silent so a
 // build without the .so still counts teeth — but silent on the device meant
 // silent in the telemetry too, and `stageMs.preprocessBackend === 'js'` alone

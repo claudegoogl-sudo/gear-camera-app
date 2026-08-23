@@ -134,10 +134,43 @@ tooth-count band — the value that actually drives `bestF`/`toothCount` in
 
 ## 5. Status
 
-Blocked on [PAP-1694](/PAP/issues/PAP-1694)'s native C++/CMake scaffolding
-landing (Option A, QA-approved on [PAP-1697](/PAP/issues/PAP-1697), currently
-in progress). This parity study itself is complete; QA cross-check
-([PAP-1698](/PAP/issues/PAP-1698)) verdict is **CONFIRMED**, with one
-non-blocking correction applied to this doc (the N=256 fast-mode call site
-at `gearCounter.js:761`, folded into §1/§2 above 2026-08-23). Conclusion
-unchanged: no accuracy re-baseline risk from the DFT-core swap.
+The parity study is complete; QA cross-check ([PAP-1698](/PAP/issues/PAP-1698))
+verdict is **CONFIRMED**, with one non-blocking correction applied to this doc
+(the N=256 fast-mode call site at `gearCounter.js:761`, folded into §1/§2
+above 2026-08-23). Conclusion unchanged: no accuracy re-baseline risk from the
+DFT-core swap.
+
+**2026-08-23 update — JS/native wiring landed.** [PAP-1694](/PAP/issues/PAP-1694)'s
+native scaffolding (Option A, QA-approved on [PAP-1697](/PAP/issues/PAP-1697))
+landed at `6972385`, which unblocked the C++/native-integration half of this
+ticket. Rather than adding `cv::dft` calls to `mobile/cpp/gear_kernels.cpp`
+(that library deliberately stays OpenCV-free — see
+`withGearKernelsPlugin.js`'s header comment), the FFT swap goes through
+`react-native-fast-opencv` directly, which is already linked for exactly this
+purpose:
+
+- `mobile/src/algorithm/fft.js` gained the same backend-seam shape PAP-1694
+  built for `preprocess()`: `fftMagnitudeJs` is the pure-JS default,
+  `setFftBackend`/`getFftBackendName` swap it, and `fftMagnitude()` degrades
+  to JS (permanently, for the session) if the active backend throws.
+- `mobile/src/algorithm/nativeFft.js` is the `cv::dft` backend: packs the
+  (already power-of-two, per §1) signal into a `Mat`, calls
+  `OpenCV.dft(..., DFT_COMPLEX_OUTPUT, 0)`, `split`s the two channels, calls
+  `OpenCV.magnitude`, and slices to the same `N/2+1` half-spectrum
+  `fftMagnitudeJs` returns. Installed from `mobile/index.js` alongside the
+  preprocess kernels, tagged `fft_backend` in Sentry for the same reason
+  PAP-1700 tagged `preprocess_backend` — so a device session's numbers can be
+  split by backend without opening each report.
+- `mobile/__tests__/nativeFft.test.js` covers the JS-side orchestration (Mat
+  packing, half-spectrum slicing, padding, throw-degrades-to-JS) against a
+  fake-but-mathematically-real `OpenCV.dft`, since the actual binding can't
+  run in this sandbox (no device/emulator). The numeric parity claim itself
+  is still the one this doc already established via the real `cv2.dft` python
+  proxy — that's what a real device would exercise, not new math.
+
+**Remaining, not blocking this ticket:**
+- On-device numeric spot-check of the actual JSI call path (this sandbox has
+  no adb/emulator — same constraint as PAP-1694 AC3).
+- `sampleIntensityRing` (`cv::warpPolar` candidate) and `savgolSmooth`
+  (`cv::filter2D` candidate) are unported, per §4's "adjacent primitives"
+  note — each needs its own parity study before porting.
