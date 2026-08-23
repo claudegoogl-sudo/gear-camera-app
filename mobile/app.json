@@ -45,7 +45,8 @@
         }
       ],
       "./plugins/withExtractYPlanePlugin",
-      "./plugins/withBuildHostGradleProps"
+      "./plugins/withBuildHostGradleProps",
+      "./plugins/withGearKernelsPlugin"
     ],
     "extra": {
       "eas": {
