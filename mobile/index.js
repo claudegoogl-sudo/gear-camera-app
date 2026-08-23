@@ -2,7 +2,7 @@ import { registerRootComponent } from 'expo';
 
 // PAP-1543: Sentry.init() must run before any module that may call
 // Sentry.captureMessage / addAttachment.  Importing the module triggers init.
-import './src/sentry';
+import { Sentry } from './src/sentry';
 
 // PAP-1694: install the native C++ preprocess kernels onto the JS runtime, if
 // this build has them.  Byte-identical to the JS backend by construction
@@ -10,7 +10,31 @@ import './src/sentry';
 // corpus), so this is a speed change only.  It is a no-op in Expo Go and on any
 // build where libgearkernels.so is missing — countTeeth stays on the JS path.
 import { installNativeKernels } from './src/algorithm/nativeKernels';
-installNativeKernels();
+reportNativeKernelInstall(installNativeKernels());
+
+// PAP-1700 (QA fast-follow): the downgrade above is deliberately silent so a
+// build without the .so still counts teeth — but silent on the device meant
+// silent in the telemetry too, and `stageMs.preprocessBackend === 'js'` alone
+// never says *why*.  A tag makes the backend a queryable dimension over all
+// events (so AC3's device numbers can be split by backend without opening each
+// report), and the breadcrumb carries the reason string on any event that
+// follows.  Wrapped because telemetry must never be the thing that stops the
+// app from starting.
+function reportNativeKernelInstall(r) {
+  try {
+    Sentry.setTag('preprocess_backend', r.backend);
+    Sentry.addBreadcrumb({
+      category: 'algo.nativeKernels',
+      level: r.installed ? 'info' : 'warning',
+      message: r.installed
+        ? 'native C++ preprocess kernels installed'
+        : `native preprocess kernels unavailable — staying on JS: ${r.reason}`,
+      data: { backend: r.backend, reason: r.reason ?? null },
+    });
+  } catch {
+    // no-op: Sentry may be uninitialised (no DSN) or absent (Expo Go).
+  }
+}
 
 import App from './App';
 

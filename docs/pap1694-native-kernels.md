@@ -123,6 +123,39 @@ facebook::jsi::Runtime`. The public route is `jsi::ArrayBuffer`'s
 `(Runtime&, shared_ptr<MutableBuffer>)` constructor, which is what the code now
 uses — a mistake no amount of reading the port would have caught.
 
+**AC1 (release half) — the same matrix, verified again in `RelWithDebInfo`.**
+The release variant is verified separately because `project_PAP1636_release_probe`
+records that it differs from debug in symbol stripping and packaging, so a green
+debug build is not evidence about it. `:app:configureCMakeRelease` succeeded for
+all four ABIs, `:app:buildCMakeRelWithDebInfo[<abi>]` ran for all four
+(`debug-reports/pap1694_release_abi_matrix_2026-08-23.log:212,214,216,218`), and
+`:app:externalNativeBuildRelease` was re-run to a terminal
+`BUILD SUCCESSFUL in 1m 12s`
+(`debug-reports/pap1694_release_uptodate_2026-08-23.log:284,294`) — the first log
+was truncated by the process being killed during unrelated downstream tasks, so
+it proves the per-ABI work happened but not that Gradle agreed at the end.
+
+```
+abi           libgearkernels.so machine        size      nativeInstall  libappmodules.so
+armeabi-v7a   ARM                              339476B   exported       ARM       13911204B
+arm64-v8a     AArch64                          407632B   exported       AArch64   15496624B
+x86           Intel 80386                      369868B   exported       Intel 80386   13367664B
+x86_64        Advanced Micro Devices X86-64    394464B   exported       AMD X86-64    14638992B
+```
+
+Two things worth writing down because they cost time to establish:
+
+- An earlier release run was cut off mid-build and had produced only
+  `arm64-v8a`. Three-quarters of a matrix looks the same on a task list as a
+  whole one; the per-ABI artifact check is what distinguishes them. Artifact
+  mtimes (10:28–10:40Z) are recorded in the verification file so the evidence
+  can't be confused with a carry-over from a prior session.
+- There are two `RelWithDebInfo` variant hashes under
+  `app/build/intermediates/cxx/`. `26i2a284` is **stale** — 2026-08-07,
+  predating the native module, and contains no `libgearkernels.so`. `46h6b6j6`
+  is the live one. Reading the wrong directory would produce a confident and
+  completely wrong "release doesn't build our library" conclusion.
+
 **AC1 (Gradle half) — both libraries configure, and fast-opencv is in the
 graph.** `:app:configureCMakeDebug` now emits, for each of the four ABIs
 (checked in all four `android_gradle_build.json`, not extrapolated from one):
@@ -288,7 +321,7 @@ without the `.so` must still count teeth:
 
 | AC | State |
 |---|---|
-| AC1 debug+release variants | **Debug: met.** `:app:configureCMakeDebug` + `:app:externalNativeBuildDebug` emit `libgearkernels.so` **and** `libappmodules.so` for all four ABIs, machine type and exported JNI entry point re-verified per ABI with `readelf`/`nm` (`debug-reports/pap1694_abi_matrix_verified_2026-08-23.txt`). **Release: `configureCMakeRelease` succeeded for all four ABIs; `externalNativeBuildRelease` has `arm64-v8a` only so far** — the first run was cut off mid-build and has been resumed (`debug-reports/pap1694_release_abi_matrix_2026-08-23.log`). Per QA on [PAP-1700](/PAP/issues/PAP-1700) that release-variant native build, not a full `assembleRelease`, is the AC1 bar. |
+| AC1 debug+release variants | **Met, both variants.** `libgearkernels.so` (with the exported `Java_…GearKernelsModule_nativeInstall`) **and** `libappmodules.so` are emitted for all four ABIs in *both* `Debug` and `RelWithDebInfo`, machine type re-verified per ABI with host `readelf`/`nm` rather than read off the build log — debug: `debug-reports/pap1694_abi_matrix_verified_2026-08-23.txt`, release: `debug-reports/pap1694_release_abi_matrix_verified_2026-08-23.txt`. `react-native-fast-opencv` 1.0.1 also links its own release `.so` + bundled `libopencv_java4.so` per ABI. Per QA on [PAP-1700](/PAP/issues/PAP-1700) the release-variant *native* build, not a full `assembleRelease`, is the AC1 bar. |
 | AC2 byte-parity | **Met.** 431/431 images byte-identical, two compilers, and at both `c++17 -O2` and the shipping `c++20 -O3`. |
 | AC3 ≥10x on device | **Open.** Projection is 11-22x; needs `stageMs.preprocessBackend == 'native-cpp'` from a real FP5 session. |
 | AC4 detect port | Filed as PAP-1696, not blocking this ticket. |

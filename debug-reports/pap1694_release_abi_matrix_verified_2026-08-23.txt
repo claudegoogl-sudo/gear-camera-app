@@ -1,0 +1,37 @@
+PAP-1694 / PAP-1700 — AC1 RELEASE ABI matrix, verified with host binutils 2026-08-23T11:21:42Z
+readelf/nm on the artifacts, not the build log.
+
+reactNativeArchitectures (mobile/android/gradle.properties:29) = armeabi-v7a,arm64-v8a,x86,x86_64  <- default, unrestricted
+Variant dir: mobile/android/app/build/intermediates/cxx/RelWithDebInfo/46h6b6j6/obj/<abi>/
+Build logs:
+  debug-reports/pap1694_release_abi_matrix_2026-08-23.log  (10:34:55Z run; :app:buildCMakeRelWithDebInfo[<abi>]
+      present for all 4 ABIs at lines 212,214,216,218; process was killed later during unrelated
+      downstream tasks, so this log has no terminal status line)
+  debug-reports/pap1694_release_uptodate_2026-08-23.log    (11:21:01Z re-run of the same task, to
+      terminal status)
+      > Task :app:externalNativeBuildRelease            (line 284)
+      BUILD SUCCESSFUL in 1m 12s                       (line 294)
+      163 actionable tasks: 86 executed, 77 up-to-date
+      EXIT=0 at 2026-08-23T11:22:13Z
+
+abi           libgearkernels.so machine        gk size        nativeInstall libappmodules.so machine         am size       
+armeabi-v7a   ARM                              339476B        1           ARM                              13911204B     
+arm64-v8a     AArch64                          407632B        1           AArch64                          15496624B     
+x86           Intel 80386                      369868B        1           Intel 80386                      13367664B     
+x86_64        Advanced Micro Devices X86-64    394464B        1           Advanced Micro Devices X86-64    14638992B     
+
+react-native-fast-opencv 1.0.1 release .so — node_modules/react-native-fast-opencv/android/build/intermediates/cxx/RelWithDebInfo/1i2o4k2c/obj/<abi>/
+abi           machine                          fast-opencv    opencv_java4  
+armeabi-v7a   ARM                              10438516B      15622192B     
+arm64-v8a     AArch64                          11955368B      23465088B     
+x86           Intel 80386                      10391748B      41727236B     
+x86_64        Advanced Micro Devices X86-64    11491888B      55830920B     
+
+Artifact mtimes (release native build ran 10:28-10:40Z today, not carried over from a prior run):
+  mobile/android/app/build/intermediates/cxx/RelWithDebInfo/46h6b6j6/obj/armeabi-v7a/libgearkernels.so  2026-08-23 10:37:21.195911152 +0000
+  mobile/android/app/build/intermediates/cxx/RelWithDebInfo/46h6b6j6/obj/arm64-v8a/libgearkernels.so  2026-08-23 10:28:54.998132933 +0000
+  mobile/android/app/build/intermediates/cxx/RelWithDebInfo/46h6b6j6/obj/x86/libgearkernels.so  2026-08-23 10:38:26.277137123 +0000
+  mobile/android/app/build/intermediates/cxx/RelWithDebInfo/46h6b6j6/obj/x86_64/libgearkernels.so  2026-08-23 10:39:35.973378672 +0000
+
+NOTE: mobile/android/app/build/intermediates/cxx/RelWithDebInfo/26i2a284/ is a STALE 2026-08-07
+variant dir predating the native module (no libgearkernels.so). 46h6b6j6 is the current one.
