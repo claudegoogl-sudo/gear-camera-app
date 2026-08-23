@@ -1,0 +1,35 @@
+=== PAP-1659 AC1: direct checkpoint (deadline already expired) ===
+  2026-05-01_08-24-07-480Z: baseline=1002ms truncated=13ms budgetState.hit=true -> PASS
+  2026-05-04_11-46-43-304Z: baseline=605ms truncated=13ms budgetState.hit=true -> PASS
+  2026-05-01_09-09-26-510Z: baseline=704ms truncated=14ms budgetState.hit=true -> PASS
+  2026-04-28_06-56-36-143Z: baseline=495ms truncated=12ms budgetState.hit=true -> PASS
+  2026-04-22_07-10-07-868Z: baseline=438ms truncated=1ms budgetState.hit=true -> PASS
+  2026-04-24_07-05-25-396Z: baseline=645ms truncated=2ms budgetState.hit=true -> PASS
+  2026-04-17_10-57-40-821Z: baseline=647ms truncated=2ms budgetState.hit=true -> PASS
+  2026-04-30_11-35-41-631Z: baseline=900ms truncated=3ms budgetState.hit=true -> PASS
+
+=== PAP-1659 AC1: retryNearCenter direct checkpoint (deadline already expired) ===
+  2026-05-01_08-24-07-480Z: baseline=634ms truncated=0ms budgetState.hit=true -> PASS
+  2026-05-04_11-46-43-304Z: baseline=809ms truncated=0ms budgetState.hit=true -> PASS
+  2026-05-01_09-09-26-510Z: baseline=1145ms truncated=0ms budgetState.hit=true -> PASS
+  2026-04-28_06-56-36-143Z: baseline=493ms truncated=0ms budgetState.hit=true -> PASS
+  2026-04-22_07-10-07-868Z: baseline=888ms truncated=0ms budgetState.hit=true -> PASS
+  2026-04-24_07-05-25-396Z: baseline=561ms truncated=0ms budgetState.hit=true -> PASS
+  2026-04-17_10-57-40-821Z: baseline=562ms truncated=0ms budgetState.hit=true -> PASS
+  2026-04-30_11-35-41-631Z: baseline=436ms truncated=0ms budgetState.hit=true -> PASS
+
+=== PAP-1659 AC1: simulated slow device (20x clock, PAP-1647 midpoint) ===
+  2026-05-01_08-24-07-480Z (actual=52T, 20x clock): real=283ms simulated=5660ms (1.1x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-05-04_11-46-43-304Z (actual=36T, 20x clock): real=292ms simulated=5840ms (1.2x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-05-01_09-09-26-510Z (actual=36T, 20x clock): real=510ms simulated=10200ms (2.0x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-04-28_06-56-36-143Z (actual=52T, 20x clock): real=260ms simulated=5200ms (1.0x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-04-22_07-10-07-868Z (actual=21T, 20x clock): real=253ms simulated=5060ms (1.0x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-04-24_07-05-25-396Z (actual=21T, 20x clock): real=330ms simulated=6600ms (1.3x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-04-17_10-57-40-821Z (actual=21T, 20x clock): real=506ms simulated=10120ms (2.0x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+  2026-04-30_11-35-41-631Z (actual=42T, 20x clock): real=341ms simulated=6820ms (1.4x budget) tc=0 conf=0.00 method=pap1659-budget-exhausted budgetExhausted=true -> PASS
+
+ALL CHECKS PASSED
+(node:2804872) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///tmp/pap_b137_head/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /tmp/pap_b137_head/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
