@@ -1,0 +1,203 @@
+================================================================================
+PAP-1675 — full-corpus re-audit after the PAP-1659 wall-clock abstain gate
+================================================================================
+SHA under test : 9c4eacc  (main HEAD, 2026-08-23)
+Baseline SHA   : 49a7498  (PAP-1658, 58.0%)  — 34 commits behind; PAP-1659
+                 (8f87c1d + fea3570) is IN 9c4eacc and NOT IN 49a7498.
+Corpus         : 362/362 labeled photos, SCOPE=full
+Runner         : plain node, dim=900, resumable JSONL checkpoint
+                 (mobile/__tests__/pap1675.audit.mjs)
+Working tree   : mobile/src/algorithm/ identical to 9c4eacc (verified clean)
+Row-level CSV  : debug-reports/pap1675_rows_9c4eacc.csv (362 rows)
+
+Why plain node and not jest: two earlier whole-corpus attempts under jest were
+SIGTERM'd at heartbeat teardown and lost everything (52-byte and 146-byte logs).
+jest is also ~6x slower here (PAP-1672: babel-jest, not host contention).
+Equivalence is demonstrated, not assumed — the PAP-1693 dim=900 plain-node sweep
+reproduced the PAP-1674 jest audit exactly, and this run reproduces the PAP-1658
+jest audit bucket-for-bucket and per-actual-for-per-actual (see AC3 below).
+
+--------------------------------------------------------------------------------
+AC2 — per-bucket table, PAP-1052 / PAP-1658 schema
+--------------------------------------------------------------------------------
+Bucket          Tol   N    Correct  Acc%    Abstain  Conf-Wrong   med  p95  max  (ms)
+Small  9-15T   exact  136      102   75.0%       31           3   1329 3896 4518
+Mid    16-20T  exact   33       27   81.8%        5           1    884 3315 5074
+Large  21-28T  ±1     113       51   45.1%       52          10   1166 3516 4470
+XL     29-60T  ±1      80       30   37.5%       38          12   1230 1746 2294
+-------------------------------------------------------------------------------------
+TOTAL                362      210   58.0%      126          26   1197 3286 5074
+
+Per-actual breakdown:
+actual   N   correct  abstain  conf-wrong  acc%
+  11T    41        24       16           1   58.5%
+  12T     2         2        0           0  100.0%
+  13T    11         5        6           0   45.5%
+  14T    47        43        4           0   91.5%
+  15T    35        28        5           2   80.0%
+  17T     1         1        0           0  100.0%
+  18T    32        26        5           1   81.3%
+  21T    32        16       14           2   50.0%
+  23T     1         1        0           0  100.0%
+  24T    36        16       17           3   44.4%
+  28T    44        18       21           5   40.9%
+  32T     2         2        0           0  100.0%
+  34T     4         1        1           2   25.0%
+  36T    10         4        5           1   40.0%
+  42T    27        10       14           3   37.0%
+  48T     7         7        0           0  100.0%
+  50T     7         5        1           1   71.4%
+  51T     1         0        1           0    0.0%
+  52T    22         1       16           5    4.5%
+
+--------------------------------------------------------------------------------
+AC3 — three-way delta
+--------------------------------------------------------------------------------
+                       PAP-1052       PAP-1658       PAP-1675
+                       141cffb        49a7498        9c4eacc
+  corpus N               356            362            362
+  correct                181            210            210
+  headline (corr/N)     50.8%          58.0%          58.0%
+  abstain                152            126            126
+  conf-wrong              23             26             26
+
+  per bucket (N / correct / acc% / abstain / conf-wrong)
+  Small  9-15T   135/102/75.6/30/3   136/102/75.0/31/3   136/102/75.0/31/3
+  Mid    16-20T    33/27/81.8/6/0      33/27/81.8/5/1      33/27/81.8/5/1
+  Large  21-28T   112/50/44.6/52/10  113/51/45.1/52/10  113/51/45.1/52/10
+  XL     29-60T    76/ 2/ 2.6/64/10   80/30/37.5/38/12   80/30/37.5/38/12
+
+  1052 -> 1658 : +7.2pp headline. Driven almost entirely by XL (2.6% -> 37.5%,
+                 abstain 64 -> 38). Corpus also grew 356 -> 362, so the two are
+                 not on an identical denominator — the XL move is far larger
+                 than the 6-photo corpus change can explain, but the headline
+                 delta is not a pure like-for-like.
+  1658 -> 1675 : ZERO. Identical on every bucket row, every per-actual row, and
+                 both disputed terms (abstain 126, conf-wrong 26). Same 362
+                 photos, same denominator — this one IS like-for-like.
+
+  Runtime columns are NOT comparable across the three: 1052 and 1658 ran under
+  jest (babel-jest inflates typed-array loops ~400x, PAP-1672), this run under
+  plain node. The 5757ms -> 1197ms median drop is the runner, not a speedup.
+
+--------------------------------------------------------------------------------
+AC4 — isolating the PAP-1659 effect
+--------------------------------------------------------------------------------
+  abstains       : 126 -> 126   (UNCHANGED, 34.8% of photos)
+  confident-wrong:  26 ->  26   (UNCHANGED,  7.2% of photos)
+  budgetExhausted fires: 0 / 362
+
+  Mechanism, not just the count. Every PAP-1659 hunk in gearCounter.js is behind
+  a `Date.now() >= deadline` test (lines 1079, 1241, 1372, 1432, 1484, 2783,
+  2834, 3085) with `deadline = t2 + WALL_CLOCK_BUDGET_MS`, WALL_CLOCK_BUDGET_MS
+  = 45000 (line 95), anchored after decode+preprocess (PAP-1683 fix B). The
+  slowest photo in the corpus is 5074ms — 8.9x of headroom to the deadline; not
+  one photo comes within 5x of it. Every guarded branch is therefore statically
+  unreachable on this corpus at host speed, and the observed identity is the
+  expected consequence, not a coincidence.
+
+  This was pre-registered on the issue BEFORE the numbers landed, from reading
+  the 49a7498..HEAD diff: predicted 210/362 = 58.0%, abstain 126, conf-wrong 26,
+  unchanged to the photo. That is exactly what came back.
+
+  The other accuracy-adjacent changes in the range are also inert here, for the
+  same kind of reason:
+   - preprocess() extracted to a backend seam (PAP-1694, aec054c/8f77b27) — the
+     JS backend is the default and its calls are byte-identical to the previously
+     inlined four (rgbaToGray -> clahe(3.0,8,8) -> gaussianBlur5x5 ->
+     cannyEdges(50,150)).
+   - rBins hoisted out of the grid loop + .fill(0) — maxRadius is loop-invariant.
+   - PAP-1662 (7666e47) is Sentry-only.
+
+--------------------------------------------------------------------------------
+AC5 — PAP-1659 under each of the two accuracy readings
+--------------------------------------------------------------------------------
+  The board has not chosen a reading (PAP-1673). Both are reported; neither is
+  endorsed here.
+
+  Reading A — correct / all photos
+      before 210/362 = 58.0%   after 210/362 = 58.0%   delta 0.0pp
+  Reading B — correct / answers only (answer-rate floor separate)
+      before 210/236 = 89.0%   after 210/236 = 89.0%   delta 0.0pp
+      answer-rate before 236/362 = 65.2%, after 65.2%, delta 0.0pp
+
+  Verdict under BOTH readings: PAP-1659 neither helped nor hurt on this corpus.
+  It is exactly neutral, on the headline and on both disputed terms.
+
+  IMPORTANT — what this does NOT license. "Neutral" here means "unreachable at
+  host speed", not "harmless". See the device-speed sensitivity probe below.
+
+--------------------------------------------------------------------------------
+Device-speed sensitivity probe — why "neutral" is not "safe"
+--------------------------------------------------------------------------------
+The identity above is a statement about THIS HOST, not about the product. Every
+PAP-1659 branch is unreachable here only because host runtimes are 1-2 orders of
+magnitude under the 45000ms budget. Device runtimes are not.
+
+Established device gap (PAP-1682 / PAP-1677, Sentry, n=160 FP5 events): Hermes on
+device runs this pipeline ~33-38x slower than V8 on this host. Host median 1197ms
+x 33-38 = 39.5-45.5s. The device median photo therefore sits ON the 45s deadline,
+not comfortably under it.
+
+Scaling every row of pap1675_rows_9c4eacc.csv by a uniform factor f and asking
+how many photos reach the 45000ms budget:
+
+  f      photos tripping   of which currently   Reading A   Reading B   answer
+         the deadline      correct  abstain  cw   (corr/N)   (corr/ans)   rate
+  ----------------------------------------------------------------------------
+   1x        0/362 (0.0%)      -       -     -      58.0%      89.0%     65.2%
+  10x        2/362 (0.6%)      2       0     0      57.5%      88.8%     64.6%
+  15x       24/362 (6.6%)     17       6     1      53.3%      88.5%     60.2%
+  20x       66/362(18.2%)     50      14     2      44.2%      87.0%     50.8%
+  30x      117/362(32.3%)     81      30     6      35.6%      86.6%     41.2%
+  33x      136/362(37.6%)     88      37    11      33.7%      89.1%     37.8%
+  36x      170/362(47.0%)     99      55    16      30.7%      91.7%     33.4%
+  38x      186/362(51.4%)    103      65    18      29.6%      93.0%     31.8%
+
+  Inside the measured 33-38x device band the gate would convert 88-103 photos
+  that are CORRECT today into abstains, and 11-18 confidently-wrong ones into
+  abstains. Net: Reading A 58.0% -> 29.6-33.7% (-24 to -28pp), answer rate
+  65.2% -> 31.8-37.8%, while Reading B moves +0.1 to +4.0pp because the gate
+  strips correct and wrong answers at roughly similar rates and the surviving
+  fast photos skew easy.
+
+  Per bucket at the band edges, photos tripping / of which correct today:
+              33x                38x
+  Small  9-15T   67/136, 55 corr    75/136, 56 corr
+  Mid    16-20T   9/ 33,  8 corr    12/ 33,  9 corr
+  Large  21-28T  32/113, 15 corr    52/113, 22 corr
+  XL     29-60T  28/ 80, 10 corr    47/ 80, 16 corr
+  Small gears are hit hardest in absolute correct-answers-lost — they are both
+  the largest bucket and the most accurate one today.
+
+  BOUNDS AND CAVEATS — this is a bounding estimate, not a measurement:
+   - It over-counts. `runtime` here is whole-analyze wall time; the PAP-1689
+     ruling scopes the budget to stageMs.detect+methods, and the deadline is
+     anchored AFTER decode+preprocess (PAP-1683 fix B). Decode+preprocess is
+     inside the scaled number but outside the budget clock.
+   - It assumes a uniform scale factor. The Hermes/V8 gap is not uniform across
+     stages; typed-array inner loops degrade worse than allocation-light code.
+   - It under-counts in one direction: some deadline branches abstain mid-count
+     rather than at entry, so a photo can trip a guard and still be slower than
+     modeled here.
+   - It says nothing about b137 field behaviour at the previous 5000ms budget,
+     where the gate reportedly abstained on 100% of real FP5 photos. That
+     observation and this table are consistent: 5000ms is ~4x under the device
+     median, 45000ms is ~1x it.
+
+  What this licenses: the corpus CANNOT be used to size a wall-clock budget, in
+  either direction. It could not detect a 5000ms budget that abstains on
+  everything on device, and it cannot certify 45000ms as safe. The only
+  instrument that can is device telemetry — the `budgetExhausted` flag in the
+  b137+ Sentry debug_report events. That is a separate, cheap measurement and it
+  is filed rather than done here.
+
+--------------------------------------------------------------------------------
+AC1 / AC6 — provenance
+--------------------------------------------------------------------------------
+AC1: SHA under test 9c4eacc, named above and in the CSV filename. This log and
+     debug-reports/pap1675_rows_9c4eacc.csv are committed to the repo.
+AC6: the issue was never parked `blocked` with an empty blocker list while this
+     ran. The sweep ran detached under setsid (surviving heartbeat SIGTERM, which
+     killed two earlier jest attempts) with the issue held `in_progress`.
+================================================================================
