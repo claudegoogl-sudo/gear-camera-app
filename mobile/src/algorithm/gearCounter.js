@@ -30,6 +30,10 @@ import {
   findPeaks,
   applyCircularMask,
 } from './imageUtils';
+// PAP-1694: the preprocess stage is behind a swappable backend so the native
+// OpenCV port can replace it at one point instead of at every call site.
+// Default backend is pure JS and byte-identical to the calls it replaced.
+import { preprocess } from './preprocess';
 
 // ── Tuning constants (match Python defaults) ──────────��─────────────────────
 const MIN_TEETH       = 10;
@@ -3037,10 +3041,13 @@ export async function countTeeth(photoUri, signal, opts) {
   await yieldOrAbort();
 
   // ── Preprocessing ──────────────────────────────────────────────────
-  const gray     = rgbaToGray(rgba, width, height);
-  const enhanced = clahe(gray, width, height, 3.0, 8, 8);
-  const blurred  = gaussianBlur5x5(enhanced, width, height);
-  const edges    = cannyEdges(blurred, width, height, 50, 150);
+  // PAP-1694: rgbaToGray -> clahe(3.0,8,8) -> gaussianBlur5x5 -> cannyEdges(50,150),
+  // behind the backend seam.  `preprocessBackend` is surfaced on the result so
+  // Sentry telemetry can attribute stageMs.preprocess to the backend that
+  // produced it.
+  const pre = preprocess(rgba, width, height);
+  const { gray, enhanced, edges } = pre;
+  const preprocessBackend = pre.backend;
   const t2 = Date.now();
   // PAP-1683 fix B: budget window starts here, after the uninterruptible
   // decode+preprocess cost has already been paid.
@@ -3129,11 +3136,9 @@ export async function countTeeth(photoUri, signal, opts) {
       && r.toothCount > 0
       && !hiresOverBudget) {
     const hi = await loadAndDecodeImage(photoUri, RETRY_MAX_DIM);
-    const hiGray     = rgbaToGray(hi.rgba, hi.width, hi.height);
-    const hiEnhanced = clahe(hiGray, hi.width, hi.height, 3.0, 8, 8);
-    const hiBlurred  = gaussianBlur5x5(hiEnhanced, hi.width, hi.height);
-    const hiEdges    = cannyEdges(hiBlurred, hi.width, hi.height, 50, 150);
-    const r2 = analyzeImage(hiGray, hiEnhanced, hiEdges, hi.width, hi.height, 0, deadline, budgetState);
+    const hiPre = preprocess(hi.rgba, hi.width, hi.height);
+    const r2 = analyzeImage(hiPre.gray, hiPre.enhanced, hiPre.edges,
+      hi.width, hi.height, 0, deadline, budgetState);
     if (r2.confidence > r.confidence) {
       console.log(`[GearCounter] small-gear retry: ${width}→${hi.width}px, ` +
         `${r.toothCount}T(${(r.confidence*100).toFixed(0)}%)→` +
@@ -3605,6 +3610,11 @@ export async function countTeeth(photoUri, signal, opts) {
       methods: t4 - t3,
       total: t4 - t0,
       px: width * height,
+      // PAP-1694: which preprocess backend produced this stage.  'js' is the
+      // pure-JS default; 'native-opencv-*' is the OpenCV port; 'js-fallback'
+      // means the native backend threw and we degraded mid-run.  AC3 compares
+      // stageMs.preprocess across this field, so it has to travel with it.
+      preprocessBackend,
     },
     innerContourSuspected,
     // PAP-815 instrumentation: outer-edge anchor diagnostic surfaced for
@@ -3670,10 +3680,7 @@ export function countTeethFromRgba(rgba, width, height) {
   // PAP-1683 fix B: mirrors countTeeth's anchor point too — deadline starts
   // after preprocessing, not before it (see countTeeth for rationale).
   const budgetState = { hit: false };
-  const gray     = rgbaToGray(rgba, width, height);
-  const enhanced = clahe(gray, width, height, 3.0, 8, 8);
-  const blurred  = gaussianBlur5x5(enhanced, width, height);
-  const edges    = cannyEdges(blurred, width, height, 50, 150);
+  const { gray, enhanced, edges } = preprocess(rgba, width, height);
   const deadline = Date.now() + WALL_CLOCK_BUDGET_MS;
   // PAP-1100: harness path mirrors countTeeth's aimR convention.  Training
   // photos have no aimCrop input but the harness applies the same circular
