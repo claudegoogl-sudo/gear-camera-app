@@ -59,7 +59,7 @@ const DETECT_SUB = [
   'binContour',  // binaryContourCount
   'clahePeak',   // clahePeakCounting
 ];
-const OUT_KEYS = ['tc', 'conf', 'method', 'gearR', 'peakTc', 'fft90', 'op', 'bcTc', 'peakR', 'rOuter'];
+const OUT_KEYS = ['tc', 'conf', 'method', 'gearR', 'peakTc', 'fft90', 'op', 'bcTc', 'peakR', 'rOuter', 'cx', 'cy'];
 
 const snapPath = (label) => path.join(DEBUG_DIR, `pap1639_${label}.json`);
 
@@ -185,6 +185,8 @@ function measure(label, stride) {
         bcTc: r.bcTc || 0,
         peakR: r.peakR || 0,
         rOuter: r.rOuter || 0,
+        cx: r.cx || 0,
+        cy: r.cy || 0,
       },
     });
     if ((i + 1) % 50 === 0) {
