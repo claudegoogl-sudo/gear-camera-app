@@ -101,6 +101,28 @@ These are **opposite instructions to the same engineers**, so until the ruling l
   clock on device; any proposal that bounds wall clock must state its abstain cost in pp.
 - **Full-corpus audits go stale.** Re-audit at HEAD after any cluster of
   accuracy-relevant commits; do not quote a months-old table as current.
+- **A runtime-triggered change cannot be accepted on corpus evidence.** Any gate whose
+  trigger is a *runtime-measured quantity* — wall clock, memory, frame rate — must be
+  accepted against **device `stageMs`**, never against a desktop corpus sweep. The corpus
+  host is ~37x faster than the FP5 (PAP-1682: ~980 ms p50 desktop vs ~36.7 s device), so
+  any threshold set near a device-realistic value is *unreachable by construction* on the
+  corpus and a green corpus result carries no information about it. PAP-1659 is the case
+  that set this rule: it was specified, implemented, tested, reviewed and released, and
+  every one of those gates ran against the corpus — where a 5000 ms deadline can never
+  fire. It fired on 100% of real photos. A green corpus run is necessary and **not
+  sufficient** (CEO ruling, PAP-1686 / PAP-1688, 2026-08-23).
+- **A guard's test must assert the outcome the guard preserves, not just that it fired.**
+  `pap1659.deadline-bound.mjs` asserted `budgetExhausted === true` and never asserted that
+  a count came back, so 8/8 photos returning `toothCount: 0` printed `ALL CHECKS PASSED`.
+  The acceptance evidence for PAP-1659 was, read correctly, a reproduction of the bug.
+  This applies to every gate — deadline, confidence and sanity alike (CEO ruling,
+  PAP-1686 / PAP-1688, 2026-08-23).
+- **A wall-clock budget is a crash-bound, not a performance target.** Target 3's <=5 s is
+  an optimisation goal for the *count*; the `WALL_CLOCK_BUDGET_MS` guard exists only to
+  clip the PAP-1647 70–93 s freeze. They are different numbers with different jobs, and a
+  fired budget **may never convert a held answer into an abstain** — it returns the best
+  count already held, with `budgetExhausted: true`. Conflating the two is what produced
+  the b137 outage (CEO ruling, PAP-1686 / PAP-1688, 2026-08-23).
 - **Abstain is a floor, not a finish — for target 1.** Shipping an abstain closes a
   *confidently-wrong* defect and does not advance target 1 (range). Whether it advances
   or damages **target 2** depends on the denominator the board picks in PAP-1673; until
