@@ -97,10 +97,25 @@ it safe for the generated CMake to pin `CXX_STANDARD 20` to match the
 framework's own `-std=c++20`, instead of inheriting whatever the NDK's clang
 happens to default to.
 
-**AC1 (C++ half) — compiles for every shipped ABI.** `gear_kernels.cpp` compiles
-clean under NDK 27.1.12297006 for `aarch64`, `armv7a` and `x86_64`, and the full
-`gearkernels` target (kernels + JSI + JNI) builds through the real Gradle/CMake
-pipeline via `:app:externalNativeBuildDebug`.
+**AC1 (C++ half) — links for every shipped ABI.** The full `gearkernels` target
+(kernels + JSI + JNI) builds through the real Gradle/CMake pipeline via
+`:app:externalNativeBuildDebug` under NDK 27.1.12297006, for all four ABIs in
+`reactNativeArchitectures`, and each `libgearkernels.so` is the right machine
+with the JNI entry point actually exported:
+
+| ABI | `readelf -h` machine | `Java_…GearKernelsModule_nativeInstall` exported |
+|---|---|---|
+| `armeabi-v7a` | ARM | yes |
+| `arm64-v8a` | AArch64 | yes |
+| `x86` | Intel 80386 | yes |
+| `x86_64` | Advanced Micro Devices X86-64 | yes |
+
+(`app/build/intermediates/cxx/Debug/5m342j6v/obj/<abi>/`; `llvm-nm -D
+--defined-only`.) An earlier revision of this doc cited a standalone
+(non-Gradle) NDK cross-compile that covered only `aarch64`, `armv7a` and
+`x86_64` — QA correctly flagged on [PAP-1700](/PAP/issues/PAP-1700) that 32-bit
+`x86` was then untested by anything. The table above supersedes that check: it
+is per-ABI Gradle output, which is both broader and stronger evidence.
 
 That last step is why it was worth running rather than assuming: the first
 attempt failed with `'createArrayBuffer' is a protected member of
@@ -109,7 +124,8 @@ facebook::jsi::Runtime`. The public route is `jsi::ArrayBuffer`'s
 uses — a mistake no amount of reading the port would have caught.
 
 **AC1 (Gradle half) — both libraries configure, and fast-opencv is in the
-graph.** `:app:configureCMakeDebug` now emits, per ABI:
+graph.** `:app:configureCMakeDebug` now emits, for each of the four ABIs
+(checked in all four `android_gradle_build.json`, not extrapolated from one):
 
 ```
 libraries:
@@ -272,7 +288,7 @@ without the `.so` must still count teeth:
 
 | AC | State |
 |---|---|
-| AC1 debug+release variants | C++ cross-compiles for all ABIs; plugin verified to generate correct gradle/CMake/Kotlin via `expo prebuild`, and the `appmodules` defect above was caught and fixed before any build. **Full `assembleDebug`/`assembleRelease` not yet run** — that is the build gated on QA review. |
+| AC1 debug+release variants | **Debug: met.** `:app:configureCMakeDebug` + `:app:externalNativeBuildDebug` emit `libgearkernels.so` **and** `libappmodules.so` for all four ABIs, machine type and exported JNI entry point re-verified per ABI with `readelf`/`nm` (`debug-reports/pap1694_abi_matrix_verified_2026-08-23.txt`). **Release: `configureCMakeRelease` succeeded for all four ABIs; `externalNativeBuildRelease` has `arm64-v8a` only so far** — the first run was cut off mid-build and has been resumed (`debug-reports/pap1694_release_abi_matrix_2026-08-23.log`). Per QA on [PAP-1700](/PAP/issues/PAP-1700) that release-variant native build, not a full `assembleRelease`, is the AC1 bar. |
 | AC2 byte-parity | **Met.** 431/431 images byte-identical, two compilers, and at both `c++17 -O2` and the shipping `c++20 -O3`. |
 | AC3 ≥10x on device | **Open.** Projection is 11-22x; needs `stageMs.preprocessBackend == 'native-cpp'` from a real FP5 session. |
 | AC4 detect port | Filed as PAP-1696, not blocking this ticket. |

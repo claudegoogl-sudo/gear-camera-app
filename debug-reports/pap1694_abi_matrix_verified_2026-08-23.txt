@@ -1,0 +1,27 @@
+PAP-1694 / PAP-1700 — AC1 ABI matrix, independently re-verified 2026-08-23 10:33Z
+Host binutils (readelf/nm), not the build log.
+
+reactNativeArchitectures (mobile/android/gradle.properties:29) =
+  armeabi-v7a,arm64-v8a,x86,x86_64      <- default, unrestricted
+
+--- :app:configureCMakeDebug — app/.cxx/Debug/5m342j6v/<abi>/android_gradle_build.json
+abi           libraries include appmodules+gearkernels   fast-opencv in buildFiles
+armeabi-v7a   yes                                        yes (10 buildFiles)
+arm64-v8a     yes                                        yes (10 buildFiles)
+x86           yes                                        yes (10 buildFiles)
+x86_64        yes                                        yes (10 buildFiles)
+
+--- :app:externalNativeBuildDebug — app/build/intermediates/cxx/Debug/5m342j6v/obj/<abi>/
+abi           libgearkernels.so machine            JNI nativeInstall exported   libappmodules.so
+armeabi-v7a   ARM                       (653216B)  yes                          yes
+arm64-v8a     AArch64                   (731304B)  yes                          yes
+x86           Intel 80386               (694096B)  yes                          yes
+x86_64        Advanced Micro Devices X86-64 (706304B) yes                        yes
+
+--- :app:configureCMakeRelease — BUILD SUCCESSFUL, all 4 ABIs
+  debug-reports/pap1694_cmake_configure_release_2026-08-23.log:181-195
+
+--- :app:externalNativeBuildRelease — app/build/intermediates/cxx/RelWithDebInfo/46h6b6j6/obj/<abi>/
+  arm64-v8a: libgearkernels.so + libappmodules.so present
+  armeabi-v7a / x86 / x86_64: EMPTY at 10:33Z — prior run was cut off mid-build.
+  Resumed 2026-08-23 10:33Z, log: debug-reports/pap1694_release_abi_matrix_2026-08-23.log
