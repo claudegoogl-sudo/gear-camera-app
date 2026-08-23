@@ -1,6 +1,15 @@
 # FP5 Device Session — Batched Shot List
 
-**Total time: ~22 minutes.** One build. Do the steps in order — if you run out of time,
+> **Updated 2026-08-23 (CEO).** The telemetry question this list was built around is
+> **already answered** — debug reports have been reaching Sentry all along, most
+> recently 2026-08-19 from this same FP5. See
+> [`device-telemetry-sentry-2026-08-23.md`](./device-telemetry-sentry-2026-08-23.md).
+> Step 1 below is rescoped accordingly (it now tests b137 specifically, not the
+> pipeline), and Step 3 is downgraded because the device already told us its stage
+> timings. **Step 2 is now the reason to run this session at all.** Revised total:
+> ~17 minutes.
+
+**Total time: ~17 minutes** (was 22; Steps 1 and 3 shrank — see the note below). One build. Do the steps in order — if you run out of time,
 stop after any step and everything already done keeps its full value. Nothing later
 invalidates anything earlier.
 
@@ -25,12 +34,15 @@ sideload the APK and open it once to let it finish first-launch setup before ste
 
 ---
 
-## Step 1 — Telemetry liveness (5 min) — do this first, it gates everything else
+## Step 1 — Does b137 still send? (4 min)
 
-**Why first:** we have zero device telemetry since 2026-05-04 and don't know if that's
-a broken upload pipeline or just nobody shooting photos since the upload mechanism
-changed (see "Telemetry conclusion" below). This step settles it before any other
-step's data is trustworthy.
+**Why:** the upload pipeline is **known good** — we have debug reports in Sentry from
+this device on builds b129 and b132, the newest dated 2026-08-19. What is *not* known
+is whether **b137** still sends, because no device has ever run b134 or later. b133 had
+a build where the Sentry key was missing from the bundle; b134 added a guard against
+that, but the guard has only ever been checked on a desktop, never confirmed by an
+actual report arriving from a b134+ build. This step closes that one gap. It also
+double-serves as the send-back channel for Steps 2 and 3, so do it first regardless.
 
 **What to do:**
 1. Open the app, point it at any gear (doesn't need to be in focus/countable).
@@ -69,6 +81,12 @@ grinding to completion.
 **Pass looks like:** result (a count, or an "unable to determine" abstain) appears
 within **~10 seconds**. No indefinite spinner.
 
+**For reference, what the device did before this fix:** two chainring reports from
+build b129 took **70.0 s** and **93.5 s**. Those are the real measured numbers this
+step is trying to beat, not an estimate. Note also that *ordinary* gears currently take
+~36 s on this phone — so a chainring landing at ~10 s is the pass, but do not be
+surprised that everything is slow; that is a separate, larger problem we are tracking.
+
 **Fail looks like:** the app hangs/freezes for 30+ seconds with no response to touch.
 
 **Send back:** the stopwatch time for each shot, plus whether it returned a count or
@@ -77,13 +95,13 @@ for that shot — don't wait out a suspected regression.
 
 ---
 
-## Step 3 — Stage timings / ABI trim (5 min) — settles the 5757ms-vs-977ms gap
+## Step 3 — Stage timings / ABI trim (4 min, optional — cut this first if short on time)
 
-**Why:** our desktop corpus audit measures a 5757ms median per photo; a separate
-profiler run on the same corpus measures 977ms p50 — a ~6x discrepancy we can't
-resolve without a real device data point. This step's numbers feed that reconciliation
-directly (Algorithm Engineer side, PAP-1672), not something you'll see resolved
-on-screen.
+**Why (reduced):** we already have this number from telemetry — the device reports
+~35–37 seconds total per ordinary gear, of which ~30 s is the `detect` stage. Desktop
+said 5757 ms and 977 ms; both were wrong by 6x and 37x respectively. So this step is no
+longer discovery, just confirmation that b137 didn't change the picture. **If you are
+short on time, skip this one and do Step 4 instead.**
 
 **What to do:**
 1. Take 3 photos of **normal-sized gears** (a rear cassette gear, not a chainring —
@@ -124,42 +142,18 @@ others, or the app crashes on launch.
 
 ---
 
-## Telemetry conclusion (Part 1a — code-level narrowing done ahead of the session)
+## Telemetry conclusion (Part 1a) — SUPERSEDED 2026-08-23
 
-**Cannot be fully resolved without this session's Step 1** — but here is what code
-review narrows down, and why:
+The original version of this section reasoned from code alone and concluded "probably
+nobody has shot a photo since May." That was wrong, and it was wrong because nobody had
+queried Sentry — the triage token lives in the repo's `.env`, not in the environment, so
+a `env | grep SENTRY` came back empty and the check was written off as impossible.
 
-- The on-disk `debug-reports/report_*` folders stop at 2026-05-04. That is **fully
-  explained by an architecture change, not a pipeline failure**: `PAP-1543` (commit
-  `3e1c90e`, shipped in b125 on 2026-05-16) migrated debug-report delivery from a
-  local/GitHub-PAT path to Sentry-only, **twelve days after** the last on-disk report.
-  Reports created after the migration were never going to appear on disk regardless of
-  whether uploads work — the on-disk silence from May 4–16 predates the very code path
-  in question and proves nothing about it.
-- The Sentry-side upload path (`mobile/src/utils/debugShare.js`) looks correct on
-  inspection: it gates on `SENTRY_ENABLED` (non-empty DSN), tags events
-  `kind: debug_report`, attaches photo + cropped photo, and sets `gear`/`camera`
-  contexts including `algoDiag`.
-- `b133` was confirmed **telemetry-dead** (DSN missing from the bundle — root cause:
-  Expo project root is `mobile/`, and a bare `gradlew assembleRelease` never sourced
-  repo-root `.env`) and is explicitly marked "DO NOT VALIDATE" on its release page.
-  `b134` added `assert_sentry_dsn_bundled` (commit `51a4e99`) to both build scripts,
-  refusing to publish an APK whose bundle is missing the DSN — QA cross-checked this
-  with fixture APKs (present → pass, absent → refuse) and approved it. Every release
-  from b134 through b137 has passed that guard.
-- b135 additionally moved native Sentry init before JS load, and b136 removed a
-  redundant JS-side re-init (bounded ANR-pattern risk, not a correctness bug) — neither
-  change touches the upload path itself.
-- **What could not be checked from here:** whether any `debug_report`-tagged event has
-  actually landed in the Sentry project since the b125 migration. That requires either
-  Sentry dashboard/API access (`$SENTRY_TRIAGE_TOKEN`, referenced in prior QA memory)
-  or an operator physically confirming a send — **this sandbox does not have that
-  token set**, and no working reference for obtaining it was found in the repo or
-  environment. This is the same "no adb/emulator/kvm" capability gap as the rest of
-  PAP-1671, applied to Sentry API access instead of device access.
+**Actual answer:** the pipeline works and the phone has been reporting all along.
+`debug_report`, `training_sample` and `chainring_abstain` events are present for builds
+b129 and b132, the newest on 2026-08-19. Full evidence, the query runbook, and what it
+means for the speed target are in
+[`device-telemetry-sentry-2026-08-23.md`](./device-telemetry-sentry-2026-08-23.md).
 
-**Conclusion:** the code-level evidence leans toward **(ii) — nobody has shot a photo
-since the migration** rather than (i) a broken pipeline, because the guard rails added
-since b133 are real and QA-verified, not just claimed. But this is not proof — it's an
-absence-of-known-breakage argument, not a positive confirmation. **Step 1 above is the
-actual test**; treat its result as authoritative over this paragraph.
+The one thing telemetry cannot tell us is whether **b134 and later** still send, since
+no device has run a build newer than b132. That residue is Step 1 above.
