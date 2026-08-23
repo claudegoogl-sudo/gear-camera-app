@@ -236,6 +236,12 @@ export default function CameraScreen({ navigation }) {
   const [showBuildPicker, setShowBuildPicker] = useState(false);
   const [pickerBuilds, setPickerBuilds] = useState([]);
   const policyRetryCountRef = useRef(0);
+  // PAP-1708: re-show explicit framing guidance after a policy-restriction
+  // recovery.  The operator re-acquired mid-aim; b132 evidence shows the
+  // post-recovery capture can fire within a few seconds of the preview
+  // returning, while they are still re-framing.  Shown for 6s once the
+  // camera is ready again, then the normal hint chain takes over.
+  const [recoveryGuidance, setRecoveryGuidance] = useState(false);
   // PAP-476: URI of the aim-circle-cropped photo, displayed as a circular
   // thumbnail in the processing card so the user can verify what the
   // algorithm sees during counting.  Cleared on reset / failure / cancel.
@@ -590,6 +596,34 @@ export default function CameraScreen({ navigation }) {
 
   useEffect(() => { motionResetRef.current = motionReset; }, [motionReset]);
 
+  // ── PAP-1708: reset auto-capture state on camera session loss ──────────
+  // The two b132 policyRestricted wrong-counts (ff4aa59f / c325dbba, both
+  // 36T→11/13T @ conf 0) were captured 4.0s / 8.4s after the camera
+  // re-initialized following a policyRetry.  useMotionDetection's trigger
+  // state (`gearWasDetectedRef`, `cresConsecutiveHitsRef`,
+  // `lastMotionTimeRef`) previously survived the interruption because
+  // `reset()` only ran on navigation focus — so `stillnessMs` was stale by
+  // the whole 37–60s restriction window and the CRES-primary trigger passed
+  // on the FIRST gear-ish frame after re-acquire, capturing while the
+  // operator was still re-framing (36T chainring overfilling the reticle).
+  // Resetting here covers every session-loss path: policy error, policyRetry
+  // (AppState + button), postPolicyAutoRetry, and the wide→main fallback
+  // (which also clears `prevSamples` — stale samples across a lens switch
+  // produced garbage frame-diffs).  Also emits a device-verifiable
+  // breadcrumb for QA.
+  const prevCameraReadyRef = useRef(false);
+  useEffect(() => {
+    const wasReady = prevCameraReadyRef.current;
+    prevCameraReadyRef.current = isCameraReady;
+    if (isCameraReady || !wasReady) return;
+    motionResetRef.current?.();
+    cameraEventsRef.current.push({
+      type: 'motionStateReset',
+      ts: new Date().toISOString(),
+      reason: 'cameraSessionLoss',
+    });
+  }, [isCameraReady]);
+
   // Pulse aim circle when stable
   useEffect(() => {
     if (isStable) {
@@ -612,6 +646,7 @@ export default function CameraScreen({ navigation }) {
       setCameraHasError(false);
       setIsPolicyRestricted(false);
       policyRetryCountRef.current = 0;
+      setRecoveryGuidance(false);
       setPreviewPaused(false); // resume live preview (e.g. Reset from Result)
     });
     return unsub;
@@ -637,12 +672,40 @@ export default function CameraScreen({ navigation }) {
           policyRetryCountRef.current = 0;
           isCameraReadyRef.current = false;
           setIsCameraReady(false);
+          setRecoveryGuidance(true);
           setRetryKey((k) => k + 1);
         }, 400);
       }
     });
     return () => { sub.remove(); if (settleTimer) clearTimeout(settleTimer); };
   }, [isPolicyRestricted]);
+
+  // PAP-1708: show the recovery framing hint once the re-acquired camera is
+  // actually ready (preview visible), for 6s.  Breadcrumb is the QA-verifiable
+  // assertion that the guidance appeared on device.
+  useEffect(() => {
+    if (!isCameraReady || !recoveryGuidance) return undefined;
+    cameraEventsRef.current.push({ type: 'recoveryGuidanceShown', ts: new Date().toISOString() });
+    const t = setTimeout(() => setRecoveryGuidance(false), 6000);
+    return () => clearTimeout(t);
+  }, [isCameraReady, recoveryGuidance]);
+
+  // PAP-1708: log ALL AppState transitions, not only while restricted.  The
+  // two b132 policyRestricted events carry no pre-error background transition
+  // because the listener above attaches only after isPolicyRestricted flips
+  // true — so "app backgrounded → keyguard/policy cut the camera" vs
+  // "foregrounded → OS privacy toggle" was unanswerable from telemetry.  The
+  // restricted listener keeps logging (with isPolicyRestricted: true) during
+  // a restriction; this one covers everything else.
+  const policyRestrictedRef = useRef(false);
+  useEffect(() => { policyRestrictedRef.current = isPolicyRestricted; }, [isPolicyRestricted]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (policyRestrictedRef.current) return; // restricted listener logs these
+      cameraEventsRef.current.push({ type: 'appState', ts: new Date().toISOString(), nextState });
+    });
+    return () => sub.remove();
+  }, []);
 
   // ── Permission gate ────────────────────────────────────────────────────
   useEffect(() => {
@@ -909,7 +972,7 @@ export default function CameraScreen({ navigation }) {
         <View style={styles.topBar}>
           {isCameraReady
             ? <MotionIndicator stable={isStable} gearDetected={gearDetected} />
-            : <Text style={styles.initText}>{cameraHasError ? (isPolicyRestricted ? 'Camera blocked by OS' : 'Camera error') : 'Starting camera…'}</Text>
+            : <Text style={styles.initText}>{cameraHasError ? (isPolicyRestricted ? 'Camera disabled by OS' : 'Camera error') : 'Starting camera…'}</Text>
           }
           <TouchableOpacity
             style={styles.debugIcon}
@@ -999,10 +1062,16 @@ export default function CameraScreen({ navigation }) {
           <Text style={styles.hint}>
             {cameraHasError
               ? (isPolicyRestricted
-                ? 'Camera blocked by OS — unlock your phone'
+                // PAP-1708: b132 telemetry shows the app can be foregrounded
+                // when this fires (Android 12+ global Camera-access privacy
+                // toggle in Quick Settings is as plausible as keyguard/MDM),
+                // so name both remedies instead of assuming a lock screen.
+                ? 'Camera disabled by OS — re-enable camera access (Quick Settings privacy toggle) or unlock, then tap Retry'
                 : 'Camera error — tap Retry below')
               : !isCameraReady
               ? 'Starting camera…'
+              : recoveryGuidance
+              ? 'Camera recovered — fit the gear inside the circle'
               : isProcessing
               ? 'Processing…'
               : isStable
@@ -1026,6 +1095,7 @@ export default function CameraScreen({ navigation }) {
                   setIsCameraReady(false);
                   setIsPolicyRestricted(false);
                   policyRetryCountRef.current = 0;
+                  setRecoveryGuidance(true);
                   setRetryKey((k) => k + 1);
                 } else {
                   isCameraReadyRef.current = false;
