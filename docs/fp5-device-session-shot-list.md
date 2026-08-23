@@ -15,18 +15,18 @@ invalidates anything earlier.
 
 ## The build
 
-**Release b137**, tag `b137`:
-https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b137
-Asset: `gear-camera-release-2026-08-23.01.19-b137.apk`
+**Release b141**, tag `b141`:
+https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b141
+Asset: `gear-camera-release-2026-08-23.08.47-b141.apk`
 
-b137 is the newest build and is a strict superset of every fix below (Sentry DSN guard
-since b134, native Sentry init since b135, Sentry double-init removal in b136, the
-chainring wall-clock deadline new in b137 itself). One install covers all four steps.
+b141 is the current production build and includes the motion-state reset fix (PAP-1708) and the corrected 45000ms wall-clock budget (PAP-1683). One install covers all four steps.
 
-**What b137 cannot evidence:** nothing in this list — it's the latest build, so it
-carries every fix this session needs to check. (If you're instead asked to validate an
-*older* build like b130/b134/b135 specifically, use that build's own release page —
-this list assumes b137.)
+**⚠️ DO NOT INSTALL b137** — b137 shipped with WALL_CLOCK_BUDGET_MS=5000, which causes a 100% abstain rate on real FP5 photos (the 5s budget is exhausted before the algorithm even starts). Use b141 instead.
+
+**What b141 cannot evidence:** nothing in this list — it's the latest build and includes
+the motion-state reset fix (PAP-1708) and the corrected 45000ms wall-clock budget
+(PAP-1683). (If you're instead asked to validate an *older* build like b130/b134/b135
+specifically, use that build's own release page — this list assumes b141.)
 
 Install: uninstall any existing debug/release build of the app first (mixed
 debug+release installs on the same device can throw a signature-mismatch error), then
@@ -34,11 +34,11 @@ sideload the APK and open it once to let it finish first-launch setup before ste
 
 ---
 
-## Step 1 — Does b137 still send? (4 min)
+## Step 1 — Does b141 still send? (4 min)
 
 **Why:** the upload pipeline is **known good** — we have debug reports in Sentry from
 this device on builds b129 and b132, the newest dated 2026-08-19. What is *not* known
-is whether **b137** still sends, because no device has ever run b134 or later. b133 had
+is whether **b141** still sends, because no device has ever run b134 or later. b133 had
 a build where the Sentry key was missing from the bundle; b134 added a guard against
 that, but the guard has only ever been checked on a desktop, never confirmed by an
 actual report arriving from a b134+ build. This step closes that one gap. It also
@@ -67,9 +67,10 @@ rest server-side once we know the client-side attempt succeeded or failed.
 
 **Why:** front chainrings (the big flat gear near the pedals, ≥~24% of the frame width)
 previously triggered 70–93 second UI freezes on FP5 — the algorithm has no timeout and
-just runs. b137 adds a hard 5-second wall-clock deadline meant to cut that to roughly
-10s worst case (bounded overshoot, not millisecond-tight) by abstaining instead of
-grinding to completion.
+just runs. b141 adds a hard 45-second wall-clock deadline meant to cut that to roughly
+50s worst case (bounded overshoot, not millisecond-tight) by abstaining instead of
+grinding to completion. Ordinary gears currently take ~30-40s on this phone, so the
+deadline is set above normal operation to catch only the pathological freeze tail.
 
 **What to do:**
 1. Find a **front chainring** — the largest gear on a bike, mounted near the pedals
@@ -79,7 +80,7 @@ grinding to completion.
 3. Repeat for 2–3 different chainrings if you have access to more than one bike.
 
 **Pass looks like:** result (a count, or an "unable to determine" abstain) appears
-within **~10 seconds**. No indefinite spinner.
+within **~50 seconds** (bounded overshoot above the 45s budget). No indefinite spinner.
 
 **For reference, what the device did before this fix:** two chainring reports from
 build b129 took **70.0 s** and **93.5 s**. Those are the real measured numbers this
@@ -100,7 +101,7 @@ for that shot — don't wait out a suspected regression.
 **Why (reduced):** we already have this number from telemetry — the device reports
 ~35–37 seconds total per ordinary gear, of which ~30 s is the `detect` stage. Desktop
 said 5757 ms and 977 ms; both were wrong by 6x and 37x respectively. So this step is no
-longer discovery, just confirmation that b137 didn't change the picture. **If you are
+longer discovery, just confirmation that b141 didn't change the picture. **If you are
 short on time, skip this one and do Step 4 instead.**
 
 **What to do:**
@@ -131,6 +132,9 @@ crash on launch — the risk case would show up as a slow or hung splash screen.
    stopwatch (i.e. time from tapping the app icon to the camera view being usable).
 3. Force a crash if you can trigger one naturally in normal use during this session
    (don't go hunting for one) — otherwise just note "no crash observed."
+4. **If you see a "Camera recovered — fit the gear inside the circle" message** (new in
+   b141, PAP-1708), screenshot it — this confirms the motion-state reset recovery
+   guidance is working after a camera interruption.
 
 **Pass looks like:** consistent cold-start time across the 3 launches (no launch
 noticeably slower than the others), no visible hang on the splash screen.
@@ -138,7 +142,7 @@ noticeably slower than the others), no visible hang on the splash screen.
 **Fail looks like:** one or more launches hangs for several seconds longer than the
 others, or the app crashes on launch.
 
-**Send back:** the 3 cold-start stopwatch numbers, and crash/no-crash.
+**Send back:** the 3 cold-start stopwatch numbers, crash/no-crash, and a screenshot if you see the recovery guidance message.
 
 ---
 
@@ -155,5 +159,5 @@ b129 and b132, the newest on 2026-08-19. Full evidence, the query runbook, and w
 means for the speed target are in
 [`device-telemetry-sentry-2026-08-23.md`](./device-telemetry-sentry-2026-08-23.md).
 
-The one thing telemetry cannot tell us is whether **b134 and later** still send, since
+The one thing telemetry cannot tell us is whether **b141** still sends, since
 no device has run a build newer than b132. That residue is Step 1 above.
