@@ -46,12 +46,20 @@ porting profile — flagged for a follow-up parity study, out of scope here.
 **Key structural fact:** every call site samples at a fixed, already-power-
 -of-two length — `N_ANGLES = 1024` (`gearCounter.js:42`, 5 of 6 call sites)
 or `BC_ANGLES = 4096` (`traceOuterContour`'s path, `gearCounter.js:2056`).
-`fftMagnitude`'s "pad to next power of two" branch (`fft.js:14-16`) is
-therefore **dead code in every production call** — real usage is always an
-exact N=1024 or N=4096 real-input DFT. That removes an entire class of
-padding/convention ambiguity from the port: there's no "what does cv::dft do
-with a non-power-of-two signal" question to answer, and both 1024 (2^10) and
-4096 (2^12) are already optimal sizes for OpenCV's mixed-radix DFT
+**Correction (QA cross-check, [PAP-1698](/PAP/issues/PAP-1698)):** a third
+N exists — `fftPurityCheck(..., fast=true)` (`gearCounter.js:761`) sets
+`nAngles = 256` for its coarse grid-search-screening path, which then calls
+`fftMagnitude` at line 803. This wasn't caught by grepping the two named
+constants and wasn't in the 120-case parity dump. It doesn't change the
+port-safety conclusion — 256 is still a power of two, so
+`fftMagnitude`'s zero-pad branch still never fires for it — but the parity
+*measurement* only covers N=1024/4096, not N=256. `fftMagnitude`'s "pad to
+next power of two" branch (`fft.js:14-16`) is therefore **dead code in
+every production call** — real usage is always an exact N=256, N=1024, or
+N=4096 real-input DFT. That removes an entire class of padding/convention
+ambiguity from the port: there's no "what does cv::dft do with a
+non-power-of-two signal" question to answer, and 256 (2^8), 1024 (2^10),
+and 4096 (2^12) are already optimal sizes for OpenCV's mixed-radix DFT
 (`getOptimalDFTSize` would return them unchanged).
 
 ## 2. Method
@@ -80,7 +88,11 @@ Mirrors PAP-1694's `pap1694_opencv_parity.py` template:
   `gearCounter.js:726`) since that's the only region the algorithm reads.
 
 Full results: `debug-reports/pap1696_dft_parity_2026-08-23.json` (240 rows —
-120 cases × {f64, f32}).
+120 cases × {f64, f32}). **Coverage note:** cases are N=1024/4096 only;
+N=256 (`fftPurityCheck` fast mode, §1 above) was not measured. The
+linearity argument in §4 still applies to it (any correct `cv::dft` agrees
+with any correct FFT up to float rounding, independent of N), but there is
+no direct empirical measurement at N=256 the way there is for 1024/4096.
 
 ## 3. Results
 
@@ -124,6 +136,8 @@ tooth-count band — the value that actually drives `bestF`/`toothCount` in
 
 Blocked on [PAP-1694](/PAP/issues/PAP-1694)'s native C++/CMake scaffolding
 landing (Option A, QA-approved on [PAP-1697](/PAP/issues/PAP-1697), currently
-in progress). This parity study itself is complete and, per the standing QA
-cross-check requirement, has a sign-off request open on
-[PAP-1698](/PAP/issues/PAP-1698).
+in progress). This parity study itself is complete; QA cross-check
+([PAP-1698](/PAP/issues/PAP-1698)) verdict is **CONFIRMED**, with one
+non-blocking correction applied to this doc (the N=256 fast-mode call site
+at `gearCounter.js:761`, folded into §1/§2 above 2026-08-23). Conclusion
+unchanged: no accuracy re-baseline risk from the DFT-core swap.
