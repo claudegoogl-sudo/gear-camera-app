@@ -160,7 +160,23 @@ function checkSimulatedSlowDevice(stamp, actual, factor) {
   // slowest photos under a 20x clock — see PAP-1659 handoff notes for why
   // tighter isn't achievable without finer-grained (and costlier-on-every-
   // count) instrumentation inside the sweep's per-iteration morphology.
-  const ok = simulatedElapsed <= BUDGET_MS * 3 && r.budgetExhausted === true;
+  // PAP-1683 AC2: the old predicate only checked that a fired budget was
+  // *truncated* (simulatedElapsed bounded, budgetExhausted===true) and never
+  // asserted anything was actually *returned* — 8/8 corpus photos returning
+  // tc=0 via the 'pap1659-budget-exhausted' hard-abstain path (analyzeImage's
+  // early return when findGearCenter's own base pass never completed) passed
+  // this check every time, which is precisely the device-fatal bug PAP-1683
+  // found. Split by whether the base pass completed:
+  //   - exact 'pap1659-budget-exhausted' methodUsed = analyzeImage's early
+  //     return = findGearCenter itself was truncated = no center to report.
+  //     This is the failure mode PAP-1683 filed; it must not occur here.
+  //   - a '<method>+pap1659-budget-exhausted' suffix = the base pass DID
+  //     complete and only later optional work (e.g. the retry gate) was
+  //     skipped for budget; toothCount must be non-zero in that case.
+  const basePassTruncated = r.methodUsed === 'pap1659-budget-exhausted';
+  const ok = simulatedElapsed <= BUDGET_MS * 3
+    && !basePassTruncated
+    && (!r.budgetExhausted || r.toothCount > 0);
   out(
     `  ${stamp} (actual=${actual}T, ${factor}x clock): real=${realElapsed}ms ` +
     `simulated=${Math.round(simulatedElapsed)}ms (${(simulatedElapsed / BUDGET_MS).toFixed(1)}x budget) ` +

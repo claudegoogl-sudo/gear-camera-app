@@ -2955,11 +2955,13 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
 
 export async function countTeeth(photoUri, signal, opts) {
   const t0 = Date.now();
-  // PAP-1659: hard wall-clock deadline for the whole count (see
-  // WALL_CLOCK_BUDGET_MS above). `budgetState.hit` becomes true the first
-  // time any checkpoint downstream — inside findGearCenter's sweep, or one
-  // of the retry gates below — actually cuts work short.
-  const deadline = t0 + WALL_CLOCK_BUDGET_MS;
+  // PAP-1683 fix B: `deadline` is anchored after decode+preprocess (at t2,
+  // once it's computed below), not at t0. Neither stage has a checkpoint —
+  // charging them against the budget only shrinks the window the checkpoints
+  // downstream (inside findGearCenter's sweep, or the retry gates below)
+  // actually get to work with, for no benefit. See PAP-1683: on a real FP5,
+  // decode+preprocess alone measured 6.5-7s, already exceeding the 5s
+  // budget before the first checkpoint was reachable.
   const budgetState = { hit: false };
 
   // Yield to the event loop so pending UI events (e.g. cancel press) can
@@ -3008,6 +3010,9 @@ export async function countTeeth(photoUri, signal, opts) {
   const blurred  = gaussianBlur5x5(enhanced, width, height);
   const edges    = cannyEdges(blurred, width, height, 50, 150);
   const t2 = Date.now();
+  // PAP-1683 fix B: budget window starts here, after the uninterruptible
+  // decode+preprocess cost has already been paid.
+  const deadline = t2 + WALL_CLOCK_BUDGET_MS;
 
   await yieldOrAbort();
 
@@ -3626,13 +3631,14 @@ export function countTeethFromRgba(rgba, width, height) {
   // corpus measurement (pap760.audit.js and friends) exercises the same
   // budget gates production does — required to measure AC1/AC3 honestly
   // rather than only on-device.
-  const t0 = Date.now();
-  const deadline = t0 + WALL_CLOCK_BUDGET_MS;
+  // PAP-1683 fix B: mirrors countTeeth's anchor point too — deadline starts
+  // after preprocessing, not before it (see countTeeth for rationale).
   const budgetState = { hit: false };
   const gray     = rgbaToGray(rgba, width, height);
   const enhanced = clahe(gray, width, height, 3.0, 8, 8);
   const blurred  = gaussianBlur5x5(enhanced, width, height);
   const edges    = cannyEdges(blurred, width, height, 50, 150);
+  const deadline = Date.now() + WALL_CLOCK_BUDGET_MS;
   // PAP-1100: harness path mirrors countTeeth's aimR convention.  Training
   // photos have no aimCrop input but the harness applies the same circular
   // mask convention (PAP-961 mirror at line 3383); aimR = 0.5*min(W,H)
