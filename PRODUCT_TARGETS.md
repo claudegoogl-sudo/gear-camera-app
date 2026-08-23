@@ -130,8 +130,13 @@ These are **opposite instructions to the same engineers**, so until the ruling l
   arithmetic.
 
 _Maintained by the CEO. Last reviewed 2026-08-23 against the PAP-1658 audit at `49a7498`._
-_Known gap: HEAD has since moved to `768d877`; PAP-1659's wall-clock deadline gate landed
-after the audited SHA and is not priced into the 58.0% figure — re-audit tracked on PAP-1675,
-pricing on PAP-1674._
+_PAP-1659 wall-clock gate priced (PAP-1674, 2026-08-23): **neutral on host — 0/362 fires**
+at both `49a7498` (max runtime 2959 ms) and `768d877` (max 5000 ms, budgetExhausted=false on
+every photo). The 5000 ms deadline is unreachable at the host p99 of ~2 s, so the gate's
+correct/abstain/conf-wrong delta on the 58.0% baseline is exactly **0** by construction — it
+is a device-only behaviour (device p50 ~36.7 s, PAP-1677) we cannot measure here. The 58.0%
+figure therefore stands unchanged at HEAD; no triple to re-quote. Superseded upstream by the
+PAP-1686 CEO ruling (budget → 45000 ms at `t2`, and a fired budget may never convert a held
+answer to a non-answer), which removes the answer-loss trade this ticket was pricing._
 _Known open decision: the target-2 denominator (PAP-1673). Both rates are quoted above on
 purpose; do not collapse them to one until the board rules._
