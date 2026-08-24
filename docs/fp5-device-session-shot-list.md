@@ -15,11 +15,13 @@ invalidates anything earlier.
 
 ## The build
 
-**Release b141**, tag `b141`:
+**Build b141**, tag `b141`:
 https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b141
-Asset: `gear-camera-release-2026-08-23.08.47-b141.apk`
+Asset: `gear-camera-debug-2026-08-23.17.33-b141.apk` (debug variant, 142 MB — this is the only file on the tag; use whatever the page lists)
 
-b141 is the current production build and includes the motion-state reset fix (PAP-1708) and the corrected 45000ms wall-clock budget (PAP-1683). One install covers all four steps.
+b141 includes the motion-state reset fix (PAP-1708) and the corrected 45000ms wall-clock budget (PAP-1683). One install covers all four steps.
+
+**Tag `b143` is an equally valid substitute.** GitHub shows `b143` above b141 as the newest release (`gear-camera-release-2026-08-23.23.57-b143.apk`, release variant, 89 MB). Its app source is identical to b141's — every commit between the two builds (496db65, b429084, b0a05f2, 2eae22f) touched only docs and build scripts — and it carries the same native kernels, the 45000ms budget, the PAP-1708 fix, and the Sentry DSN (all verified against the published APK). If you install b143 instead of b141, every step below reads the same; its events arrive in Sentry under release `v1.0.0 (143) · 2026-08-23 23:57` (dist 143).
 
 **⚠️ DO NOT INSTALL b137** — b137 shipped with WALL_CLOCK_BUDGET_MS=5000, which causes a 100% abstain rate on real FP5 photos (the 5s budget is exhausted before the algorithm even starts). Use b141 instead.
 
