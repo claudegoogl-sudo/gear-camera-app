@@ -14,11 +14,13 @@ const useGearStore = create((set) => ({
   // PAP-1591 (revokes PAP-1536 UX descope): chainring-scale signal flag from
   // the algorithm (any of peakTc/fft90tc/opTc/bcTc/bcPeaks >= 30).  No
   // longer gates UX — v1 surfaces the tooth count across the full 11–60T
-  // range.  Kept on the result so ResultScreen can fire the Sentry
-  // chainring-regime telemetry event (used by the cassette-FP work under
-  // PAP-1538).
+  // range.  PAP-1742: the Sentry chainring-regime telemetry event is now
+  // emitted at capture time in CameraScreen.handleCapture (reads result.*
+  // directly), so this field is currently write-only in the store — kept
+  // for API compatibility (cassette-FP work under PAP-1538 heritage).
   chainringRegime: false,
   // PAP-1536: aim-circle prior reading + chosen-radius for telemetry payload.
+  // PAP-1742: write-only since emission moved to CameraScreen.handleCapture.
   aimR: null,
   peakR: null,
   // PAP-1538: enriched methodUsed tag from countTeeth.  Carried through

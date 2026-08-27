@@ -3467,8 +3467,8 @@ export async function countTeeth(photoUri, signal, opts) {
   // ≤ MIN_TEETH+2 with bcPeaks ∈ [20,30] still abstains regardless of
   // committed tc — that targets the specific 52T 05-35-33 confidently-
   // wrong pattern.  The chainringRegime flag itself remains computed and
-  // surfaced in the return value for UX telemetry consumers (see
-  // ResultScreen.jsx emitChainringAbstainTelemetry).
+  // surfaced in the return value for capture-time telemetry consumers (see
+  // CameraScreen.jsx handleCapture → emitChainringAbstainTelemetry, PAP-1742).
   const chainringRegime =
     r.peakTc >= 30 || r.fft90tc >= 30 || r.opTc >= 30
     || r.bcTc >= 30 || r.bcPeaks >= 30;
