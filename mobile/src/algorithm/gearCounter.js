@@ -2505,13 +2505,18 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
     // (bcPeaks < MIN_TEETH) AND the multi-radius FFT reads ≥2x higher at
     // moderate confidence (fftConf ≥ 0.40, the PAP-282/PAP-300 band),
     // prefer peakTc over the harmonic artifact.  Sharp-disagreement form
-    // (peak ≥ 2·bc) keeps it off near-agreement rows.  Zero-fire on the
-    // 362-photo corpus (PAP-1731 probe): no branch-2 row satisfies the
-    // predicate, so this converts no existing outcome.
+    // (peak ≥ 2·bc) keeps it off near-agreement rows.  The rescue also
+    // inherits branch 1's peak-trust conditions (R1, PAP-1739): a peakTc
+    // that branch 1 refused for inner-bore lock (innerBoreSuspect) or a
+    // disagreeing bc center (centerDisagree, PAP-266) can never win via
+    // the rescue — a ≥0.70-conf distrusted peak must not resurface here.
+    // Zero-fire on the 362-photo corpus (PAP-1731 probe): no branch-2 row
+    // satisfies the predicate, so this converts no existing outcome.
     if (bcTc === MIN_TEETH
         && bcPeaks < MIN_TEETH
         && peakTc >= 2 * MIN_TEETH
-        && fftConf >= 0.40) {
+        && fftConf >= 0.40
+        && !innerBoreSuspect && !centerDisagree) {
       console.log(`[bc-fft-lobe-rescue] bc-fft=>${peakTc} peak=${peakTc}(conf=${fftConf.toFixed(2)}) ` +
         `bc=${bcTc}(peaks=${bcPeaks},purity=${bcPurity.toFixed(2)}) fft90=${fft90tc} op=${opTc}`);
       finalTc = peakTc;
@@ -2965,11 +2970,14 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
     // PAP-1731: mirror the main cascade's bc-fft lobe-harmonic rescue —
     // see analyzeImage branch 2 for the full rationale (bcTc===MIN_TEETH
     // with an out-of-range bcPeaks is a sub-tooth lobe contour's 2nd
-    // harmonic, not a tooth count).
+    // harmonic, not a tooth count).  R1: requires !innerBoreSuspect2 like
+    // the main path; there is no centerDisagree term here because this
+    // path is center-locked by construction.
     if (bcTc === MIN_TEETH
         && bcPeaks < MIN_TEETH
         && peakTc >= 2 * MIN_TEETH
-        && fftConf >= 0.40) {
+        && fftConf >= 0.40
+        && !innerBoreSuspect2) {
       console.log(`[bc-fft-lobe-rescue] retry bc-fft=>${peakTc} peak=${peakTc}(conf=${fftConf.toFixed(2)}) ` +
         `bc=${bcTc}(peaks=${bcPeaks},purity=${bcPurity.toFixed(2)}) fft90=${fft90tc} op=${opTc}`);
       finalTc = peakTc;
