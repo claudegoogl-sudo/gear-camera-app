@@ -19,32 +19,41 @@
 > Revised remaining time: ~18 minutes. Thank you — that session closed four
 > validation tickets outright and fed two fix builds.
 
+> **Updated 2026-08-27 late (Mobile).** Build bumped **b144 → b145** to match QA's
+> consolidated ask (PAP-1708 comment `017b98ca`): b145 is b144 plus one telemetry-only
+> fix (PAP-1742 — chainring abstains now emit **once per capture**, deduped on
+> resultId, so QA can verify them from Sentry). No algorithm behavior changed. Step 2
+> gains a small PAP-1742 addendum (shoot the same chainring twice, debug-share every
+> shot); all other steps are unchanged. Install b145 below.
+
 **Total time: ~17 minutes** (was 22; Steps 1 and 3 shrank — see the note below). One build. Do the steps in order — if you run out of time,
 stop after any step and everything already done keeps its full value. Nothing later
 invalidates anything earlier.
 
 ## The build
 
-**Build b144**, tag `b144`:
-https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b144
-Asset: `gear-camera-debug-2026-08-27.03.44-b144.apk` (debug variant, 133 MB — this is the only file on the tag; use whatever the page lists)
+**Build b145**, tag `b145`:
+https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b145
+Asset: `gear-camera-debug-2026-08-27.16.42-b145.apk` (debug variant, ~136 MB — this is the only file on the tag; use whatever the page lists)
 
-b144 includes everything b141/b143 carried — the motion-state reset fix (PAP-1708), the
-corrected 45000ms wall-clock budget (PAP-1683), the native kernels — **plus the
-PAP-1731 fix for the 32T→10T undercount you hit on 2026-08-26**. One install covers
+b145 includes everything b141–b144 carried — the motion-state reset fix (PAP-1708), the
+corrected 45000ms wall-clock budget (PAP-1683), the native kernels, the PAP-1731 fix
+for the 32T→10T undercount you hit on 2026-08-26 — **plus the PAP-1742 telemetry fix
+(chainring abstains emit once per capture, deduped on resultId)**. One install covers
 every step, including Step 0.
 
-**b141/b142/b143 are valid substitutes for Steps 1–4 only** (their app source is
+**b141/b142/b143/b144 are valid substitutes for Steps 1–4 only** (their app source is
 otherwise equivalent, and b142 already ran Steps 1 and 3 partially), but **Step 0
-requires b144** — the 32T rescue does not exist in any earlier build.
+requires b144 or later, and the Step 2 PAP-1742 telemetry check requires b145** — the
+once-per-capture emission does not exist in b144 or earlier.
 
-**⚠️ DO NOT INSTALL b137** — b137 shipped with WALL_CLOCK_BUDGET_MS=5000, which causes a 100% abstain rate on real FP5 photos (the 5s budget is exhausted before the algorithm even starts). Use b144 instead.
+**⚠️ DO NOT INSTALL b137** — b137 shipped with WALL_CLOCK_BUDGET_MS=5000, which causes a 100% abstain rate on real FP5 photos (the 5s budget is exhausted before the algorithm even starts). Use b145 instead.
 
-**What b144 cannot evidence:** nothing in this list — it's the latest build and includes
+**What b145 cannot evidence:** nothing in this list — it's the latest build and includes
 the motion-state reset fix (PAP-1708), the corrected 45000ms wall-clock budget
-(PAP-1683), and the PAP-1731 32T rescue. (If you're instead asked to validate an
-*older* build like b130/b134/b135 specifically, use that build's own release page —
-this list assumes b144.)
+(PAP-1683), the PAP-1731 32T rescue, and the PAP-1742 telemetry fix. (If you're instead
+asked to validate an *older* build like b130/b134/b135 specifically, use that build's
+own release page — this list assumes b145.)
 
 Install: uninstall any existing debug/release build of the app first (mixed
 debug+release installs on the same device can throw a signature-mismatch error), then
@@ -55,8 +64,8 @@ sideload the APK and open it once to let it finish first-launch setup before ste
 ## Step 0 — Re-shoot the 32T cassette (3 min) — validates the fix for yesterday's wrong answer
 
 **Why:** on 2026-08-26 your first shot of the bare 32T cassette came back **10**
-(confidently wrong, 3.2x under); a second shot read **32** correctly. b144 adds a
-narrowly-gated rescue that converts exactly that failure pattern into the correct
+(confidently wrong, 3.2x under); a second shot read **32** correctly. b145 adds a
+narrowly-gated rescue (first shipped in b144) that converts exactly that failure pattern into the correct
 peak-based answer, so the first shot should now read 32 too.
 
 **What to do:**
@@ -77,10 +86,10 @@ stopwatch needed for this step.
 
 ---
 
-## Step 1 — Does the current build still send? (4 min — already answered for b142, repeat once on b144)
+## Step 1 — Does the current build still send? (4 min — already answered for b142, repeat once on b145)
 
 *2026-08-27 note: this step is effectively done — your b142 session delivered labeled
-debug reports to Sentry. Only the first bullet (one debug-share on b144) is still worth
+debug reports to Sentry. Only the first bullet (one debug-share on b145) is still worth
 doing, and Step 0's debug-shares already cover it. Consider this step optional if you
 did Step 0.*
 
@@ -126,6 +135,11 @@ deadline is set above normal operation to catch only the pathological freeze tai
 2. Take the photo. Start your phone's stopwatch the moment you tap the shutter; stop it
    when the result screen appears (count, or an abstain message).
 3. Repeat for 2–3 different chainrings if you have access to more than one bike.
+4. **PAP-1742 addendum (QA ask):** among your chainring shots, include **the same
+   chainring twice back-to-back**, and tap **debug-share on every chainring shot**.
+   Then take **1–2 cassette shots** (Step 3 covers these) — a cassette shot must
+   **not** produce a chainring-abstain event. QA verifies exactly one abstain event
+   per chainring photo, each event's channels matching its own photo.
 
 **Pass looks like:** result (a count, or an "unable to determine" abstain) appears
 within **~50 seconds** (bounded overshoot above the 45s budget). No indefinite spinner.
