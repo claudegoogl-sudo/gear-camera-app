@@ -34,6 +34,8 @@ import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
+// PAP-1742: capture-time chainring_abstain telemetry (moved off ResultScreen).
+import { emitChainringAbstainTelemetry } from '../utils/chainringAbstainTelemetry';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Sentry, SENTRY_ENABLED } from '../sentry';
 
@@ -513,6 +515,57 @@ export default function CameraScreen({ navigation }) {
         methodUsed: result.methodUsed ?? null,
       });
 
+      // PAP-1742: build the algoDiag block once, keyed to this capture, so
+      // every consumer (telemetry below, debug-share via route params) sees
+      // the SAME block for this photo.  The resultId lets downstream counts
+      // dedupe per photo and lets emitChainringAbstainTelemetry suppress
+      // duplicate emissions for one capture.
+      const captureId = `cap-${Date.now().toString(36)}-${gen}`;
+      const algoDiagBlock = {
+        resultId: captureId,
+        peakR: result.peakR ?? null,
+        rOuter: result.rOuter ?? null,
+        radialRelDisagree: result.radialRelDisagree ?? null,
+        // PAP-1536: chainring regime cue + aim-circle prior reading
+        // surfaced for the chainring abstain UX gate and telemetry.
+        chainringRegime: result.chainringRegime ?? false,
+        aimR: result.aimR ?? null,
+        // PAP-1538: methodUsed tag carried into algoDiag for downstream
+        // telemetry / debug JSON consumers that don't read the store.
+        methodUsed: result.methodUsed ?? null,
+        // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
+        // says a count was slow, never which stage was slow.
+        stageMs: result.stageMs ?? null,
+        // PAP-1659 AC2: budget-triggered stop is a first-class outcome —
+        // surfaced separately from an ordinary abstain so telemetry can
+        // count how often the wall-clock deadline actually fires in the
+        // field (methodUsed also carries a '+pap1659-budget-exhausted'
+        // suffix for grep-based consumers).
+        budgetExhausted: result.budgetExhausted ?? false,
+      };
+
+      // PAP-1742: chainring_abstain telemetry now fires HERE, once per
+      // capture completion, instead of from a ResultScreen mount effect.
+      // The effect double-fired per chainring-regime result (re-mount /
+      // [chainringRegime, toothCount] dep transitions ~2-5 ms apart) and
+      // mixed fresh store fields (confidence/toothCount) with the previous
+      // photo's route-params algoDiag channels block — 5 events for 3
+      // photos on b142.  Emitting in the same scope that just produced
+      // `result` and `algoDiagBlock` guarantees one event whose channels
+      // always describe the same photo as toothCount/confidence; the
+      // resultId guard inside emitChainringAbstainTelemetry is the backstop
+      // against double captures.
+      if (result.chainringRegime) {
+        emitChainringAbstainTelemetry({
+          aimR: result.aimR ?? null,
+          peakR: result.peakR ?? null,
+          toothCount: result.toothCount,
+          confidence: result.confidence,
+          channels: algoDiagBlock,
+          resultId: captureId,
+        });
+      }
+
       navigation.navigate('Result', {
         photoPath: aim.path,
         originalPhotoPath: photo.path,
@@ -525,27 +578,9 @@ export default function CameraScreen({ navigation }) {
         // failures land with margin data already attached, per QA PAP-818
         // implementation gate 3.  All three are null/0 outside chainring
         // regime (where the abstain predicate doesn't fire).
-        algoDiag: {
-          peakR: result.peakR ?? null,
-          rOuter: result.rOuter ?? null,
-          radialRelDisagree: result.radialRelDisagree ?? null,
-          // PAP-1536: chainring regime cue + aim-circle prior reading
-          // surfaced for the chainring abstain UX gate and telemetry.
-          chainringRegime: result.chainringRegime ?? false,
-          aimR: result.aimR ?? null,
-          // PAP-1538: methodUsed tag carried into algoDiag for downstream
-          // telemetry / debug JSON consumers that don't read the store.
-          methodUsed: result.methodUsed ?? null,
-          // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
-          // says a count was slow, never which stage was slow.
-          stageMs: result.stageMs ?? null,
-          // PAP-1659 AC2: budget-triggered stop is a first-class outcome —
-          // surfaced separately from an ordinary abstain so telemetry can
-          // count how often the wall-clock deadline actually fires in the
-          // field (methodUsed also carries a '+pap1659-budget-exhausted'
-          // suffix for grep-based consumers).
-          budgetExhausted: result.budgetExhausted ?? false,
-        },
+        // PAP-1742: hoisted to algoDiagBlock above so the telemetry event
+        // and the debug JSON can never diverge per photo.
+        algoDiag: algoDiagBlock,
       });
     } catch (e) {
       if (gen !== captureGenRef.current) return; // cancelled or superseded

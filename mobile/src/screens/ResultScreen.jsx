@@ -25,7 +25,6 @@ import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
 import { shareDebugReport } from '../utils/debugShare';
 import { uploadTrainingData } from '../utils/trainingDataUpload';
-import { emitChainringAbstainTelemetry } from '../utils/chainringAbstainTelemetry';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -76,7 +75,9 @@ function useCountUp(target) {
  */
 export default function ResultScreen({ navigation, route }) {
   const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected, algoDiag } = route.params ?? {};
-  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset, chainringRegime, aimR, peakR } = useGearStore();
+  // PAP-1742: chainringRegime/aimR/peakR were only consumed by the removed
+  // chainring-abstain telemetry effect — dropped from this selector.
+  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset } = useGearStore();
 
   // PAP-622: Transform algorithm coordinates (relative to original uncropped
   // photo) into aim-circle-crop space for the overlay.  The displayed photo is
@@ -109,20 +110,17 @@ export default function ResultScreen({ navigation, route }) {
   // gone — v1 now surfaces the algorithm's tooth count across the full
   // 11–60T range. The chainringRegime cue is still computed by the
   // algorithm and is diagnostically useful for the cassette-FP work under
-  // PAP-1538, so we keep firing the Sentry telemetry event on every
-  // chainring-regime-detected result. Fire once per result via toothCount-
-  // keyed effect — re-renders during animation must not re-emit.
-  useEffect(() => {
-    if (!chainringRegime) return;
-    if (toothCount == null) return;
-    emitChainringAbstainTelemetry({
-      aimR,
-      peakR,
-      toothCount,
-      confidence,
-      channels: algoDiag ?? null,
-    });
-  }, [chainringRegime, toothCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  // PAP-1538, so the Sentry telemetry event still fires on every
+  // chainring-regime-detected result.
+  //
+  // PAP-1742: the emission MOVED to CameraScreen (capture completion).
+  // This mount effect double-fired per chainring result (re-mount /
+  // [chainringRegime, toothCount] dep transitions ~2-5 ms apart) and,
+  // because algoDiag arrives via route params while toothCount/confidence
+  // come from the store, a re-fire could pair the PREVIOUS photo's channels
+  // block with this photo's count/confidence (5 events = 3 photos on b142).
+  // Do not re-add telemetry emission here — see CameraScreen.handleCapture
+  // and utils/chainringAbstainTelemetry.js (resultId dedupe guard).
 
   // Low-confidence + out-of-range toasts.
   const [briefToast, setBriefToast] = useState(null);
