@@ -9,26 +9,42 @@
 > timings. **Step 2 is now the reason to run this session at all.** Revised total:
 > ~17 minutes.
 
+> **Updated 2026-08-27 (QA).** Your 2026-08-26 session (build **b142**, 12:28–12:30 UTC) worked: 2 labeled
+> captures and 5 abstains arrived in Sentry, camera and torch behaved, and the upload
+> pipeline question (Step 1) is **closed** — reports reached us from a b134+ build.
+> One capture came back wrong: the 32T cassette read **10** the first time (32 on the
+> second shot). We shipped a fix for exactly that in build **b144**. **Install b144 now,
+> not b141/b143** — b144 carries everything below plus that fix. A new **Step 0**
+> (top priority) re-shoots the cassette; Steps 2–4 are unchanged and still open.
+> Revised remaining time: ~18 minutes. Thank you — that session closed four
+> validation tickets outright and fed two fix builds.
+
 **Total time: ~17 minutes** (was 22; Steps 1 and 3 shrank — see the note below). One build. Do the steps in order — if you run out of time,
 stop after any step and everything already done keeps its full value. Nothing later
 invalidates anything earlier.
 
 ## The build
 
-**Build b141**, tag `b141`:
-https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b141
-Asset: `gear-camera-debug-2026-08-23.17.33-b141.apk` (debug variant, 142 MB — this is the only file on the tag; use whatever the page lists)
+**Build b144**, tag `b144`:
+https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b144
+Asset: `gear-camera-debug-2026-08-27.03.44-b144.apk` (debug variant, 133 MB — this is the only file on the tag; use whatever the page lists)
 
-b141 includes the motion-state reset fix (PAP-1708) and the corrected 45000ms wall-clock budget (PAP-1683). One install covers all four steps.
+b144 includes everything b141/b143 carried — the motion-state reset fix (PAP-1708), the
+corrected 45000ms wall-clock budget (PAP-1683), the native kernels — **plus the
+PAP-1731 fix for the 32T→10T undercount you hit on 2026-08-26**. One install covers
+every step, including Step 0.
 
-**Tag `b143` is an equally valid substitute.** GitHub shows `b143` above b141 as the newest release (`gear-camera-release-2026-08-23.23.57-b143.apk`, release variant, 89 MB). Its app source is identical to b141's — every commit between the two builds (496db65, b429084, b0a05f2, 2eae22f) touched only docs and build scripts — and it carries the same native kernels, the 45000ms budget, the PAP-1708 fix, and the Sentry DSN (all verified against the published APK). If you install b143 instead of b141, every step below reads the same; its events arrive in Sentry under release `v1.0.0 (143) · 2026-08-23 23:57` (dist 143).
+**b141/b142/b143 are valid substitutes for Steps 1–4 only** (their app source is
+otherwise equivalent, and b142 already ran Steps 1 and 3 partially), but **Step 0
+requires b144** — the 32T rescue does not exist in any earlier build.
 
-**⚠️ DO NOT INSTALL b137** — b137 shipped with WALL_CLOCK_BUDGET_MS=5000, which causes a 100% abstain rate on real FP5 photos (the 5s budget is exhausted before the algorithm even starts). Use b141 instead.
+**⚠️ DO NOT INSTALL b137** — b137 shipped with WALL_CLOCK_BUDGET_MS=5000, which causes a 100% abstain rate on real FP5 photos (the 5s budget is exhausted before the algorithm even starts). Use b144 instead.
 
-**What b141 cannot evidence:** nothing in this list — it's the latest build and includes
-the motion-state reset fix (PAP-1708) and the corrected 45000ms wall-clock budget
-(PAP-1683). (If you're instead asked to validate an *older* build like b130/b134/b135
-specifically, use that build's own release page — this list assumes b141.)
+**What b144 cannot evidence:** nothing in this list — it's the latest build and includes
+the motion-state reset fix (PAP-1708), the corrected 45000ms wall-clock budget
+(PAP-1683), and the PAP-1731 32T rescue. (If you're instead asked to validate an
+*older* build like b130/b134/b135 specifically, use that build's own release page —
+this list assumes b144.)
 
 Install: uninstall any existing debug/release build of the app first (mixed
 debug+release installs on the same device can throw a signature-mismatch error), then
@@ -36,7 +52,37 @@ sideload the APK and open it once to let it finish first-launch setup before ste
 
 ---
 
-## Step 1 — Does b141 still send? (4 min)
+## Step 0 — Re-shoot the 32T cassette (3 min) — validates the fix for yesterday's wrong answer
+
+**Why:** on 2026-08-26 your first shot of the bare 32T cassette came back **10**
+(confidently wrong, 3.2x under); a second shot read **32** correctly. b144 adds a
+narrowly-gated rescue that converts exactly that failure pattern into the correct
+peak-based answer, so the first shot should now read 32 too.
+
+**What to do:**
+1. Same bare cassette as yesterday (largest cog, top-down, indoor light — same setup
+   if convenient, so the comparison is clean).
+2. Take **2–3 photos**, debug-share and label **32** on each.
+3. If handy, one mid-size gear (24–28T) labeled too — confirms nothing changed for
+   normal gears.
+
+**Pass looks like:** every cassette shot returns **32**. If a result screen mentions
+method `bc-fft+peak-lobe-rescue`, that is the rescue *working*, not an error.
+
+**Fail looks like:** any confident answer other than 32 (10 again, or another number),
+or an abstain where yesterday's shots answered.
+
+**Send back:** the count per shot. Stage timings arrive via the debug-share; no
+stopwatch needed for this step.
+
+---
+
+## Step 1 — Does the current build still send? (4 min — already answered for b142, repeat once on b144)
+
+*2026-08-27 note: this step is effectively done — your b142 session delivered labeled
+debug reports to Sentry. Only the first bullet (one debug-share on b144) is still worth
+doing, and Step 0's debug-shares already cover it. Consider this step optional if you
+did Step 0.*
 
 **Why:** the upload pipeline is **known good** — we have debug reports in Sentry from
 this device on builds b129 and b132, the newest dated 2026-08-19. What is *not* known
@@ -134,9 +180,14 @@ crash on launch — the risk case would show up as a slow or hung splash screen.
    stopwatch (i.e. time from tapping the app icon to the camera view being usable).
 3. Force a crash if you can trigger one naturally in normal use during this session
    (don't go hunting for one) — otherwise just note "no crash observed."
-4. **If you see a "Camera recovered — fit the gear inside the circle" message** (new in
-   b141, PAP-1708), screenshot it — this confirms the motion-state reset recovery
-   guidance is working after a camera interruption.
+4. **Deliberately cut the camera once, mid-aim (PAP-1708, 30 seconds):** start an aim
+   screen on any gear, then briefly flip the Quick-Settings camera-privacy toggle
+   off→on (or just lock and unlock the phone with the aim screen live). Expected: a
+   "Camera recovered — fit the gear inside the circle" message appears, and the app
+   waits for you to re-frame — it must **not** auto-capture a badly-framed shot before
+   you've re-centered. Screenshot the message, then re-frame and capture normally.
+   (If the message does *not* appear, or it captures a garbage frame — that's exactly
+   the regression we're testing for; label it and it still counts.)
 
 **Pass looks like:** consistent cold-start time across the 3 launches (no launch
 noticeably slower than the others), no visible hang on the splash screen.
