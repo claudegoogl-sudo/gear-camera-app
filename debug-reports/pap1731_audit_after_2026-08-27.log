@@ -1,0 +1,39 @@
+
+=== PAP-1675 full-corpus re-audit @ c633996+PAP-1731-fix ===
+Corpus: 362 photos   runner: plain node (dim=900)
+
+Bucket          Tol   N    Correct  Acc%    Abstain  Conf-Wrong   med  p95  max  (ms)
+Small  9-15T   exact  136      102   75.0%       31           3    869 1466 2593
+Mid    16-20T  exact   33       27   81.8%        5           1    817 1236 1385
+Large  21-28T  ±1     113       51   45.1%       52          10   1115 1577 3854
+XL     29-60T  ±1      80       30   37.5%       38          12   1232 1683 2086
+-------------------------------------------------------------------------------------
+TOTAL                362      210   58.0%      126          26   1007 1560 3854
+
+Per-actual breakdown:
+actual   N   correct  abstain  conf-wrong  acc%
+  11T    41        24       16           1   58.5%
+  12T     2         2        0           0  100.0%
+  13T    11         5        6           0   45.5%
+  14T    47        43        4           0   91.5%
+  15T    35        28        5           2   80.0%
+  17T     1         1        0           0  100.0%
+  18T    32        26        5           1   81.3%
+  21T    32        16       14           2   50.0%
+  23T     1         1        0           0  100.0%
+  24T    36        16       17           3   44.4%
+  28T    44        18       21           5   40.9%
+  32T     2         2        0           0  100.0%
+  34T     4         1        1           2   25.0%
+  36T    10         4        5           1   40.0%
+  42T    27        10       14           3   37.0%
+  48T     7         7        0           0  100.0%
+  50T     7         5        1           1   71.4%
+  51T     1         0        1           0    0.0%
+  52T    22         1       16           5    4.5%
+
+[AC4] PAP-1659 budgetExhausted fires: 0/362
+[AC4] abstain=126 (34.8%)  confident-wrong=26 (7.2%)
+[AC4] slowest photo: 3854ms vs WALL_CLOCK_BUDGET_MS=45000 — headroom 11.7x
+
+row-level csv: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1675_rows_c633996+PAP-1731-fix.csv (362 rows)

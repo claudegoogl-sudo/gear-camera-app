@@ -1,0 +1,20 @@
+rows compared: 362
+outcome (tc) diffs: 0
+method diffs: 0
+conf diffs: 0
+bc-fft branch rows: before=8 after=8
+guard fired (after): 0 []
+accuracy: before=217/362 after=217/362
+channel-predicate-eligible rows (base, excl bore/center gates): 12
+   2026-04-11_17-17-26-759Z actual=24 method=peak tc=24 peakTc=24 bcPeaks=9 fftConf=0.970 innerBore=False
+   2026-04-19_15-49-28-586Z actual=28 method=peak tc=28 peakTc=28 bcPeaks=4 fftConf=1.000 innerBore=False
+   2026-04-19_18-44-38-938Z actual=28 method=fft-agreement tc=27 peakTc=27 bcPeaks=4 fftConf=0.514 innerBore=False
+   2026-04-19_19-09-53-902Z actual=24 method=peak tc=24 peakTc=24 bcPeaks=4 fftConf=1.000 innerBore=False
+   2026-04-19_19-21-03-594Z actual=21 method=peak tc=21 peakTc=21 bcPeaks=4 fftConf=0.853 innerBore=False
+   2026-04-23_07-10-59-824Z actual=28 method=peak tc=28 peakTc=28 bcPeaks=9 fftConf=0.887 innerBore=False
+   2026-04-24_06-12-35-051Z actual=28 method=fft-agreement tc=28 peakTc=28 bcPeaks=4 fftConf=1.000 innerBore=False
+   2026-04-24_06-58-18-724Z actual=24 method=peak tc=24 peakTc=24 bcPeaks=3 fftConf=0.865 innerBore=False
+   2026-04-24_07-05-25-396Z actual=21 method=fft-agreement tc=21 peakTc=21 bcPeaks=4 fftConf=0.632 innerBore=False
+   2026-04-24_10-43-48-529Z actual=28 method=fft-agreement tc=28 peakTc=28 bcPeaks=1 fftConf=1.000 innerBore=False
+   2026-04-30_05-32-57-251Z actual=42 method=fft-agreement tc=42 peakTc=42 bcPeaks=0 fftConf=0.505 innerBore=False
+   2026-04-30_20-03-52-567Z actual=52 method=fft90-fallback+xl-peak-override tc=52 peakTc=52 bcPeaks=1 fftConf=0.820 innerBore=False

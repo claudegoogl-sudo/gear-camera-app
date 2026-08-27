@@ -2489,9 +2489,38 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
     // PAP-308 port: raised multiplier from 0.30 → 0.50 so confident bc
     // detections produce realistic confidence and are not overridden by
     // off-center retries that lock onto background features.
-    finalTc = bcTc;
-    finalRel = Math.max(finalRel, bcPurity * 0.50);
-    methodUsed = 'bc-fft';
+    //
+    // PAP-1731: bc-fft lobe-harmonic rescue.  bcPurity measures how
+    // dominant one bin is inside [MIN_TEETH, MAX_TEETH] — it says nothing
+    // about teeth when the contour's radial profile is a LOW-order lobe
+    // structure.  On the 2026-08-26 FP5 32T cassette (event 93a89a7c) the
+    // winning contour's spectrum was a clean 5-fold harmonic series
+    // (mag 5 : 10 : 15 : 20 = 3.54 : 1.00 : 0.46 : 0.24); the scoring
+    // window starts at MIN_TEETH=10 so the invisible 5-fundamental is
+    // dropped and its 2nd harmonic at exactly 10 wins with purity 0.315,
+    // while bcPeaks (independent count on the SAME contour) read 5 — out
+    // of tooth range.  bcTc===MIN_TEETH is by corpus construction never a
+    // true count (min truth label 11T — see PAP-474/PAP-632 precedent),
+    // so when the bc channel self-describes as a sub-tooth lobe contour
+    // (bcPeaks < MIN_TEETH) AND the multi-radius FFT reads ≥2x higher at
+    // moderate confidence (fftConf ≥ 0.40, the PAP-282/PAP-300 band),
+    // prefer peakTc over the harmonic artifact.  Sharp-disagreement form
+    // (peak ≥ 2·bc) keeps it off near-agreement rows.  Zero-fire on the
+    // 362-photo corpus (PAP-1731 probe): no branch-2 row satisfies the
+    // predicate, so this converts no existing outcome.
+    if (bcTc === MIN_TEETH
+        && bcPeaks < MIN_TEETH
+        && peakTc >= 2 * MIN_TEETH
+        && fftConf >= 0.40) {
+      console.log(`[bc-fft-lobe-rescue] bc-fft=>${peakTc} peak=${peakTc}(conf=${fftConf.toFixed(2)}) ` +
+        `bc=${bcTc}(peaks=${bcPeaks},purity=${bcPurity.toFixed(2)}) fft90=${fft90tc} op=${opTc}`);
+      finalTc = peakTc;
+      methodUsed = 'bc-fft+peak-lobe-rescue';
+    } else {
+      finalTc = bcTc;
+      finalRel = Math.max(finalRel, bcPurity * 0.50);
+      methodUsed = 'bc-fft';
+    }
   } else if (bcPurity >= 0.10 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
     // PAP-282: raised threshold from 0.05 → 0.10; lower purities are
     // unreliable on large gears where spider-arm cutout features
@@ -2933,10 +2962,24 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
     finalTc = peakTc;
     methodUsed = 'peak';
   } else if (bcPurity >= 0.20 && bcTc >= MIN_TEETH && bcTc <= MAX_TEETH) {
-    finalTc = bcTc;
-    // PAP-308 port: match main analyzeImage multiplier (0.30 → 0.50)
-    finalRel = Math.max(finalRel, bcPurity * 0.50);
-    methodUsed = 'bc-fft';
+    // PAP-1731: mirror the main cascade's bc-fft lobe-harmonic rescue —
+    // see analyzeImage branch 2 for the full rationale (bcTc===MIN_TEETH
+    // with an out-of-range bcPeaks is a sub-tooth lobe contour's 2nd
+    // harmonic, not a tooth count).
+    if (bcTc === MIN_TEETH
+        && bcPeaks < MIN_TEETH
+        && peakTc >= 2 * MIN_TEETH
+        && fftConf >= 0.40) {
+      console.log(`[bc-fft-lobe-rescue] retry bc-fft=>${peakTc} peak=${peakTc}(conf=${fftConf.toFixed(2)}) ` +
+        `bc=${bcTc}(peaks=${bcPeaks},purity=${bcPurity.toFixed(2)}) fft90=${fft90tc} op=${opTc}`);
+      finalTc = peakTc;
+      methodUsed = 'bc-fft+peak-lobe-rescue';
+    } else {
+      finalTc = bcTc;
+      // PAP-308 port: match main analyzeImage multiplier (0.30 → 0.50)
+      finalRel = Math.max(finalRel, bcPurity * 0.50);
+      methodUsed = 'bc-fft';
+    }
   } else if (bcPurity >= 0.05 && bcPeaks >= MIN_TEETH && bcPeaks <= MAX_TEETH) {
     if (fft90tc > 0 && bcTc > 0 && fft90tc === bcTc && Math.abs(fft90tc - bcPeaks) === 1) {
       finalTc = fft90tc;

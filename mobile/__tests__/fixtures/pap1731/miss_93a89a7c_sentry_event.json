@@ -1,0 +1,1545 @@
+{
+ "id": "93a89a7c64fe4c44af62bc9361f11d39",
+ "groupID": "120360803",
+ "eventID": "93a89a7c64fe4c44af62bc9361f11d39",
+ "projectID": "4511400627142736",
+ "size": 32127,
+ "entries": [
+  {
+   "data": {
+    "formatted": "debug_report"
+   },
+   "type": "message"
+  },
+  {
+   "data": {
+    "values": [
+     {
+      "type": null,
+      "value": "debug_report",
+      "mechanism": {
+       "type": "generic",
+       "synthetic": true,
+       "handled": true
+      },
+      "threadId": null,
+      "module": null,
+      "stacktrace": {
+       "frames": [
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "anonymous",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1875,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "tryCallOne",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1181,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "_next",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 192415,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "asyncGeneratorStep",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 192158,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "native",
+         "absPath": "native",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "next",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": null,
+         "colNo": null,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": false,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "?anon_0_",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 2262425,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1477813,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 872044,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 851842,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 852526,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "safeCallback",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1477835,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": "index.android",
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "anonymous",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 2263034,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        }
+       ],
+       "framesOmitted": null,
+       "registers": null,
+       "hasSystemFrames": true
+      },
+      "rawStacktrace": {
+       "frames": [
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "anonymous",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1875,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "tryCallOne",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1181,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "_next",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 192415,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "asyncGeneratorStep",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 192158,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "native",
+         "absPath": "native",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "next",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": null,
+         "colNo": null,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "?anon_0_",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 2262425,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1477813,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 872044,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 851842,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "withScope",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 852526,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "safeCallback",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 1477835,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        },
+        {
+         "filename": "app:///index.android.bundle",
+         "absPath": "app:///index.android.bundle",
+         "module": null,
+         "package": null,
+         "platform": null,
+         "instructionAddr": null,
+         "symbolAddr": null,
+         "function": "anonymous",
+         "rawFunction": null,
+         "symbol": null,
+         "context": [],
+         "lineNo": 1,
+         "colNo": 2263034,
+         "parentIndex": null,
+         "sampleCount": null,
+         "inApp": true,
+         "trust": null,
+         "errors": null,
+         "lock": null,
+         "sourceLink": null,
+         "vars": null
+        }
+       ],
+       "framesOmitted": null,
+       "registers": null,
+       "hasSystemFrames": true
+      },
+      "rawValue": null,
+      "rawModule": null,
+      "rawType": null
+     }
+    ],
+    "hasSystemFrames": true,
+    "excOmitted": null
+   },
+   "type": "exception"
+  },
+  {
+   "data": {
+    "values": [
+     {
+      "type": "system",
+      "timestamp": "2026-08-26T12:13:32.054000Z",
+      "level": "warning",
+      "message": "Low memory",
+      "category": "device.event",
+      "data": {
+       "action": "LOW_MEMORY",
+       "level": 40
+      },
+      "event_id": null
+     },
+     {
+      "type": "navigation",
+      "timestamp": "2026-08-26T12:27:41.187000Z",
+      "level": "info",
+      "message": null,
+      "category": "ui.lifecycle",
+      "data": {
+       "screen": "MainActivity",
+       "state": "created"
+      },
+      "event_id": null
+     },
+     {
+      "type": "navigation",
+      "timestamp": "2026-08-26T12:27:41.255000Z",
+      "level": "info",
+      "message": null,
+      "category": "ui.lifecycle",
+      "data": {
+       "screen": "MainActivity",
+       "state": "started"
+      },
+      "event_id": null
+     },
+     {
+      "type": "navigation",
+      "timestamp": "2026-08-26T12:27:41.258000Z",
+      "level": "info",
+      "message": null,
+      "category": "app.lifecycle",
+      "data": {
+       "state": "foreground"
+      },
+      "event_id": null
+     },
+     {
+      "type": "navigation",
+      "timestamp": "2026-08-26T12:27:41.261000Z",
+      "level": "info",
+      "message": null,
+      "category": "ui.lifecycle",
+      "data": {
+       "screen": "MainActivity",
+       "state": "resumed"
+      },
+      "event_id": null
+     },
+     {
+      "type": "system",
+      "timestamp": "2026-08-26T12:27:41.281000Z",
+      "level": "info",
+      "message": null,
+      "category": "network.event",
+      "data": {
+       "action": "NETWORK_AVAILABLE"
+      },
+      "event_id": null
+     },
+     {
+      "type": "system",
+      "timestamp": "2026-08-26T12:27:41.281000Z",
+      "level": "info",
+      "message": null,
+      "category": "network.event",
+      "data": {
+       "action": "NETWORK_CAPABILITIES_CHANGED",
+       "download_bandwidth": 8758,
+       "network_type": "cellular",
+       "upload_bandwidth": 1601,
+       "vpn_active": true
+      },
+      "event_id": null
+     },
+     {
+      "type": "system",
+      "timestamp": "2026-08-26T12:27:41.282000Z",
+      "level": "info",
+      "message": null,
+      "category": "device.event",
+      "data": {
+       "action": "BATTERY_CHANGED",
+       "charging": false,
+       "level": 33
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:41.991000Z",
+      "level": "debug",
+      "message": "Loading react-native-worklets-core...",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "Loading react-native-worklets-core..."
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:41.993000Z",
+      "level": "debug",
+      "message": "Worklets loaded successfully",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "Worklets loaded successfully"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.374000Z",
+      "level": "info",
+      "message": "native C++ preprocess kernels installed",
+      "category": "algo.nativeKernels",
+      "data": {
+       "backend": "native-cpp",
+       "reason": null
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.406000Z",
+      "level": "debug",
+      "message": "success",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "success"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.406000Z",
+      "level": "info",
+      "message": "native cv::dft fft backend installed",
+      "category": "algo.nativeFft",
+      "data": {
+       "backend": "native-cv-dft",
+       "reason": null
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.417000Z",
+      "level": "debug",
+      "message": "Running \"main\"",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "Running \"main\""
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.517000Z",
+      "level": "info",
+      "message": "torchState",
+      "category": "camera.torch",
+      "data": {
+       "deviceId": "0",
+       "hasFlash": true,
+       "hasTorch": true,
+       "mainHasTorch": true,
+       "physicalDevices": [
+        "wide-angle-camera"
+       ],
+       "position": "back",
+       "selectedWideAngle": true,
+       "torchProp": "off",
+       "ts": "2026-08-26T12:27:42.517Z",
+       "type": "torchState",
+       "wideAngleFailed": false,
+       "wideAngleHasTorch": true
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.924000Z",
+      "level": "info",
+      "message": "torchCycleApplied",
+      "category": "camera.torch.cycle",
+      "data": {
+       "deviceId": "0",
+       "hasTorch": true,
+       "ts": "2026-08-26T12:27:42.924Z"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:42.933000Z",
+      "level": "info",
+      "message": "torchState",
+      "category": "camera.torch",
+      "data": {
+       "deviceId": "0",
+       "hasFlash": true,
+       "hasTorch": true,
+       "mainHasTorch": true,
+       "physicalDevices": [
+        "wide-angle-camera"
+       ],
+       "position": "back",
+       "selectedWideAngle": true,
+       "torchProp": "on",
+       "ts": "2026-08-26T12:27:42.933Z",
+       "type": "torchState",
+       "wideAngleFailed": false,
+       "wideAngleHasTorch": true
+      },
+      "event_id": null
+     },
+     {
+      "type": "http",
+      "timestamp": "2026-08-26T12:27:43.461000Z",
+      "level": "info",
+      "message": null,
+      "category": "xhr",
+      "data": {
+       "method": "GET",
+       "status_code": 200,
+       "url": "https://api.github.com/repos/claudegoogl-sudo/gear-camera-app/releases?per_page=100"
+      },
+      "event_id": null
+     },
+     {
+      "type": "http",
+      "timestamp": "2026-08-26T12:27:43.723000Z",
+      "level": "warning",
+      "message": null,
+      "category": "xhr",
+      "data": {
+       "method": "GET",
+       "status_code": 404,
+       "url": "https://api.github.com/repos/claudegoogl-sudo/gear-camera-app/releases/tags/b144"
+      },
+      "event_id": null
+     },
+     {
+      "type": "http",
+      "timestamp": "2026-08-26T12:27:44.001000Z",
+      "level": "warning",
+      "message": null,
+      "category": "xhr",
+      "data": {
+       "method": "GET",
+       "status_code": 404,
+       "url": "https://api.github.com/repos/claudegoogl-sudo/gear-camera-app/releases/tags/b145"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:27:50.719000Z",
+      "level": "info",
+      "message": "takePhotoCompleted",
+      "category": "camera.capture",
+      "data": {
+       "deviceId": "0",
+       "flash": "on",
+       "hasFlash": true,
+       "hasTorch": true,
+       "torchProp": "off",
+       "ts": "2026-08-26T12:27:49.823Z",
+       "type": "capture"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:22.221000Z",
+      "level": "debug",
+      "message": "[GearCounter] 900\u00d7900px | load=3757ms preprocess=289ms detect=25678ms methods=66ms total=29790ms\n  center=(437,449) method=multi-threshold\n  contourR=268 gearR=349\n  fft90=10T | multiR=32T(rel=0.178) | outer=32T(rel=0.076) | bc=10T(pur=0.088,peaks=12) | clahe=15T(conf=0.74)\n  \u2192 result=10T conf=85.3% via=bc-consensus",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "[GearCounter] 900\u00d7900px | load=3757ms preprocess=289ms detect=25678ms methods=66ms total=29790ms\n  center=(437,449) method=multi-threshold\n  contourR=268 gearR=349\n  fft90=10T | multiR=32T(rel=0.178) | outer=32T(rel=0.076) | bc=10T(pur=0.088,peaks=12) | clahe=15T(conf=0.74)\n  \u2192 result=10T conf=85.3% via=bc-consensus"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:22.298000Z",
+      "level": "debug",
+      "message": "[Telemetry] chainring-abstain {\"event\":\"chainring-abstain\",\"schemaVersion\":1,\"timestamp\":\"2026-08-26T12:28:22.298Z\",\"build\":\"v1.0.0 (142) \u00b7 2026-08-23 17:35\",\"regime\":\"chainring\",\"aimCirclePrior\":{\"aimR\":450,\"peakR\":349,\"ratio\":0.7756},\"detection\":{\"toothCount\":10,\"confidence\":0.8526,\"channels\":{\"peakR\":349,\"rOuter\":424,\"radialRelDisagree\":0.17688679245283018,\"chainringRegime\":true,\"aimR\":450,\"methodUsed\":\"bc-consensus\",\"stageMs\":{\"load\":3757,\"preprocess\":289,\"detect\":25678,\"methods\":66,\"total\":29790,\"px\":810000,\"preprocessBackend\":\"native-cpp\"},\"budgetExhausted\":false}}}",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "[Telemetry] chainring-abstain",
+        "{\"event\":\"chainring-abstain\",\"schemaVersion\":1,\"timestamp\":\"2026-08-26T12:28:22.298Z\",\"build\":\"v1.0.0 (142) \u00b7 2026-08-23 17:35\",\"regime\":\"chainring\",\"aimCirclePrior\":{\"aimR\":450,\"peakR\":349,\"ratio\":0.7756},\"detection\":{\"toothCount\":10,\"confidence\":0.8526,\"channels\":{\"peakR\":349,\"rOuter\":424,\"radialRelDisagree\":0.17688679245283018,\"chainringRegime\":true,\"aimR\":450,\"methodUsed\":\"bc-consensus\",\"stageMs\":{\"load\":3757,\"preprocess\":289,\"detect\":25678,\"methods\":66,\"total\":29790,\"px\":810000,\"preprocessBackend\":\"native-cpp\"},\"budgetExhausted\":false}}}"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:22.346000Z",
+      "level": "info",
+      "message": "chainring_abstain",
+      "category": "sentry.event",
+      "data": null,
+      "event_id": "02c3ebea94c24b72a799b49c9ea3acb3"
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:30.871000Z",
+      "level": "info",
+      "message": "torchState",
+      "category": "camera.torch",
+      "data": {
+       "deviceId": "0",
+       "hasFlash": true,
+       "hasTorch": true,
+       "mainHasTorch": true,
+       "physicalDevices": [
+        "wide-angle-camera"
+       ],
+       "position": "back",
+       "selectedWideAngle": true,
+       "torchProp": "off",
+       "ts": "2026-08-26T12:28:30.871Z",
+       "type": "torchState",
+       "wideAngleFailed": false,
+       "wideAngleHasTorch": true
+      },
+      "event_id": null
+     },
+     {
+      "type": "http",
+      "timestamp": "2026-08-26T12:28:30.909000Z",
+      "level": "info",
+      "message": null,
+      "category": "xhr",
+      "data": {
+       "method": "GET",
+       "status_code": 200,
+       "url": "https://api.github.com/repos/claudegoogl-sudo/gear-camera-app/releases?per_page=100"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:31.079000Z",
+      "level": "info",
+      "message": "torchCycleApplied",
+      "category": "camera.torch.cycle",
+      "data": {
+       "deviceId": "0",
+       "hasTorch": true,
+       "ts": "2026-08-26T12:28:31.079Z"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:31.101000Z",
+      "level": "info",
+      "message": "torchState",
+      "category": "camera.torch",
+      "data": {
+       "deviceId": "0",
+       "hasFlash": true,
+       "hasTorch": true,
+       "mainHasTorch": true,
+       "physicalDevices": [
+        "wide-angle-camera"
+       ],
+       "position": "back",
+       "selectedWideAngle": true,
+       "torchProp": "on",
+       "ts": "2026-08-26T12:28:31.101Z",
+       "type": "torchState",
+       "wideAngleFailed": false,
+       "wideAngleHasTorch": true
+      },
+      "event_id": null
+     },
+     {
+      "type": "http",
+      "timestamp": "2026-08-26T12:28:31.460000Z",
+      "level": "warning",
+      "message": null,
+      "category": "xhr",
+      "data": {
+       "method": "GET",
+       "status_code": 404,
+       "url": "https://api.github.com/repos/claudegoogl-sudo/gear-camera-app/releases/tags/b144"
+      },
+      "event_id": null
+     },
+     {
+      "type": "http",
+      "timestamp": "2026-08-26T12:28:31.717000Z",
+      "level": "warning",
+      "message": null,
+      "category": "xhr",
+      "data": {
+       "method": "GET",
+       "status_code": 404,
+       "url": "https://api.github.com/repos/claudegoogl-sudo/gear-camera-app/releases/tags/b145"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:28:39.265000Z",
+      "level": "info",
+      "message": "takePhotoCompleted",
+      "category": "camera.capture",
+      "data": {
+       "deviceId": "0",
+       "flash": "on",
+       "hasFlash": true,
+       "hasTorch": true,
+       "torchProp": "off",
+       "ts": "2026-08-26T12:28:38.286Z",
+       "type": "capture"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:29:12.653000Z",
+      "level": "debug",
+      "message": "[GearCounter] 900\u00d7900px | load=3827ms preprocess=304ms detect=27612ms methods=35ms total=31778ms\n  center=(446,487) method=multi-threshold\n  contourR=291 gearR=387\n  fft90=10T | multiR=32T(rel=0.143) | outer=28T(rel=0.056) | bc=10T(pur=0.315,peaks=5) | clahe=32T(conf=0.81)\n  \u2192 result=10T conf=71.7% via=bc-fft",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "[GearCounter] 900\u00d7900px | load=3827ms preprocess=304ms detect=27612ms methods=35ms total=31778ms\n  center=(446,487) method=multi-threshold\n  contourR=291 gearR=387\n  fft90=10T | multiR=32T(rel=0.143) | outer=28T(rel=0.056) | bc=10T(pur=0.315,peaks=5) | clahe=32T(conf=0.81)\n  \u2192 result=10T conf=71.7% via=bc-fft"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:29:12.745000Z",
+      "level": "debug",
+      "message": "[Telemetry] chainring-abstain {\"event\":\"chainring-abstain\",\"schemaVersion\":1,\"timestamp\":\"2026-08-26T12:29:12.745Z\",\"build\":\"v1.0.0 (142) \u00b7 2026-08-23 17:35\",\"regime\":\"chainring\",\"aimCirclePrior\":{\"aimR\":450,\"peakR\":387,\"ratio\":0.86},\"detection\":{\"toothCount\":10,\"confidence\":0.7174,\"channels\":{\"peakR\":349,\"rOuter\":424,\"radialRelDisagree\":0.17688679245283018,\"chainringRegime\":true,\"aimR\":450,\"methodUsed\":\"bc-consensus\",\"stageMs\":{\"load\":3757,\"preprocess\":289,\"detect\":25678,\"methods\":66,\"total\":29790,\"px\":810000,\"preprocessBackend\":\"native-cpp\"},\"budgetExhausted\":false}}}",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "[Telemetry] chainring-abstain",
+        "{\"event\":\"chainring-abstain\",\"schemaVersion\":1,\"timestamp\":\"2026-08-26T12:29:12.745Z\",\"build\":\"v1.0.0 (142) \u00b7 2026-08-23 17:35\",\"regime\":\"chainring\",\"aimCirclePrior\":{\"aimR\":450,\"peakR\":387,\"ratio\":0.86},\"detection\":{\"toothCount\":10,\"confidence\":0.7174,\"channels\":{\"peakR\":349,\"rOuter\":424,\"radialRelDisagree\":0.17688679245283018,\"chainringRegime\":true,\"aimR\":450,\"methodUsed\":\"bc-consensus\",\"stageMs\":{\"load\":3757,\"preprocess\":289,\"detect\":25678,\"methods\":66,\"total\":29790,\"px\":810000,\"preprocessBackend\":\"native-cpp\"},\"budgetExhausted\":false}}}"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:29:12.747000Z",
+      "level": "debug",
+      "message": "[Telemetry] chainring-abstain {\"event\":\"chainring-abstain\",\"schemaVersion\":1,\"timestamp\":\"2026-08-26T12:29:12.747Z\",\"build\":\"v1.0.0 (142) \u00b7 2026-08-23 17:35\",\"regime\":\"chainring\",\"aimCirclePrior\":{\"aimR\":450,\"peakR\":387,\"ratio\":0.86},\"detection\":{\"toothCount\":10,\"confidence\":0.7174,\"channels\":{\"peakR\":387,\"rOuter\":405,\"radialRelDisagree\":0.044444444444444446,\"chainringRegime\":true,\"aimR\":450,\"methodUsed\":\"bc-fft\",\"stageMs\":{\"load\":3827,\"preprocess\":304,\"detect\":27612,\"methods\":35,\"total\":31778,\"px\":810000,\"preprocessBackend\":\"native-cpp\"},\"budgetExhausted\":false}}}",
+      "category": "console",
+      "data": {
+       "arguments": [
+        "[Telemetry] chainring-abstain",
+        "{\"event\":\"chainring-abstain\",\"schemaVersion\":1,\"timestamp\":\"2026-08-26T12:29:12.747Z\",\"build\":\"v1.0.0 (142) \u00b7 2026-08-23 17:35\",\"regime\":\"chainring\",\"aimCirclePrior\":{\"aimR\":450,\"peakR\":387,\"ratio\":0.86},\"detection\":{\"toothCount\":10,\"confidence\":0.7174,\"channels\":{\"peakR\":387,\"rOuter\":405,\"radialRelDisagree\":0.044444444444444446,\"chainringRegime\":true,\"aimR\":450,\"methodUsed\":\"bc-fft\",\"stageMs\":{\"load\":3827,\"preprocess\":304,\"detect\":27612,\"methods\":35,\"total\":31778,\"px\":810000,\"preprocessBackend\":\"native-cpp\"},\"budgetExhausted\":false}}}"
+       ],
+       "logger": "console"
+      },
+      "event_id": null
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:29:12.792000Z",
+      "level": "info",
+      "message": "chainring_abstain",
+      "category": "sentry.event",
+      "data": null,
+      "event_id": "e44b3041b0a845e0833dac49461de603"
+     },
+     {
+      "type": "default",
+      "timestamp": "2026-08-26T12:29:12.799000Z",
+      "level": "info",
+      "message": "chainring_abstain",
+      "category": "sentry.event",
+      "data": null,
+      "event_id": "a80d4c3ab739410c92e4e119bb3170ff"
+     }
+    ]
+   },
+   "type": "breadcrumbs"
+  }
+ ],
+ "dist": "142",
+ "message": "debug_report",
+ "title": "anonymous",
+ "location": "app:///index.android.bundle",
+ "user": {
+  "id": "b0fd948acd754ef6830617682e6a46e4",
+  "email": null,
+  "username": null,
+  "ip_address": null,
+  "name": null,
+  "geo": {
+   "country_code": "DE",
+   "city": "Hamburg",
+   "region": "Germany"
+  },
+  "data": null
+ },
+ "contexts": {
+  "app": {
+   "app_start_time": "2026-08-26T12:27:41.185Z",
+   "app_identifier": "com.gearcounter.app",
+   "app_name": "GearCounter",
+   "app_version": "1.0.0",
+   "app_build": "1",
+   "in_foreground": true,
+   "view_names": [
+    "com.gearcounter.app.MainActivity"
+   ],
+   "is_split_apks": false,
+   "permissions": {
+    "ACCESS_NETWORK_STATE": "granted",
+    "ACTIVITY_RECOGNITION": "not_granted",
+    "CAMERA": "granted",
+    "DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "granted",
+    "INTERNET": "granted",
+    "READ_EXTERNAL_STORAGE": "not_granted",
+    "REQUEST_INSTALL_PACKAGES": "not_granted",
+    "SYSTEM_ALERT_WINDOW": "not_granted",
+    "VIBRATE": "granted",
+    "WRITE_EXTERNAL_STORAGE": "not_granted"
+   },
+   "type": "app"
+  },
+  "camera": {
+   "cameraErrors": [],
+   "cameraEvents": [
+    {
+     "deviceId": "0",
+     "hasFlash": true,
+     "hasTorch": true,
+     "mainHasTorch": true,
+     "physicalDevices": [
+      "wide-angle-camera"
+     ],
+     "position": "back",
+     "selectedWideAngle": true,
+     "torchProp": "off",
+     "ts": "2026-08-26T12:28:30.871Z",
+     "type": "torchState",
+     "wideAngleFailed": false,
+     "wideAngleHasTorch": true
+    },
+    {
+     "alreadyReady": false,
+     "deviceId": "0",
+     "hasFlash": true,
+     "hasTorch": true,
+     "mainHasTorch": true,
+     "retryKey": 0,
+     "selectedWideAngle": true,
+     "ts": "2026-08-26T12:28:31.003Z",
+     "type": "initialized",
+     "wideAngleHasTorch": true
+    },
+    {
+     "deviceId": "0",
+     "hasTorch": true,
+     "ts": "2026-08-26T12:28:31.079Z",
+     "type": "torchCycleApplied"
+    },
+    {
+     "deviceId": "0",
+     "hasFlash": true,
+     "hasTorch": true,
+     "mainHasTorch": true,
+     "physicalDevices": [
+      "wide-angle-camera"
+     ],
+     "position": "back",
+     "selectedWideAngle": true,
+     "torchProp": "on",
+     "ts": "2026-08-26T12:28:31.101Z",
+     "type": "torchState",
+     "wideAngleFailed": false,
+     "wideAngleHasTorch": true
+    },
+    {
+     "deviceId": "0",
+     "flash": "on",
+     "hasFlash": true,
+     "hasTorch": true,
+     "torchProp": "off",
+     "ts": "2026-08-26T12:28:38.286Z",
+     "type": "capture"
+    }
+   ],
+   "type": "default"
+  },
+  "device": {
+   "family": "FP5",
+   "model": "FP5",
+   "model_id": "AQ3A.240912.001",
+   "battery_level": 32.0,
+   "orientation": "portrait",
+   "manufacturer": "Fairphone",
+   "brand": "Fairphone",
+   "screen_width_pixels": 1224,
+   "screen_height_pixels": 2700,
+   "screen_density": 3.0,
+   "screen_dpi": 480,
+   "online": true,
+   "charging": false,
+   "low_memory": false,
+   "simulator": false,
+   "memory_size": 7651213312,
+   "free_memory": 2675744768,
+   "storage_size": 229781221376,
+   "free_storage": 171853123584,
+   "boot_time": "2026-08-24T06:23:01.501Z",
+   "timezone": "Europe/Berlin",
+   "locale": "de_DE",
+   "processor_count": 8,
+   "processor_frequency": 2707,
+   "archs": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "armeabi"
+   ],
+   "battery_temperature": 32,
+   "chipset": "QTI SM7325",
+   "connection_type": "cellular",
+   "id": "b0fd948acd754ef6830617682e6a46e4",
+   "type": "device"
+  },
+  "expo_constants": {
+   "execution_environment": "bare",
+   "session_id": "e871b13e-37e3-4325-93ca-1035ce4aff60",
+   "status_bar_height": 48,
+   "type": "default"
+  },
+  "gear": {
+   "actualTeethCount": 32,
+   "aimCrop": {
+    "aimCircleFrac": 1,
+    "fullH": 4096,
+    "fullW": 3072,
+    "measured": true,
+    "originX": 655,
+    "originY": 712,
+    "screenCenterX": "204.1666717529297",
+    "screenCenterY": "350.16664123535156",
+    "side": 1764
+   },
+   "algoDiag": {
+    "aimR": 450,
+    "budgetExhausted": false,
+    "chainringRegime": true,
+    "methodUsed": "bc-fft",
+    "peakR": 387,
+    "rOuter": 405,
+    "radialRelDisagree": "0.044444444444444446",
+    "stageMs": {
+     "detect": 27612,
+     "load": 3827,
+     "methods": 35,
+     "preprocess": 304,
+     "preprocessBackend": "native-cpp",
+     "px": 810000,
+     "total": 31778
+    }
+   },
+   "algorithmRuntimeMs": 31778,
+   "confidence": 0.7174,
+   "gearContour": {
+    "centerX": 0.4977734375,
+    "centerY": 0.406865234375,
+    "radius": 0.2469140625
+   },
+   "innerContourSuspected": false,
+   "toothCount": 10,
+   "type": "default"
+  },
+  "os": {
+   "os": "Android 15",
+   "name": "Android",
+   "version": "15",
+   "build": "FP5.VT2X.C.107.20260609",
+   "kernel_version": "5.4.274-qgki-gd51836b0c13b",
+   "rooted": false,
+   "type": "os"
+  },
+  "ota_updates": {
+   "is_enabled": false,
+   "type": "default"
+  },
+  "react_native_context": {
+   "expo": true,
+   "fabric": true,
+   "hermes_debug_info": false,
+   "hermes_version": "for RN 0.81.5",
+   "js_engine": "hermes",
+   "react_native_version": "0.81.5",
+   "turbo_module": true,
+   "type": "default"
+  },
+  "trace": {
+   "trace_id": "2c01724b3b1b4104a313c9819de6710f",
+   "span_id": "ad889647904cac75",
+   "status": "unknown",
+   "type": "trace"
+  }
+ },
+ "sdk": {
+  "name": "sentry.javascript.react-native",
+  "version": "8.11.1"
+ },
+ "context": {},
+ "packages": {},
+ "type": "error",
+ "metadata": {
+  "filename": "app:///index.android.bundle",
+  "function": "anonymous",
+  "in_app_frame_mix": "mixed",
+  "value": "debug_report"
+ },
+ "tags": [
+  {
+   "key": "actualTeethCount",
+   "value": "32"
+  },
+  {
+   "key": "buildLabel",
+   "value": "v1.0.0 (142) \u00b7 2026-08-23 17:35"
+  },
+  {
+   "key": "device",
+   "value": "FP5"
+  },
+  {
+   "key": "device.class",
+   "value": "high"
+  },
+  {
+   "key": "device.family",
+   "value": "FP5"
+  },
+  {
+   "key": "dist",
+   "value": "142"
+  },
+  {
+   "key": "environment",
+   "value": "production"
+  },
+  {
+   "key": "event.environment",
+   "value": "javascript"
+  },
+  {
+   "key": "event.origin",
+   "value": "javascript"
+  },
+  {
+   "key": "fft_backend",
+   "value": "native-cv-dft"
+  },
+  {
+   "key": "handled",
+   "value": "yes"
+  },
+  {
+   "key": "hermes",
+   "value": "True"
+  },
+  {
+   "key": "interface_type",
+   "value": "exception"
+  },
+  {
+   "key": "kind",
+   "value": "debug_report"
+  },
+  {
+   "key": "level",
+   "value": "info"
+  },
+  {
+   "key": "mechanism",
+   "value": "generic"
+  },
+  {
+   "key": "os",
+   "value": "Android 15"
+  },
+  {
+   "key": "os.build",
+   "value": "FP5.VT2X.C.107.20260609"
+  },
+  {
+   "key": "os.name",
+   "value": "Android"
+  },
+  {
+   "key": "os.rooted",
+   "value": "no"
+  },
+  {
+   "key": "preprocess_backend",
+   "value": "native-cpp"
+  },
+  {
+   "key": "release",
+   "value": "v1.0.0 (142) \u00b7 2026-08-23 17:35"
+  },
+  {
+   "key": "toothCount",
+   "value": "10"
+  },
+  {
+   "key": "user",
+   "value": "id:b0fd948acd754ef6830617682e6a46e4",
+   "query": "user.id:\"b0fd948acd754ef6830617682e6a46e4\""
+  }
+ ],
+ "platform": "javascript",
+ "dateReceived": "2026-08-26T12:29:34.620699Z",
+ "errors": [
+  {
+   "type": "js_no_source",
+   "message": "Source code was not found",
+   "data": {
+    "symbolicator_type": "missing_source",
+    "url": "app:///index.android.bundle"
+   }
+  }
+ ],
+ "occurrence": null,
+ "_meta": {
+  "entries": {},
+  "message": null,
+  "user": null,
+  "contexts": null,
+  "sdk": null,
+  "context": null,
+  "packages": null,
+  "tags": {}
+ },
+ "crashFile": null,
+ "culprit": "",
+ "dateCreated": "2026-08-26T12:29:31.950000Z",
+ "fingerprints": [
+  "7f7a3add6c17c52233b164fbce7d84ef",
+  "a35f5a02e5b45b6efe1ffbfe314ff1f5"
+ ],
+ "groupingConfig": {
+  "enhancements": "KLUv_SAd6QAAkwORuGFsbC1wbGF0Zm9ybXM6MjAyNi0wMS0yMJA#KLUv_SAd6QAAkwORuGFsbC1wbGF0Zm9ybXM6MjAyNi0wMS0yMJA#KLUv_SAd6QAAkwORuGFsbC1wbGF0Zm9ybXM6MjAyNi0wMS0yMJA",
+  "id": "newstyle:2026-01-20"
+ },
+ "release": {
+  "id": 123584080,
+  "version": "v1.0.0 (142) \u00b7 2026-08-23 17:35",
+  "status": "open",
+  "shortVersion": "v1.0.0 (142) \u00b7 2026-08-23 17:35",
+  "versionInfo": {
+   "package": null,
+   "version": {
+    "raw": "v1.0.0 (142) \u00b7 2026-08-23 17:35"
+   },
+   "description": "v1.0.0 (142) \u00b7 2026-08-23 17:35",
+   "buildHash": null
+  },
+  "ref": null,
+  "url": null,
+  "dateReleased": null,
+  "dateCreated": "2026-08-25T16:10:23.369000Z",
+  "data": {},
+  "newGroups": 0,
+  "owner": null,
+  "commitCount": 0,
+  "lastCommit": null,
+  "deployCount": 0,
+  "lastDeploy": null,
+  "authors": [],
+  "projects": [
+   {
+    "id": 4511400627142736,
+    "slug": "gear-camera-app",
+    "name": "react-native",
+    "newGroups": 0,
+    "platform": "react-native",
+    "platforms": [],
+    "hasHealthData": false
+   }
+  ],
+  "firstEvent": "2026-08-25T16:10:23Z",
+  "lastEvent": "2026-08-26T12:30:40Z",
+  "currentProjectMeta": {},
+  "userAgent": null
+ },
+ "userReport": null,
+ "sdkUpdates": [
+  {
+   "type": "updateSdk",
+   "sdkName": "sentry.javascript.react-native",
+   "newSdkVersion": "8.23.0",
+   "sdkUrl": "https://docs.sentry.io/platforms/react-native",
+   "enables": []
+  }
+ ],
+ "resolvedWith": [],
+ "nextEventID": "aa25c7876e064fc588c90c1f802165b3",
+ "previousEventID": "48c31ebb00044b5e830f081c69d05905"
+}

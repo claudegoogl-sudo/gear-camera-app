@@ -1,0 +1,20 @@
+[pap1731.probe] corpus=362 done=0 this-chunk=362
+  [25/362] 23s
+  [50/362] 43s
+  [75/362] 67s
+  [100/362] 88s
+  [125/362] 109s
+  [150/362] 129s
+  [175/362] 150s
+  [200/362] 168s
+  [225/362] 188s
+  [250/362] 210s
+  [275/362] 233s
+  [300/362] 258s
+  [325/362] 283s
+  [350/362] 306s
+[pap1731.probe] done in 320s; remaining=0
+(node:2118420) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
