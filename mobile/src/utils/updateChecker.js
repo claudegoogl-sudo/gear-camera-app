@@ -35,15 +35,17 @@ function parseBuildNumber(tag) {
 
 /**
  * Find the APK download URL in a release's assets.
- * Accepts both naming patterns:
- *   gear-camera-debug-bN.apk
- *   gear-camera-debug-YYYY-MM-DD*-bN.apk
+ * Accepts both build variants (PAP-1665: the debug-only pattern made the
+ * in-app updater report "No APK available" for release builds, whose
+ * assets are named gear-camera-release-*.apk):
+ *   gear-camera-debug-bN.apk   / gear-camera-debug-YYYY-MM-DD*-bN.apk
+ *   gear-camera-release-bN.apk / gear-camera-release-YYYY-MM-DD*-bN.apk
  *
  * @param {Array} assets
  * @returns {string}
  */
-function findApkUrl(assets) {
-  const asset = (assets ?? []).find((a) => /gear-camera-debug.*\.apk$/.test(a.name));
+export function findApkUrl(assets) {
+  const asset = (assets ?? []).find((a) => /gear-camera-(debug|release).*\.apk$/.test(a.name));
   return asset?.browser_download_url ?? '';
 }
 
