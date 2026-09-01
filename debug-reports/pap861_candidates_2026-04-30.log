@@ -1,0 +1,85 @@
+
+=== PAP-861 candidate predicate sweep ===
+
+[Training] 317 photos (9-60T)
+  [50/317] 960s
+  [100/317] 2000s
+  [150/317] 3124s
+  [200/317] 4175s
+  [250/317] 5240s
+  [300/317] 6346s
+  done in 6731s
+
+[XL device] 10 targets
+  build=b111 report_2026-04-29_05-29-04-170Z cls=XL actual=42 tc=41 conf=0.48 peak=43 fft90=41 op=42 bc=10(pk=12) rel=0.1111 method=fft90-fallback
+  build=b111 report_2026-04-29_05-31-25-376Z cls=XL actual=42 tc=41 conf=0.82 peak=41 fft90=41 op=13 bc=12(pk=4) rel=0.0415 method=peak
+  build=b111 report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) rel=0.1451 method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) rel=0.2028 method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-37-38-177Z cls=XL actual=52 tc=50 conf=0.61 peak=12 fft90=12 op=18 bc=53(pk=50) rel=0.1032 method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-39-22-521Z cls=XL actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) rel=0.6889 method=bc-consensus+peak
+  build=b112 report_2026-04-30_05-32-51-092Z cls=XL actual=42 tc=42 conf=0.67 peak=43 fft90=42 op=42 bc=42(pk=36) rel=0.0955 method=bc-fft
+  build=b112 report_2026-04-30_05-34-20-458Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=43 op=14 bc=12(pk=4) rel=0.0113 method=bc-fft+pap632-fft-floor-abstain
+  build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+  build=b112 report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus
+
+--- Candidate evaluation: TRAINING corpus ---
+  cand                       fires  wins  losses  neutral
+  rel-threshold-0.16            23     0       0       23
+  rel-threshold-0.14            24     0       1       23
+  rel-threshold-0.13            24     0       1       23
+  bc-isolated-d8                 2     0       0        2
+  bc-isolated-d10                2     0       0        2
+  bc-isolated-d12                2     0       0        2
+  bc-d10 OR rel-0.14            24     0       1       23
+
+  LOSS rows under "rel-threshold-0.14":
+    2026-04-28_06-58-55-390Z cls=XL actual=52 tc=53 conf=0.64 peak=53 fft90=12 op=26 bc=12(pk=18) rel=0.1579 method=fft90-fallback+xl-peak-override
+
+  LOSS rows under "rel-threshold-0.13":
+    2026-04-28_06-58-55-390Z cls=XL actual=52 tc=53 conf=0.64 peak=53 fft90=12 op=26 bc=12(pk=18) rel=0.1579 method=fft90-fallback+xl-peak-override
+
+  LOSS rows under "bc-d10 OR rel-0.14":
+    2026-04-28_06-58-55-390Z cls=XL actual=52 tc=53 conf=0.64 peak=53 fft90=12 op=26 bc=12(pk=18) rel=0.1579 method=fft90-fallback+xl-peak-override
+
+  Wins under each candidate:
+
+--- Candidate evaluation: XL device targets (b111+b112) ---
+  cand                       fires  wins  losses
+  rel-threshold-0.16             2     0       0
+  rel-threshold-0.14             4     1       1
+  rel-threshold-0.13             4     1       1
+  bc-isolated-d8                 1     1       0
+  bc-isolated-d10                1     1       0
+  bc-isolated-d12                1     1       0
+  bc-d10 OR rel-0.14             4     1       1
+
+  XL fires under "rel-threshold-0.16":
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+
+  XL fires under "rel-threshold-0.14":
+    [LOSS] report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) rel=0.1451 method=retry-bc-peaks
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+    [WIN] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus
+
+  XL fires under "rel-threshold-0.13":
+    [LOSS] report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) rel=0.1451 method=retry-bc-peaks
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+    [WIN] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-isolated-d8":
+    [WIN] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-isolated-d10":
+    [WIN] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-isolated-d12":
+    [WIN] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-d10 OR rel-0.14":
+    [LOSS] report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) rel=0.1451 method=retry-bc-peaks
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+    [WIN] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.27 peak=11 fft90=20 op=26 bc=39(pk=41) rel=0.1449 method=bc-consensus

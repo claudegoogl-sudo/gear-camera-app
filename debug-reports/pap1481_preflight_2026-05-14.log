@@ -1,0 +1,46 @@
+
+=== PAP-1481 B' (abstain-only) ===
+Phase: preflight | τ grid: 0.2,0.25,0.3,0.35,0.4
+
+Step 1: HEAD baseline — 0/145 cached, computing 145
+  baseline [10/145] 198s (saved)
+  baseline [20/145] 397s (saved)
+  baseline [30/145] 600s (saved)
+  baseline [40/145] 798s (saved)
+  baseline [50/145] 1034s (saved)
+  baseline [60/145] 1273s (saved)
+  baseline [70/145] 1606s (saved)
+  baseline [80/145] 1968s (saved)
+  baseline [90/145] 2314s (saved)
+  baseline [100/145] 2593s (saved)
+  baseline [110/145] 2874s (saved)
+  baseline [120/145] 3137s (saved)
+  baseline [130/145] 3396s (saved)
+  baseline [140/145] 3616s (saved)
+  baseline saved → ../.cache/pap1481-baseline-d321c3d62aa3.json (3714s)
+  PAP-1060 11T cluster: 25 (target ≥15)
+  XL 42T+ CW cluster:   20 (target ≥15)
+  Mid control:           20 (target ≥15)
+  Small control:         20 (target ≥15)
+
+=== Step 2: PRE-FLIGHT — AC2 LOSS candidates per τ ===
+(rows where HEAD is correct AND |peakR/aimR-1|>τ → become abstain under B')
+τ      Small_LOSS  Mid_LOSS  Large_LOSS  TOTAL  11T_NEW_ABSTAIN  XL_NEW_ABSTAIN
+0.20           0        0          0      0                0               0
+0.25           0        0          0      0                0               0
+0.30           0        0          0      0                0               0
+0.35           0        0          0      0                0               0
+0.40           0        0          0      0                0               0
+
+[HEADROOM CLEAN] zero AC2 LOSS candidates at any τ — proceed to τ sweep with confidence.
+
+[phase=preflight] stopping. Re-run with PAP1481_PHASE=sweep to evaluate AC1 headroom.
+PASS __tests__/pap1481.tau-sweep.js (3714.209 s)
+  PAP-1481 (τ) sweep (B' abstain-only)
+    ✓ preflight + (gated) τ sweep (3713981 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        3714.284 s
+Ran all test suites.

@@ -1,0 +1,89 @@
+
+=== PAP-833 5-way 20-25 agreement sweep ===
+
+[Part 1] Training corpus: 305 photos
+  [25/305] elapsed 505s
+  [50/305] elapsed 967s
+  [75/305] elapsed 1465s
+  [100/305] elapsed 1972s
+  [125/305] elapsed 2482s
+  [150/305] elapsed 3003s
+  [175/305] elapsed 3499s
+  [200/305] elapsed 4016s
+  [225/305] elapsed 4552s
+  [250/305] elapsed 5053s
+  [275/305] elapsed 5593s
+  [300/305] elapsed 6130s
+  done. wall=6244s
+
+-- 5-way [20-25] agreement rows (strict AC2 pattern) --
+  total=7
+  2026-04-08_18-30-50-993Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=151 rOuter=160 rel=0.0563 innerSus=false method=bc-consensus+peak
+  2026-04-08_19-51-45-965Z cls=Large actual=21 tc=21 conf=0.90 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=215 rOuter=127 rel=0.6929 innerSus=false method=bc-consensus+peak
+  2026-04-20_16-03-44-377Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=179 rOuter=137 rel=0.3066 innerSus=false method=bc-consensus+peak
+  2026-04-20_16-07-50-291Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=140 rOuter=155 rel=0.0968 innerSus=false method=retry-bc-consensus+peak
+  2026-04-23_07-13-06-829Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=24 bc=24(pk=24) mode=24×5 peakR=178 rOuter=180 rel=0.0111 innerSus=false method=bc-consensus+peak
+  2026-04-29_05-22-34-904Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=174 rOuter=135 rel=0.2889 innerSus=false method=bc-consensus+peak
+  2026-04-29_05-39-28-385Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=172 rOuter=99 rel=0.7374 innerSus=false method=bc-consensus+peak
+
+-- Strict pattern outcome under hypothetical override --
+  [TRUE-RANGE-LOSS] 2026-04-08_18-30-50-993Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=151 rOuter=160 rel=0.0563 innerSus=false method=bc-consensus+peak
+  [TRUE-RANGE-LOSS] 2026-04-08_19-51-45-965Z cls=Large actual=21 tc=21 conf=0.90 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=215 rOuter=127 rel=0.6929 innerSus=false method=bc-consensus+peak
+  [TRUE-RANGE-LOSS] 2026-04-20_16-03-44-377Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=179 rOuter=137 rel=0.3066 innerSus=false method=bc-consensus+peak
+  [TRUE-RANGE-LOSS] 2026-04-20_16-07-50-291Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=140 rOuter=155 rel=0.0968 innerSus=false method=retry-bc-consensus+peak
+  [TRUE-RANGE-LOSS] 2026-04-23_07-13-06-829Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=24 bc=24(pk=24) mode=24×5 peakR=178 rOuter=180 rel=0.0111 innerSus=false method=bc-consensus+peak
+  [TRUE-RANGE-LOSS] 2026-04-29_05-22-34-904Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=174 rOuter=135 rel=0.2889 innerSus=false method=bc-consensus+peak
+  [TRUE-RANGE-LOSS] 2026-04-29_05-39-28-385Z cls=Large actual=21 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=172 rOuter=99 rel=0.7374 innerSus=false method=bc-consensus+peak
+  tally: {"CHAINRING-WIN":0,"TRUE-RANGE-LOSS":7,"AMBIGUOUS":0}
+
+-- 4-of-5 [20-25] agreement rows --
+  total=6
+  2026-04-08_18-34-56-184Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=12 bc=24(pk=24) mode=24×4 peakR=212 rOuter=204 rel=0.0392 innerSus=false method=bc-consensus+peak
+  2026-04-17_10-57-40-821Z cls=Large actual=21 tc=21 conf=0.58 peak=21 fft90=21 op=21 bc=21(pk=20) mode=21×4 peakR=179 rOuter=176 rel=0.0170 innerSus=false method=retry-bc-consensus+fft-agree
+  2026-04-19_15-00-49-192Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=24 bc=24(pk=23) mode=24×4 peakR=132 rOuter=142 rel=0.0704 innerSus=false method=bc-consensus+peak
+  2026-04-19_15-34-25-108Z cls=Large actual=21 tc=21 conf=0.70 peak=21 fft90=21 op=21 bc=21(pk=14) mode=21×4 peakR=140 rOuter=116 rel=0.2069 innerSus=false method=fft-agreement
+  2026-04-20_16-22-09-223Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=24 bc=24(pk=16) mode=24×4 peakR=157 rOuter=117 rel=0.3419 innerSus=false method=peak
+  2026-04-23_07-16-38-914Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=24 bc=24(pk=23) mode=24×4 peakR=184 rOuter=95 rel=0.9368 innerSus=false method=bc-consensus+peak
+
+-- 3-of-5 [20-25] agreement rows --
+  total=10
+  2026-04-13_09-30-06-934Z cls=Large actual=24 tc=24 conf=0.55 peak=24 fft90=24 op=24 bc=18(pk=10) mode=24×3 peakR=141 rOuter=113 rel=0.2478 innerSus=false method=fft-agreement
+  2026-04-19_14-59-13-044Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=12 bc=24(pk=21) mode=24×3 peakR=192 rOuter=146 rel=0.3151 innerSus=false method=fft-agreement
+  2026-04-19_19-09-53-902Z cls=Large actual=24 tc=24 conf=1.00 peak=24 fft90=24 op=24 bc=10(pk=4) mode=24×3 peakR=139 rOuter=138 rel=0.0072 innerSus=false method=peak
+  2026-04-19_19-16-13-389Z cls=Large actual=21 tc=21 conf=0.77 peak=21 fft90=21 op=21 bc=10(pk=4) mode=21×3 peakR=127 rOuter=98 rel=0.2959 innerSus=false method=retry-peak
+  2026-04-20_16-18-45-790Z cls=Large actual=24 tc=24 conf=0.92 peak=24 fft90=24 op=24 bc=11(pk=5) mode=24×3 peakR=151 rOuter=56 rel=1.6964 innerSus=false method=fft-agreement
+  2026-04-21_19-28-49-137Z cls=Large actual=21 tc=21 conf=0.88 peak=21 fft90=21 op=21 bc=10(pk=4) mode=21×3 peakR=119 rOuter=92 rel=0.2935 innerSus=false method=retry-peak
+  2026-04-22_07-08-17-422Z cls=Large actual=21 tc=21 conf=0.00 peak=21 fft90=10 op=21 bc=21(pk=16) mode=21×3 peakR=85 rOuter=81 rel=0.0494 innerSus=true method=bc-peaks
+  2026-04-24_07-00-14-707Z cls=Large actual=24 tc=24 conf=0.89 peak=24 fft90=24 op=24 bc=11(pk=4) mode=24×3 peakR=173 rOuter=160 rel=0.0813 innerSus=false method=peak
+  2026-04-24_07-02-48-626Z cls=Large actual=21 tc=16 conf=0.62 peak=21 fft90=21 op=21 bc=10(pk=16) mode=21×3 peakR=176 rOuter=134 rel=0.3134 innerSus=false method=retry-bc-peaks
+  2026-04-24_07-05-25-396Z cls=Large actual=21 tc=21 conf=0.76 peak=21 fft90=21 op=21 bc=10(pk=4) mode=21×3 peakR=180 rOuter=136 rel=0.3235 innerSus=false method=retry-peak
+
+-- Actual-label histogram for rows with mode ∈ [20,25] (any agreement count) --
+  actual=21: 17 rows
+  actual=24: 14 rows
+
+-- modeVal histogram across full corpus (modeN ≥ 3) --
+  mode=10: 24 rows
+  mode=11: 33 rows
+  mode=12: 3 rows
+  mode=13: 5 rows
+  mode=14: 42 rows
+  mode=15: 24 rows
+  mode=17: 1 rows
+  mode=18: 26 rows
+  mode=21: 13 rows
+  mode=24: 10 rows
+  mode=28: 14 rows
+
+[Part 2] XL device targets (cropped.jpg)
+  report_2026-04-29_05-29-04-170Z cls=XL actual=42 tc=42 conf=0.53 peak=41 fft90=41 op=42 bc=10(pk=12) mode=41×2 peakR=379 rOuter=359 rel=0.0557 innerSus=false method=fft-agreement+xl-op-vote-boost
+  report_2026-04-29_05-31-25-376Z cls=XL actual=42 tc=41 conf=0.84 peak=41 fft90=41 op=13 bc=10(pk=1) mode=41×2 peakR=393 rOuter=383 rel=0.0261 innerSus=false method=fft-agreement
+  report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.48 peak=13 fft90=13 op=17 bc=55(pk=52) mode=13×2 peakR=330 rOuter=353 rel=0.0652 innerSus=false method=retry-bc-peaks
+  report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) mode=12×3 peakR=283 rOuter=355 rel=0.2028 innerSus=true method=retry-bc-peaks
+  report_2026-04-29_05-37-38-177Z cls=XL actual=52 tc=52 conf=0.61 peak=12 fft90=12 op=14 bc=53(pk=52) mode=12×2 peakR=304 rOuter=339 rel=0.1032 innerSus=false method=retry-bc-consensus+chainring-pk
+  report_2026-04-29_05-39-22-521Z cls=XL actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) mode=21×5 peakR=380 rOuter=308 rel=0.2338 innerSus=false method=bc-consensus+peak
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        6425.235 s
+Ran all test suites.

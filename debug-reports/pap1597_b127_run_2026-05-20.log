@@ -1,0 +1,41 @@
+  32T 0959928d: b127→32 (conf=0.8079, bc-consensus+fft-agree)  HEAD→32 (conf=1.0000, bc-consensus+pap1059-chainring-tc-confirmed) CORRECT 17892ms
+  36T 3219e927: b127→16 (conf=0.1750, fft90-fallback)  HEAD→11 (conf=0.0000, fft-agreement) ABSTAIN 23507ms
+  36T d6b831de: b127→36 (conf=1.0000, bc-consensus+peak)  HEAD→36 (conf=0.7680, bc-consensus+pap1059-chainring-tc-confirmed) CORRECT 17557ms
+  36T dd25a498: b127→28 (conf=0.0000, fft90-fallback)  HEAD→12 (conf=0.0000, bc-consensus+pap961-aim-circle-prior-abstain) ABSTAIN 17939ms
+  48T 5b3a13d8: b127→48 (conf=0.8819, bc-consensus+peak)  HEAD→48 (conf=0.7605, bc-consensus+peak+pap1059-chainring-tc-confirmed) CORRECT 17336ms
+  50T 01fdccfd: b127→50 (conf=1.0000, bc-consensus)  HEAD→12 (conf=0.0000, fft90-fallback) ABSTAIN 24736ms
+  console.log
+    [xl-peak-override] fft90-fallback=>52 peak=52(rel=0.139) fft90=10 bc=14(peaks=6) op=15(rel=0.060)
+
+      at log (src/algorithm/gearCounter.js:2280:15)
+
+  52T 625fd85d: b127→51 (conf=0.9673, retry-bc-consensus+chainring-pk)  HEAD→52 (conf=0.0000, fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain) ABSTAIN 27051ms
+  console.log
+    [pap474-abstain] peak=10 fft90=10 bc=53(peaks=18) op=14(rel=0.078) gearR=289 contourR=136 minDim=675
+
+      at log (src/algorithm/gearCounter.js:2400:13)
+
+  52T 93bab076: b127→12 (conf=0.0000, peak)  HEAD→0 (conf=0.0000, fft90-fallback+pap474-abstain) ABSTAIN 25603ms
+  console.log
+    [low-conf-consensus] final=11 fftConf=0.296 bcPeaks=4 fft90=11 peak=10 op=11 agree=3/4 contourR=150
+
+      at log (src/algorithm/gearCounter.js:2173:13)
+
+  console.log
+    [pap632-fft-floor-abstain] peak=10 fft90=11 final=11 bc=13(peaks=4) op=11(rel=0.057) gearR=278 contourR=150 minDim=675
+
+      at log (src/algorithm/gearCounter.js:2441:15)
+
+  52T b17133f8: b127→30 (conf=0.4692, retry-bc-peaks)  HEAD→0 (conf=0.0000, low-conf-consensus+pap632-fft-floor-abstain) ABSTAIN 18307ms
+
+PAP-1597 HEAD summary: correct=3 abstain=6 confidentWrong=0
+CSV: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1597_b127_baseline_2026-05-20.csv
+PASS mobile/__tests__/pap1597.b127.harness.js (208.052 s)
+  PAP-1597 b127 Sentry corpus
+    ✓ rerun + CSV write (206858 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        208.102 s
+Ran all test suites.

@@ -1,0 +1,34 @@
+{
+  "event_id": "c325dbba2f874926b7ae36215dd932d9",
+  "timestamp": "2026-08-07T12:58:57.007000Z",
+  "build": "b132",
+  "device": "FP5",
+  "actual_teeth": 36,
+  "predicted_teeth": 11,
+  "confidence": 0,
+  "camera_error": "policyRestricted",
+  "detected_center": {
+    "x": 0.479,
+    "y": 0.401
+  },
+  "true_center": {
+    "x": 0.479,
+    "y": 0.401
+  },
+  "detected_radius_px": 370,
+  "true_radius_px": 794,
+  "crop_dimensions": {
+    "width": 1764,
+    "height": 1764
+  },
+  "overfill_factor": 1.76,
+  "signature": "chainring_overfill_inner_latch",
+  "inner_contour_suspected": true,
+  "algo_diag": {
+    "aimR": 450,
+    "chainringRegime": true,
+    "methodUsed": "fft90-fallback+pap963-campa-bolt-abstain",
+    "peakR": 360,
+    "rOuter": 336
+  }
+}

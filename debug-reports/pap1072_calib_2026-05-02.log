@@ -1,0 +1,98 @@
+
+[pap1072.calib] SCOPE=full running 356/356 labeled photos
+  [25/356] 660s
+[pap1072.calib] sample=62 (target 4/actual)
+[pap1072.calib] actuals: 11T(4) 12T(2) 13T(4) 14T(4) 15T(4) 17T(1) 18T(4) 21T(4) 24T(4) 28T(4) 32T(2) 34T(4) 36T(4) 42T(4) 48T(4) 50T(4) 51T(1) 52T(4)
+  [10/62] 185s
+  [20/62] 370s
+  [30/62] 577s
+  [40/62] 794s
+  [50/62] 991s
+  [60/62] 1215s
+
+=== PAP-1072 candidate-signal quantiles (stratified sample) ===
+class    N    signal             p05    p10    p25    p50    p75    p90    p95
+-- Small (n=10) --
+Small   10  peakR_aim          0.308  0.382  0.477  0.501  0.551  0.809  0.809
+Small   10  gearR              0.143  0.154  0.207  0.246  0.271  0.323  0.323
+Small   10  contourR_aim       0.000  0.000  0.000  0.000  0.000  0.000  0.000
+Small   10  rOuter_aim         0.249  0.249  0.270  0.296  0.459  0.895  0.895
+Small   10  bcDist_aim         0.000  0.000  0.000  0.000  0.000  0.000  0.000
+Small   10  peakR_rOuter       0.904  1.019  1.200  1.290  2.011  2.202  2.202
+Small   10  peakR_px          104.000 129.000 161.000 169.000 186.000 273.000 273.000
+Small   10  minDim            675.000 675.000 675.000 675.000 675.000 675.000 675.000
+Small   10  aimR              337.500 337.500 337.500 337.500 337.500 337.500 337.500
+-- Mid (n=13) --
+Mid     13  peakR_aim          0.299  0.329  0.341  0.436  0.486  0.521  0.569
+Mid     13  gearR              0.123  0.128  0.157  0.181  0.243  0.261  0.284
+Mid     13  contourR_aim       0.000  0.000  0.000  0.000  0.000  0.000  0.000
+Mid     13  rOuter_aim         0.249  0.258  0.273  0.364  0.412  0.444  0.450
+Mid     13  bcDist_aim         0.000  0.000  0.000  0.000  0.000  0.000  0.000
+Mid     13  peakR_rOuter       0.954  0.993  1.173  1.206  1.322  1.504  1.614
+Mid     13  peakR_px          101.000 111.000 115.000 147.000 164.000 176.000 192.000
+Mid     13  minDim            675.000 675.000 675.000 675.000 675.000 675.000 675.000
+Mid     13  aimR              337.500 337.500 337.500 337.500 337.500 337.500 337.500
+-- Large (n=12) --
+Large   12  peakR_aim          0.124  0.222  0.391  0.447  0.717  0.753  0.756
+Large   12  gearR              0.047  0.111  0.156  0.224  0.283  0.314  0.324
+Large   12  contourR_aim       0.000  0.000  0.000  0.000  0.000  0.000  0.000
+Large   12  rOuter_aim         0.136  0.193  0.341  0.421  0.593  0.604  0.676
+Large   12  bcDist_aim         0.000  0.000  0.000  0.000  0.000  0.000  0.000
+Large   12  peakR_rOuter       0.856  0.882  0.930  1.061  1.538  1.814  1.904
+Large   12  peakR_px          42.000 75.000 132.000 151.000 242.000 254.000 255.000
+Large   12  minDim            675.000 675.000 675.000 675.000 675.000 675.000 675.000
+Large   12  aimR              337.500 337.500 337.500 337.500 337.500 337.500 337.500
+-- XL (n=27) --
+XL      27  peakR_aim          0.267  0.370  0.447  0.539  0.732  0.844  0.847
+XL      27  gearR              0.133  0.185  0.206  0.268  0.366  0.422  0.424
+XL      27  contourR_aim       0.000  0.000  0.000  0.000  0.000  0.000  0.000
+XL      27  rOuter_aim         0.246  0.255  0.370  0.471  0.521  0.545  0.551
+XL      27  bcDist_aim         0.000  0.000  0.000  0.000  0.000  0.000  0.000
+XL      27  peakR_rOuter       0.698  0.737  1.043  1.358  1.692  1.815  2.240
+XL      27  peakR_px          90.000 125.000 151.000 182.000 247.000 285.000 286.000
+XL      27  minDim            675.000 675.000 675.000 675.000 675.000 675.000 675.000
+XL      27  aimR              337.500 337.500 337.500 337.500 337.500 337.500 337.500
+
+=== Cog (n=35) vs Chainring (n=27) ===
+signal             COG p10  p25  p50  p75  p90 | RING p10  p25  p50  p75  p90
+peakR_aim          0.299  0.382  0.480  0.551  0.717 |  0.370  0.447  0.539  0.732  0.844
+gearR              0.123  0.156  0.224  0.269  0.303 |  0.185  0.206  0.268  0.366  0.422
+contourR_aim       0.000  0.000  0.000  0.000  0.000 |  0.000  0.000  0.000  0.000  0.000
+rOuter_aim         0.249  0.270  0.364  0.450  0.593 |  0.255  0.370  0.471  0.521  0.545
+bcDist_aim         0.000  0.000  0.000  0.000  0.000 |  0.000  0.000  0.000  0.000  0.000
+peakR_rOuter       0.913  1.019  1.207  1.504  1.904 |  0.737  1.043  1.358  1.692  1.815
+peakR_px          101.000 129.000 162.000 186.000 242.000 | 125.000 151.000 182.000 247.000 285.000
+minDim            675.000 675.000 675.000 675.000 675.000 | 675.000 675.000 675.000 675.000 675.000
+aimR              337.500 337.500 337.500 337.500 337.500 | 337.500 337.500 337.500 337.500 337.500
+
+=== Threshold-sweep: signal >= T fires "chainring" ===
+direction  signal             T       cogCap  ring%   cog%   S%   M%   L%   XL%
+high     peakR_aim         T= 0.830 cog<=0.00  ring%= 14.8  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 15
+high     peakR_aim         T= 0.830 cog<=0.02  ring%= 14.8  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 15
+high     peakR_aim         T= 0.803 cog<=0.05  ring%= 18.5  cog%= 2.9  S%= 10 M%=  0 L%=  0 XL%= 19
+high     gearR             T= 0.348 cog<=0.00  ring%= 37.0  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 37
+high     gearR             T= 0.348 cog<=0.02  ring%= 37.0  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 37
+high     gearR             T= 0.348 cog<=0.05  ring%= 37.0  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 37
+high     peakR_rOuter      T= 2.240 cog<=0.00  ring%=  7.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%=  7
+high     peakR_rOuter      T= 2.240 cog<=0.02  ring%=  7.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%=  7
+high     peakR_rOuter      T= 2.240 cog<=0.05  ring%=  7.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%=  7
+high     peakR_px          T=280.000 cog<=0.00  ring%= 14.8  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 15
+high     peakR_px          T=280.000 cog<=0.02  ring%= 14.8  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 15
+high     peakR_px          T=271.000 cog<=0.05  ring%= 18.5  cog%= 2.9  S%= 10 M%=  0 L%=  0 XL%= 19
+low      peakR_aim         T= 0.216 cog<=0.05  ring%=  3.7  cog%= 2.9  S%=  0 M%=  0 L%=  8 XL%=  4
+low      gearR             T= 0.108 cog<=0.05  ring%=  3.7  cog%= 2.9  S%=  0 M%=  0 L%=  8 XL%=  4
+low      peakR_rOuter      T= 0.737 cog<=0.00  ring%= 11.1  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 11
+low      peakR_rOuter      T= 0.737 cog<=0.02  ring%= 11.1  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 11
+low      peakR_rOuter      T= 0.737 cog<=0.05  ring%= 11.1  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 11
+low      peakR_px          T=73.000 cog<=0.05  ring%=  3.7  cog%= 2.9  S%=  0 M%=  0 L%=  8 XL%=  4
+
+=== PAP-1060 11T conf=0 cluster signals (n=1/11) ===
+stamp                            peakR/aim  gearR  rOuter/aim  contourR/aim  peakR/rOuter
+2026-04-06_10-01-25-781Z   0.551     0.207   0.459       0.000         1.200
+
+row-level csv: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1072_calib_rows_2026-05-02.csv  (62 rows)
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        1256.014 s
+Ran all test suites.

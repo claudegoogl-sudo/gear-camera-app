@@ -1,0 +1,84 @@
+
+=== PAP-950 XL center-detection diagnostic ===
+Probing radialOuterPeak with bands:
+  current:  [0.30·peakR, 1.50·peakR]   (production)
+  wide:     [0.30·minDim, 0.95·minDim]  (proposed Option A)
+  midwide:  [0.30·peakR, 0.95·minDim]   (Option A-narrow)
+
+--- per-row signal table ---
+stamp                actual tc  conf  peakR rOprod rOcur rOmid rOwide  minDim   ratio_wide/peakR
+08-22-10-875Z           52  13 0.00   292    287   396   396    396     900  1.356  [MISS]
+08-24-01-784Z           52   0 0.00   249    254   319   319    411     900  1.651  [MISS]
+08-26-34-045Z           52  32 0.00   315    347   441   327    327     900  1.038  [MISS]
+09-09-19-262Z           36  10 0.00   299    232   441   358    358     900  1.197  [MISS]
+14-52-05-858Z           42  12 0.73   374    441   441   358    358     900  0.957  [MISS]
+15-12-27-152Z           52  36 0.00   294    206   344   344    344     900  1.170  [MISS]
+15-14-08-511Z           52  38 0.43   252    268   355   355    355     900  1.409  [MISS]
+15-28-06-337Z           36  30 0.14   245    276   346   346    346     900  1.412  [MISS]
+15-30-03-986Z           36  30 0.00   217    281   291   336    336     900  1.548  [MISS]
+08-28-32-755Z           50  50 0.00   396    222   441   178    344     900  0.869  [CTRL]
+08-30-59-457Z           50  50 0.00   305    369   441   302    335     900  1.098  [CTRL]
+09-03-58-615Z           48  48 1.00   401    400   441   367    416     900  1.037  [CTRL]
+09-07-06-225Z           42  42 0.49   401    387   441   397    397     900  0.990  [CTRL]
+
+--- wide-band top peaks per row ---
+08-22-10-875Z target=52 [MISS] : r=396 prom=3.65 | r=334 prom=3.19 | r=352 prom=2.83
+08-24-01-784Z target=52 [MISS] : r=319 prom=3.55 | r=411 prom=2.04 | r=358 prom=1.55
+08-26-34-045Z target=52 [MISS] : r=327 prom=13.15 | r=365 prom=3.88 | r=360 prom=2.70
+09-09-19-262Z target=36 [MISS] : r=331 prom=5.70 | r=358 prom=4.75 | r=317 prom=4.49
+14-52-05-858Z target=42 [MISS] : r=358 prom=10.38 | r=325 prom=5.09 | r=296 prom=4.15
+15-12-27-152Z target=52 [MISS] : r=344 prom=6.41 | r=309 prom=2.53 | r=359 prom=1.57
+15-14-08-511Z target=52 [MISS] : r=355 prom=6.70 | r=318 prom=4.02 | r=351 prom=3.78
+15-28-06-337Z target=36 [MISS] : r=346 prom=5.55 | r=302 prom=5.50 | r=323 prom=4.79
+15-30-03-986Z target=36 [MISS] : r=291 prom=13.86 | r=336 prom=13.77 | r=289 prom=9.72
+08-28-32-755Z target=50 [CTRL] : r=344 prom=2.98 | r=287 prom=1.92 | r=312 prom=1.83
+08-30-59-457Z target=50 [CTRL] : r=302 prom=4.58 | r=335 prom=2.86 | r=288 prom=2.78
+09-03-58-615Z target=48 [CTRL] : r=367 prom=2.76 | r=329 prom=1.79 | r=416 prom=1.46
+09-07-06-225Z target=42 [CTRL] : r=397 prom=3.85 | r=395 prom=3.09 | r=358 prom=2.58
+
+--- Option A simulation (broaden rOuter if chainringRegime ≥30) ---
+A1: abstain-only (replace existing radialChainringFires gate with widened rOuter)
+  08-22-10-875Z target=52 kind=MISS chReg=true wideRel=0.263 -> no-effect-already-abstain
+  08-24-01-784Z target=52 kind=MISS chReg=true wideRel=0.394 -> no-effect-already-abstain
+  08-26-34-045Z target=52 kind=MISS chReg=true wideRel=0.037 -> no-fire
+  09-09-19-262Z target=36 kind=MISS chReg=false wideRel=0.165 -> no-fire
+  14-52-05-858Z target=42 kind=MISS chReg=true wideRel=0.045 -> no-fire
+  15-12-27-152Z target=52 kind=MISS chReg=true wideRel=0.145 -> no-fire
+  15-14-08-511Z target=52 kind=MISS chReg=true wideRel=0.290 -> WIN-abstain
+  15-28-06-337Z target=36 kind=MISS chReg=true wideRel=0.292 -> no-effect-already-abstain
+  15-30-03-986Z target=36 kind=MISS chReg=true wideRel=0.354 -> no-effect-already-abstain
+  08-28-32-755Z target=50 kind=CTRL chReg=true wideRel=0.151 -> no-fire
+  08-30-59-457Z target=50 kind=CTRL chReg=true wideRel=0.090 -> no-fire
+  09-03-58-615Z target=48 kind=CTRL chReg=true wideRel=0.036 -> no-fire
+  09-07-06-225Z target=42 kind=CTRL chReg=true wideRel=0.010 -> no-fire
+Option A1 totals: WIN=1 LOSS=0 no-fire=8
+
+--- Option B simulation: re-anchor FFT at rOuterWide and report tc/rel ---
+Eligibility: chReg=true AND rOuterWide > peakR * 1.15
+  08-22-10-875Z target=52 [MISS] chReg=true rOuterWide=396 fftAt(396)={tc:51,rel:0.094} → weak-fft(rel=0.094)
+     probes 302:tc=12 rel=0.16 | 322:tc=12 rel=0.16 | 342:tc=11 rel=0.08 | 362:tc=19 rel=0.04 | 382:tc=10 rel=0.07
+  08-24-01-784Z target=52 [MISS] chReg=true rOuterWide=411 fftAt(411)={tc:50,rel:0.043} → weak-fft(rel=0.043)
+     probes 259:tc=11 rel=0.10 | 279:tc=11 rel=0.08 | 299:tc=13 rel=0.08 | 319:tc=13 rel=0.11 | 339:tc=13 rel=0.09 | 359:tc=14 rel=0.08 | 379:tc=48 rel=0.08 | 399:tc=49 rel=0.05
+  08-26-34-045Z target=52 [MISS] chReg=true rOuterWide=327 fftAt(327)={tc:13,rel:0.085} → no-rescue
+  09-09-19-262Z target=36 [MISS] chReg=false rOuterWide=358 fftAt(358)={tc:17,rel:0.053} → no-rescue
+     probes 309:tc=12 rel=0.07 | 329:tc=27 rel=0.04 | 349:tc=14 rel=0.05
+  14-52-05-858Z target=42 [MISS] chReg=true rOuterWide=358 fftAt(358)={tc:41,rel:0.062} → no-rescue
+  15-12-27-152Z target=52 [MISS] chReg=true rOuterWide=344 fftAt(344)={tc:11,rel:0.113} → MISS-still-wrong(11)
+     probes 304:tc=12 rel=0.08 | 324:tc=14 rel=0.08 | 344:tc=11 rel=0.11
+  15-14-08-511Z target=52 [MISS] chReg=true rOuterWide=355 fftAt(355)={tc:10,rel:0.126} → MISS-still-wrong(10)
+     probes 262:tc=12 rel=0.10 | 282:tc=12 rel=0.11 | 302:tc=12 rel=0.11 | 322:tc=14 rel=0.09 | 342:tc=10 rel=0.07
+  15-28-06-337Z target=36 [MISS] chReg=true rOuterWide=346 fftAt(346)={tc:12,rel:0.049} → weak-fft(rel=0.049)
+     probes 255:tc=22 rel=0.05 | 275:tc=29 rel=0.06 | 295:tc=12 rel=0.08 | 315:tc=31 rel=0.06 | 335:tc=10 rel=0.06
+  15-30-03-986Z target=36 [MISS] chReg=true rOuterWide=336 fftAt(336)={tc:18,rel:0.056} → weak-fft(rel=0.056)
+     probes 227:tc=12 rel=0.07 | 247:tc=11 rel=0.05 | 267:tc=20 rel=0.06 | 287:tc=12 rel=0.07 | 307:tc=18 rel=0.06 | 327:tc=32 rel=0.07
+  08-28-32-755Z target=50 [CTRL] chReg=true rOuterWide=344 fftAt(344)={tc:23,rel:0.098} → no-rescue
+  08-30-59-457Z target=50 [CTRL] chReg=true rOuterWide=335 fftAt(335)={tc:12,rel:0.056} → no-rescue
+     probes 315:tc=11 rel=0.09 | 335:tc=12 rel=0.06
+  09-03-58-615Z target=48 [CTRL] chReg=true rOuterWide=416 fftAt(416)={tc:49,rel:0.105} → no-rescue
+  09-07-06-225Z target=42 [CTRL] chReg=true rOuterWide=397 fftAt(397)={tc:38,rel:0.073} → no-rescue
+Option B totals: WIN=0 LOSS=0 weakFft=4
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        383.736 s, estimated 390 s
+Ran all test suites.

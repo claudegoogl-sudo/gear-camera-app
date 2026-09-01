@@ -1,0 +1,70 @@
+=== PAP-1481 Option C full-cohort scan (n=145) ===
+Run: 2026-05-14, HARNESS=pap1481.optC-full
+Cohort: 41 11T + 25 Small + 15 Mid + 64 XL42+ (20 confidentWrong)
+Method: bolt-pattern angular autocorrelation, ring at [0.50..0.80]×aimR, N=120, scores at lag 30 (4-fold) and lag 24 (5-fold).
+Runtime: 1.6s for 145 rows (≈11ms/photo, with warm RGBA cache).
+
+Per-cluster summary:
+cluster  n   score4_med (range)         score5_med (range)         4-fold  5-fold
+11T      41  0.041 (0.000-0.205)        0.282 (0.000-0.352)        3       38
+Small    25  0.033 (0.000-0.149)        0.205 (0.000-0.311)        2       23
+Mid      15  0.045 (0.000-0.214)        0.185 (0.009-0.296)        2       13
+XL42+    64  0.105 (0.000-0.463)        0.154 (0.000-0.346)        25      39
+
+KEY OBSERVATION vs n=13 probe:
+  n=13 (probe):  XL42+ score4_med = 0.196,  range [0.127, 0.329]   bestN=4 in 3/4
+  n=145 (full):  XL42+ score4_med = 0.105,  range [0.000, 0.463]   bestN=4 in 25/64 (39%)
+The n=13 separation was a SAMPLING ARTIFACT — the 4 probe rows happened to be
+high-score4 Shimano 4-arm chainrings.  Full cohort shows enormous variance
+within XL42+ (many near zero — likely Campagnolo 5-arm, hidden spider behind
+cogset, occluded by cogset behind chainring, ramp-lined inner faces).
+
+Predicate sweep — (bestN==4 ∧ score4>τ4) OR (bestN==5 ∧ score5>τ5):
+  τ4 ∈ {0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22}
+  τ5 ∈ {0.10, 0.15, 0.18, 0.20, 0.22, 0.25, 0.30}
+  Result: NO cell meets AC1 Wilson 95% UB ≥ 80% AND AC2 cog_FP = 0.
+
+  At every operating point that hits enough XL42+ rows for AC1≥80% UB, the
+  predicate also fires on currently-correct cog rows (LOSS).  At every cog-FP=0
+  operating point, XL42+ hit rate < 25% (W95UB ≪ 80%).
+
+  The OR-arm structure means: tightening τ4 to suppress 11T 4-fold outliers
+  also suppresses many XL42+ 4-fold hits; tightening τ5 to suppress Small/Mid
+  5-fold loses Campagnolo 5-arm XL chainrings.
+
+XL42+ rows with low score (12 lowest):
+  Half are correct (FFT got the right tooth count anyway — abstain unnecessary)
+  Half are confidentWrong (the AC1 target).  Even at score4>0.0 the AC1 target
+  rows have score4 in 0.020-0.111 range.  No τ4 separates them from cog
+  outliers.
+
+VERDICT:
+
+  Option A (Hough on raw RGBA):  all 4 variants overlap on n=13.  Exhausted.
+  Option C (bolt-pattern):       no AC1 W95UB ≥ 80% + AC2 = 0 cell on n=145.
+                                 Exhausted.
+
+  The geometric/symmetry discriminator layer on raw RGBA is structurally unable
+  to separate chainrings from cogs on this corpus at the QA Wilson 95% UB ≥ 80%
+  bar (per PAP-1091 precedent).  The previous FFT-magnitude prior ladder
+  (PAP-1100/PAP-1108) also closed at this bar.
+
+REMAINING PATHS for PAP-1481:
+
+  Option B (operator-aim authoritative): treat aim-circle radius as ground
+    truth for outer gear radius; lock peakR := aimR; re-derive tooth count
+    from circumference.  PAP-1484 confirmed there is no pitch/circumference
+    constant in gearCounter.js — would need new pitch-derived rule, OR a
+    look-up table from {chainring, cog} families.  HIGH UX RISK (operator
+    misaim → confident-wrong predictions).  Not endorsed by PAP-1484 / 1488.
+
+  Option D (descope PAP-1481 wontfix): file PAP-1481 closed wontfix at the
+    geometric-discriminator layer; PAP-758 has no orthogonal escape route
+    available with current corpus + Wilson UB bar.  Surviving in-regime path
+    is PAP-1480 (joint R×tc scoring, PAP-1102 lineage) — accept that some
+    chainring confident-wrongs cannot be discriminated and rely on tc
+    co-evidence to dampen the score.
+
+Recommendation: post n=145 evidence to PAP-1489 cross-check #3; ask QA to
+endorse DESCOPE both Option A and Option C; suggest closing PAP-1481 wontfix
+with handoff comment to PAP-1480 lineage.

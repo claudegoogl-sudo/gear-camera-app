@@ -1,0 +1,72 @@
+
+=== PAP-939 candidate sweep ===
+[Training] 340 photos (9-60T)
+  [50/340] 969s
+  [100/340] 1982s
+  [150/340] 3011s
+  [200/340] 4016s
+  [250/340] 5048s
+  [300/340] 6119s
+  done in 7016s
+
+[XL device] b116=8 prior=15
+  b116 report_2026-05-01_08-22-10-875 cls=XL act=52 tc=13 conf=0.41 peak=13 fft90=13 op=21 bc=46(pk=27) gR=0.324 peakR=292 rO=287 m=fft-agreement
+  b116 report_2026-05-01_08-24-01-784 cls=XL act=52 tc=0 conf=0.00 peak=10 fft90=15 op=23 bc=45(pk=47) gR=0.277 peakR=249 rO=254 m=fft90-fallback+pap632-fft-floor-abstain
+  b116 report_2026-05-01_08-26-34-045 cls=XL act=52 tc=32 conf=0.51 peak=12 fft90=12 op=24 bc=52(pk=32) gR=0.350 peakR=315 rO=347 m=retry-bc-peaks
+  b116 report_2026-05-01_08-28-32-755 cls=XL act=50 tc=50 conf=0.00 peak=50 fft90=24 op=25 bc=50(pk=50) gR=0.440 peakR=396 rO=222 m=bc-consensus
+  b116 report_2026-05-01_08-30-59-457 cls=XL act=50 tc=50 conf=0.00 peak=12 fft90=24 op=24 bc=50(pk=49) gR=0.339 peakR=305 rO=369 m=bc-consensus
+  b116 report_2026-05-01_09-03-58-615 cls=XL act=48 tc=48 conf=1.00 peak=48 fft90=12 op=14 bc=48(pk=48) gR=0.446 peakR=401 rO=400 m=bc-consensus+peak
+  b116 report_2026-05-01_09-07-06-225 cls=XL act=42 tc=42 conf=0.49 peak=42 fft90=42 op=20 bc=40(pk=17) gR=0.446 peakR=401 rO=387 m=fft-agreement
+  b116 report_2026-05-01_09-09-19-262 cls=XL act=36 tc=10 conf=0.00 peak=12 fft90=10 op=12 bc=10(pk=4) gR=0.332 peakR=299 rO=232 m=fft90-fallback
+  b111 report_2026-04-29_05-29-04-170 cls=XL act=42 tc=41 conf=0.48 peak=43 fft90=41 op=42 bc=10(pk=12) gR=0.436 peakR=392 rO=441 m=fft90-fallback
+  b111 report_2026-04-29_05-31-25-376 cls=XL act=42 tc=41 conf=0.82 peak=41 fft90=41 op=13 bc=12(pk=4) gR=0.437 peakR=393 rO=410 m=peak
+  b111 report_2026-04-29_05-33-35-933 cls=XL act=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gR=0.367 peakR=330 rO=386 m=retry-bc-peaks
+  b111 report_2026-04-29_05-35-33-518 cls=XL act=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gR=0.314 peakR=283 rO=355 m=retry-bc-peaks
+  b111 report_2026-04-29_05-37-38-177 cls=XL act=52 tc=50 conf=0.61 peak=12 fft90=12 op=18 bc=53(pk=50) gR=0.338 peakR=304 rO=339 m=retry-bc-peaks
+  b111 report_2026-04-29_05-39-22-521 cls=XL act=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) gR=0.422 peakR=380 rO=225 m=bc-consensus+peak
+  b112 report_2026-04-30_05-32-51-092 cls=XL act=42 tc=42 conf=0.67 peak=43 fft90=42 op=42 bc=42(pk=36) gR=0.400 peakR=360 rO=398 m=bc-fft
+  b112 report_2026-04-30_05-34-20-458 cls=XL act=42 tc=43 conf=0.73 peak=10 fft90=43 op=14 bc=12(pk=4) gR=0.484 peakR=436 rO=441 m=bc-fft+pap868-fft90-xl-rescue-A
+  b112 report_2026-04-30_05-35-59-637 cls=XL act=42 tc=42 conf=0.73 peak=10 fft90=42 op=20 bc=12(pk=4) gR=0.319 peakR=287 rO=373 m=bc-fft+pap868-fft90-xl-rescue-A
+  b112 report_2026-04-30_05-37-35-156 cls=XL act=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gR=0.262 peakR=236 rO=276 m=bc-consensus
+  b114 report_2026-04-30_10-09-03-515 cls=XL act=34 tc=18 conf=0.00 peak=10 fft90=18 op=24 bc=10(pk=23) gR=0.131 peakR=118 rO=116 m=fft90-fallback
+  b114 report_2026-04-30_10-14-44-086 cls=XL act=34 tc=28 conf=0.00 peak=10 fft90=28 op=13 bc=11(pk=2) gR=0.047 peakR=42 rO=49 m=fft90-fallback
+  b114 report_2026-04-30_10-17-03-115 cls=XL act=34 tc=34 conf=1.00 peak=34 fft90=34 op=34 bc=34(pk=34) gR=0.410 peakR=369 rO=367 m=bc-consensus+fft-agree
+  b114 report_2026-04-30_10-19-19-295 cls=XL act=36 tc=35 conf=0.79 peak=35 fft90=36 op=35 bc=36(pk=36) gR=0.429 peakR=386 rO=278 m=bc-consensus+peak
+  b114 report_2026-04-30_10-23-07-161 cls=XL act=36 tc=36 conf=1.00 peak=36 fft90=36 op=36 bc=36(pk=36) gR=0.423 peakR=381 rO=288 m=bc-consensus+peak
+
+--- C2 ---
+  TRAINING: LOSS=1 WIN=0 NOOP=16
+    LOSS rows:
+      2026-04-30_10-17-13-321Z cls=XL act=34 tc=34 conf=0.90 peak=34 fft90=11 op=12 bc=34(pk=34) gR=0.259 peakR=175 rO=166 m=bc-consensus+peak
+  b116-XL: LOSS=0 WIN=2 NOOP=1
+    WIN  report_2026-05-01_08-22-10-875 cls=XL act=52 tc=13 conf=0.41 peak=13 fft90=13 op=21 bc=46(pk=27) gR=0.324 peakR=292 rO=287 m=fft-agreement
+    WIN  report_2026-05-01_08-26-34-045 cls=XL act=52 tc=32 conf=0.51 peak=12 fft90=12 op=24 bc=52(pk=32) gR=0.350 peakR=315 rO=347 m=retry-bc-peaks
+  prior-XL: LOSS=0 WIN=0 NOOP=0
+
+--- C3 ---
+  TRAINING: LOSS=1 WIN=0 NOOP=0
+    LOSS rows:
+      2026-04-30_10-17-13-321Z cls=XL act=34 tc=34 conf=0.90 peak=34 fft90=11 op=12 bc=34(pk=34) gR=0.259 peakR=175 rO=166 m=bc-consensus+peak
+  b116-XL: LOSS=0 WIN=2 NOOP=1
+    WIN  report_2026-05-01_08-22-10-875 cls=XL act=52 tc=13 conf=0.41 peak=13 fft90=13 op=21 bc=46(pk=27) gR=0.324 peakR=292 rO=287 m=fft-agreement
+    WIN  report_2026-05-01_08-26-34-045 cls=XL act=52 tc=32 conf=0.51 peak=12 fft90=12 op=24 bc=52(pk=32) gR=0.350 peakR=315 rO=347 m=retry-bc-peaks
+  prior-XL: LOSS=0 WIN=0 NOOP=0
+
+--- C6 ---
+  TRAINING: LOSS=0 WIN=0 NOOP=13
+  b116-XL: LOSS=0 WIN=2 NOOP=1
+    WIN  report_2026-05-01_08-22-10-875 cls=XL act=52 tc=13 conf=0.41 peak=13 fft90=13 op=21 bc=46(pk=27) gR=0.324 peakR=292 rO=287 m=fft-agreement
+    WIN  report_2026-05-01_08-26-34-045 cls=XL act=52 tc=32 conf=0.51 peak=12 fft90=12 op=24 bc=52(pk=32) gR=0.350 peakR=315 rO=347 m=retry-bc-peaks
+  prior-XL: LOSS=0 WIN=0 NOOP=0
+
+=== summary ===
+PASS __tests__/pap939.candidates.js (7661.558 s)
+  PAP-939 candidate sweep
+    ✓ C2 / C3 / C6 sweep (7661355 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        7661.635 s
+Ran all test suites.
+Exit:0

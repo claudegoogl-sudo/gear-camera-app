@@ -1,0 +1,13 @@
+
+=== PAP-815 XL-target verification (radial-chainring abstain) ===
+  [2026-04-29_05-29-04-170Z] actual=42 tc=42 conf=0.53 peak=41 fft90=41 op=42 bc=10(pk=12) peakR=379 rOuter=359 rel=0.0557 innerSus=false method=fft-agreement+xl-op-vote-boost
+  [2026-04-29_05-31-25-376Z] actual=42 tc=41 conf=0.84 peak=41 fft90=41 op=13 bc=10(pk=1) peakR=393 rOuter=383 rel=0.0261 innerSus=false method=fft-agreement
+  [2026-04-29_05-33-35-933Z] actual=52 tc=52 conf=0.48 peak=13 fft90=13 op=17 bc=55(pk=52) peakR=330 rOuter=353 rel=0.0652 innerSus=false method=retry-bc-peaks
+  [2026-04-29_05-35-33-518Z] actual=52 tc=24 conf=0.51 peak=12 fft90=12 op=12 bc=11(pk=24) peakR=283 rOuter=0 rel=n/a innerSus=false method=retry-bc-peaks
+  [2026-04-29_05-37-38-177Z] actual=52 tc=52 conf=0.61 peak=12 fft90=12 op=14 bc=53(pk=52) peakR=304 rOuter=339 rel=0.1032 innerSus=false method=retry-bc-consensus+chainring-pk
+  [2026-04-29_05-39-22-521Z] actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) peakR=380 rOuter=0 rel=n/a innerSus=false method=bc-consensus+peak
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        184.493 s
+Ran all test suites.

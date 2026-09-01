@@ -1,0 +1,221 @@
+[pap1674.audit] corpus=362
+  [25/362] 168s
+  [50/362] 292s
+  [75/362] 457s
+  [100/362] 643s
+  [125/362] 829s
+  [150/362] 1030s
+  [175/362] 1219s
+  [200/362] 1405s
+  [225/362] 1598s
+  [250/362] 1783s
+  [275/362] 1979s
+  [300/362] 2184s
+  [325/362] 2406s
+  [350/362] 2803s
+
+=== PAP-1674 per-class accuracy ===
+Corpus: 362 photos   Wall: 2905.2s
+
+Bucket          Tol   N    Correct  Acc%    Abstain  Conf-Wrong   med  p95  max  (ms)
+Small  9-15T   exact  136      102   75.0%       31           3   4975 6564 7971
+Mid    16-20T  exact   33       27   81.8%        5           1   5172 7342 8226
+Large  21-28T  ±1     113       51   45.1%       52          10   6174 7604 8006
+XL     29-60T  ±1      80       30   37.5%       38          12   7251 15465 22072
+-------------------------------------------------------------------------------------
+TOTAL                362      210   58.0%      126          26   5787 9382 22072
+
+Per-actual breakdown:
+actual   N   correct  abstain  conf-wrong  acc%
+  11T    41        24       16           1   58.5%
+  12T     2         2        0           0   100.0%
+  13T    11         5        6           0   45.5%
+  14T    47        43        4           0   91.5%
+  15T    35        28        5           2   80.0%
+  17T     1         1        0           0   100.0%
+  18T    32        26        5           1   81.3%
+  21T    32        16       14           2   50.0%
+  23T     1         1        0           0   100.0%
+  24T    36        16       17           3   44.4%
+  28T    44        18       21           5   40.9%
+  32T     2         2        0           0   100.0%
+  34T     4         1        1           2   25.0%
+  36T    10         4        5           1   40.0%
+  42T    27        10       14           3   37.0%
+  48T     7         7        0           0   100.0%
+  50T     7         5        1           1   71.4%
+  51T     1         0        1           0   0.0%
+  52T    22         1       16           5   4.5%
+
+Failures (not correct):
+  -- Small  9-15T  --
+    ABSTAIN 2026-04-04_09-10-20-407Z actual=13 detected=13 conf=0.000 5565ms
+    WRONG   2026-04-04_09-10-51-656Z actual=11 detected=17 conf=0.121 6857ms
+    ABSTAIN 2026-04-05_08-24-37-589Z actual=14 detected=13 conf=0.000 6844ms
+    ABSTAIN 2026-04-05_08-27-08-187Z actual=14 detected=10 conf=0.000 4249ms
+    ABSTAIN 2026-04-05_08-31-06-222Z actual=13 detected=0 conf=0.000 6564ms
+    ABSTAIN 2026-04-05_08-31-34-725Z actual=13 detected=0 conf=0.000 5447ms
+    ABSTAIN 2026-04-05_08-32-16-126Z actual=13 detected=13 conf=0.000 4219ms
+    ABSTAIN 2026-04-05_08-32-48-875Z actual=11 detected=11 conf=0.000 4761ms
+    ABSTAIN 2026-04-05_08-33-27-869Z actual=11 detected=11 conf=0.000 5978ms
+    ABSTAIN 2026-04-05_08-34-06-051Z actual=11 detected=11 conf=0.000 4811ms
+    ABSTAIN 2026-04-05_14-38-39-916Z actual=13 detected=13 conf=0.000 4280ms
+    ABSTAIN 2026-04-05_14-40-38-072Z actual=11 detected=11 conf=0.000 5212ms
+    ABSTAIN 2026-04-05_20-05-36-867Z actual=11 detected=11 conf=0.000 4921ms
+    WRONG   2026-04-05_20-14-33-985Z actual=15 detected=14 conf=1.000 5106ms
+    WRONG   2026-04-06_09-24-05-913Z actual=15 detected=14 conf=0.924 4719ms
+    ABSTAIN 2026-04-06_10-01-25-781Z actual=11 detected=11 conf=0.000 7329ms
+    ABSTAIN 2026-04-19_11-32-11-962Z actual=11 detected=11 conf=0.000 4421ms
+    ABSTAIN 2026-04-19_11-33-29-608Z actual=11 detected=11 conf=0.000 4372ms
+    ABSTAIN 2026-04-19_19-44-35-557Z actual=15 detected=12 conf=0.000 6871ms
+    ABSTAIN 2026-04-19_20-05-09-636Z actual=15 detected=10 conf=0.000 5911ms
+    ABSTAIN 2026-04-19_20-16-28-570Z actual=11 detected=20 conf=0.000 5551ms
+    ABSTAIN 2026-04-19_20-32-41-522Z actual=11 detected=12 conf=0.000 5950ms
+    ABSTAIN 2026-04-20_18-22-07-461Z actual=11 detected=13 conf=0.000 6001ms
+    ABSTAIN 2026-04-20_18-24-43-234Z actual=11 detected=22 conf=0.000 6209ms
+    ABSTAIN 2026-04-21_06-18-32-006Z actual=15 detected=18 conf=0.000 5803ms
+    ABSTAIN 2026-04-21_06-23-13-341Z actual=14 detected=21 conf=0.000 7971ms
+    ABSTAIN 2026-04-21_19-02-17-555Z actual=11 detected=11 conf=0.000 4104ms
+    ABSTAIN 2026-04-21_19-08-20-758Z actual=15 detected=28 conf=0.000 6464ms
+    ABSTAIN 2026-04-22_07-23-07-738Z actual=11 detected=12 conf=0.000 5868ms
+    ABSTAIN 2026-04-22_18-55-06-131Z actual=11 detected=11 conf=0.000 4200ms
+    ABSTAIN 2026-04-22_19-05-59-553Z actual=15 detected=10 conf=0.000 4917ms
+    ABSTAIN 2026-04-25_08-03-37-711Z actual=11 detected=11 conf=0.000 5974ms
+    ABSTAIN 2026-04-28_18-37-51-496Z actual=14 detected=10 conf=0.000 7037ms
+    ABSTAIN 2026-05-04_11-42-28-074Z actual=13 detected=13 conf=0.000 4692ms
+  -- Large  21-28T --
+    ABSTAIN 2026-04-08_19-49-12-150Z actual=24 detected=20 conf=0.000 6441ms
+    ABSTAIN 2026-04-11_17-20-57-425Z actual=28 detected=10 conf=0.000 6915ms
+    ABSTAIN 2026-04-13_09-18-08-473Z actual=28 detected=0 conf=0.000 5841ms
+    WRONG   2026-04-13_09-28-41-286Z actual=28 detected=22 conf=0.369 6766ms
+    ABSTAIN 2026-04-13_09-35-27-304Z actual=24 detected=0 conf=0.000 7070ms
+    ABSTAIN 2026-04-13_09-38-00-648Z actual=28 detected=10 conf=0.000 7466ms
+    ABSTAIN 2026-04-16_11-26-39-022Z actual=21 detected=0 conf=0.000 6498ms
+    ABSTAIN 2026-04-16_11-29-30-227Z actual=28 detected=28 conf=0.000 5416ms
+    ABSTAIN 2026-04-17_11-01-34-218Z actual=24 detected=0 conf=0.000 6598ms
+    ABSTAIN 2026-04-19_15-14-02-261Z actual=24 detected=0 conf=0.000 6303ms
+    ABSTAIN 2026-04-19_15-25-39-158Z actual=21 detected=19 conf=0.000 5600ms
+    ABSTAIN 2026-04-19_15-28-14-823Z actual=21 detected=22 conf=0.000 7604ms
+    ABSTAIN 2026-04-19_15-30-17-488Z actual=21 detected=11 conf=0.000 6266ms
+    ABSTAIN 2026-04-19_15-36-36-632Z actual=28 detected=0 conf=0.000 5821ms
+    ABSTAIN 2026-04-19_15-38-37-106Z actual=28 detected=10 conf=0.000 6313ms
+    ABSTAIN 2026-04-19_15-40-54-450Z actual=28 detected=0 conf=0.000 5787ms
+    ABSTAIN 2026-04-19_15-42-38-634Z actual=28 detected=27 conf=0.000 4717ms
+    ABSTAIN 2026-04-19_15-44-52-340Z actual=28 detected=10 conf=0.000 7025ms
+    ABSTAIN 2026-04-19_15-47-20-296Z actual=28 detected=0 conf=0.000 6414ms
+    WRONG   2026-04-19_15-55-27-352Z actual=28 detected=11 conf=0.299 5544ms
+    ABSTAIN 2026-04-19_18-38-33-566Z actual=28 detected=32 conf=0.000 6467ms
+    ABSTAIN 2026-04-19_18-42-36-869Z actual=28 detected=0 conf=0.000 7214ms
+    ABSTAIN 2026-04-19_18-47-36-063Z actual=24 detected=0 conf=0.000 7143ms
+    WRONG   2026-04-19_18-54-04-915Z actual=24 detected=20 conf=0.235 7324ms
+    ABSTAIN 2026-04-19_18-56-13-322Z actual=24 detected=0 conf=0.000 6731ms
+    ABSTAIN 2026-04-19_19-03-10-890Z actual=24 detected=10 conf=0.000 5960ms
+    ABSTAIN 2026-04-19_19-18-34-054Z actual=21 detected=0 conf=0.000 6543ms
+    ABSTAIN 2026-04-20_16-26-12-721Z actual=24 detected=27 conf=0.000 7223ms
+    ABSTAIN 2026-04-20_16-29-57-130Z actual=24 detected=0 conf=0.000 5257ms
+    ABSTAIN 2026-04-20_16-35-00-142Z actual=28 detected=0 conf=0.000 6590ms
+    ABSTAIN 2026-04-21_05-22-00-958Z actual=28 detected=22 conf=0.000 6920ms
+    ABSTAIN 2026-04-21_05-23-42-208Z actual=28 detected=25 conf=0.000 5520ms
+    ABSTAIN 2026-04-21_05-25-55-038Z actual=24 detected=44 conf=0.000 5053ms
+    ABSTAIN 2026-04-21_05-33-16-931Z actual=24 detected=0 conf=0.000 6728ms
+    ABSTAIN 2026-04-21_05-42-18-885Z actual=21 detected=20 conf=0.000 5770ms
+    ABSTAIN 2026-04-21_05-48-20-813Z actual=28 detected=15 conf=0.000 6656ms
+    WRONG   2026-04-21_05-51-52-636Z actual=28 detected=22 conf=0.308 6048ms
+    ABSTAIN 2026-04-21_05-55-58-591Z actual=24 detected=26 conf=0.000 7045ms
+    ABSTAIN 2026-04-21_05-59-14-103Z actual=24 detected=11 conf=0.000 5780ms
+    ABSTAIN 2026-04-21_06-09-20-021Z actual=21 detected=19 conf=0.000 6130ms
+    WRONG   2026-04-21_19-20-19-066Z actual=21 detected=10 conf=0.265 7706ms
+    ABSTAIN 2026-04-21_19-26-08-385Z actual=21 detected=20 conf=0.000 6653ms
+    WRONG   2026-04-21_19-30-41-277Z actual=24 detected=28 conf=0.307 6944ms
+    ABSTAIN 2026-04-21_19-32-34-507Z actual=24 detected=0 conf=0.000 7877ms
+    ABSTAIN 2026-04-21_19-35-44-770Z actual=28 detected=0 conf=0.000 6029ms
+    ABSTAIN 2026-04-21_19-37-24-880Z actual=28 detected=0 conf=0.000 7300ms
+    ABSTAIN 2026-04-22_07-01-01-985Z actual=28 detected=0 conf=0.000 6036ms
+    ABSTAIN 2026-04-22_07-03-12-059Z actual=28 detected=10 conf=0.000 6174ms
+    WRONG   2026-04-22_07-04-52-734Z actual=24 detected=11 conf=0.436 6088ms
+    ABSTAIN 2026-04-22_07-08-17-422Z actual=21 detected=21 conf=0.000 6554ms
+    ABSTAIN 2026-04-22_07-10-07-868Z actual=21 detected=10 conf=0.000 7305ms
+    ABSTAIN 2026-04-22_19-12-17-955Z actual=21 detected=0 conf=0.000 5670ms
+    ABSTAIN 2026-04-22_19-14-01-206Z actual=21 detected=21 conf=0.000 6222ms
+    ABSTAIN 2026-04-22_19-16-09-601Z actual=24 detected=15 conf=0.000 6137ms
+    ABSTAIN 2026-04-22_19-21-10-295Z actual=24 detected=0 conf=0.000 7179ms
+    ABSTAIN 2026-04-22_19-23-01-893Z actual=28 detected=0 conf=0.000 6137ms
+    WRONG   2026-04-22_19-24-58-121Z actual=28 detected=20 conf=0.383 6656ms
+    WRONG   2026-04-23_07-08-27-801Z actual=28 detected=11 conf=0.462 5904ms
+    ABSTAIN 2026-04-23_07-15-00-335Z actual=24 detected=0 conf=0.000 6007ms
+    ABSTAIN 2026-04-23_07-21-34-334Z actual=21 detected=44 conf=0.000 5962ms
+    ABSTAIN 2026-04-23_07-26-37-883Z actual=21 detected=19 conf=0.000 5578ms
+    WRONG   2026-04-24_07-02-48-626Z actual=21 detected=16 conf=0.621 7170ms
+  -- Mid    16-20T --
+    ABSTAIN 2026-04-19_14-49-48-616Z actual=18 detected=18 conf=0.000 4817ms
+    ABSTAIN 2026-04-19_19-26-17-731Z actual=18 detected=18 conf=0.000 7342ms
+    ABSTAIN 2026-04-19_19-32-49-661Z actual=18 detected=22 conf=0.000 4804ms
+    WRONG   2026-04-20_15-53-34-450Z actual=18 detected=44 conf=0.039 5783ms
+    ABSTAIN 2026-04-22_07-13-50-403Z actual=18 detected=18 conf=0.000 6330ms
+    ABSTAIN 2026-04-28_14-36-56-005Z actual=18 detected=18 conf=0.000 5172ms
+  -- XL     29-60T --
+    ABSTAIN 2026-04-24_10-54-55-930Z actual=42 detected=40 conf=0.000 6211ms
+    ABSTAIN 2026-04-25_08-45-07-271Z actual=36 detected=37 conf=0.000 6982ms
+    ABSTAIN 2026-04-25_09-03-13-830Z actual=51 detected=0 conf=0.000 7008ms
+    ABSTAIN 2026-04-26_08-54-51-262Z actual=52 detected=28 conf=0.000 4217ms
+    ABSTAIN 2026-04-27_07-59-59-093Z actual=42 detected=20 conf=0.000 6549ms
+    ABSTAIN 2026-04-27_13-21-00-705Z actual=52 detected=0 conf=0.000 7279ms
+    ABSTAIN 2026-04-27_13-24-12-798Z actual=52 detected=0 conf=0.000 6941ms
+    ABSTAIN 2026-04-27_13-27-43-775Z actual=52 detected=0 conf=0.000 6367ms
+    ABSTAIN 2026-04-28_06-50-20-391Z actual=42 detected=0 conf=0.000 7819ms
+    WRONG   2026-04-28_06-52-14-899Z actual=42 detected=10 conf=0.292 7214ms
+    ABSTAIN 2026-04-28_06-54-24-694Z actual=42 detected=0 conf=0.000 6894ms
+    WRONG   2026-04-28_06-56-36-143Z actual=52 detected=11 conf=0.420 7141ms
+    ABSTAIN 2026-04-28_06-58-55-390Z actual=52 detected=53 conf=0.000 7837ms
+    ABSTAIN 2026-04-28_07-01-23-211Z actual=52 detected=0 conf=0.000 5094ms
+    ABSTAIN 2026-04-28_07-03-25-120Z actual=42 detected=0 conf=0.000 7571ms
+    ABSTAIN 2026-04-28_14-00-29-906Z actual=42 detected=13 conf=0.000 6966ms
+    WRONG   2026-04-28_14-18-32-698Z actual=34 detected=40 conf=0.213 7012ms
+    ABSTAIN 2026-04-28_18-27-23-983Z actual=52 detected=0 conf=0.000 7479ms
+    ABSTAIN 2026-04-28_18-29-55-917Z actual=52 detected=0 conf=0.000 6422ms
+    ABSTAIN 2026-04-28_18-32-08-432Z actual=42 detected=43 conf=0.000 6730ms
+    WRONG   2026-04-28_18-34-58-887Z actual=42 detected=12 conf=0.112 6059ms
+    ABSTAIN 2026-04-29_05-29-10-169Z actual=42 detected=12 conf=0.000 6784ms
+    ABSTAIN 2026-04-29_05-33-41-732Z actual=52 detected=0 conf=0.000 7183ms
+    WRONG   2026-04-29_05-35-39-053Z actual=52 detected=10 conf=0.329 7195ms
+    ABSTAIN 2026-04-29_05-37-44-380Z actual=52 detected=0 conf=0.000 7780ms
+    ABSTAIN 2026-04-30_05-29-59-315Z actual=52 detected=0 conf=0.000 6850ms
+    WRONG   2026-04-30_05-31-33-683Z actual=52 detected=11 conf=0.356 6346ms
+    ABSTAIN 2026-04-30_05-34-26-023Z actual=42 detected=0 conf=0.000 7691ms
+    ABSTAIN 2026-04-30_05-36-04-910Z actual=42 detected=26 conf=0.000 8082ms
+    ABSTAIN 2026-04-30_05-37-41-094Z actual=42 detected=0 conf=0.000 6397ms
+    WRONG   2026-04-30_10-09-16-909Z actual=34 detected=11 conf=0.441 7069ms
+    ABSTAIN 2026-04-30_10-14-55-670Z actual=34 detected=11 conf=0.000 5614ms
+    ABSTAIN 2026-04-30_11-31-00-084Z actual=42 detected=0 conf=0.000 8250ms
+    WRONG   2026-04-30_11-35-41-631Z actual=42 detected=11 conf=0.328 9382ms
+    ABSTAIN 2026-04-30_20-03-52-567Z actual=52 detected=52 conf=0.000 8041ms
+    WRONG   2026-04-30_20-09-43-249Z actual=50 detected=16 conf=0.252 22072ms
+    ABSTAIN 2026-05-01_08-22-17-365Z actual=52 detected=0 conf=0.000 14884ms
+    WRONG   2026-05-01_08-24-07-480Z actual=52 detected=13 conf=0.434 13941ms
+    ABSTAIN 2026-05-01_08-26-39-688Z actual=52 detected=10 conf=0.000 15158ms
+    ABSTAIN 2026-05-01_08-31-05-858Z actual=50 detected=50 conf=0.000 7705ms
+    ABSTAIN 2026-05-01_09-07-12-086Z actual=42 detected=10 conf=0.000 13210ms
+    ABSTAIN 2026-05-01_09-09-26-510Z actual=36 detected=34 conf=0.000 21515ms
+    WRONG   2026-05-01_15-12-33-142Z actual=52 detected=12 conf=0.406 6758ms
+    ABSTAIN 2026-05-01_15-14-13-835Z actual=52 detected=0 conf=0.000 7300ms
+    ABSTAIN 2026-05-01_15-20-31-778Z actual=52 detected=53 conf=0.000 7251ms
+    ABSTAIN 2026-05-01_15-37-22-230Z actual=36 detected=38 conf=0.000 6315ms
+    ABSTAIN 2026-05-04_11-33-56-211Z actual=42 detected=43 conf=0.000 7300ms
+    ABSTAIN 2026-05-04_11-44-37-757Z actual=36 detected=35 conf=0.000 7813ms
+    WRONG   2026-05-04_11-46-43-304Z actual=36 detected=22 conf=0.273 7650ms
+    ABSTAIN 2026-05-04_11-58-49-079Z actual=36 detected=10 conf=0.000 7839ms
+[PAP-1674] WARN Large  21-28T accuracy 45.1% (<50%) — likely regression
+[PAP-1674] WARN XL     29-60T accuracy 37.5% (<50%) — likely regression
+
+[pap1674.audit] budgetExhausted fires: 0/362
+
+row-level csv: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1674_base_rows_2026-08-23.csv (362 rows)
+PASS mobile/__tests__/pap1674.audit.js (2905.582 s)
+  PAP-1674 wall-clock deadline gate pricing
+    ✓ full-corpus per-photo rows with budgetExhausted (2905343 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        2905.7 s
+Ran all test suites within paths "mobile/__tests__/pap1674.audit.js".

@@ -1,0 +1,98 @@
+
+=== PAP-889 Option A sweep ===
+
+[Training] 329 photos (9-60T)
+  [50/329] 924s
+  [100/329] 1914s
+  [150/329] 2920s
+  [200/329] 3910s
+  [250/329] 4917s
+  [300/329] 5960s
+  done in 6571s
+
+[XL device] 15 targets
+  build=b111 report_2026-04-29_05-29-04-170Z cls=XL actual=42 tc=41 conf=0.48 peak=43 fft90=41 op=42 bc=10(pk=12) gearR=0.436 triple=N bcStr=N method=fft90-fallback
+  build=b111 report_2026-04-29_05-31-25-376Z cls=XL actual=42 tc=41 conf=0.82 peak=41 fft90=41 op=13 bc=12(pk=4) gearR=0.437 triple=N bcStr=N method=peak
+  build=b111 report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gearR=0.367 triple=N bcStr=N method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 triple=N bcStr=N method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-37-38-177Z cls=XL actual=52 tc=50 conf=0.61 peak=12 fft90=12 op=18 bc=53(pk=50) gearR=0.338 triple=N bcStr=N method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-39-22-521Z cls=XL actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) gearR=0.422 triple=Y bcStr=N method=bc-consensus+peak
+  build=b112 report_2026-04-30_05-32-51-092Z cls=XL actual=42 tc=42 conf=0.67 peak=43 fft90=42 op=42 bc=42(pk=36) gearR=0.400 triple=N bcStr=N method=bc-fft
+  build=b112 report_2026-04-30_05-34-20-458Z cls=XL actual=42 tc=43 conf=0.73 peak=10 fft90=43 op=14 bc=12(pk=4) gearR=0.484 triple=N bcStr=N method=bc-fft+pap868-fft90-xl-rescue-A
+  build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=42 conf=0.73 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 triple=N bcStr=N method=bc-fft+pap868-fft90-xl-rescue-A
+  build=b112 report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 triple=N bcStr=N method=bc-consensus
+  build=b114 report_2026-04-30_10-09-03-515Z cls=XL actual=34 tc=18 conf=0.00 peak=10 fft90=18 op=24 bc=10(pk=23) gearR=0.131 triple=N bcStr=N method=fft90-fallback
+  build=b114 report_2026-04-30_10-14-44-086Z cls=XL actual=34 tc=28 conf=0.00 peak=10 fft90=28 op=13 bc=11(pk=2) gearR=0.047 triple=N bcStr=N method=fft90-fallback
+  build=b114 report_2026-04-30_10-17-03-115Z cls=XL actual=34 tc=34 conf=1.00 peak=34 fft90=34 op=34 bc=34(pk=34) gearR=0.410 triple=Y bcStr=N method=bc-consensus+fft-agree
+  build=b114 report_2026-04-30_10-19-19-295Z cls=XL actual=36 tc=35 conf=0.79 peak=35 fft90=36 op=35 bc=36(pk=36) gearR=0.429 triple=N bcStr=N method=bc-consensus+peak
+  build=b114 report_2026-04-30_10-23-07-161Z cls=XL actual=36 tc=36 conf=1.00 peak=36 fft90=36 op=36 bc=36(pk=36) gearR=0.423 triple=Y bcStr=N method=bc-consensus+peak
+
+--- Option A on TRAINING corpus ---
+  fires=55 LOSS=18 WIN=27 NOOP=10 inconsistent=0
+  LOSS rows (confident-correct → would abstain) — REGRESSION:
+    2026-04-05_08-24-37-589Z cls=Mid actual=14 tc=13 conf=0.00 peak=14 fft90=14 op=13 bc=14(pk=10) gearR=0.135 triple=N bcStr=N method=low-conf-consensus+op-override
+    2026-04-05_08-32-48-875Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=17 op=10 bc=10(pk=12) gearR=0.132 triple=N bcStr=N method=bc-consensus+peak
+    2026-04-05_08-33-27-869Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=34 op=16 bc=11(pk=9) gearR=0.129 triple=N bcStr=N method=bc-fft
+    2026-04-16_11-29-30-227Z cls=Large actual=28 tc=28 conf=0.00 peak=28 fft90=10 op=14 bc=10(pk=19) gearR=0.142 triple=N bcStr=N method=peak
+    2026-04-19_11-32-11-962Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=22 op=11 bc=11(pk=18) gearR=0.166 triple=N bcStr=N method=peak
+    2026-04-19_11-33-29-608Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=10 op=11 bc=11(pk=16) gearR=0.120 triple=N bcStr=N method=peak
+    2026-04-19_14-49-48-616Z cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=18 op=24 bc=10(pk=4) gearR=0.102 triple=N bcStr=N method=peak
+    2026-04-19_15-28-14-823Z cls=Large actual=21 tc=22 conf=0.00 peak=12 fft90=11 op=22 bc=11(pk=11) gearR=0.110 triple=N bcStr=N method=low-conf-consensus+large-op-override
+    2026-04-19_15-42-38-634Z cls=Large actual=28 tc=27 conf=0.00 peak=12 fft90=10 op=27 bc=26(pk=5) gearR=0.055 triple=N bcStr=N method=fft90-fallback+large-op-override
+    2026-04-19_19-26-17-731Z cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=36 op=18 bc=18(pk=16) gearR=0.170 triple=N bcStr=N method=retry-bc-consensus+peak
+    2026-04-21_05-42-18-885Z cls=Large actual=21 tc=20 conf=0.00 peak=18 fft90=20 op=11 bc=10(pk=10) gearR=0.100 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_19-02-17-555Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=13 op=11 bc=11(pk=21) gearR=0.159 triple=N bcStr=N method=peak
+    2026-04-21_19-26-08-385Z cls=Large actual=21 tc=20 conf=0.00 peak=20 fft90=20 op=22 bc=21(pk=11) gearR=0.120 triple=N bcStr=N method=fft-agreement
+    2026-04-22_07-08-17-422Z cls=Large actual=21 tc=21 conf=0.00 peak=21 fft90=10 op=21 bc=21(pk=16) gearR=0.126 triple=N bcStr=N method=bc-peaks
+    2026-04-22_07-13-50-403Z cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=36 op=18 bc=18(pk=15) gearR=0.128 triple=N bcStr=N method=retry-peak
+    2026-04-22_18-55-06-131Z cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=20 op=11 bc=11(pk=10) gearR=0.159 triple=N bcStr=N method=bc-consensus+peak
+    2026-04-22_19-14-01-206Z cls=Large actual=21 tc=21 conf=0.00 peak=21 fft90=11 op=21 bc=10(pk=10) gearR=0.142 triple=N bcStr=N method=fft90-fallback+peak-subharmonic
+    2026-04-25_08-03-37-711Z cls=Small actual=11 tc=11 conf=0.00 peak=10 fft90=10 op=11 bc=13(pk=9) gearR=0.175 triple=N bcStr=N method=low-conf-consensus+op-up-override
+  WIN rows (confident-wrong → would abstain):
+    2026-04-05_08-27-08-187Z cls=Mid actual=14 tc=10 conf=0.00 peak=14 fft90=14 op=14 bc=10(pk=12) gearR=0.176 triple=N bcStr=N method=bc-consensus
+    2026-04-08_19-49-12-150Z cls=Large actual=24 tc=20 conf=0.00 peak=10 fft90=10 op=20 bc=10(pk=4) gearR=0.058 triple=N bcStr=N method=bc-fft+large-op-override
+    2026-04-11_17-20-57-425Z cls=Large actual=28 tc=10 conf=0.00 peak=12 fft90=10 op=15 bc=10(pk=1) gearR=0.144 triple=N bcStr=N method=fft90-fallback
+    2026-04-13_09-38-00-648Z cls=Large actual=28 tc=10 conf=0.00 peak=27 fft90=20 op=10 bc=10(pk=4) gearR=0.149 triple=N bcStr=N method=bc-fft
+    2026-04-19_15-25-39-158Z cls=Large actual=21 tc=19 conf=0.00 peak=18 fft90=18 op=19 bc=23(pk=20) gearR=0.161 triple=N bcStr=N method=low-conf-consensus
+    2026-04-19_15-30-17-488Z cls=Large actual=21 tc=11 conf=0.00 peak=11 fft90=11 op=20 bc=10(pk=1) gearR=0.128 triple=N bcStr=N method=retry-fft90-fallback
+    2026-04-19_15-44-52-340Z cls=Large actual=28 tc=10 conf=0.00 peak=13 fft90=10 op=12 bc=11(pk=4) gearR=0.037 triple=N bcStr=N method=fft90-fallback
+    2026-04-19_19-03-10-890Z cls=Large actual=24 tc=10 conf=0.00 peak=12 fft90=10 op=17 bc=0(pk=0) gearR=0.150 triple=N bcStr=N method=fft90-fallback
+    2026-04-19_19-44-35-557Z cls=Mid actual=15 tc=12 conf=0.00 peak=10 fft90=12 op=12 bc=11(pk=3) gearR=0.043 triple=N bcStr=N method=fft90-fallback
+    2026-04-19_20-05-09-636Z cls=Mid actual=15 tc=10 conf=0.00 peak=11 fft90=26 op=12 bc=10(pk=4) gearR=0.099 triple=N bcStr=N method=bc-fft
+    2026-04-19_20-16-28-570Z cls=Small actual=11 tc=20 conf=0.00 peak=10 fft90=20 op=10 bc=15(pk=4) gearR=0.080 triple=N bcStr=N method=fft90-fallback
+    2026-04-20_16-26-12-721Z cls=Large actual=24 tc=27 conf=0.00 peak=11 fft90=27 op=27 bc=11(pk=4) gearR=0.111 triple=N bcStr=N method=fft90-fallback
+    2026-04-20_18-22-07-461Z cls=Small actual=11 tc=13 conf=0.00 peak=11 fft90=13 op=11 bc=16(pk=2) gearR=0.091 triple=N bcStr=N method=fft90-fallback
+    2026-04-20_18-24-43-234Z cls=Small actual=11 tc=22 conf=0.00 peak=10 fft90=22 op=10 bc=56(pk=13) gearR=0.021 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_05-22-00-958Z cls=Large actual=28 tc=22 conf=0.00 peak=10 fft90=10 op=22 bc=10(pk=7) gearR=0.098 triple=N bcStr=N method=fft90-fallback+large-op-override
+    2026-04-21_05-23-42-208Z cls=Large actual=28 tc=25 conf=0.00 peak=10 fft90=14 op=25 bc=11(pk=4) gearR=0.087 triple=N bcStr=N method=fft90-fallback+large-op-override
+    2026-04-21_05-48-20-813Z cls=Large actual=28 tc=15 conf=0.00 peak=11 fft90=15 op=10 bc=0(pk=0) gearR=0.126 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_05-55-58-591Z cls=Large actual=24 tc=26 conf=0.00 peak=26 fft90=26 op=23 bc=10(pk=5) gearR=0.182 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_05-59-14-103Z cls=Large actual=24 tc=11 conf=0.00 peak=10 fft90=11 op=18 bc=16(pk=11) gearR=0.156 triple=N bcStr=N method=low-conf-consensus
+    2026-04-21_06-09-20-021Z cls=Large actual=21 tc=19 conf=0.00 peak=19 fft90=19 op=11 bc=11(pk=11) gearR=0.111 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_06-18-32-006Z cls=Mid actual=15 tc=18 conf=0.00 peak=10 fft90=18 op=17 bc=13(pk=21) gearR=0.094 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_06-23-13-341Z cls=Mid actual=14 tc=21 conf=0.00 peak=10 fft90=21 op=19 bc=16(pk=1) gearR=0.078 triple=N bcStr=N method=fft90-fallback
+    2026-04-21_19-08-20-758Z cls=Mid actual=15 tc=28 conf=0.00 peak=10 fft90=28 op=10 bc=14(pk=9) gearR=0.081 triple=N bcStr=N method=fft90-fallback
+    2026-04-22_19-05-59-553Z cls=Mid actual=15 tc=10 conf=0.00 peak=15 fft90=10 op=15 bc=10(pk=3) gearR=0.159 triple=N bcStr=N method=fft90-fallback
+    2026-04-22_19-16-09-601Z cls=Large actual=24 tc=15 conf=0.00 peak=18 fft90=15 op=12 bc=10(pk=4) gearR=0.086 triple=N bcStr=N method=fft90-fallback
+    2026-04-23_07-26-37-883Z cls=Large actual=21 tc=19 conf=0.00 peak=12 fft90=19 op=22 bc=11(pk=2) gearR=0.095 triple=N bcStr=N method=fft90-fallback
+    2026-04-26_08-54-51-262Z cls=XL actual=52 tc=28 conf=0.00 peak=28 fft90=28 op=15 bc=28(pk=28) gearR=0.108 triple=N bcStr=N method=bc-consensus+peak
+  histogram by actual tc (committed rows that fire Option A):
+
+--- Option A on XL device ---
+  fires=2 LOSS=0 WIN=2 NOOP=0 inconsistent=0
+  WIN rows (confident-wrong → abstain on device):
+    report_2026-04-30_10-09-03-515Z cls=XL actual=34 tc=18 conf=0.00 peak=10 fft90=18 op=24 bc=10(pk=23) gearR=0.131 triple=N bcStr=N method=fft90-fallback build=b114
+    report_2026-04-30_10-14-44-086Z cls=XL actual=34 tc=28 conf=0.00 peak=10 fft90=28 op=13 bc=11(pk=2) gearR=0.047 triple=N bcStr=N method=fft90-fallback build=b114
+
+=== verdict ===
+  TRAINING: LOSS=18 WIN=27 inconsistent=0
+  XL: LOSS=0 WIN=2 inconsistent=0
+PASS __tests__/pap889.candidates.js (6981.148 s)
+  PAP-889 Option A candidate sweep
+    ✓ gearR<0.20 abstain extension (6980945 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        6981.218 s
+Ran all test suites.

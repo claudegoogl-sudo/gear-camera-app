@@ -926,6 +926,15 @@ export default function CameraScreen({ navigation }) {
             // Clear any lingering error state — the camera recovered.
             setCameraHasError(false);
             setIsPolicyRestricted(false);
+            // PAP-1708: Show recovery guidance immediately when preview becomes
+            // available after policyRetry (not after 400ms settle delay). This
+            // reduces the user's wrong-frame opportunity from ~2-3 seconds to
+            // <500ms. The guidance appears here (preview ready) instead of in the
+            // useEffect, eliminating the setTimeout delay.
+            if (retryKey > 0) {
+              // Only show on retries (retryKey increments on camera re-init)
+              setRecoveryGuidance(true);
+            }
           }
         }}
         onError={(e) => {

@@ -1,0 +1,33 @@
+
+=== PAP-1639 before/after [baseline -> optimized] ===
+Paired 362 photos (before=362, after=362)
+
+stage             p50 ms            p95 ms            sum s
+gray                4->    4 +0%      5->    5 +0%  1.7->1.6 -4%
+clahe              15->   15 +0%     17->   17 +0%  5.6->5.6 -2%
+blur               15->   15 +0%     22->   22 +0%  5.9->5.8 -2%
+canny              53->   54 +2%     72->   71 -1%  20.0->20.0 +0%
+detect           2003->  774 -61%  2412-> 1077 -55% 740.5->284.8 -62%
+  center         1565->  602 -62%  1912->  840 -56% 577.9->220.1 -62%
+  edgeRadius        1->    1 +0%      1->    1 +0%  0.3->0.3 -2%
+  fft90             5->    4 -20%     9->    8 -11% 1.8->1.5 -14%
+  multiR            6->    5 -17%    22->    7 -68% 2.9->1.8 -38%
+  outerProf         1->    1 +0%     13->    2 -85% 1.1->0.4 -59%
+  binContour      417->  154 -63%   556->  262 -53% 155.4->59.9 -61%
+  clahePeak         3->    2 -33%     5->    3 -40% 1.1->0.8 -28%
+methods           108->   40 -63%   909->  530 -42% 102.4->54.7 -47%
+total            2282->  950 -58%  3117-> 1490 -52% 858.6->366.3 -57%
+
+Output identity: 362/362 photos identical on [tc,conf,method,gearR,peakTc,fft90,op,bcTc,peakR,rOuter]
+
+Accuracy (PAP-760 buckets)
+bucket          N    correct before -> after      abstain      conf-wrong
+Small  9-15T   136   102 (75.0%)  ->  102 (75.0%)    31->31       3->3
+Mid    16-20T   33   27 (81.8%)   ->  27 (81.8%)     5->5       1->1
+Large  21-28T  113   51 (45.1%)   ->  51 (45.1%)     52->52       10->10
+XL     29-60T   80   30 (37.5%)   ->  30 (37.5%)     38->38       12->12
+TOTAL           362   210 (58.0%)  ->  210 (58.0%)   126->126       26->26
+(node:874654) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

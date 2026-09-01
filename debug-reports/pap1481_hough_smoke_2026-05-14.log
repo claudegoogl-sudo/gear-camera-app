@@ -1,0 +1,46 @@
+=== PAP-1481 Hough smoke (Option A v1 ms-cost gate) ===
+Run: 2026-05-14, HARNESS=pap1481.hough-smoke
+Optimisation applied: dropped O(radii × edges) refinement pass; using rMap[peakI]
+for the radius at the peak cell (per-vote last-wins; good enough for ms-cost smoke).
+
+Sample: 10/10 photos found (3×11T + 4×42T+ + 1×18T + 1×21T + 1×15T; one 900x675 portrait inverted)
+
+Per-photo timings (ms):
+stamp                          actual  WxH        HEAD_ms  Hough_ms  houghR  aimR   ratio    edges  peak
+2026-04-04_09-10-51-656Z   11T   900x675    24271       139    133   338     0.39    36932    50
+2026-04-05_08-32-48-875Z   11T   675x900    21547       110    345   338     1.02    20347    23
+2026-04-05_08-33-27-869Z   11T   675x900    22103       104    201   338     0.60    21000    21
+2026-04-24_10-54-55-930Z   42T   675x900    23089       118    161   338     0.48    40795    50
+2026-04-25_07-58-59-154Z   42T   675x900    24415       121    181   338     0.54    35780    50
+2026-04-25_08-05-45-433Z   42T   675x900    25090       138    185   338     0.55    31383    52
+2026-04-25_09-03-13-830Z   51T   675x900    24515       136    165   338     0.49    43084    55
+2026-04-08_18-28-12-142Z   18T   675x900    17391       120    153   338     0.45    24684    43
+2026-04-08_18-30-50-993Z   21T   675x900    17982       112    145   338     0.43    29043    45
+2026-04-04_09-09-24-950Z   15T   675x900    18407       118    209   338     0.62    22903    30
+
+Summary:
+HEAD timings:  p50=23089ms  p95=25090ms  p99=25090ms
+Hough probe:   p50=120ms  p95=139ms  p99=139ms
+
+QA pass bar (PAP-1488): p99 delta <= +500ms vs HEAD
+[PASS] Hough p99=139ms <= 500ms -- proceed to file Option A v1 spec
+
+HoughR/aimR ratio distribution: min=0.44, med=0.60, max=1.15
+
+Notes for spec phase (Option A v1 calibration):
+- Original chainring hypothesis was houghR/aimR > ~1.4 -> conf=0 abstain.
+  Observed range [0.39, 1.15] does NOT contain >1.4 in this 10-photo cohort.
+  Two interpretations:
+  (a) Smoke uses rMap[peakI] which is last-wins per cell -- not the true peak
+      radius; production must use 3D accumulator (cx, cy, r) for accurate radius.
+  (b) 2D collapse + both-polarity voting saturates the inner-circle bin; the
+      large-gear case (42T+) shows houghR clustering at ~160-185 (similar to
+      inner BCD circle in chainring images, not the outer tooth tips).
+- Spec must therefore CALIBRATE on a stratified n>=45 sweep BEFORE choosing the
+  discriminator predicate. Candidate predicates to evaluate:
+  * R1: houghR > tau1 * min(W,H) absolute large-circle floor
+  * R2: peakVotes / edgeCount > tau2 (signal-strength gate)
+  * R3: 3D accumulator full radius distribution (defer if R1/R2 sufficient)
+- Earliest-cheapest first: smoke uses 2D + per-vote rMap; if calibration shows
+  R1/R2 insufficient, fall back to 3D accumulator (still cheap: peak found via
+  argmax over flat array; same edge x radius cost).

@@ -1,0 +1,353 @@
+[
+  {
+    "event_id": "0959928df0ff464eb701b7c52d500858",
+    "event_short": "0959928d",
+    "actualTC": 32,
+    "predTC": 32,
+    "confidence": 0.8079,
+    "methodUsed": "bc-consensus+fft-agree",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 99307,
+    "dateCreated": "2026-05-19T14:35:06.462000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "32T_0959928d.jpg",
+    "cropped": "32T_0959928d_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "bc-consensus+fft-agree",
+      "peakR": 385,
+      "rOuter": 305,
+      "radialRelDisagree": "0.26229508196721313"
+    },
+    "gearContour": {
+      "centerX": "0.5093644444444444",
+      "centerY": "0.4252816666666666",
+      "radius": "0.2575222222222222"
+    }
+  },
+  {
+    "event_id": "3219e9271aed4bfdade7cd6e421d1e0e",
+    "event_short": "3219e927",
+    "actualTC": 36,
+    "predTC": 16,
+    "confidence": 0.175,
+    "methodUsed": "fft90-fallback",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 107103,
+    "dateCreated": "2026-05-19T10:39:16.429000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "36T_3219e927.jpg",
+    "cropped": "36T_3219e927_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": false,
+      "methodUsed": "fft90-fallback",
+      "peakR": 338,
+      "rOuter": 264,
+      "radialRelDisagree": "0.2803030303030303"
+    },
+    "gearContour": {
+      "centerX": "0.5474911111111112",
+      "centerY": "0.39518166666666665",
+      "radius": "0.22608444444444445"
+    }
+  },
+  {
+    "event_id": "d6b831de2d924ecfa34529db3b79a8b8",
+    "event_short": "d6b831de",
+    "actualTC": 36,
+    "predTC": 36,
+    "confidence": 1,
+    "methodUsed": "bc-consensus+peak",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 86398,
+    "dateCreated": "2026-05-19T14:04:26.103000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "36T_d6b831de.jpg",
+    "cropped": "36T_d6b831de_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "bc-consensus+peak",
+      "peakR": 403,
+      "rOuter": 430,
+      "radialRelDisagree": "0.06279069767441861"
+    },
+    "gearContour": {
+      "centerX": "0.5020066666666667",
+      "centerY": "0.42377666666666663",
+      "radius": "0.2695622222222222"
+    }
+  },
+  {
+    "event_id": "dd25a498369142eb81fe2c0d132ff6d3",
+    "event_short": "dd25a498",
+    "actualTC": 36,
+    "predTC": 28,
+    "confidence": 0,
+    "methodUsed": "fft90-fallback",
+    "innerContourSuspected": true,
+    "algorithmRuntimeMs": 113326,
+    "dateCreated": "2026-05-19T10:37:11.485000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "36T_dd25a498.jpg",
+    "cropped": "36T_dd25a498_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": false,
+      "methodUsed": "fft90-fallback",
+      "peakR": 284,
+      "rOuter": 195,
+      "radialRelDisagree": "0.4564102564102564"
+    },
+    "gearContour": {
+      "centerX": "0.5441466666666667",
+      "centerY": "0.3695966666666667",
+      "radius": "0.18996444444444444"
+    }
+  },
+  {
+    "event_id": "5b3a13d80e70446ebd368e1c16882e1d",
+    "event_short": "5b3a13d8",
+    "actualTC": 48,
+    "predTC": 48,
+    "confidence": 0.8819,
+    "methodUsed": "bc-consensus+peak",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 84510,
+    "dateCreated": "2026-05-19T10:41:10.629000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "48T_5b3a13d8.jpg",
+    "cropped": "48T_5b3a13d8_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "bc-consensus+peak",
+      "peakR": 385,
+      "rOuter": 379,
+      "radialRelDisagree": "0.0158311345646438"
+    },
+    "gearContour": {
+      "centerX": "0.49799333333333334",
+      "centerY": "0.4313016666666667",
+      "radius": "0.2575222222222222"
+    }
+  },
+  {
+    "event_id": "01fdccfd89f143178f4d6a93f0929b91",
+    "event_short": "01fdccfd",
+    "actualTC": 50,
+    "predTC": 50,
+    "confidence": 1,
+    "methodUsed": "bc-consensus",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 75391,
+    "dateCreated": "2026-05-19T10:34:48.353000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "50T_01fdccfd.jpg",
+    "cropped": "50T_01fdccfd_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "bc-consensus",
+      "peakR": 295,
+      "rOuter": 208,
+      "radialRelDisagree": "0.4182692307692308"
+    },
+    "gearContour": {
+      "centerX": "0.4872911111111112",
+      "centerY": "0.4162516666666667",
+      "radius": "0.19732222222222223"
+    }
+  },
+  {
+    "event_id": "625fd85d6dc94a268a570ef187a5e096",
+    "event_short": "625fd85d",
+    "actualTC": 52,
+    "predTC": 51,
+    "confidence": 0.9673,
+    "methodUsed": "retry-bc-consensus+chainring-pk",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 116088,
+    "dateCreated": "2026-05-19T07:14:21.788000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "52T_625fd85d.jpg",
+    "cropped": "52T_625fd85d_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "retry-bc-consensus+chainring-pk",
+      "peakR": 321,
+      "rOuter": 350,
+      "radialRelDisagree": "0.08285714285714285"
+    },
+    "gearContour": {
+      "centerX": "0.4966555555555556",
+      "centerY": 0.41575,
+      "radius": "0.21471333333333337"
+    }
+  },
+  {
+    "event_id": "93bab076877646ac8846d184ddf6ee58",
+    "event_short": "93bab076",
+    "actualTC": 52,
+    "predTC": 12,
+    "confidence": 0,
+    "methodUsed": "peak",
+    "innerContourSuspected": true,
+    "algorithmRuntimeMs": 86171,
+    "dateCreated": "2026-05-19T07:16:08.316000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "52T_93bab076.jpg",
+    "cropped": "52T_93bab076_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "peak",
+      "peakR": 322,
+      "rOuter": 230,
+      "radialRelDisagree": 0.4
+    },
+    "gearContour": {
+      "centerX": "0.5013377777777778",
+      "centerY": "0.4242783333333333",
+      "radius": "0.21538222222222225"
+    }
+  },
+  {
+    "event_id": "b17133f888de411f97a4925f505aac92",
+    "event_short": "b17133f8",
+    "actualTC": 52,
+    "predTC": 30,
+    "confidence": 0.4692,
+    "methodUsed": "retry-bc-peaks",
+    "innerContourSuspected": false,
+    "algorithmRuntimeMs": 107851,
+    "dateCreated": "2026-05-19T07:18:23.493000Z",
+    "device": "21081111RG",
+    "release": "v1.0.0 (127) \u00b7 2026-05-19 06:44",
+    "photo": "52T_b17133f8.jpg",
+    "cropped": "52T_b17133f8_cropped.jpg",
+    "aimCrop": {
+      "aimCircleFrac": 1,
+      "fullH": 4000,
+      "fullW": 3000,
+      "measured": true,
+      "originX": 597,
+      "originY": 760,
+      "screenCenterX": "196.36363220214844",
+      "screenCenterY": "343.4545440673828",
+      "side": 1806
+    },
+    "algoDiag": {
+      "aimR": 450,
+      "chainringRegime": true,
+      "methodUsed": "retry-bc-peaks",
+      "peakR": 298,
+      "rOuter": 363,
+      "radialRelDisagree": "0.1790633608815427"
+    },
+    "gearContour": {
+      "centerX": 0.5,
+      "centerY": "0.4282916666666667",
+      "radius": "0.1993288888888889"
+    }
+  }
+]

@@ -1,0 +1,53 @@
+
+=== PAP-885 5-way-agree override sweep ===
+
+[Training] 0 photos (9-60T)
+  done in 0s
+
+[XL device] 15 targets
+  build=b111 report_2026-04-29_05-29-04-170Z cls=XL actual=42 tc=41 conf=0.48 peak=43 fft90=41 op=42 bc=10(pk=12) gearR=0.436 rel=0.1111 chFires=N method=fft90-fallback
+  build=b111 report_2026-04-29_05-31-25-376Z cls=XL actual=42 tc=41 conf=0.82 peak=41 fft90=41 op=13 bc=12(pk=4) gearR=0.437 rel=0.0415 chFires=N method=peak
+  build=b111 report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gearR=0.367 rel=0.1451 chFires=N method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 chFires=Y method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-37-38-177Z cls=XL actual=52 tc=50 conf=0.61 peak=12 fft90=12 op=18 bc=53(pk=50) gearR=0.338 rel=0.1032 chFires=N method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-39-22-521Z cls=XL actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) gearR=0.422 rel=0.6889 chFires=N method=bc-consensus+peak
+  build=b112 report_2026-04-30_05-32-51-092Z cls=XL actual=42 tc=42 conf=0.67 peak=43 fft90=42 op=42 bc=42(pk=36) gearR=0.400 rel=0.0955 chFires=N method=bc-fft
+  build=b112 report_2026-04-30_05-34-20-458Z cls=XL actual=42 tc=43 conf=0.73 peak=10 fft90=43 op=14 bc=12(pk=4) gearR=0.484 rel=0.0113 chFires=N method=bc-fft+pap868-fft90-xl-rescue-A
+  build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=42 conf=0.73 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 chFires=Y method=bc-fft+pap868-fft90-xl-rescue-A
+  build=b112 report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 chFires=N method=bc-consensus
+  build=b114 report_2026-04-30_10-09-03-515Z cls=XL actual=34 tc=18 conf=0.37 peak=10 fft90=18 op=24 bc=10(pk=23) gearR=0.131 rel=0.0172 chFires=N method=fft90-fallback
+  build=b114 report_2026-04-30_10-14-44-086Z cls=XL actual=34 tc=28 conf=0.00 peak=10 fft90=28 op=13 bc=11(pk=2) gearR=0.047 rel=0.1429 chFires=N method=fft90-fallback
+  build=b114 report_2026-04-30_10-17-03-115Z cls=XL actual=34 tc=34 conf=1.00 peak=34 fft90=34 op=34 bc=34(pk=34) gearR=0.410 rel=0.0054 chFires=N method=bc-consensus+fft-agree
+  build=b114 report_2026-04-30_10-19-19-295Z cls=XL actual=36 tc=35 conf=0.00 peak=35 fft90=36 op=35 bc=36(pk=36) gearR=0.429 rel=0.3885 chFires=Y method=bc-consensus+peak
+  build=b114 report_2026-04-30_10-23-07-161Z cls=XL actual=36 tc=36 conf=0.00 peak=36 fft90=36 op=36 bc=36(pk=36) gearR=0.423 rel=0.3229 chFires=Y method=bc-consensus+peak
+
+--- Eligibility / chainring-abstain rows ---
+  training: 0 radial-chainring-abstained rows
+  xl:       3 radial-chainring-abstained rows
+  (xl detail)
+    report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 chFires=Y method=retry-bc-peaks build=b111
+    report_2026-04-30_10-19-19-295Z cls=XL actual=36 tc=35 conf=0.00 peak=35 fft90=36 op=35 bc=36(pk=36) gearR=0.429 rel=0.3885 chFires=Y method=bc-consensus+peak build=b114
+    report_2026-04-30_10-23-07-161Z cls=XL actual=36 tc=36 conf=0.00 peak=36 fft90=36 op=36 bc=36(pk=36) gearR=0.423 rel=0.3229 chFires=Y method=bc-consensus+peak build=b114
+
+--- Candidate evaluation: TRAINING corpus ---
+  cand                          fires  wins  losses  benign  noop
+  5way-agree-d1-thr30              0     0       0       0     0
+  5way-agree-d2-thr30              0     0       0       0     0
+  5way-d1-thr30-fftMethod          0     0       0       0     0
+
+--- Candidate evaluation: XL device targets ---
+  cand                          fires  wins  losses  benign  noop
+  5way-agree-d1-thr30              2     2       0       0     0
+    [WIN]    report_2026-04-30_10-19-19-295Z cls=XL actual=36 tc=35 conf=0.00 peak=35 fft90=36 op=35 bc=36(pk=36) gearR=0.429 rel=0.3885 chFires=Y method=bc-consensus+peak build=b114
+    [WIN]    report_2026-04-30_10-23-07-161Z cls=XL actual=36 tc=36 conf=0.00 peak=36 fft90=36 op=36 bc=36(pk=36) gearR=0.423 rel=0.3229 chFires=Y method=bc-consensus+peak build=b114
+  5way-agree-d2-thr30              2     2       0       0     0
+    [WIN]    report_2026-04-30_10-19-19-295Z cls=XL actual=36 tc=35 conf=0.00 peak=35 fft90=36 op=35 bc=36(pk=36) gearR=0.429 rel=0.3885 chFires=Y method=bc-consensus+peak build=b114
+    [WIN]    report_2026-04-30_10-23-07-161Z cls=XL actual=36 tc=36 conf=0.00 peak=36 fft90=36 op=36 bc=36(pk=36) gearR=0.423 rel=0.3229 chFires=Y method=bc-consensus+peak build=b114
+  5way-d1-thr30-fftMethod          2     2       0       0     0
+    [WIN]    report_2026-04-30_10-19-19-295Z cls=XL actual=36 tc=35 conf=0.00 peak=35 fft90=36 op=35 bc=36(pk=36) gearR=0.429 rel=0.3885 chFires=Y method=bc-consensus+peak build=b114
+    [WIN]    report_2026-04-30_10-23-07-161Z cls=XL actual=36 tc=36 conf=0.00 peak=36 fft90=36 op=36 bc=36(pk=36) gearR=0.423 rel=0.3229 chFires=Y method=bc-consensus+peak build=b114
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        424.541 s
+Ran all test suites.

@@ -1,0 +1,60 @@
+=== starting dim=900 09:17:59 ===
+[pap1693-resdim] dim=900 label=sweep corpus=362
+  [100/362] 168s
+  [150/362] 251s
+  [200/362] 333s
+  [250/362] 415s
+  [300/362] 517s
+  [350/362] 616s
+
+=== PAP-1693 RESDIM=900 summary ===
+Corpus: 362 photos   Wall: 661.4s
+accuracy: 210/362 = 58.0%   abstain: 126 (34.8%)   confident-wrong: 26 (7.2%)
+countTeethFromRgba runtime: p50=1032  p95=1789  max=4832  sum=404127
+
+Per-bucket:
+Bucket          Tol   N    Correct  Acc%    Abstain  Conf-Wrong   med(ms)
+Small  9-15T   exact  136      102   75.0%       31           3     866
+Mid    16-20T  exact   33       27   81.8%        5           1     878
+Large  21-28T  ±1     113       51   45.1%       52          10    1135
+XL     29-60T  ±1      80       30   37.5%       38          12    1286
+
+[pap1693-resdim] snapshot -> /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1693_resdim_900_sweep.json
+(node:2940098) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+=== finished dim=900 09:27:33 ===
+=== starting dim=700 09:27:33 ===
+[pap1693-resdim] dim=700 label=sweep corpus=362
+  [50/362] 59s
+  [100/362] 97s
+  [150/362] 132s
+  [200/362] 174s
+  [250/362] 213s
+  [300/362] 250s
+  [350/362] 289s
+
+=== PAP-1693 RESDIM=700 summary ===
+Corpus: 362 photos   Wall: 298.1s
+accuracy: 0/362 = 0.0%   abstain: 362 (100.0%)   confident-wrong: 0 (0.0%)
+countTeethFromRgba runtime: p50=88  p95=142  max=480  sum=33995
+
+Per-bucket:
+Bucket          Tol   N    Correct  Acc%    Abstain  Conf-Wrong   med(ms)
+Small  9-15T   exact  136        0    0.0%      136           0      84
+Mid    16-20T  exact   33        0    0.0%       33           0      82
+Large  21-28T  ±1     113        0    0.0%      113           0      88
+XL     29-60T  ±1      80        0    0.0%       80           0      99
+
+[pap1693-resdim] snapshot -> /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1693_resdim_700_sweep.json
+(node:2959873) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+=== finished dim=700 09:32:32 ===
+=== starting dim=500 09:32:32 ===
+[pap1693-resdim] dim=500 label=sweep corpus=362
+  [50/362] 49s
+  [100/362] 100s
+  [150/362] 153s

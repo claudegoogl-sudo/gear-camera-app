@@ -1,0 +1,34 @@
+[pap1639] measure label=pap1666_after photos=362 stride=1
+  [50/362] 84s
+  [100/362] 180s
+  [150/362] 271s
+  [200/362] 355s
+  [250/362] 447s
+  [300/362] 551s
+  [350/362] 660s
+
+=== PAP-1639 stage profile [pap1666_after] ===
+Corpus: 362 photos   Wall: 688.6s   Sum(total): 368.9s
+
+stage           p50     p95     max    share
+gray               4       6      21     0.4%
+clahe             15      18      48     1.5%
+blur              16      23     119     1.7%
+canny             55      74     136     5.6%
+detect           780    1083    1684    77.4%
+  center         604     813    1257    59.1%
+  edgeRadius       1       1       5     0.1%
+  fft90            4       8      30     0.4%
+  multiR           5       8      22     0.5%
+  outerProf        1       2      14     0.1%
+  binContour     160     276     673    16.9%
+  clahePeak        2       3       7     0.2%
+methods           58     560     910    15.5%
+------------------------------------------------
+total            977    1505    2291   100.0%
+
+[pap1639] snapshot -> /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1639_pap1666_after.json
+(node:1809863) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

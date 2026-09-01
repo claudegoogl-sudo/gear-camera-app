@@ -1,0 +1,135 @@
+
+=== PAP-939 b116 XL diagnostic ===
+
+--- per-row ---
+08-22-10-875Z 52T-CW-13
+  actual=52 tc=13 conf=0.407 method=fft-agreement innerSus=false
+  peakTc=13 fft90=13 op=21 bcTc=46 bcPk=27
+  gearR=0.324 peakR=292 rOuter=287 radialRel=0.017 crop=900x900
+08-24-01-784Z 52T-abstain
+  actual=52 tc=0 conf=0.000 method=fft90-fallback+pap632-fft-floor-abstain innerSus=false
+  peakTc=10 fft90=15 op=23 bcTc=45 bcPk=47
+  gearR=0.277 peakR=249 rOuter=254 radialRel=0.020 crop=900x900
+08-26-34-045Z 52T-CW-32
+  actual=52 tc=32 conf=0.512 method=retry-bc-peaks innerSus=false
+  peakTc=12 fft90=12 op=24 bcTc=52 bcPk=32
+  gearR=0.350 peakR=315 rOuter=347 radialRel=0.092 crop=900x900
+08-28-32-755Z 50T-abstain
+  actual=50 tc=50 conf=0.000 method=bc-consensus innerSus=true
+  peakTc=50 fft90=24 op=25 bcTc=50 bcPk=50
+  gearR=0.440 peakR=396 rOuter=222 radialRel=0.784 crop=900x900
+08-30-59-457Z 50T-abstain
+  actual=50 tc=50 conf=0.000 method=bc-consensus innerSus=true
+  peakTc=12 fft90=24 op=24 bcTc=50 bcPk=49
+  gearR=0.339 peakR=305 rOuter=369 radialRel=0.173 crop=900x900
+09-03-58-615Z 48T-correct
+  actual=48 tc=48 conf=1.000 method=bc-consensus+peak innerSus=false
+  peakTc=48 fft90=12 op=14 bcTc=48 bcPk=48
+  gearR=0.446 peakR=401 rOuter=400 radialRel=0.003 crop=900x900
+09-07-06-225Z 42T-correct
+  actual=42 tc=42 conf=0.493 method=fft-agreement innerSus=false
+  peakTc=42 fft90=42 op=20 bcTc=40 bcPk=17
+  gearR=0.446 peakR=401 rOuter=387 radialRel=0.036 crop=900x900
+09-09-19-262Z 36T-abstain
+  actual=36 tc=10 conf=0.000 method=fft90-fallback innerSus=true
+  peakTc=12 fft90=10 op=12 bcTc=10 bcPk=4
+  gearR=0.332 peakR=299 rOuter=232 radialRel=0.289 crop=900x900
+
+--- candidate predicates (harness/crop-space gearR) ---
+
+existing PAP-889 (gR<0.20 tc<30 conf<0.40)
+  WIN=0 LOSS=0 NOOP=0 PASS=8
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → PASS
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → PASS
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → PASS
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+
+Cand-1 (device 0.22): gR<0.365 tc<35 conf<0.55
+  WIN=2 LOSS=0 NOOP=2 PASS=4
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → NOOP
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → NOOP
+
+Cand-2 (device 0.22): gR<0.365 tc<35 chainringRegime
+  WIN=2 LOSS=0 NOOP=1 PASS=5
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → NOOP
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+
+Cand-3: gR<0.365 + dual-inner-lock (|peakR-rOuter|/rOuter<0.10) + chReg
+  WIN=2 LOSS=0 NOOP=1 PASS=5
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → NOOP
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+
+Cand-4: gR<0.365 + tc<35 + chReg + (peakR/min<0.40 OR conf<0.55)
+  WIN=2 LOSS=0 NOOP=1 PASS=5
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → NOOP
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+
+Cand-5: gR<0.365 + tc<35 + chReg + bcPeaks differs from bcTc by >5
+  WIN=2 LOSS=0 NOOP=0 PASS=6
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → PASS
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+
+Cand-6: gR<0.365 + tc<35 + (any chainring channel >=30 AND tc < that channel - 10)
+  WIN=2 LOSS=0 NOOP=1 PASS=5
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → NOOP
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+
+Cand-7: gR<0.365 + tc<35 + (peakR<350 in 900-px crop) + chReg
+  WIN=2 LOSS=0 NOOP=1 PASS=5
+  26-05-01_08-22-10 52T-CW-13 tc=13 conf=0.41 → WIN
+  26-05-01_08-24-01 52T-abstain tc=0 conf=0.00 → NOOP
+  26-05-01_08-26-34 52T-CW-32 tc=32 conf=0.51 → WIN
+  26-05-01_08-28-32 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_08-30-59 50T-abstain tc=50 conf=0.00 → PASS
+  26-05-01_09-03-58 48T-correct tc=48 conf=1.00 → PASS
+  26-05-01_09-07-06 42T-correct tc=42 conf=0.49 → PASS
+  26-05-01_09-09-19 36T-abstain tc=10 conf=0.00 → PASS
+PASS __tests__/pap939.diag.js (254.724 s)
+  PAP-939 b116 XL diagnostic
+    ✓ replay b116 XL captures (254434 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        254.827 s
+Ran all test suites.

@@ -1,0 +1,92 @@
+[pap1078.dark] sample=62 (target 4/actual)
+[pap1078.dark] actuals: 11T(4) 12T(2) 13T(4) 14T(4) 15T(4) 17T(1) 18T(4) 21T(4) 24T(4) 28T(4) 32T(2) 34T(4) 36T(4) 42T(4) 48T(4) 50T(4) 51T(1) 52T(4)
+  [10/62] 192s
+  [20/62] 384s
+  [30/62] 592s
+  [40/62] 858s
+  [50/62] 1077s
+  [60/62] 1292s
+
+=== PAP-1078 annular signals — quantiles per class ===
+
+-- band=narrow [0.55, 0.9]·peakR --
+class    N    signal     p05    p10    p25    p50    p75    p90    p95
+Small   10  cv         0.048  0.102  0.186  0.214  0.246  0.321  0.321
+Small   10  iqr        0.042  0.047  0.052  0.077  0.106  0.463  0.463
+Small   10  bim        0.101  0.134  0.154  0.504  0.585  0.726  0.726
+Mid     13  cv         0.133  0.148  0.175  0.203  0.245  0.275  0.311
+Mid     13  iqr        0.047  0.060  0.071  0.093  0.141  0.206  0.207
+Mid     13  bim        0.269  0.296  0.361  0.373  0.525  0.649  0.691
+Large   12  cv         0.095  0.104  0.145  0.195  0.243  0.252  0.334
+Large   12  iqr        0.038  0.047  0.094  0.154  0.196  0.359  0.415
+Large   12  bim        0.088  0.106  0.299  0.428  0.574  0.576  0.759
+XL      27  cv         0.102  0.125  0.137  0.335  0.471  0.580  0.587
+XL      27  iqr        0.030  0.041  0.122  0.278  0.654  1.091  1.495
+XL      27  bim        0.170  0.172  0.306  0.796  1.161  1.810  1.864
+
+-- band=tight [0.6, 0.85]·peakR --
+class    N    signal     p05    p10    p25    p50    p75    p90    p95
+Small   10  cv         0.039  0.109  0.185  0.212  0.245  0.321  0.321
+Small   10  iqr        0.042  0.049  0.052  0.078  0.109  0.459  0.459
+Small   10  bim        0.091  0.110  0.143  0.495  0.570  0.726  0.726
+Mid     13  cv         0.137  0.142  0.174  0.198  0.244  0.274  0.302
+Mid     13  iqr        0.047  0.058  0.066  0.094  0.151  0.190  0.196
+Mid     13  bim        0.254  0.273  0.346  0.369  0.527  0.648  0.664
+Large   12  cv         0.097  0.111  0.140  0.186  0.238  0.258  0.346
+Large   12  iqr        0.039  0.047  0.095  0.149  0.204  0.357  0.459
+Large   12  bim        0.087  0.134  0.269  0.405  0.553  0.583  0.779
+XL      27  cv         0.107  0.122  0.133  0.329  0.469  0.577  0.586
+XL      27  iqr        0.029  0.037  0.109  0.280  0.720  1.196  1.465
+XL      27  bim        0.162  0.167  0.304  0.793  1.098  1.772  1.824
+
+=== Cog (n=35) vs Chainring (n=27) ===
+-- band=narrow --
+signal   COG p10  p25  p50  p75  p90 | RING p10  p25  p50  p75  p90
+cv        0.104  0.156  0.203  0.245  0.294 |  0.125  0.137  0.335  0.471  0.580
+iqr       0.047  0.060  0.094  0.160  0.207 |  0.041  0.122  0.278  0.654  1.091
+bim       0.134  0.299  0.428  0.574  0.691 |  0.172  0.306  0.796  1.161  1.810
+-- band=tight --
+signal   COG p10  p25  p50  p75  p90 | RING p10  p25  p50  p75  p90
+cv        0.111  0.151  0.198  0.244  0.292 |  0.122  0.133  0.329  0.469  0.577
+iqr       0.047  0.058  0.095  0.154  0.204 |  0.037  0.109  0.280  0.720  1.196
+bim       0.134  0.273  0.405  0.565  0.664 |  0.167  0.304  0.793  1.098  1.772
+
+=== Threshold sweep: signal >= T fires "chainring" (high direction only) ===
+band     signal   T       cogCap  ring%   cog%   S%   M%   L%   XL%
+narrow  cv       T= 0.335 cog<=0.00  ring%= 51.9  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 52
+narrow  cv       T= 0.335 cog<=0.02  ring%= 51.9  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 52
+narrow  cv       T= 0.323 cog<=0.05  ring%= 59.3  cog%= 2.9  S%=  0 M%=  0 L%=  8 XL%= 59
+narrow  iqr      T= 0.517 cog<=0.00  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+narrow  iqr      T= 0.517 cog<=0.02  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+narrow  iqr      T= 0.517 cog<=0.05  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+narrow  bim      T= 0.781 cog<=0.00  ring%= 59.3  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 59
+narrow  bim      T= 0.781 cog<=0.02  ring%= 59.3  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 59
+narrow  bim      T= 0.781 cog<=0.05  ring%= 59.3  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 59
+tight   cv       T= 0.375 cog<=0.00  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+tight   cv       T= 0.375 cog<=0.02  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+tight   cv       T= 0.324 cog<=0.05  ring%= 59.3  cog%= 2.9  S%=  0 M%=  0 L%=  8 XL%= 59
+tight   iqr      T= 0.482 cog<=0.00  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+tight   iqr      T= 0.482 cog<=0.02  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+tight   iqr      T= 0.482 cog<=0.05  ring%= 44.4  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 44
+tight   bim      T= 0.793 cog<=0.00  ring%= 51.9  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 52
+tight   bim      T= 0.793 cog<=0.02  ring%= 51.9  cog%= 0.0  S%=  0 M%=  0 L%=  0 XL%= 52
+tight   bim      T= 0.775 cog<=0.05  ring%= 63.0  cog%= 2.9  S%=  0 M%=  0 L%=  8 XL%= 63
+
+=== PAP-1060 11T-conf=0 cluster trace (n=1/11 present in stratified sample) ===
+stamp                            actual  detected  conf   peakR  ncv niqr nbim  tcv tiqr tbim
+2026-04-06_10-01-25-781Z  11T    11T      0.000    186   0.321  0.463  0.721   0.321  0.459  0.726
+
+--- per-candidate cluster fire trace (any FIRE on a cluster row = structural AC2 LOSS) ---
+  cand band=narrow sig=cv T=0.335 ring%=51.9  cluster_fire=0/1
+  cand band=narrow sig=iqr T=0.517 ring%=44.4  cluster_fire=0/1
+  cand band=narrow sig=bim T=0.781 ring%=59.3  cluster_fire=0/1
+  cand band=tight sig=cv T=0.375 ring%=44.4  cluster_fire=0/1
+  cand band=tight sig=iqr T=0.482 ring%=44.4  cluster_fire=0/1
+  cand band=tight sig=bim T=0.793 ring%=51.9  cluster_fire=0/1
+
+row-level csv: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1078_dark_rows_2026-05-03.csv  (62 rows)
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        1328.859 s
+Ran all test suites.

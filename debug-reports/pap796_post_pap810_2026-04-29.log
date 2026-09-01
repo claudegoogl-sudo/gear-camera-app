@@ -1,0 +1,181 @@
+
+[pap796] inspecting 305 9-60T photos
+  [25/305] elapsed 478s
+  [50/305] elapsed 963s
+  [75/305] elapsed 1476s
+  [100/305] elapsed 1998s
+  [125/305] elapsed 2522s
+  [150/305] elapsed 3053s
+  [175/305] elapsed 3571s
+  [200/305] elapsed 4109s
+  [225/305] elapsed 4668s
+  [250/305] elapsed 5193s
+  [275/305] elapsed 5764s
+  [300/305] elapsed 6303s
+
+=== PAP-796 Option E (bc-strong-disagree) cross-check ===
+Corpus: 305 photos.  Wall: 6418s
+
+-- Per-class baseline --
+  Small: n=51 correct=32 (62.7%) wrong=1 abstain=18
+  Mid: n=114 correct=102 (89.5%) wrong=2 abstain=10
+  Large: n=109 correct=47 (43.1%) wrong=15 abstain=47
+  XL: n=31 correct=8 (25.8%) wrong=8 abstain=15
+
+-- Option E threshold sweep (THRESH = |bcTc - peakTc| >) --
+thresh | wins(±1) | losses(>±1) | new_wrong_committed | by_class W/L
+   5    |       0  |          0  |                  0  | Small 0/0  Mid 0/0  Large 0/0  XL 0/0
+   6    |       0  |          0  |                  0  | Small 0/0  Mid 0/0  Large 0/0  XL 0/0
+   8    |       0  |          0  |                  0  | Small 0/0  Mid 0/0  Large 0/0  XL 0/0
+  10    |       0  |          0  |                  0  | Small 0/0  Mid 0/0  Large 0/0  XL 0/0
+  15    |       0  |          0  |                  0  | Small 0/0  Mid 0/0  Large 0/0  XL 0/0
+
+-- Option E (THRESH > 5) WIN rows --
+  (none)
+
+-- Option E (THRESH > 5) LOSS rows --
+  (none)
+
+-- Rows that DROP OUT when tightening 5→10 (no longer triggered) --
+  Wins lost when raising threshold to >10 (0):
+  Losses avoided when raising threshold to >10 (0):
+
+-- |bcTc - peakTc| distribution across ABSTAIN rows (bcSelf && bcCommitted only) --
+  abstain ∧ bcSelf ∧ tc==bcTc ∧ bcTc>10  total=3
+    |Δ| 0     : 1
+    |Δ| 1-2   : 1
+    |Δ| 3-5   : 1
+    |Δ| 6-10  : 0
+    |Δ| 11-20 : 0
+    |Δ| 21+   : 0
+
+-- All ABSTAIN rows (radius-sanity / inner-contour fired) --
+(90 rows)
+  2026-04-04_09-10-20-407Z  cls=Small actual=13 tc=13 conf=0.00 peak=11 fft90=17 op=17 bcTc=13 bcPk=12 dPB=2 gR=0.271 innerSus=true tripleAgree=false method=bc-consensus
+  2026-04-05_08-27-08-187Z  cls=Mid actual=14 tc=10 conf=0.00 peak=14 fft90=14 op=14 bcTc=10 bcPk=12 dPB=4 gR=0.176 innerSus=true tripleAgree=false method=bc-consensus
+  2026-04-05_08-31-06-222Z  cls=Small actual=13 tc=0 conf=0.00 peak=10 fft90=34 op=14 bcTc=13 bcPk=13 dPB=3 gR=0.252 innerSus=false tripleAgree=false method=bc-consensus+pap632-fft-floor-abstain
+  2026-04-05_08-31-34-725Z  cls=Small actual=13 tc=0 conf=0.00 peak=10 fft90=17 op=10 bcTc=13 bcPk=14 dPB=3 gR=0.250 innerSus=false tripleAgree=false method=bc-consensus+pap632-fft-floor-abstain
+  2026-04-05_08-32-16-126Z  cls=Small actual=13 tc=13 conf=0.00 peak=11 fft90=17 op=14 bcTc=13 bcPk=13 dPB=2 gR=0.255 innerSus=true tripleAgree=false method=bc-consensus
+  2026-04-05_08-32-48-875Z  cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=17 op=10 bcTc=10 bcPk=12 dPB=1 gR=0.132 innerSus=true tripleAgree=false method=bc-consensus+peak
+  2026-04-05_08-33-27-869Z  cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=34 op=16 bcTc=11 bcPk=9 dPB=0 gR=0.129 innerSus=true tripleAgree=false method=bc-fft
+  2026-04-05_08-34-06-051Z  cls=Small actual=11 tc=11 conf=0.00 peak=14 fft90=28 op=11 bcTc=11 bcPk=11 dPB=3 gR=0.290 innerSus=true tripleAgree=false method=bc-consensus
+  2026-04-05_14-40-38-072Z  cls=Small actual=11 tc=11 conf=0.00 peak=18 fft90=36 op=12 bcTc=11 bcPk=13 dPB=7 gR=0.440 innerSus=true tripleAgree=false method=bc-consensus
+  2026-04-08_19-49-12-150Z  cls=Large actual=24 tc=20 conf=0.00 peak=10 fft90=10 op=20 bcTc=10 bcPk=4 dPB=0 gR=0.058 innerSus=true tripleAgree=false method=bc-fft+large-op-override
+  2026-04-11_17-20-57-425Z  cls=Large actual=28 tc=10 conf=0.00 peak=12 fft90=10 op=15 bcTc=10 bcPk=1 dPB=2 gR=0.144 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-13_09-18-08-473Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=11 bcTc=11 bcPk=4 dPB=1 gR=0.364 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-13_09-35-27-304Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=10 op=29 bcTc=50 bcPk=16 dPB=40 gR=0.012 innerSus=true tripleAgree=false method=fft90-fallback+pap474-abstain
+  2026-04-16_11-26-39-022Z  cls=Large actual=21 tc=0 conf=0.00 peak=10 fft90=10 op=18 bcTc=10 bcPk=12 dPB=0 gR=0.169 innerSus=false tripleAgree=false method=fft90-fallback+mid-op-override+pap632-fft-floor-abstain
+  2026-04-16_11-29-30-227Z  cls=Large actual=28 tc=28 conf=0.00 peak=28 fft90=10 op=14 bcTc=10 bcPk=19 dPB=18 gR=0.142 innerSus=true tripleAgree=false method=peak
+  2026-04-17_11-01-34-218Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=10 op=16 bcTc=24 bcPk=18 dPB=14 gR=0.393 innerSus=false tripleAgree=false method=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-19_11-32-11-962Z  cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=22 op=11 bcTc=11 bcPk=18 dPB=0 gR=0.166 innerSus=true tripleAgree=false method=peak
+  2026-04-19_11-33-29-608Z  cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=10 op=11 bcTc=11 bcPk=16 dPB=0 gR=0.120 innerSus=true tripleAgree=false method=peak
+  2026-04-19_14-49-48-616Z  cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=18 op=24 bcTc=10 bcPk=4 dPB=8 gR=0.102 innerSus=true tripleAgree=false method=peak
+  2026-04-19_15-14-02-261Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=10 op=22 bcTc=0 bcPk=0 dPB=10 gR=0.184 innerSus=false tripleAgree=false method=fft-agreement+pap632-fft-floor-abstain
+  2026-04-19_15-28-14-823Z  cls=Large actual=21 tc=22 conf=0.00 peak=12 fft90=11 op=22 bcTc=11 bcPk=11 dPB=1 gR=0.110 innerSus=true tripleAgree=false method=low-conf-consensus+large-op-override
+  2026-04-19_15-30-17-488Z  cls=Large actual=21 tc=11 conf=0.00 peak=11 fft90=11 op=20 bcTc=10 bcPk=1 dPB=1 gR=0.128 innerSus=true tripleAgree=false method=retry-fft90-fallback
+  2026-04-19_15-36-36-632Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=11 bcTc=0 bcPk=0 dPB=10 gR=0.184 innerSus=false tripleAgree=false method=low-conf-consensus+op-up-override+pap632-fft-floor-abstain
+  2026-04-19_15-38-37-106Z  cls=Large actual=28 tc=10 conf=0.00 peak=10 fft90=10 op=15 bcTc=12 bcPk=3 dPB=2 gR=0.221 innerSus=true tripleAgree=false method=fft-agreement
+  2026-04-19_15-40-54-450Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=15 bcTc=12 bcPk=3 dPB=2 gR=0.124 innerSus=true tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-19_15-42-38-634Z  cls=Large actual=28 tc=27 conf=0.00 peak=12 fft90=10 op=27 bcTc=26 bcPk=5 dPB=14 gR=0.055 innerSus=true tripleAgree=false method=fft90-fallback+large-op-override
+  2026-04-19_15-44-52-340Z  cls=Large actual=28 tc=10 conf=0.00 peak=13 fft90=10 op=12 bcTc=11 bcPk=4 dPB=2 gR=0.037 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-19_15-47-20-296Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=12 op=12 bcTc=12 bcPk=13 dPB=2 gR=0.404 innerSus=false tripleAgree=false method=low-conf-consensus+pap632-fft-floor-abstain
+  2026-04-19_18-42-36-869Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=18 op=22 bcTc=10 bcPk=4 dPB=0 gR=0.301 innerSus=false tripleAgree=false method=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-19_18-47-36-063Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=13 op=22 bcTc=12 bcPk=4 dPB=2 gR=0.121 innerSus=true tripleAgree=false method=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-19_18-56-13-322Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=11 op=12 bcTc=10 bcPk=4 dPB=0 gR=0.099 innerSus=true tripleAgree=false method=low-conf-consensus+pap632-fft-floor-abstain
+  2026-04-19_19-18-34-054Z  cls=Large actual=21 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=19 bcPk=2 dPB=9 gR=0.012 innerSus=true tripleAgree=false method=low-conf-consensus+pap474-abstain
+  2026-04-19_19-44-35-557Z  cls=Mid actual=15 tc=12 conf=0.00 peak=10 fft90=12 op=12 bcTc=11 bcPk=3 dPB=1 gR=0.043 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-19_20-05-09-636Z  cls=Mid actual=15 tc=10 conf=0.00 peak=11 fft90=26 op=12 bcTc=10 bcPk=4 dPB=1 gR=0.099 innerSus=true tripleAgree=false method=bc-fft
+  2026-04-19_20-16-28-570Z  cls=Small actual=11 tc=20 conf=0.00 peak=10 fft90=20 op=10 bcTc=15 bcPk=4 dPB=5 gR=0.080 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-19_20-32-41-522Z  cls=Small actual=11 tc=12 conf=0.00 peak=13 fft90=12 op=11 bcTc=10 bcPk=12 dPB=3 gR=0.246 innerSus=true tripleAgree=false method=low-conf-consensus
+  2026-04-20_16-26-12-721Z  cls=Large actual=24 tc=27 conf=0.00 peak=11 fft90=27 op=27 bcTc=11 bcPk=4 dPB=0 gR=0.111 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-20_16-29-57-130Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=11 op=18 bcTc=32 bcPk=5 dPB=22 gR=0.330 innerSus=false tripleAgree=false method=fft-agreement+mid-op-override+pap632-fft-floor-abstain
+  2026-04-20_16-35-00-142Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=12 op=11 bcTc=10 bcPk=3 dPB=0 gR=0.282 innerSus=false tripleAgree=false method=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-20_18-22-07-461Z  cls=Small actual=11 tc=13 conf=0.00 peak=11 fft90=13 op=11 bcTc=16 bcPk=2 dPB=5 gR=0.091 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-20_18-24-43-234Z  cls=Small actual=11 tc=22 conf=0.00 peak=10 fft90=22 op=10 bcTc=56 bcPk=13 dPB=46 gR=0.021 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_05-22-00-958Z  cls=Large actual=28 tc=22 conf=0.00 peak=10 fft90=10 op=22 bcTc=10 bcPk=7 dPB=0 gR=0.098 innerSus=true tripleAgree=false method=fft90-fallback+large-op-override
+  2026-04-21_05-23-42-208Z  cls=Large actual=28 tc=25 conf=0.00 peak=10 fft90=14 op=25 bcTc=11 bcPk=4 dPB=1 gR=0.087 innerSus=true tripleAgree=false method=fft90-fallback+large-op-override
+  2026-04-21_05-25-55-038Z  cls=Large actual=24 tc=44 conf=0.00 peak=10 fft90=44 op=10 bcTc=13 bcPk=13 dPB=3 gR=0.127 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_05-33-16-931Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=11 op=11 bcTc=11 bcPk=4 dPB=1 gR=0.213 innerSus=false tripleAgree=false method=low-conf-consensus+pap632-fft-floor-abstain
+  2026-04-21_05-42-18-885Z  cls=Large actual=21 tc=20 conf=0.00 peak=18 fft90=20 op=11 bcTc=10 bcPk=10 dPB=8 gR=0.100 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_05-48-20-813Z  cls=Large actual=28 tc=15 conf=0.00 peak=11 fft90=15 op=10 bcTc=0 bcPk=0 dPB=11 gR=0.126 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_05-59-14-103Z  cls=Large actual=24 tc=11 conf=0.00 peak=10 fft90=11 op=18 bcTc=16 bcPk=11 dPB=6 gR=0.156 innerSus=true tripleAgree=false method=low-conf-consensus
+  2026-04-21_06-09-20-021Z  cls=Large actual=21 tc=19 conf=0.00 peak=19 fft90=19 op=11 bcTc=11 bcPk=11 dPB=8 gR=0.111 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_06-18-32-006Z  cls=Mid actual=15 tc=18 conf=0.00 peak=10 fft90=18 op=17 bcTc=13 bcPk=21 dPB=3 gR=0.094 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_06-23-13-341Z  cls=Mid actual=14 tc=21 conf=0.00 peak=10 fft90=21 op=19 bcTc=16 bcPk=1 dPB=6 gR=0.078 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_19-02-17-555Z  cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=13 op=11 bcTc=11 bcPk=21 dPB=0 gR=0.159 innerSus=true tripleAgree=false method=peak
+  2026-04-21_19-08-20-758Z  cls=Mid actual=15 tc=28 conf=0.00 peak=10 fft90=28 op=10 bcTc=14 bcPk=9 dPB=4 gR=0.081 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-21_19-26-08-385Z  cls=Large actual=21 tc=20 conf=0.00 peak=20 fft90=20 op=22 bcTc=21 bcPk=11 dPB=1 gR=0.120 innerSus=true tripleAgree=false method=fft-agreement
+  2026-04-21_19-32-34-507Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=10 bcPk=4 dPB=0 gR=0.379 innerSus=false tripleAgree=false method=low-conf-consensus+pap474-abstain
+  2026-04-21_19-35-44-770Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=14 bcTc=16 bcPk=10 dPB=6 gR=0.376 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-21_19-37-24-880Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=14 bcTc=10 bcPk=4 dPB=0 gR=0.393 innerSus=false tripleAgree=false method=bc-fft+pap474-abstain
+  2026-04-22_07-01-01-985Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=10 bcPk=4 dPB=0 gR=0.416 innerSus=false tripleAgree=false method=bc-fft+pap474-abstain
+  2026-04-22_07-03-12-059Z  cls=Large actual=28 tc=10 conf=0.00 peak=10 fft90=10 op=20 bcTc=27 bcPk=11 dPB=17 gR=0.319 innerSus=true tripleAgree=false method=fft-agreement
+  2026-04-22_07-08-17-422Z  cls=Large actual=21 tc=21 conf=0.00 peak=21 fft90=10 op=21 bcTc=21 bcPk=16 dPB=0 gR=0.126 innerSus=true tripleAgree=false method=bc-peaks
+  2026-04-22_07-10-07-868Z  cls=Large actual=21 tc=10 conf=0.00 peak=10 fft90=10 op=21 bcTc=10 bcPk=4 dPB=0 gR=0.406 innerSus=true tripleAgree=false method=fft-agreement
+  2026-04-22_07-13-50-403Z  cls=Mid actual=18 tc=18 conf=0.00 peak=18 fft90=36 op=18 bcTc=18 bcPk=15 dPB=0 gR=0.128 innerSus=true tripleAgree=false method=retry-peak
+  2026-04-22_07-23-07-738Z  cls=Small actual=11 tc=12 conf=0.00 peak=12 fft90=12 op=11 bcTc=11 bcPk=12 dPB=1 gR=0.236 innerSus=true tripleAgree=false method=low-conf-consensus
+  2026-04-22_18-55-06-131Z  cls=Small actual=11 tc=11 conf=0.00 peak=11 fft90=20 op=11 bcTc=11 bcPk=10 dPB=0 gR=0.159 innerSus=true tripleAgree=false method=bc-consensus+peak
+  2026-04-22_19-05-59-553Z  cls=Mid actual=15 tc=10 conf=0.00 peak=15 fft90=10 op=15 bcTc=10 bcPk=3 dPB=5 gR=0.159 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-22_19-12-17-955Z  cls=Large actual=21 tc=0 conf=0.00 peak=10 fft90=13 op=17 bcTc=10 bcPk=4 dPB=0 gR=0.274 innerSus=false tripleAgree=false method=fft90-fallback+mid-op-override+pap632-fft-floor-abstain
+  2026-04-22_19-14-01-206Z  cls=Large actual=21 tc=21 conf=0.00 peak=21 fft90=11 op=21 bcTc=10 bcPk=10 dPB=11 gR=0.142 innerSus=true tripleAgree=false method=fft90-fallback+peak-subharmonic
+  2026-04-22_19-16-09-601Z  cls=Large actual=24 tc=15 conf=0.00 peak=18 fft90=15 op=12 bcTc=10 bcPk=4 dPB=8 gR=0.086 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-22_19-21-10-295Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=14 op=12 bcTc=10 bcPk=4 dPB=0 gR=0.363 innerSus=false tripleAgree=false method=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-22_19-23-01-893Z  cls=Large actual=28 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=10 bcPk=4 dPB=0 gR=0.393 innerSus=false tripleAgree=false method=low-conf-consensus+pap474-abstain
+  2026-04-23_07-15-00-335Z  cls=Large actual=24 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=33 bcPk=15 dPB=23 gR=0.257 innerSus=false tripleAgree=false method=low-conf-consensus+pap474-abstain
+  2026-04-23_07-21-34-334Z  cls=Large actual=21 tc=44 conf=0.00 peak=10 fft90=44 op=15 bcTc=12 bcPk=1 dPB=2 gR=0.047 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-23_07-26-37-883Z  cls=Large actual=21 tc=19 conf=0.00 peak=12 fft90=19 op=22 bcTc=11 bcPk=2 dPB=1 gR=0.095 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-25_08-03-37-711Z  cls=Small actual=11 tc=11 conf=0.00 peak=10 fft90=10 op=11 bcTc=13 bcPk=9 dPB=3 gR=0.175 innerSus=true tripleAgree=false method=low-conf-consensus+op-up-override
+  2026-04-25_08-45-07-271Z  cls=XL actual=36 tc=37 conf=0.00 peak=11 fft90=20 op=11 bcTc=37 bcPk=35 dPB=26 gR=0.133 innerSus=true tripleAgree=false method=bc-consensus
+  2026-04-25_09-03-13-830Z  cls=XL actual=51 tc=0 conf=0.00 peak=10 fft90=14 op=26 bcTc=11 bcPk=4 dPB=1 gR=0.185 innerSus=false tripleAgree=false method=fft90-fallback+pap632-fft-floor-abstain
+  2026-04-26_08-54-51-262Z  cls=XL actual=52 tc=28 conf=0.00 peak=28 fft90=28 op=15 bcTc=28 bcPk=28 dPB=0 gR=0.108 innerSus=true tripleAgree=false method=bc-consensus+peak
+  2026-04-27_13-21-00-705Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=15 bcTc=11 bcPk=12 dPB=1 gR=0.281 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-27_13-24-12-798Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=11 bcPk=15 dPB=1 gR=0.148 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-27_13-27-43-775Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=10 bcTc=12 bcPk=12 dPB=2 gR=0.351 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-28_06-50-20-391Z  cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=10 op=12 bcTc=10 bcPk=1 dPB=0 gR=0.409 innerSus=false tripleAgree=false method=fft90-fallback+pap474-abstain
+  2026-04-28_06-54-24-694Z  cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=10 op=12 bcTc=10 bcPk=2 dPB=0 gR=0.422 innerSus=false tripleAgree=false method=fft90-fallback+pap474-abstain
+  2026-04-28_07-01-23-211Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=13 bcTc=10 bcPk=3 dPB=0 gR=0.244 innerSus=false tripleAgree=false method=fft90-fallback+pap474-abstain
+  2026-04-28_07-03-25-120Z  cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=10 op=13 bcTc=10 bcPk=3 dPB=0 gR=0.415 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-28_14-00-29-906Z  cls=XL actual=42 tc=13 conf=0.00 peak=10 fft90=10 op=14 bcTc=10 bcPk=13 dPB=0 gR=0.200 innerSus=true tripleAgree=false method=bc-peaks
+  2026-04-28_18-27-23-983Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=14 bcTc=11 bcPk=4 dPB=1 gR=0.234 innerSus=false tripleAgree=false method=fft-agreement+pap474-abstain
+  2026-04-28_18-29-55-917Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=11 bcTc=10 bcPk=16 dPB=0 gR=0.372 innerSus=false tripleAgree=false method=low-conf-consensus+op-up-override+pap632-fft-floor-abstain
+  2026-04-28_18-37-51-496Z  cls=Mid actual=14 tc=10 conf=0.00 peak=10 fft90=10 op=14 bcTc=11 bcPk=3 dPB=1 gR=0.273 innerSus=true tripleAgree=false method=fft90-fallback
+  2026-04-29_05-33-41-732Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=11 op=10 bcTc=12 bcPk=5 dPB=2 gR=0.241 innerSus=false tripleAgree=false method=fft-agreement+pap632-fft-floor-abstain
+  2026-04-29_05-37-44-380Z  cls=XL actual=52 tc=0 conf=0.00 peak=10 fft90=10 op=11 bcTc=10 bcPk=1 dPB=0 gR=0.308 innerSus=false tripleAgree=false method=low-conf-consensus+op-up-override+pap632-fft-floor-abstain
+
+-- Confident-wrong rows (off>1, conf>0, not abstain) --
+(26 rows)
+  2026-04-04_09-10-51-656Z  cls=Small actual=11 tc=17 conf=0.12 peak=12 fft90=12 op=10 bcTc=11 bcPk=17 dPB=1 gR=0.303 innerSus=false tripleAgree=false method=bc-peaks
+  2026-04-13_09-28-41-286Z  cls=Large actual=28 tc=22 conf=0.37 peak=12 fft90=12 op=22 bcTc=10 bcPk=4 dPB=2 gR=0.321 innerSus=false tripleAgree=false method=fft90-fallback+large-op-override
+  2026-04-13_09-38-00-648Z  cls=Large actual=28 tc=10 conf=0.37 peak=27 fft90=20 op=10 bcTc=10 bcPk=4 dPB=17 gR=0.149 innerSus=false tripleAgree=false method=bc-fft
+  2026-04-19_15-25-39-158Z  cls=Large actual=21 tc=19 conf=0.30 peak=18 fft90=18 op=19 bcTc=23 bcPk=20 dPB=5 gR=0.161 innerSus=false tripleAgree=false method=low-conf-consensus
+  2026-04-19_15-55-27-352Z  cls=Large actual=28 tc=11 conf=0.30 peak=11 fft90=11 op=11 bcTc=11 bcPk=4 dPB=0 gR=0.254 innerSus=false tripleAgree=true method=low-conf-consensus
+  2026-04-19_18-38-33-566Z  cls=Large actual=28 tc=32 conf=0.37 peak=15 fft90=10 op=32 bcTc=10 bcPk=4 dPB=5 gR=0.157 innerSus=false tripleAgree=false method=bc-fft+large-op-override
+  2026-04-19_18-54-04-915Z  cls=Large actual=24 tc=20 conf=0.24 peak=14 fft90=20 op=11 bcTc=12 bcPk=4 dPB=2 gR=0.209 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-19_19-03-10-890Z  cls=Large actual=24 tc=10 conf=0.14 peak=12 fft90=10 op=17 bcTc=0 bcPk=0 dPB=12 gR=0.150 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-19_19-32-49-661Z  cls=Mid actual=18 tc=22 conf=0.28 peak=12 fft90=22 op=30 bcTc=10 bcPk=4 dPB=2 gR=0.207 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-20_15-53-34-450Z  cls=Mid actual=18 tc=44 conf=0.04 peak=13 fft90=44 op=12 bcTc=17 bcPk=7 dPB=4 gR=0.412 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-21_05-51-52-636Z  cls=Large actual=28 tc=22 conf=0.31 peak=10 fft90=22 op=11 bcTc=10 bcPk=4 dPB=0 gR=0.403 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-21_05-55-58-591Z  cls=Large actual=24 tc=26 conf=0.34 peak=26 fft90=26 op=23 bcTc=10 bcPk=5 dPB=16 gR=0.182 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-21_19-20-19-066Z  cls=Large actual=21 tc=10 conf=0.26 peak=12 fft90=10 op=10 bcTc=10 bcPk=4 dPB=2 gR=0.328 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-21_19-30-41-277Z  cls=Large actual=24 tc=28 conf=0.31 peak=10 fft90=11 op=28 bcTc=10 bcPk=4 dPB=0 gR=0.360 innerSus=false tripleAgree=false method=fft90-fallback+large-op-override
+  2026-04-22_07-04-52-734Z  cls=Large actual=24 tc=11 conf=0.44 peak=11 fft90=11 op=13 bcTc=10 bcPk=4 dPB=1 gR=0.434 innerSus=false tripleAgree=false method=fft-agreement
+  2026-04-22_19-24-58-121Z  cls=Large actual=28 tc=20 conf=0.38 peak=10 fft90=10 op=20 bcTc=10 bcPk=4 dPB=0 gR=0.283 innerSus=false tripleAgree=false method=fft90-fallback+large-op-override
+  2026-04-23_07-08-27-801Z  cls=Large actual=28 tc=11 conf=0.46 peak=11 fft90=11 op=10 bcTc=10 bcPk=2 dPB=1 gR=0.336 innerSus=false tripleAgree=false method=fft-agreement
+  2026-04-24_07-02-48-626Z  cls=Large actual=21 tc=16 conf=0.62 peak=21 fft90=21 op=21 bcTc=10 bcPk=16 dPB=11 gR=0.261 innerSus=false tripleAgree=false method=retry-bc-peaks
+  2026-04-24_10-54-55-930Z  cls=XL actual=42 tc=40 conf=0.53 peak=40 fft90=12 op=14 bcTc=13 bcPk=14 dPB=27 gR=0.256 innerSus=false tripleAgree=false method=fft90-fallback+xl-peak-override
+  2026-04-27_07-59-59-093Z  cls=XL actual=42 tc=20 conf=0.27 peak=10 fft90=20 op=10 bcTc=43 bcPk=37 dPB=33 gR=0.410 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-28_06-52-14-899Z  cls=XL actual=42 tc=10 conf=0.29 peak=11 fft90=10 op=15 bcTc=10 bcPk=1 dPB=1 gR=0.218 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-28_06-56-36-143Z  cls=XL actual=52 tc=11 conf=0.42 peak=11 fft90=11 op=10 bcTc=11 bcPk=10 dPB=0 gR=0.364 innerSus=false tripleAgree=false method=bc-consensus+fft-agree
+  2026-04-28_14-18-32-698Z  cls=XL actual=34 tc=40 conf=0.21 peak=11 fft90=40 op=24 bcTc=12 bcPk=10 dPB=1 gR=0.359 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-28_18-34-58-887Z  cls=XL actual=42 tc=12 conf=0.11 peak=12 fft90=12 op=10 bcTc=10 bcPk=4 dPB=2 gR=0.378 innerSus=false tripleAgree=false method=fft90-fallback
+  2026-04-29_05-29-10-169Z  cls=XL actual=42 tc=12 conf=0.17 peak=12 fft90=30 op=11 bcTc=10 bcPk=13 dPB=2 gR=0.330 innerSus=false tripleAgree=false method=low-conf-consensus
+  2026-04-29_05-35-39-053Z  cls=XL actual=52 tc=10 conf=0.33 peak=14 fft90=10 op=15 bcTc=10 bcPk=1 dPB=4 gR=0.241 innerSus=false tripleAgree=false method=fft90-fallback
+PASS __tests__/pap796.crosscheck.js (6419.1 s)
+  PAP-796 Option E cross-check
+    ✓ measure bc-strong-disagree override on 9-60T corpus (6418898 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        6419.16 s
+Ran all test suites.

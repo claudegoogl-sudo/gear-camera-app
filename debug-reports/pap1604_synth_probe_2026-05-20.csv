@@ -1,0 +1,10 @@
+event,actual,devicePred,deviceConf,synthTC,synthConf,synthMethod,sentryTC,sentryConf,sentryMethod,matchDev_synth,matchDev_sentry,matchSentry_synth
+0959928d,32,32,0.808,32,0.968,bc-consensus+pap1059-chainring-tc-confirmed,32,0.808,bc-consensus+fft-agree,N,Y,N
+3219e927,36,16,0.175,16,0.187,fft90-fallback,16,0.175,fft90-fallback,Y,Y,Y
+d6b831de,36,36,1.000,36,0.889,bc-consensus+peak,36,1.000,bc-consensus+peak,N,Y,N
+dd25a498,36,28,0.000,13,0.000,fft90-fallback,28,0.202,fft90-fallback,N,N,N
+5b3a13d8,48,48,0.882,48,0.984,bc-consensus+peak,48,0.882,bc-consensus+peak,N,Y,N
+01fdccfd,50,50,1.000,50,1.000,bc-consensus,50,1.000,bc-consensus,Y,Y,Y
+625fd85d,52,51,0.967,51,0.970,retry-bc-consensus+chainring-pk,51,0.967,retry-bc-consensus+chainring-pk,Y,Y,Y
+93bab076,52,12,0.000,12,0.000,peak,12,0.000,peak,Y,Y,Y
+b17133f8,52,30,0.469,17,0.000,fft90-fallback,30,0.469,retry-bc-peaks,N,Y,N

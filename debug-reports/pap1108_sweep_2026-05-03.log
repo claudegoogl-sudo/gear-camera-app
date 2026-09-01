@@ -1,0 +1,68 @@
+
+=== PAP-1100 calibration sweep ===
+Cells: 20 | grid: (0.75,1.1) (0.75,1.15) (0.75,1.2) (0.75,1.25) (0.75,1.3) (0.8,1.1) (0.8,1.15) (0.8,1.2) (0.8,1.25) (0.8,1.3) (0.85,1.1) (0.85,1.15) (0.85,1.2) (0.85,1.25) (0.85,1.3) (0.9,1.1) (0.9,1.15) (0.9,1.2) (0.9,1.25) (0.9,1.3)
+
+Step 1: BASELINE CACHE HIT (144 rows, sha=a54d24d8c193)
+  PAP-1060 11T cluster: 24 (target ≥15)
+  XL 42T+ CW cluster:   10 (target ≥15)
+  Mid control:           20 (target ≥15)
+  Small control:         20 (target ≥15)
+
+[WARN] sub-cluster floors not met — sweep results below are advisory only
+
+Step 2: (α, β) sweep
+  α=0.75 β=1.1  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=4  Sm_LOSS=1  1454s
+  α=0.75 β=1.15  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=0  1450s
+  α=0.75 β=1.2  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=3  Sm_LOSS=0  1477s
+  α=0.75 β=1.25  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=1  1478s
+  α=0.75 β=1.3  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=3  Sm_LOSS=0  1485s
+  α=0.8 β=1.1  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=1  1480s
+  α=0.8 β=1.15  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=2  1485s
+  α=0.8 β=1.2  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=3  Sm_LOSS=1  1488s
+  α=0.8 β=1.25  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=1  1501s
+  α=0.8 β=1.3  11T_rec=2/24 (LB=2.3% UB=25.8%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=3  Sm_LOSS=1  1453s
+  α=0.85 β=1.1  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=3  Sm_LOSS=0  1434s
+  α=0.85 β=1.15  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=0  1464s
+  α=0.85 β=1.2  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=3  Sm_LOSS=0  1454s
+  α=0.85 β=1.25  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=0  1444s
+  α=0.85 β=1.3  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=2  Sm_LOSS=1  1454s
+  α=0.9 β=1.1  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=4  Sm_LOSS=0  1465s
+  α=0.9 β=1.15  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=4  Sm_LOSS=0  1449s
+  α=0.9 β=1.2  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=5  Sm_LOSS=0  1449s
+  α=0.9 β=1.25  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=5  Sm_LOSS=0  1475s
+  α=0.9 β=1.3  11T_rec=3/24 (LB=4.3% UB=31.0%)  XL_rec=0/10 (LB=-0.0% UB=27.8%)  Mid_LOSS=5  Sm_LOSS=0  1466s
+
+Step 3: ranking by min(11T_UB, XL_UB) descending
+rank  α    β    11T_p%   11T_UB%  XL_p%    XL_UB%   Mid_LOSS  Sm_LOSS
+   1  0.85  1.10   12.5     31.0      0.0     27.8          3        0
+   2  0.85  1.15   12.5     31.0      0.0     27.8          2        0
+   3  0.85  1.20   12.5     31.0      0.0     27.8          3        0
+   4  0.85  1.25   12.5     31.0      0.0     27.8          2        0
+   5  0.85  1.30   12.5     31.0      0.0     27.8          2        1
+   6  0.90  1.10   12.5     31.0      0.0     27.8          4        0
+   7  0.90  1.15   12.5     31.0      0.0     27.8          4        0
+   8  0.90  1.20   12.5     31.0      0.0     27.8          5        0
+   9  0.90  1.25   12.5     31.0      0.0     27.8          5        0
+  10  0.90  1.30   12.5     31.0      0.0     27.8          5        0
+  11  0.75  1.10    8.3     25.8      0.0     27.8          4        1
+  12  0.75  1.15    8.3     25.8      0.0     27.8          2        0
+  13  0.75  1.20    8.3     25.8      0.0     27.8          3        0
+  14  0.75  1.25    8.3     25.8      0.0     27.8          2        1
+  15  0.75  1.30    8.3     25.8      0.0     27.8          3        0
+  16  0.80  1.10    8.3     25.8      0.0     27.8          2        1
+  17  0.80  1.15    8.3     25.8      0.0     27.8          2        2
+  18  0.80  1.20    8.3     25.8      0.0     27.8          3        1
+  19  0.80  1.25    8.3     25.8      0.0     27.8          2        1
+  20  0.80  1.30    8.3     25.8      0.0     27.8          3        1
+
+Best cell: α=0.85 β=1.1
+  AC1 11T Wilson UB: 31.0% (target ≥80%)
+  AC1 XL  Wilson UB: 27.8% (target ≥80%)
+
+[HARD-EXIT] PAP-1091 protocol: best (α, β) does NOT meet per-cluster Wilson 95% UB ≥80% — DESCOPE.
+AE: do NOT run AC2 305-sweep.  File successor under PAP-758.
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        29306.024 s
+Ran all test suites.

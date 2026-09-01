@@ -1,0 +1,41 @@
+=== PAP-885 b114 XL diag ===
+
+-- report_2026-04-30_10-09-03-515Z actual=34 31114ms
+   tc=18 conf=0.37 method=fft90-fallback
+   peak=10 fft90=18 op=24 bc=10(pk=23)
+   peakRel=0.106 fft90Rel=0.000 opRel=0.046 bcRel=0.000
+   peakR=118 rOuter=116 rel=0.0172
+   gearRadius=0.131 cropNormR=0.000 contourR=0
+   innerSus=false
+
+-- report_2026-04-30_10-14-44-086Z actual=34 29763ms
+   tc=28 conf=0.00 method=fft90-fallback
+   peak=10 fft90=28 op=13 bc=11(pk=2)
+   peakRel=0.104 fft90Rel=0.000 opRel=0.049 bcRel=0.000
+   peakR=42 rOuter=49 rel=0.1429
+   gearRadius=0.047 cropNormR=0.000 contourR=0
+   innerSus=true
+
+-- report_2026-04-30_10-17-03-115Z actual=34 23078ms
+   tc=34 conf=1.00 method=bc-consensus+fft-agree
+   peak=34 fft90=34 op=34 bc=34(pk=34)
+   peakRel=0.126 fft90Rel=0.000 opRel=0.068 bcRel=0.000
+   peakR=369 rOuter=367 rel=0.0054
+   gearRadius=0.410 cropNormR=0.000 contourR=0
+   innerSus=false
+
+-- report_2026-04-30_10-19-19-295Z actual=36 28540ms
+   tc=35 conf=0.00 method=bc-consensus+peak
+   peak=35 fft90=36 op=35 bc=36(pk=36)
+   peakRel=0.168 fft90Rel=0.000 opRel=0.066 bcRel=0.000
+   peakR=386 rOuter=278 rel=0.3885
+   gearRadius=0.429 cropNormR=0.000 contourR=0
+   innerSus=true
+
+-- report_2026-04-30_10-23-07-161Z actual=36 28912ms
+   tc=36 conf=0.00 method=bc-consensus+peak
+   peak=36 fft90=36 op=36 bc=36(pk=36)
+   peakRel=0.228 fft90Rel=0.000 opRel=0.090 bcRel=0.000
+   peakR=381 rOuter=288 rel=0.3229
+   gearRadius=0.423 cropNormR=0.000 contourR=0
+   innerSus=true

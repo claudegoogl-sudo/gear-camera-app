@@ -1,0 +1,104 @@
+
+=== PAP-861 candidate predicate sweep ===
+
+[Training] 0 photos (9-60T)
+  done in 0s
+
+[XL device] 10 targets
+  build=b111 report_2026-04-29_05-29-04-170Z cls=XL actual=42 tc=41 conf=0.48 peak=43 fft90=41 op=42 bc=10(pk=12) gearR=0.436 rel=0.1111 method=fft90-fallback
+  build=b111 report_2026-04-29_05-31-25-376Z cls=XL actual=42 tc=41 conf=0.82 peak=41 fft90=41 op=13 bc=12(pk=4) gearR=0.437 rel=0.0415 method=peak
+  build=b111 report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gearR=0.367 rel=0.1451 method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-37-38-177Z cls=XL actual=52 tc=50 conf=0.61 peak=12 fft90=12 op=18 bc=53(pk=50) gearR=0.338 rel=0.1032 method=retry-bc-peaks
+  build=b111 report_2026-04-29_05-39-22-521Z cls=XL actual=52 tc=21 conf=1.00 peak=21 fft90=21 op=21 bc=21(pk=21) gearR=0.422 rel=0.6889 method=bc-consensus+peak
+  build=b112 report_2026-04-30_05-32-51-092Z cls=XL actual=42 tc=42 conf=0.67 peak=43 fft90=42 op=42 bc=42(pk=36) gearR=0.400 rel=0.0955 method=bc-fft
+  build=b112 report_2026-04-30_05-34-20-458Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=43 op=14 bc=12(pk=4) gearR=0.484 rel=0.0113 method=bc-fft+pap632-fft-floor-abstain
+  build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+  build=b112 report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+--- Candidate evaluation: TRAINING corpus ---
+  cand                       fires  wins  losses  neutral
+  rel-threshold-0.16             0     0       0        0
+  rel-threshold-0.14             0     0       0        0
+  rel-threshold-0.13             0     0       0        0
+  bc-isolated-d8                 0     0       0        0
+  bc-isolated-d10                0     0       0        0
+  bc-isolated-d12                0     0       0        0
+  bc-d10 OR rel-0.14             0     0       0        0
+
+  Wins under each candidate:
+
+--- Candidate evaluation: XL device targets (b111+b112) ---
+  cand                       fires  wins  losses
+  rel-threshold-0.16             2     0       0
+  rel-threshold-0.14             4     0       1
+  rel-threshold-0.13             4     0       1
+  bc-isolated-d8                 1     0       0
+  bc-isolated-d10                1     0       0
+  bc-isolated-d12                1     0       0
+  bc-d10 OR rel-0.14             4     0       1
+
+  XL fires under "rel-threshold-0.16":
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+
+  XL fires under "rel-threshold-0.14":
+    [LOSS] report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gearR=0.367 rel=0.1451 method=retry-bc-peaks
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+    [neutral] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+  XL fires under "rel-threshold-0.13":
+    [LOSS] report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gearR=0.367 rel=0.1451 method=retry-bc-peaks
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+    [neutral] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-isolated-d8":
+    [neutral] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-isolated-d10":
+    [neutral] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-isolated-d12":
+    [neutral] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+  XL fires under "bc-d10 OR rel-0.14":
+    [LOSS] report_2026-04-29_05-33-35-933Z cls=XL actual=52 tc=52 conf=0.47 peak=13 fft90=13 op=17 bc=55(pk=52) gearR=0.367 rel=0.1451 method=retry-bc-peaks
+    [neutral] report_2026-04-29_05-35-33-518Z cls=XL actual=52 tc=24 conf=0.00 peak=12 fft90=12 op=12 bc=11(pk=24) gearR=0.314 rel=0.2028 method=retry-bc-peaks
+    [neutral] report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+    [neutral] report_2026-04-30_05-37-35-156Z cls=XL actual=42 tc=39 conf=0.00 peak=11 fft90=20 op=26 bc=39(pk=41) gearR=0.262 rel=0.1449 method=bc-consensus
+
+=== PAP-871 rescue-candidate sweep (Options A / E / A+E) ===
+
+--- Rescue evaluation: TRAINING corpus (305-photo target) ---
+  cand                  wins  newWrongs  confChk  noopFires
+  pap868-rescue-A          0          0        0          0
+  pap868-rescue-E          0          0        0          0
+  pap868-rescue-AE         0          0        0          0
+
+--- Rescue evaluation: XL device targets (b111 + b112, 10 frames) ---
+  cand                  wins  newWrongs  confChk  noopFires
+  pap868-rescue-A          2          0        0          0
+  pap868-rescue-E          1          0        0          0
+  pap868-rescue-AE         2          0        0          0
+
+  Rescue events under "pap868-rescue-A":
+    [WIN]      rescuedTc=43 build=b112 report_2026-04-30_05-34-20-458Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=43 op=14 bc=12(pk=4) gearR=0.484 rel=0.0113 method=bc-fft+pap632-fft-floor-abstain
+    [WIN]      rescuedTc=42 build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+
+  Rescue events under "pap868-rescue-E":
+    [WIN]      rescuedTc=42 build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+
+  Rescue events under "pap868-rescue-AE":
+    [WIN]      rescuedTc=43 build=b112 report_2026-04-30_05-34-20-458Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=43 op=14 bc=12(pk=4) gearR=0.484 rel=0.0113 method=bc-fft+pap632-fft-floor-abstain
+    [WIN]      rescuedTc=42 build=b112 report_2026-04-30_05-35-59-637Z cls=XL actual=42 tc=0 conf=0.00 peak=10 fft90=42 op=20 bc=12(pk=4) gearR=0.319 rel=0.2306 method=bc-fft+pap632-fft-floor-abstain
+PASS __tests__/pap861.candidates.js (280.77 s)
+  PAP-861 candidate predicate sweep
+    ✓ evaluate candidates on training + b111 + b112 XL targets (279880 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        280.818 s, estimated 7022 s
+Ran all test suites.

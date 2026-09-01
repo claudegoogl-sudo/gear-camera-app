@@ -1,0 +1,17 @@
+
+=== PAP-810 per-method snapshot (cropped.jpg) ===
+  report_2026-04-29_05-29-04-170Z  src=1806x1806->900x900  actual=42 tc=41 (-1) conf=0.532 peak=41 fft90=41 op=42 bcTc=10 bcPk=12 gR=0.4211 innerSus=false method=fft-agreement
+  report_2026-04-29_05-31-25-376Z  src=1806x1806->900x900  actual=42 tc=41 (-1) conf=0.837 peak=41 fft90=41 op=13 bcTc=10 bcPk=1 gR=0.4367 innerSus=false method=fft-agreement
+  report_2026-04-29_05-33-35-933Z  src=1806x1806->900x900  actual=52 tc=52 (+0) conf=0.476 peak=13 fft90=13 op=17 bcTc=55 bcPk=52 gR=0.3667 innerSus=false method=retry-bc-peaks
+  report_2026-04-29_05-35-33-518Z  src=1806x1806->900x900  actual=52 tc=24 (-28) conf=0.505 peak=12 fft90=12 op=12 bcTc=11 bcPk=24 gR=0.3144 innerSus=false method=retry-bc-peaks
+  report_2026-04-29_05-37-38-177Z  src=1806x1806->900x900  actual=52 tc=53 (+1) conf=0.612 peak=12 fft90=12 op=14 bcTc=53 bcPk=52 gR=0.3378 innerSus=false method=retry-bc-consensus
+  report_2026-04-29_05-39-22-521Z  src=1806x1806->900x900  actual=52 tc=21 (-31) conf=1.000 peak=21 fft90=21 op=21 bcTc=21 bcPk=21 gR=0.4222 innerSus=false method=bc-consensus+peak
+PASS __tests__/pap810.diag.js (180.212 s)
+  PAP-810 XL near-miss diagnostic (cropped.jpg path)
+    ✓ per-method snapshot for 42T/52T cluster (180012 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        180.256 s
+Ran all test suites.

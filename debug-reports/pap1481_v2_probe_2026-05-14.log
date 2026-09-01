@@ -1,0 +1,53 @@
+=== PAP-1481 v2 candidate probe (n=13) ===
+Run: 2026-05-14, HARNESS=pap1481.v2-probe, n=13 same stratified cohort as radius-diag
+Variants:
+  v2a: sparse Sobel (thresh=200 + top 20%) → gradient Hough on raw RGBA
+  v2b: per-radius 2D acc + 3D argmax → finds (cx,cy,r) tuple, not 2D-peak-then-radius
+  v2c: gradient Hough constrained to annular band [0.30, 0.70]×minDim (= [0.6, 1.4]×aimR)
+
+Per-cluster medians (ratio = dominantR / aimR):
+cluster   n   v2a_ratio_med (range)    v2a_share_med   v2b_ratio_med (range)   v2c_ratio_med (range)   v2c_share_med
+11T       3   0.69 (0.37-1.07)         0.50            0.33 (0.30-0.41)        0.94 (0.85-1.16)        0.07
+Small     3   0.32 (0.31-0.43)         0.55            0.33 (0.32-0.41)        0.98 (0.68-1.33)        0.07
+Mid       3   0.50 (0.39-0.54)         0.18            0.48 (0.35-0.51)        0.85 (0.72-1.01)        0.07
+XL42+     4   0.50 (0.33-0.60)         0.39            0.44 (0.37-0.48)        0.84 (0.67-1.33)        0.12
+
+Separability (XL42+ ratio vs Small+Mid ratio combined):
+  v2a: XL42+ [0.33, 0.60] vs Small+Mid [0.31, 0.54]  → OVERLAPS
+  v2b: XL42+ [0.37, 0.48] vs Small+Mid [0.32, 0.51]  → OVERLAPS
+  v2c: XL42+ [0.67, 1.33] vs Small+Mid [0.68, 1.33]  → OVERLAPS
+
+Secondary signal check — v2c peakShare:
+  XL42+ shares: 0.10, 0.11, 0.12, 0.17   range [0.10, 0.17]
+  Small shares: 0.06, 0.07, 0.09          range [0.06, 0.09]
+  Mid shares:   0.06, 0.07, 0.11          range [0.06, 0.11]
+  11T shares:   0.07, 0.07, 0.10          range [0.07, 0.10]
+  XL42+ min 0.10 > Small max 0.09 ✓ but ≤ Mid max 0.11 (one outlier — 24T).
+  → BORDERLINE; not clean enough for a sole discriminator. Mid 24T row blocks Wilson UB ≥80%.
+
+VERDICT: Option A is exhausted across all three kernel variants on raw RGBA.
+The chainring outer ring does NOT produce a Hough signal separable from
+small/mid gear features regardless of:
+  - Edge sparsity (v2a high-threshold + top-20%)
+  - Argmax method (v2b proper 3D)
+  - Radius band (v2c restricted to aim-prior)
+
+Root cause confirmed: the strongest concentric feature in raw RGBA on these
+photos is consistently an inner hub/spindle/BCD circle (r ~120-160px), not the
+outer tooth ring.  Gradient-based Hough peaks on inner gradient density, not
+outer geometric prior.
+
+Escalation candidates:
+  - **Option C (bolt-pattern symmetry)**: detect N-fold rotational symmetry
+    directly via radial-gradient autocorrelation at angles 360°/N for N∈{4,5}.
+    Attacks the *structural* signal Hough cannot surface (spider hole arms,
+    not concentric edges).  Calibration burden similar to PAP-1078 ladder.
+  - **Option D (descope Option A)**: file Option A as wontfix under PAP-758;
+    re-route to PAP-1480 (joint R×tc scoring under PAP-1102 lineage) as the
+    last surviving in-regime option.  Accept that escape-from-FFT-regime is
+    architecturally blocked at the discriminator layer.
+
+Recommendation: **Option C exploratory probe** (cheap, n=13 same cohort) as
+the LAST forward attempt under PAP-1481 before recommending descope.  If
+Option C also overlaps, PAP-1481 closes wontfix and PAP-758 has no successor
+on the geometric-discriminator axis.

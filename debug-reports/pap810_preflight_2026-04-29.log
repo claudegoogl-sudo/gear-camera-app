@@ -1,0 +1,55 @@
+
+=== PAP-810 pre-flight: FFT mag slices at chosen peakR ===
+Format: peakTc=k  M[k-2] M[k-1] M[k] M[k+1] M[k+2]   (zero-pad N=2048)  M[2(k-1)] M[2k-1] M[2k] M[2k+1] M[2(k+1)]
+
+  report_2026-04-29_05-29-04-170Z  actual=42 tc=41 peak=41 peakR=379
+    M    [k-2..k+2]:  4757.7  2189.4 12041.1  2970.8  4120.9
+    M_zp [zk-2..+2]:  2189.4  7784.0 12041.1  8094.4  2970.8
+    M[2k-1..2k+1]:      41.5   609.2   688.0    M[3k]=  122.2
+    M[2k]/M[k]=0.051  M[3k]/M[k]=0.010  HPS@k=8.97e+8  HPS@2k=1.50e+6
+    -> parabolic: 41.02 (rounds to 41)  zero-pad argmax-bin: 41.00
+
+  report_2026-04-29_05-31-25-376Z  actual=42 tc=41 peak=41 peakR=393
+    M    [k-2..k+2]:  2248.7  5396.8 18519.8  6556.3 13698.5
+    M_zp [zk-2..+2]:  5396.8 10118.5 18519.8 12581.3  6556.3
+    M[2k-1..2k+1]:     355.0   565.1   500.4    M[3k]=   69.4
+    M[2k]/M[k]=0.031  M[3k]/M[k]=0.004  HPS@k=7.27e+8  HPS@2k=6.18e+6
+    -> parabolic: 41.02 (rounds to 41)  zero-pad argmax-bin: 41.00
+
+  report_2026-04-29_05-33-35-933Z  actual=52 tc=52 peak=13 peakR=330
+    M    [k-2..k+2]:  5069.0  4283.4 11298.0  2035.2  1858.4
+    M_zp [zk-2..+2]:  4283.4  8052.0 11298.0  7201.5  2035.2
+    M[2k-1..2k+1]:    2016.5  1572.4  4191.2    M[3k]=  908.2
+    M[2k]/M[k]=0.139  M[3k]/M[k]=0.080  HPS@k=1.61e+10  HPS@2k=1.24e+7
+    -> parabolic: 12.93 (rounds to 13)  zero-pad argmax-bin: 13.00
+
+  report_2026-04-29_05-35-33-518Z  actual=52 tc=24 peak=12 peakR=283
+    M    [k-2..k+2]:  1341.9  1400.9 10709.9  2008.2  3685.2
+    M_zp [zk-2..+2]:  1400.9  8539.7 10709.9  5158.2  2008.2
+    M[2k-1..2k+1]:    1405.2  1556.4  1653.9    M[3k]= 1978.5
+    M[2k]/M[k]=0.145  M[3k]/M[k]=0.185  HPS@k=3.30e+10  HPS@2k=5.76e+8
+    -> parabolic: 12.02 (rounds to 12)  zero-pad argmax-bin: 12.00
+
+  report_2026-04-29_05-37-38-177Z  actual=52 tc=53 peak=12 peakR=304
+    M    [k-2..k+2]:  1257.6  1048.6 10153.4  3471.5  2176.7
+    M_zp [zk-2..+2]:  1048.6  4843.9 10153.4  9353.1  3471.5
+    M[2k-1..2k+1]:    1438.6  2548.0  3320.7    M[3k]= 1219.6
+    M[2k]/M[k]=0.251  M[3k]/M[k]=0.120  HPS@k=3.16e+10  HPS@2k=4.57e+7
+    -> parabolic: 12.08 (rounds to 12)  zero-pad argmax-bin: 12.00
+
+  report_2026-04-29_05-39-22-521Z  actual=52 tc=21 peak=21 peakR=380
+    M    [k-2..k+2]:  1970.3  9283.3 27714.7  3793.8  2857.3
+    M_zp [zk-2..+2]:  9283.3 12229.1 27714.7 18336.4  3793.8
+    M[2k-1..2k+1]:    6350.2 16318.7   278.8    M[3k]= 3315.5
+    M[2k]/M[k]=0.589  M[3k]/M[k]=0.120  HPS@k=1.50e+12  HPS@2k=4.64e+7
+    -> parabolic: 20.94 (rounds to 21)  zero-pad argmax-bin: 21.00
+
+PASS __tests__/pap810.preflight.js (180.288 s)
+  PAP-810 pre-flight: FFT magnitudes around peakTc
+    ✓ print M[k-2..k+2] at chosen peakR (179674 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        180.336 s, estimated 181 s
+Ran all test suites.

@@ -1,0 +1,10 @@
+event_short,actualTC,b127_predTC,b127_conf,b127_method,head_tc,head_conf,head_method,head_offBy,head_outcome,runtime_ms
+0959928d,32,32,0.8079,bc-consensus+fft-agree,32,1.0000,bc-consensus+pap1059-chainring-tc-confirmed,0,CORRECT,17892
+3219e927,36,16,0.1750,fft90-fallback,11,0.0000,fft-agreement,25,ABSTAIN,23507
+d6b831de,36,36,1.0000,bc-consensus+peak,36,0.7680,bc-consensus+pap1059-chainring-tc-confirmed,0,CORRECT,17557
+dd25a498,36,28,0.0000,fft90-fallback,12,0.0000,bc-consensus+pap961-aim-circle-prior-abstain,24,ABSTAIN,17939
+5b3a13d8,48,48,0.8819,bc-consensus+peak,48,0.7605,bc-consensus+peak+pap1059-chainring-tc-confirmed,0,CORRECT,17336
+01fdccfd,50,50,1.0000,bc-consensus,12,0.0000,fft90-fallback,38,ABSTAIN,24736
+625fd85d,52,51,0.9673,retry-bc-consensus+chainring-pk,52,0.0000,fft90-fallback+xl-peak-override+pap961-aim-circle-prior-abstain,0,ABSTAIN,27051
+93bab076,52,12,0.0000,peak,0,0.0000,fft90-fallback+pap474-abstain,52,ABSTAIN,25603
+b17133f8,52,30,0.4692,retry-bc-peaks,0,0.0000,low-conf-consensus+pap632-fft-floor-abstain,52,ABSTAIN,18307

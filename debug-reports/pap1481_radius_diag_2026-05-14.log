@@ -1,0 +1,64 @@
+=== PAP-1481 Hough radius distribution diagnostic ===
+Run: 2026-05-14, HARNESS=pap1481.hough-radius-diag, n=13 (3x11T + 3xMid + 3xSmall + 4xXL42+)
+Method: 2-pass — pass 1 build shared 2D accumulator + find peak; pass 2 replay each
+        edge for each radius and count only votes whose target cell == peak (+/-1 tol).
+        Yields true per-radius vote distribution at the Hough peak.
+
+Per-photo (raw downsampled RGBA, radii [0.15..0.55]xmin(W,H) step 4, magThresh 80):
+
+cluster  stamp                          actual  WxH      edges  peakV  domR  share  entropy  top3
+11T      2026-04-04_09-10-51-656Z       11T     900x675  36932    50   133   0.31   3.95     133:81 129:30 117:19   (ratio=0.39)
+11T      2026-04-05_08-32-48-875Z       11T     675x900  20347    23   265   0.05   5.39     265:4 121:3 125:3       (ratio=0.79)
+11T      2026-04-05_08-33-27-869Z       11T     675x900  21000    21   229   0.09   4.92     229:7 213:5 153:4       (ratio=0.68)
+Mid      2026-04-08_18-30-50-993Z       21T     675x900  29043    45   129   0.14   3.86     129:35 125:29 113:22    (ratio=0.38)
+Mid      2026-04-08_18-34-56-184Z       24T     675x900  45234    50   157   0.12   4.52     157:37 161:28 165:21    (ratio=0.47)
+Mid      2026-04-08_18-38-08-065Z       28T     900x675  65814    55   193   0.06   5.11     193:17 157:16 161:15    (ratio=0.57)
+Small    2026-04-04_09-09-24-950Z       15T     675x900  22903    30   129   0.18   4.02     129:21 121:13 101:11    (ratio=0.38)
+Small    2026-04-04_09-09-54-631Z       14T     675x900  36791    43   153   0.20   4.35     153:49 133:28 137:20    (ratio=0.45)
+Small    2026-04-04_09-10-20-407Z       13T     675x900  37086    28   129   0.09   4.97     129:11 125:8 229:8      (ratio=0.38)
+XL42+    2026-04-24_10-54-55-930Z       42T     675x900  40795    50   161   0.12   4.65     161:38 149:36 153:28    (ratio=0.48)
+XL42+    2026-04-25_09-03-13-830Z       51T     675x900  43084    55   157   0.15   3.81     157:46 153:45 149:40    (ratio=0.47)
+XL42+    2026-04-26_08-54-51-262Z       52T     675x900  33201    56   129   0.23   3.30     129:91 125:68 121:55    (ratio=0.38)
+XL42+    2026-04-28_06-50-20-391Z       42T     675x900  37236    49   153   0.17   4.34     153:55 169:29 157:27    (ratio=0.45)
+
+Per-cluster summary (median):
+cluster  n  dominantR  ratio_med  ratio_range   entropy  peakShare
+11T      3  229        0.68       0.39..0.79    4.92     0.09
+Small    3  129        0.38       0.38..0.45    4.35     0.18
+Mid      3  157        0.47       0.38..0.57    4.52     0.12
+XL42+    4  157        0.47       0.38..0.48    4.34     0.17
+
+VERDICT for Option A v1 (smoke kernel: gradient-Hough on raw RGBA):
+
+  S1 (radius floor)         REFUTED — XL42+ ratio range [0.38, 0.48] is a SUBSET of
+                            Small [0.38, 0.45] and Mid [0.38, 0.57].  No threshold tau
+                            separates the populations.
+
+  S2 (concentration)        REFUTED — peakShare XL42+ median 0.17 vs Small 0.18, Mid 0.12.
+                            Entropy XL42+ median 4.34 vs Small 4.35, Mid 4.52.  Overlap.
+
+  Note: 11T has the HIGHEST ratio_med (0.68) of any cluster — the cropped FFT pipeline
+  already correctly handles those (they go down the small-gear path).  But the diagnostic
+  question is: "does the chainring (XL42+) regime present a distinguishable Hough signal?"
+  Answer: not with this kernel.
+
+Root cause hypothesis:
+  - Raw downsampled RGBA contains: frame edges, hub/spindle features, BCD bolt circle,
+    inner ramp lines, cogset behind chainring, hand/finger artifacts.  All cogwise
+    concentric features.  Sobel + dense gradient Hough peaks on the strongest concentric
+    feature, which on this corpus is almost always the BCD/hub circle at r~120-160px
+    (regardless of true gear size).
+  - To surface the OUTER ring specifically we'd need: (a) Canny pre-filter so only the
+    clearest outer edge votes, (b) gradient-direction filter to suppress inner spider
+    edges, OR (c) annular mask (aim-circle authoritative — Option B' territory again).
+
+Recommendation:
+  - DESCOPE v1 (smoke kernel) BEFORE calibration sweep — n=13 stratified diagnostic
+    already shows S1/S2 inseparable, no value in n=145.
+  - v2 candidates (escalation under PAP-1481, fresh subtask):
+      v2a: Canny pre-filter + Hough Gradient (sparser, more selective edges).
+      v2b: 3D accumulator (cx,cy,r) with proper argmax — confirms whether outer ring
+           has a real peak hiding under inner-feature noise.
+      v2c: Annular Hough — search only within aim-prior radius band [0.6, 1.4]*aimR
+           (re-uses operator aim as authoritative annulus).
+  - Comment on PAP-1489 with this verdict so QA does not spend cycles on v1 spec.

@@ -1,0 +1,59 @@
+
+[pap1514] BASELINE CACHE HIT (362 rows, sha=30cc6884f060)
+
+=== PAP-1514 Phase-1 calibration sweep (v6.1 §4.1) ===
+Baseline corpus: 362/362 photos  Wall: 7322.6s
+AC2 corpus: 362 photos
+AC1 cohort (11T cluster, baseline not-correct): 29 photos
+
+-- Per-photo prep (decode + CLAHE + scoreSpec union) --
+  [25/362] prepared (2387 (photo,R) entries, 20s)
+  [50/362] prepared (4758 (photo,R) entries, 40s)
+  [75/362] prepared (7062 (photo,R) entries, 59s)
+  [100/362] prepared (9423 (photo,R) entries, 79s)
+  [125/362] prepared (11640 (photo,R) entries, 98s)
+  [150/362] prepared (13949 (photo,R) entries, 117s)
+  [175/362] prepared (16255 (photo,R) entries, 136s)
+  [200/362] prepared (18530 (photo,R) entries, 156s)
+  [225/362] prepared (20898 (photo,R) entries, 175s)
+  [250/362] prepared (23207 (photo,R) entries, 194s)
+  [275/362] prepared (25493 (photo,R) entries, 214s)
+  [300/362] prepared (27821 (photo,R) entries, 234s)
+  [325/362] prepared (30078 (photo,R) entries, 253s)
+  [350/362] prepared (32337 (photo,R) entries, 272s)
+Prep complete: 362 photos / 33377 (photo,R) cache entries / 282s
+
+-- Cell sweep: 16 cells (cache hits will be skipped) --
+
+Sweep done: 16 cells run / 0 cached / 2.172s
+AC2 pass:        0
+AC2 eliminated:  16
+CSV: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1514_sweep_2026-05-16.csv
+
+-- A5 marginal distribution of surviving cells by axis --
+  total cells in grid: 16   survivors: 0
+  (no survivors — see full-grid b6 histogram below for cap-pressure signal)
+
+-- A5 full-grid b6 bucket histogram (all evaluated cells) --
+  rescue                                    0
+  regress_correct→CW                      522
+  regress_abstain→CW                      172
+  regress_CW_worse_delta                  144
+  no_change_correct                       216
+  no_change_CW_same_or_better            4738
+
+-- A5 cells failing each AC5 cap (cap-pressure ranking) --
+  regress_correct→CW   > 1  (worst cap):  16 / 16
+  regress_abstain→CW   > 2:               16 / 16
+  regress_CW_worse_delta > 1:             16 / 16
+  diagnostic ac2_LOSS sum across grid:    522
+Report: /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1514_sweep_2026-05-16.log
+PASS mobile/__tests__/pap1514.phase1.js (284.343 s)
+  PAP-1514 Phase-1 calibration sweep (6912 cells, v6.1 §4.1)
+    ✓ sweep with AC2-eliminate-first + AC1 Wilson UB + B6 6-bucket counts (284071 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        284.402 s
+Ran all test suites.

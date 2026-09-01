@@ -1,0 +1,67 @@
+/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile
+
+[pap772] inspecting 37 actual=11T photos
+
+=== PAP-772 11T per-photo gate trace ===
+stamp                              det  conf   gR     cropNR  peak  fft90  op    method                               innerSus  gate(s)
+2026-04-04_09-10-51-656Z            17  0.12  0.303  0.133    12    12    10  bc-peaks                                false  (no gate fired)
+2026-04-05_08-32-48-875Z            11  0.00  0.132  0.142    11    17    10  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_08-33-27-869Z            11  0.00  0.129  0.141    11    34    16  bc-fft                                   true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_08-34-06-051Z            11  0.00  0.290  0.139    14    28    11  bc-consensus                             true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_14-40-38-072Z            11  0.00  0.440  0.164    18    36    12  bc-consensus                             true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_14-41-38-021Z            11  0.00  0.169  0.167    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_16-50-12-545Z            11  0.00  0.166  0.156    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_17-30-18-613Z            11  0.00  0.169  0.159    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_17-37-19-161Z            11  0.00  0.123  0.154    11    11    11  peak                                     true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-05_20-05-36-867Z            11  0.00  0.100  0.126    11    11    11  peak                                     true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-06_10-01-25-781Z            11  0.58  0.207  0.253    11    36    22  bc-consensus                            false  (no gate fired)
+2026-04-08_18-46-36-879Z            11  1.00  0.227  0.212    11    11    11  fft-agreement                           false  (no gate fired)
+2026-04-08_20-03-04-386Z            11  0.00  0.164  0.154    11    11    11  peak                                     true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-16_11-23-11-824Z            11  0.73  0.178  0.181    11    11    11  bc-consensus+peak                       false  (no gate fired)
+2026-04-19_11-29-33-819Z            11  0.00  0.178  0.167    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-19_11-30-52-252Z            11  0.00  0.172  0.161    11    11    11  peak                                     true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-19_11-32-11-962Z            11  0.00  0.166  0.153    11    22    11  peak                                     true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-19_11-33-29-608Z            11  0.00  0.120  0.153    11    10    11  peak                                     true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-19_20-16-28-570Z            20  0.00  0.080  0.104    10    20    10  fft90-fallback                           true  PAP-553 r<0.13 | PAP-673 r<0.15 && tc>=20
+2026-04-19_20-30-12-936Z            11  0.00  0.121  0.132    11    11    11  peak                                     true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-19_20-32-41-522Z            12  0.00  0.246  0.111    13    12    11  low-conf-consensus                       true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-19_20-35-09-838Z            11  1.00  0.236  0.221    11    11    11  peak                                    false  (no gate fired)
+2026-04-20_18-17-44-209Z            11  0.00  0.163  0.153    11    11    11  peak                                     true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-20_18-19-35-364Z            11  0.00  0.161  0.151    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-20_18-22-07-461Z            13  0.00  0.091  0.154    11    13    11  fft90-fallback                           true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-20_18-24-43-234Z            22  0.00  0.021  0.116    10    22    10  fft90-fallback                           true  PAP-553 r<0.13 | PAP-673 r<0.15 && tc>=20
+2026-04-21_06-25-02-778Z            11  0.00  0.128  0.160    11    11    11  peak                                     true  PAP-553 r<0.13 | PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-21_19-00-40-900Z            11  0.00  0.148  0.139    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-21_19-02-17-555Z            11  0.00  0.159  0.145    11    13    11  peak                                     true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-22_07-23-07-738Z            12  0.00  0.236  0.129    12    12    11  low-conf-consensus                       true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-22_07-27-06-532Z            11  0.80  0.154  0.127    11    22    11  retry-bc-consensus+peak                 false  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-22_18-55-06-131Z            11  0.00  0.159  0.142    11    20    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-22_19-01-14-588Z            11  0.00  0.142  0.127    11    11    11  bc-consensus+peak                        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-24_07-16-06-580Z            11  1.00  0.147  0.184    11    11    11  peak                                    false  (no gate fired)
+2026-04-24_10-52-59-789Z            11  1.00  0.262  0.246    11    11    11  peak                                    false  (no gate fired)
+2026-04-25_08-03-37-711Z            11  0.00  0.175  0.116    10    10    11  low-conf-consensus+op-up-override        true  PAP-684/740 cropNormR<0.17 && tc in [9..13]
+2026-04-28_14-33-47-405Z            11  1.00  0.236  0.224    11    12    15  bc-consensus+peak                       false  (no gate fired)
+
+=== Gate-firing summary ===
+   24  PAP-684/740 cropNormR<0.17 && tc in [9..13] | detected==actual=YES
+    7  (no gate fired) | detected==actual=YES
+    6  PAP-553 r<0.13 | detected==actual=YES
+    3  PAP-553 r<0.13 | detected==actual=no
+    3  PAP-684/740 cropNormR<0.17 && tc in [9..13] | detected==actual=no
+    2  PAP-673 r<0.15 && tc>=20 | detected==actual=no
+    1  (no gate fired) | detected==actual=no
+
+=== Outcome summary ===
+  abstain & correct      : 23
+  abstain & wrong        : 5
+  committed & correct    : 8
+  committed & confidently-wrong : 1
+PASS __tests__/pap772.gates.js (1390.555 s)
+  PAP-772 11T abstain-gate classifier
+    ✓ classify which gate fires per actual=11T photo (1389882 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        1390.611 s
+Ran all test suites.
