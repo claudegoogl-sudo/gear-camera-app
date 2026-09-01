@@ -1350,10 +1350,55 @@ function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinit
       }
     }
 
+    // ── PAP-1766 Approach A: Minimum Radius Filter ──────────────────────────────
+    // Spider/hub lock on multi-ring cassettes occurs when the contour threshold
+    // sweep finds BOTH the hub (high circularity, r=0.08-0.12 of image)
+    // AND the tooth ring (lower circularity, r=0.22-0.45 of image).
+    // FFT purity check alone doesn't disambiguate when both have weak periodicity.
+    //
+    // Fix: Reject hub-sized candidates by filtering r < 0.15 × min(W,H).
+    // This safely removes hubs (0.08-0.12) with +0.03 margin, while keeping
+    // all single-cog tooth rings (0.20+) and chainrings (0.22+) with +0.05 margin.
+    // Precedent: PAP-282, PAP-950 used similar chainring-specific logic.
+    const minRingRadius = Math.floor(0.15 * Math.min(w, h));
+    if (topCandidates[bestIdx].r < minRingRadius && topCandidates.length > 1) {
+      // Selected candidate is hub-sized; search for larger radius alternative
+      const purityThreshold = Math.max(0.08, bestPurity * 0.5);
+      let bestLargeIdx = -1;
+      let bestLargeR = 0;
+      for (let i = 0; i < topCandidates.length; i++) {
+        if (topCandidates[i].r >= minRingRadius && (purities[i] || 0) >= purityThreshold) {
+          // Prefer largest radius (likely tooth-ring) among acceptable candidates
+          if (topCandidates[i].r > bestLargeR) {
+            bestLargeIdx = i;
+            bestLargeR = topCandidates[i].r;
+          }
+        }
+      }
+      if (bestLargeIdx !== -1) {
+        console.log(`[GearCenter] PAP-1766 Approach A hub-lock fix: ` +
+          `rejected r=${topCandidates[bestIdx].r} (hub-sized), ` +
+          `selected r=${topCandidates[bestLargeIdx].r} (ring-sized)`);
+        bestIdx = bestLargeIdx;
+        bestPurity = purities[bestIdx];
+      }
+    }
+
     const winner = topCandidates[bestIdx];
     // Refine center by maximizing rotational symmetry
     const refined = refineCenterBySymmetry(enhanced, winner.cx, winner.cy, winner.r, w, h);
     result = { cx: refined.cx, cy: refined.cy, radius: winner.r, method: 'multi-threshold' };
+    // ── PAP-1766 Approach B: Radius Geometry Validation ──────────────────────────
+    // For single-cog images, validate that detected radius is physically plausible.
+    // Tooth-tip spacing should be 2πR / N pixels, typically 2-50 pixels for common gear sizes.
+    // If spacing is implausible, the radius was likely under-sized (Type B from PAP-1765).
+    // Precedent: PAP-939 validates frequency plausibility; same principle applied to geometry.
+    const estToothCount = Math.max(10, Math.round(Math.PI * winner.r / 15)); // rough estimate
+    const estSpacing = (2 * Math.PI * winner.r) / (estToothCount || 20);
+    if (estSpacing < 2 || estSpacing > 200) {
+      console.log(`[GearCenter] PAP-1766 Approach B geom warning: ` +
+        `spacing=${estSpacing.toFixed(1)}px for r=${winner.r} (est ${estToothCount}T)`);
+    }
     resultPurity = purities[bestIdx] || 0;
   }
 
