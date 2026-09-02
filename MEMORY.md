@@ -85,3 +85,28 @@ The comment I would post on PAP-1673:
 - Subtask specifications complete (PAP-1536, PAP-1538, PAP-1485, PAP-1488 for Reading 1; PAP-1534 for Reading 2)
 - Impact analysis published: debug-reports/AE_PAP1766_impact_analysis_2026-09-01.md
 - Both paths have explicit acceptance criteria ready for QA validation
+
+
+## PAP-1782: D3 Pre-FFT Dense Chainring Detection — Implementation Complete
+
+**Date:** 2026-09-03  
+**Commit:** 11d07ed  
+**Status:** Awaiting QA cross-check (PAP-1778) before Mobile build
+
+**What was implemented:**
+- `estimateInnerRadius()`: Hybrid texture/gradient analysis to find hub-tooth transition
+- `checkDenseChainringRegime()`: Pre-FFT decision gate (inner_radius_fraction < 0.50 = dense)
+- Integration into `analyzeImage()`: Call after gearR, skip FFT if dense
+- Test suite: `pap1782.dense_chainring_detect.js` with synthetic dense/small/mid images
+
+**Algorithm:** Dense chain (40+T) has small hub → inner_radius_fraction 0.20–0.40
+- Threshold 0.50 separates dense from normal (mid gears 0.50–0.65, small gears 0.60–0.80)
+- If dense: abstain (toothCount=0, confidence=0, method='pap1534-d3-dense-chainring-abstain')
+- If normal: proceed with FFT unchanged
+
+**Expected outcome:** 89% → 96%+ accuracy by eliminating catastrophic errors (52T→11T, etc) via abstention
+- Device savings: ~200–300ms per dense photo (~5–8% portfolio = 10–20ms per batch)
+
+**Pending:** QA approval on PAP-1778 (cross-check against PAP-1534 spec) → Mobile build & device validation
+
+**Note:** Cannot post comments to PAP-1782 this run (fork.37 write gate). Status comment saved to debug-reports/PAP1782_STATUS_COMMENT.md for next run.
