@@ -2270,6 +2270,113 @@ function radialOuterEdgeRadius(enhanced, cx, cy, bcCx, bcCy, peakR, w, h) {
 }
 
 /**
+ * PAP-1534: Estimate inner hub radius using hybrid texture/gradient analysis.
+ * 
+ * Measures the transition from hub texture to tooth texture by analyzing:
+ * 1. Brightness variance in concentric rings (texture method)
+ * 2. Radial gradient magnitude (edge detection method)
+ * 
+ * Returns the estimated radius of the transition point.
+ */
+function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
+  const rMin = Math.max(10, Math.floor(contourRadius * 0.1));
+  const rMax = Math.floor(contourRadius * 0.6);
+  const step = Math.max(2, Math.floor((rMax - rMin) / 20)); // ~20 rings
+
+  // Sample at multiple angles and return median
+  const estimates = [];
+  const angleCount = 8;
+
+  for (let angle = 0; angle < angleCount; angle += 1) {
+    const theta = (angle / angleCount) * Math.PI * 2;
+    const cosTheta = Math.cos(theta);
+    const sinTheta = Math.sin(theta);
+
+    let maxTransitionScore = 0;
+    let transitionR = rMin;
+
+    // Scan along this radial line
+    for (let r = rMin; r <= rMax; r += step) {
+      const x = Math.round(cx + r * cosTheta);
+      const y = Math.round(cy + r * sinTheta);
+
+      if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+      const pixelIdx = (y * width + x) * 1; // Grayscale: 1 channel
+      const prevIdx = y < 1 ? pixelIdx : ((y - 1) * width + x);
+      const nextIdx = y >= height - 1 ? pixelIdx : ((y + 1) * width + x);
+
+      const current = gray[pixelIdx] || 0;
+      const prev = gray[prevIdx] || 0;
+      const next = gray[nextIdx] || 0;
+
+      // Radial gradient: |dI/dr|
+      const gradient = Math.abs(next - prev) / 2;
+
+      // Variance proxy: compare to local neighborhood
+      let variance = 0;
+      let count = 0;
+      for (let dr = -step; dr <= step; dr += 1) {
+        const rr = r + dr;
+        if (rr < rMin || rr > rMax) continue;
+        const xx = Math.round(cx + rr * cosTheta);
+        const yy = Math.round(cy + rr * sinTheta);
+        if (xx < 0 || xx >= width || yy < 0 || yy >= height) continue;
+
+        const pix = gray[(yy * width + xx)] || 0;
+        variance += Math.abs(pix - current);
+        count += 1;
+      }
+      variance = count > 0 ? variance / count : 0;
+
+      // Combined score: weighted combination
+      const score = gradient * 0.6 + variance * 0.4;
+      if (score > maxTransitionScore) {
+        maxTransitionScore = score;
+        transitionR = r;
+      }
+    }
+
+    estimates.push(transitionR);
+  }
+
+  // Return median of angle samples
+  estimates.sort((a, b) => a - b);
+  return estimates[Math.floor(estimates.length / 2)];
+}
+
+/**
+ * PAP-1534: Check if image shows a dense chainring (40+T) before FFT computation.
+ * 
+ * Dense chainrings have a small inner hub relative to the overall gear size,
+ * causing FFT to lock onto spider arms or bolt circles instead of the tooth ring.
+ * 
+ * Decision: inner_radius_fraction = r_inner / r_contour
+ * - threshold = 0.50
+ * - if fraction < 0.50: dense chainring → abstain
+ * - else: normal gear → proceed with FFT
+ * 
+ * Returns { isDense: bool, innerRadius, fraction, confidence }
+ */
+function checkDenseChainringRegime(gray, cx, cy, contourRadius, gearR, width, height) {
+  if (contourRadius < 20) {
+    // Too small to estimate reliably
+    return { isDense: false, innerRadius: 0, fraction: 1.0, confidence: 0 };
+  }
+
+  const innerRadius = estimateInnerRadius(gray, cx, cy, contourRadius, width, height);
+  const fraction = innerRadius / contourRadius;
+  const THRESHOLD = 0.50;
+
+  return {
+    isDense: fraction < THRESHOLD,
+    innerRadius,
+    fraction,
+    confidence: fraction < THRESHOLD ? 1.0 : 0,
+  };
+}
+
+/**
  * Core analysis pipeline — operates on already-loaded pixel buffers.
  * Returns { toothCount, confidence, gearCenter, gearRadius } in pixel units.
  */
@@ -2332,6 +2439,25 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
     gearR = edgeDensityR;
   } else {
     gearR = Math.max(contourRadius, edgeDensityR);
+  }
+
+  // ── D3 Pre-FFT Dense Chainring Detection (PAP-1534) ────────────────
+  // Detect dense chainrings (40+T) BEFORE expensive FFT computation.
+  // Dense gears have small inner hub → FFT locks onto spider/bolts.
+  // Abstain rather than output confident-wrong tooth count.
+  const denseCheck = checkDenseChainringRegime(gray, cx, cy, contourRadius, gearR, width, height);
+  if (denseCheck.isDense) {
+    // Dense chainring detected — skip FFT computation and abstain
+    return {
+      toothCount: 0, confidence: 0,
+      cx, cy, gearR, initialGearR: contourRadius,
+      contourRadius, centerResult,
+      fft90tc: 0, peakTc: 0, peakRel: 0, peakR: 0, opTc: 0, opRel: 0,
+      bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0,
+      claheTc: 0, claheConf: 0,
+      rOuter: denseCheck.innerRadius,
+      methodUsed: 'pap1534-d3-dense-chainring-abstain',
+    };
   }
 
   // ── Method evaluation (matches Python decision rule from commit 4243213) ──

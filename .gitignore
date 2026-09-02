@@ -13,3 +13,19 @@ test-builds/*.apk
 mobile/_tests_/*.harness.js
 mobile/_tests/.diag*
 test-builds/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.apk
+*.aab
+build/
+dist/
