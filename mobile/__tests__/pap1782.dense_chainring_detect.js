@@ -8,6 +8,10 @@
 const path = require('path');
 const fs = require('fs');
 
+// Import the functions to test from gearCounter
+const gearCounter = require('../src/algorithm/gearCounter');
+const { estimateInnerRadius, checkDenseChainringRegime } = gearCounter.__test || gearCounter;
+
 // Mock gray image data for testing
 function createTestGray(width, height, type) {
   const gray = new Uint8Array(width * height);

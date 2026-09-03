@@ -3893,6 +3893,9 @@ export const __test = {
   multiRadiusFftScan,
   outerProfileScan,
   clahePeakCounting,
+  // PAP-1782: D3 pre-FFT dense chainring detection
+  estimateInnerRadius,
+  checkDenseChainringRegime,
 };
 
 export function countTeethFromRgba(rgba, width, height) {
