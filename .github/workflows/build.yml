@@ -17,25 +17,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3
+    - name: Load environment variables
+      run: |
+        if [ -f .env ]; then
+          cat .env >> $GITHUB_ENV
+        fi
+        if [ -f mobile/.env ]; then
+          cat mobile/.env >> $GITHUB_ENV
+        fi
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '21'
         distribution: 'temurin'
         cache: gradle
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: '22.x'
         cache: 'npm'
         cache-dependency-path: 'mobile/package-lock.json'
 
     - name: Install mobile dependencies
       run: npm ci
       working-directory: mobile
+
+    - name: Run Expo prebuild
+      run: npx expo prebuild -p android --no-install
+      working-directory: mobile
+      continue-on-error: true
 
     - name: Make build script executable
       run: chmod +x scripts/build-${{ github.event.inputs.build_type }}.sh
@@ -47,7 +61,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload APK artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: apk-${{ github.event.inputs.build_type }}
@@ -55,3 +69,15 @@ jobs:
         retention-days: 30
       continue-on-error: true
 
+    - name: Post workflow result as comment (if on PR)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Build workflow completed. Artifacts available in workflow run.'
+          })
+      continue-on-error: true
