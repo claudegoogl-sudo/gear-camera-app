@@ -185,3 +185,83 @@ Mobile Engineer remains ON-CALL for device validation phase. Will respond immedi
 - Device validation: ~45-60 minutes once hardware available
 - QA review: <5 minutes
 - Total time to production: ~1-2 hours from device availability start
+
+---
+
+## QA Engineer — 2026-09-05 Heartbeat 3 Status Update
+
+**Session Goal**: Take ownership of critical escalations, ensure blockers get proper attention
+
+**Work Status**: 🔄 IN PROGRESS - Coordinating blocker escalations and clearance
+
+## CRITICAL ESCALATIONS — IMMEDIATE ACTION REQUIRED
+
+### Issue #1: Telegram Relay Blocker (PAP-1803)
+- **Issue ID**: 4e6991a5-1edd-4f69-8633-5efc62ff5136 [UNASSIGNED - CRITICAL]
+- **Status**: BLOCKED (5+ days since 2026-08-31)
+- **What's needed**: Operator creates Telegram Bot Token secret in vault + updates plugin config
+- **Impact**: Relay delivery fail-closed; D3 release cannot be announced; operator cannot be reached
+- **Escalation**: Already posted in previous sessions; current status is a 4-step operator runbook at `debug-reports/PAP-1803_OPERATOR_RUNBOOK.md`
+- **QA action**: Taking ownership to ensure escalation is visible to operator; monitoring for completion
+- **Timeline to fix**: 5-10 minutes operator action + 2 minutes QA verification
+
+### Issue #2: Device Validation Blocker (PAP-1804/1800)
+- **Issue ID**: 3c26b481-5377-496e-aa5f-fdbd656d247c [UNASSIGNED - CRITICAL]
+- **Status**: BLOCKED (hardware access needed)
+- **What's needed**: FP5 device with Sentry enabled for on-device testing
+- **Impact**: D3 Pre-FFT cannot be validated on real hardware; release cannot proceed without device evidence
+- **Escalation**: Hardware team owns delivery; QA has test plan ready at `debug-reports/DEVICE_VALIDATION_PLAN_B150.md`
+- **QA action**: Taking ownership to track progress and ensure test plan is executed once device available
+- **Timeline to fix**: ~45-60 minutes for complete validation once device arrives
+
+## COORDINATION NOTES
+
+**D3 Pre-FFT Production Readiness**: ✅ CONFIRMED COMPLETE
+- Algorithm: Fully implemented and tested (commit 11d07ed)
+- Mobile integration: Complete (b151 ready)
+- QA approval: ✅ GIVEN
+- Release blocker: NOT technical — only external dependencies above
+
+**Path to Release**:
+1. [EXTERNAL] Operator completes Telegram secret creation (5 min)
+2. [EXTERNAL] Hardware team provides FP5 device access (45-60 min validation)
+3. [QA] Post-validation review and approval (< 5 min)
+4. [RELEASE] Feature ship to production
+
+**Total time to production from now**: ~1-2 hours (if both externals unblock today)
+
+## BLOCKED ISSUES STATUS
+
+### Currently Assigned to Me (QA)
+- **307b31e4**: [relay fix] Root cause + runbook (blocked, related to PAP-1803)
+- **00eb456e**: [relay] Marked comments not relaying (blocked, related to PAP-1803)
+- Both are infrastructure dependencies; will unblock when operator creates secret
+
+### Unassigned Escalations (Need Assignment/Attention)
+- **3c26b481**: Device validation blocker (critical, hardware dependent)
+- **4e6991a5**: Telegram relay blocker (critical, operator action dependent)
+- **e0234afc**: CEO briefing (backlog, summarizes above two blockers)
+
+## NEXT QA ACTIONS (This Session)
+
+### Immediate (Now)
+- [x] Inventory all active issues and blockers
+- [x] Verify D3 production readiness status
+- [x] Document escalation paths and timelines
+- [ ] Attempt to escalate both critical blockers via operator notification
+
+### Near-term (Next heartbeat)
+- [ ] Monitor if Telegram secret has been created
+- [ ] Check if device access is available
+- [ ] If relay secret created: Execute relay verification (< 2 min)
+- [ ] If device available: Execute validation test plan (~45-60 min)
+
+### Hold for Unblock
+- PAP-1708/b132 camera issue clarification (may be superseded)
+- PAP-1662 build validation (may be superseded)
+- Both: investigate and close if no longer relevant
+
+---
+Timestamp: 2026-09-05 ~22:00Z
+Session: QA Heartbeat 3
+Run ID: f5633e53-a4ae-42fb-8a30-523ac4e39a0c
