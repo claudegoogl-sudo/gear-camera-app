@@ -1,3 +1,17 @@
+## ESCALATION ISSUE CREATED — PAP-1822
+
+**Issue**: PAP-1822 — [ESCALATION] D3 Release Blocker — 24h+ Hardware & Operator Access Needed  
+**Assigned to**: CEO (8c60510e-09c2-4fcf-b000-ff2e31ed6f04)  
+**Status**: todo  
+**Created**: 2026-09-06 ~21:00Z  
+
+This issue consolidates the blocker situation and requests leadership decision on resource allocation for:
+- FP5 hardware prioritization
+- Telegram secret creation coordination
+- Release timing decision (defer vs. ship without device validation)
+
+---
+
 ## MOBILE ENGINEER HEARTBEAT 2026-09-06 FINAL — STATUS & NEXT ACTIONS
 
 **Timestamp**: 2026-09-06 ~21:00Z  
