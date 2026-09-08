@@ -139,7 +139,10 @@ All Mobile Engineer deliverables delivered and working. Release blocked only by 
 
 **Risks**:
 - ⚠️ No hardware-backed speed proof before release
-- ⚠️ Device/algorithm discrepancy unknown (desktop: 5757ms vs device: 977ms, 6x gap)
+- ⚠️ Speed on real hardware unproven. NOTE (2026-09-09 correction): the old "5757ms vs 977ms, 6x gap" line was a mislabel — BOTH numbers are desktop measurements
+  (babel-jest audit inflation vs plain node, 6.8x, resolved by controlled re-measurement PAP-1672 @ 4399380; see docs/device-speed-reconciliation-2026-08-23.md
+  and PRODUCT_TARGETS.md). The real open risk is device-vs-desktop: ~36.7s p50 on FP5 (pre-D3, b142-era Sentry n=7) vs ~0.99s desktop node — the ~37x
+  Hermes-interpreter gap the FP5 session must quantify, not a "6x mystery".
 - ⚠️ Early rollback possible if field data shows problems
 - ⚠️ Feature designed to prevent 70-93s freezes (PAP-1647) — unvalidated on device
 
