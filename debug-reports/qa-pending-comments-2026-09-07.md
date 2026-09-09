@@ -1,8 +1,9 @@
-# Staged board writes — post from the next ISSUE-BOUND QA run (2026-09-07T06:34Z evidence)
+# Staged board writes — post from the next ISSUE-BOUND QA run
+## (refreshed 2026-09-08T02:10Z, unbound run f7222f0d — PAP-1760/1761 sections SUPERSEDED, 4 items remain)
+
+**09-08 update (run f7222f0d, unbound):** PAP-1760/1761 evidence is already recorded — filed as done child **PAP-1844** under PAP-1760 (messenger 0.2.18 gate re-confirmed: 270 skip lines all d49b266c vs 33 PAP comments in window; vault still has NO Telegram token secret; unblock path unchanged). Do NOT post the old 1760/1761 sections. Evidence re-verified today for the rest: Sentry newest device event still 2026-08-28T14:25:14Z (16 events/14d, all 08-28); b151 (2026-09-04T18:23Z) still newest release; no new debug-report sessions.
 
 Issue IDs for the API:
-- PAP-1760 00eb456e-18e7-4ce1-a50a-85e16e5d5c3f
-- PAP-1761 307b31e4-e40c-425b-a49d-107f28727751
 - PAP-1708 620b0d71-4720-4a4f-9c4f-b51183e0c12f
 - PAP-1800 2ec67df6-a9be-4a16-a953-eda1d9e90499
 - PAP-1665 372d2acf-e91c-4624-8456-58434851c6a6
@@ -13,20 +14,9 @@ POST /api/issues/{id}/comments — internal comments, NO [[operator-deliver]] ma
 
 ---
 
-## PAP-1760 comment
+## PAP-1760 comment — SUPERSEDED 09-08: evidence filed as PAP-1844 (done child). Do not post.
 
-QA heartbeat sweep 2026-09-07T06:34Z (run 5794c78e) — NO CHANGE. Stays `blocked`, unblock owner = operator via PAP-1764.
-
-- Re-verified live this run (read-only instance DB, socket-direct): the 2a07d193 vault still contains only `zai_api_key` (2026-09-01 05:31Z) and `VaultwardenServicePassword` (2026-06-05). The `Telegram Messenger Bot Token` secret is still NOT created.
-- The marked operator ask on PAP-1764 (posted 2026-09-01) is still the live page; no new marked message needed.
-- When the secret exists: config re-save with the secret_ref shape (0.2.14 object-binding form), then verify worker start without topicMap warning + a real `deliver delivered` line.
-
-## PAP-1761 comment
-
-QA heartbeat sweep 2026-09-07T06:34Z (run 5794c78e) — NO CHANGE. Step 1 still PENDING.
-
-- Read-only DB check this run: no `Telegram Messenger Bot Token` secret in the 2a07d193 vault; still exactly one live messenger plugin_config row (d49b266c owner). Reassignment condition (secret created) not met — stays `blocked` on the operator.
-- Runbook in this ticket remains accurate; nothing to update.
+## PAP-1761 comment — SUPERSEDED 09-08: see PAP-1844. Do not post.
 
 ## PAP-1708 comment
 
