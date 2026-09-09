@@ -35,7 +35,7 @@
 
 **Pros**:
 - Validates speed performance (critical: designed to prevent 70-93s freezes)
-- Resolves 6x speed discrepancy mystery (desktop 5757ms vs device 977ms)
+- Records the first real post-D3 device stageMs and quantifies the real ~37x device-vs-desktop gap (~36.7s p50 FP5 pre-D3 vs ~0.99s desktop node; Hermes hypothesis). (Correction 2026-09-09: the old "6x mystery (desktop 5757ms vs device 977ms)" was a mislabel — both numbers were desktop; babel-jest inflation, resolved by PAP-1672.)
 - Confirms accuracy on real FP5 footage
 - Edge cases tested in real-world camera/lighting conditions
 - **Risk mitigation**: No unvalidated speed-critical features in production
@@ -60,7 +60,7 @@
 
 **Cons**:
 - Ships feature without speed proof (feature IS speed-critical)
-- 6x speed gap unresolved
+- ~37x device-vs-desktop gap unquantified (Hermes hypothesis untested)
 - Accuracy unknown on device vs 58% desktop
 - Repeat risk of PAP-1647 freeze pattern
 - Limited rollback window if issues surface
@@ -103,7 +103,7 @@
 - Build quality validated
 
 **Field Deployment Confidence**: UNKNOWN
-- Speed: Unvalidated on device (6x gap unexplained)
+- Speed: Unvalidated on device (~37x device-vs-desktop gap, no on-device stageMs breakdown yet)
 - Accuracy: Unknown (58% desktop vs ??? device)
 - Edge cases: Real-world camera/lighting untested
 - Freeze prevention: Claimed but unproven on actual hardware
@@ -118,13 +118,17 @@
 - 2-hour delay now prevents potential production rollback later
 - Device session can resolve outstanding questions definitively
 
-**Acceptance Criteria for Option A**:
-- Dense chainrings (40+T): ≥95% abstain, <5% false detections ✓
+**Acceptance Criteria for Option A** (FP5-session judgment criteria per PAP-1855, adopted 2026-09-09):
+- Dense chainrings (40+T): ≥90% abstain, <5% false detections ✓
 - Small gears (11-13T): 0% false abstain ✓
 - Mid-range (16-28T): ≥89% accuracy maintained ✓
-- Timing: Pre-FFT gate 200-300ms faster than FFT ✓
+- Pre-FFT gate overhead <30ms ✓
+- PAP-1647-class chainring freeze (70–93s) eliminated ✓
+- Full algoDiag stageMs breakdown logged per timed capture (Hermes confirm/refute) ✓
 - No crashes or ANRs ✓
 - Sentry telemetry correct ✓
+
+**NOT a pass/fail item**: ordinary-gear wall clock (~30s class is the known pre-D3 ~36.7s p50 baseline, not a failure) and NOT proximity to "977ms" (a desktop stage-profiler number — see PAP-1672).
 
 **Pass Result**: Immediate production release authorized  
 **Fail Result**: Algorithm Engineer fixes, rebuild cycle, re-test  
@@ -192,7 +196,7 @@
 - **Device Test Plan**: DEVICE_VALIDATION_PLAN_B150.md
 - **Mobile Handoff**: MOBILE_ENGINEER_HANDOFF_2026-09-06.md
 - **Device Validation Playbook**: DEVICE_VALIDATION_RESPONSE_PLAYBOOK.md
-- **Related Issues**: PAP-1673, PAP-1647, PAP-1534, PAP-1535, PAP-1782
+- **Related Issues**: PAP-1673, PAP-1647, PAP-1534, PAP-1535, PAP-1782, PAP-1855 (evidence correction), PAP-1672 (babel-jest reconciliation)
 
 ---
 

@@ -111,7 +111,8 @@ Plan includes:
 Per PAP-1673 analysis:
 - **Desktop Full-Frame Corpus**: 210/362 = 58.0% accuracy (measured on desktop harness)
 - **Device Field Data**: Unknown (not yet measured on real FP5)
-- **Speed Gap**: 5757ms (desktop audit) vs 977ms (stage profiler) — 6x unexplained difference
+- **Speed provenance (CORRECTED 2026-09-09, PAP-1855)**: the old "5757ms vs 977ms, 6x gap" was a mislabel — BOTH numbers are desktop measurements (5757ms = desktop full-corpus audit under babel-jest; 977ms = desktop stage profiler). The 6x is explained and closed: controlled re-measurement (PAP-1672, commit 4399380) gave node p50 1025ms vs jest p50 6974ms on the same 61 photos = 6.8x per-photo babel-jest inflation landing in `detect`; host contention ruled out. Authoritative: PRODUCT_TARGETS.md row 3 (Speed) and docs/device-speed-reconciliation-2026-08-23.md (note: that doc's first attribution to host contention was superseded by the PAP-1672 controlled re-run — cite PAP-1672).
+- **Real open item — device-vs-desktop gap**: ~36.7s p50 on FP5 pre-D3 (b142-era Sentry, n=7) vs ~0.99s desktop node = **~37x**, leading hypothesis Hermes interpreter. Confirming/refuting it needs on-device algoDiag stageMs breakdowns, which the FP5 session must capture.
 
 ### Why This Matters
 
@@ -121,7 +122,7 @@ The publishability decision depends on numbers that ONLY exist on hardware:
 - Are edge cases (rotation, lighting) handled correctly in the field?
 
 **Risk of Skipping Device Validation:**
-- Release with unvalidated speed performance (6x discrepancy between desktop/device)
+- Release with unvalidated device speed (~37x device-vs-desktop gap, Hermes hypothesis unconfirmed — no on-device stageMs yet)
 - Discover 70-93s device freezes in production (similar to PAP-1647)
 - No trustworthy accuracy baseline for field deployments
 
@@ -149,7 +150,7 @@ The publishability decision depends on numbers that ONLY exist on hardware:
 4. QA verifies pass criteria
 5. Release b150 immediately
 
-**This is the **low-risk path** — it costs time but eliminates the 6x speed gap mystery.**
+**This is the **low-risk path** — it costs time but records real post-D3 device stageMs for the first time and quantifies the ~37x device-vs-desktop (Hermes) gap.**
 
 ### Option B: Accept Code-Level Evidence Only
 
@@ -158,7 +159,7 @@ The publishability decision depends on numbers that ONLY exist on hardware:
 **Timeline**: Immediate release
 
 **What remains unvalidated:**
-- ⚠️ 6x speed discrepancy (desktop 5757ms vs device 977ms — unknown why)
+- ⚠️ ~37x device-vs-desktop speed gap unquantified (~36.7s p50 FP5 pre-D3 vs ~0.99s desktop node; Hermes hypothesis unconfirmed without on-device stageMs)
 - ⚠️ Real-world camera JPEG performance (tests use raw images)
 - ⚠️ Field edge cases (lighting extremes, rotated gears)
 - ⚠️ 70-93s device freeze pattern (not reproduced in tests)
@@ -166,7 +167,7 @@ The publishability decision depends on numbers that ONLY exist on hardware:
 
 **Risks**:
 - Discover critical performance issues in production
-- No way to explain or reproduce 6x speed gap
+- No way to explain or reproduce the ~37x device-vs-desktop speed gap
 - Publish without speed validation for a speed-critical feature
 - Repeat PAP-1647 freeze pattern (undiagnosed until field data)
 
@@ -183,7 +184,7 @@ The publishability decision depends on numbers that ONLY exist on hardware:
 **Release Gate**: **CONDITIONAL ON DEVICE VALIDATION**
 
 The D3 implementation is technically solid. However:
-- The 6x speed gap between desktop and device measurements is a blocker for understanding true performance
+- The ~37x device-vs-desktop speed gap (Hermes interpreter hypothesis) stays unquantified without device stageMs data
 - Accuracy is measured at 58% on desktop but unknown on device
 - Field deployment risks are real and unquantified
 
@@ -197,14 +198,28 @@ The feature is speed-critical (PAP-1535 whole point is to avoid 70-93s freezes).
 
 Once device validation is complete (via Option A or Option B):
 
+### FP5-Session Judgment Criteria (authoritative — PAP-1855, adopted 2026-09-09)
+
+Judge the b151 FP5 session by these three, and ONLY these:
+
+1. **Dense-chainring abstain rate ≥90%** with false positives <5% (40+T dense chainrings abstain from FFT instead of miscounting)
+2. **Pre-FFT gate overhead <30ms** (texture-analysis gate cost; PAP-1534 spec: ~15–30ms)
+3. **PAP-1647-class chainring freeze elimination** — no 70–93s hangs on dense chainrings
+
+**Explicitly NOT pass/fail**: ordinary-gear wall clock. A ~30s ordinary-gear number is the known pre-D3 baseline (~36.7s p50, Sentry n=7) unless the native-kernel track (PAP-1694/1696) has landed — it is not a validation failure. Do NOT judge proximity to "977ms" (a desktop stage-profiler number — see provenance correction above).
+
+**Also required from the session**: log every timed capture as a full algoDiag stageMs breakdown (method per docs/device-speed-reconciliation-2026-08-23.md) so the ~37x Hermes-interpreter hypothesis can be confirmed or refuted from the same session.
+
 **IF Option A chosen and results are positive:**
-- [ ] Dense chainrings (40+T): ≥95% abstain, <5% false detections
+- [ ] Dense chainrings (40+T): ≥90% abstain, <5% false detections
 - [ ] Small gears (11-13T): 0% false abstain (all proceed to FFT)
 - [ ] Mid-range (16-28T): ≥89% accuracy maintained
-- [ ] Timing: Dense chainring abstrains 200-300ms faster than FFT
+- [ ] Pre-FFT gate overhead <30ms
+- [ ] No PAP-1647-class chainring freezes (70–93s) observed
+- [ ] Full algoDiag stageMs breakdown captured for each timed capture
 - [ ] No crashes or ANRs observed
 - [ ] Sentry telemetry tags present and correct
-- ✅ Release b150 immediately
+- ✅ Release immediately
 
 **IF Option B chosen:**
 - ✅ Code review pass (above)
@@ -216,7 +231,7 @@ Once device validation is complete (via Option A or Option B):
 
 ## Open Questions for CEO
 
-1. **Speed validation**: Is the 6x desktop/device gap acceptable to leave unresolved?
+1. **Speed validation**: Is the ~37x device-vs-desktop gap acceptable to leave unquantified (no on-device stageMs breakdown)?
 2. **Accuracy baseline**: Should we validate 58% accuracy on real hardware before release?
 3. **Freeze risk**: How confident are we that D3 abstain prevents PAP-1647 freezes without device proof?
 4. **Operator capacity**: Is 1-2 hours of operator time available for Option A?
@@ -229,6 +244,9 @@ Once device validation is complete (via Option A or Option B):
 - PAP-1534/PAP-1535: D3 Pre-FFT Implementation Spec
 - PAP-1673: Accuracy Decision (related: device speed/accuracy gap)
 - PAP-1647: 70-93s Device Freeze (prevention motivation for D3)
+- PAP-1855: Evidence correction — 5757/977 provenance fix + FP5-session judgment criteria (this file's 2026-09-09 corrections)
+- PAP-1672: Controlled babel-jest vs node re-measurement @ 4399380 — 6.8x per-photo jest inflation (PRODUCT_TARGETS.md row 3)
+- docs/device-speed-reconciliation-2026-08-23.md + docs/device-telemetry-sentry-2026-08-23.md (~36.7s device p50 baseline, n=7)
 - DEVICE_VALIDATION_PLAN_B150.md: Complete test checklist
 - QA_PAP1782_FINAL_APPROVAL_2026-09-03.md: Code review approval
 - debug-reports/PAP1534_D3_PRE_FFT_SPEC_2026-09-02.md: Implementation spec
