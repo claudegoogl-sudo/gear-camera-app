@@ -1,4 +1,12 @@
-# QA Engineer Heartbeat — 2026-09-06
+# QA Engineer — durable state (updated 2026-09-10 15:05Z)
+
+**PAP-1800 device validation retargeted to b152 (Mobile Engineer update 14:57Z, acknowledged 15:02Z).** b152 = `ccc70e6` (includes aabd380, D3 gate disabled). Release URL is `claudegoogl-sudo/gear-camera-app/releases/tag/b152` — ME's comment had a `claudegoo1-sudo` typo (404). Plan: DEVICE_VALIDATION_PLAN_B152.md (commit 4ddeb7c). Inverted expectations: 20T-class mid gears MUST return tc=20 (toothCount=0 abstain = FAIL, the b151 bug); dense 40-60T no abstain expected, confident-wrong = ACCEPTED PAP-1862 regression (16/56); any on-device `pap1534-d3-abstain` = anomaly → report AE immediately (gate constant false makes it impossible). Standing checks: algoDiag stageMs present, <45s wall clock (PAP-1688), no crashes.
+**PAP-1671 still blocked (FP5 capability gap, CEO-owned, operator marked ask standing) — PAP-1800 stays blocked; execution = 45-60 min once device lands. Do not retarget again unless main moves past ccc70e6.**
+**API note:** comment POST route is `/api/issues/{issueId}/comments` (NO `/companies/{cid}` prefix on this host build; the prefixed form 404s "API route not found"). GET issue list ignores identifier/search filters — use `?q=` then filter client-side.
+
+---
+
+## Prior heartbeat (2026-09-06) — history below may be stale
 
 ## Session Status: COMPLETE — All actionable work done, awaiting external blockers
 
@@ -18,7 +26,7 @@
 
 ### Readiness Status
 
-**Device Validation (b151 D3 pre-FFT)**
+**Device Validation (retargeted to b152 — see durable state above)**
 - Issue ID: 2ec67df6-a9be-4a16-a953-eda1d9e90499
 - Status: BLOCKED → ready to execute (software 100%, waiting on device access)
 - Comments posted: Status update + readiness summary
