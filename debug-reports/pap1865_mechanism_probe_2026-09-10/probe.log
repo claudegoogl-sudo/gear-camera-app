@@ -1,0 +1,32 @@
+[pap1865-probe] corpus=364 (dense40-60 target) arms=legacy1024/raw2048/tp2048/off±3,6%
+[pap1865-probe] 25/364 19s
+[pap1865-probe] 50/364 35s
+[GearCenter] PAP-684 edge-density override: r=100→297 normR=0.148→0.440 purity=0.069 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=86→259 normR=0.127→0.384 purity=0.058 from multi-threshold
+[pap1865-probe] 75/364 53s
+[pap1865-probe] 100/364 70s
+[pap1865-probe] 125/364 88s
+[GearCenter] PAP-684 edge-density override: r=91→279 normR=0.135→0.413 purity=0.052 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=99→263 normR=0.147→0.390 purity=0.063 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=75→245 normR=0.111→0.363 purity=0.058 from multi-threshold
+[pap1865-probe] 150/364 106s
+[pap1865-probe] 175/364 122s
+[pap1865-probe] 200/364 139s
+[pap1865-probe] 225/364 157s
+[GearCenter] PAP-684 edge-density override: r=60→288 normR=0.089→0.427 purity=0.059 from multi-threshold
+[pap1865-probe] 250/364 175s
+[GearCenter] PAP-684 edge-density override: r=86→224 normR=0.127→0.332 purity=0.063 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=64→291 normR=0.095→0.431 purity=0.076 from multi-threshold
+[pap1865-probe] 275/364 195s
+[pap1865-probe] 300/364 215s
+[pap1865-probe] 325/364 233s
+[GearCenter] PAP-684 edge-density override: r=54→204 normR=0.080→0.302 purity=0.078 from multi-threshold
+[pap1865-probe] 350/364 252s
+[GearCenter] PAP-684 edge-density override: r=71→159 normR=0.105→0.236 purity=0.090 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=83→222 normR=0.123→0.329 purity=0.066 from multi-threshold
+[pap1865-probe] 364/364 265s
+[pap1865-probe] done rows=364 elapsed=265s -> /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1865_mechanism_probe_2026-09-10/probe_rows.json
+(node:3945631) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

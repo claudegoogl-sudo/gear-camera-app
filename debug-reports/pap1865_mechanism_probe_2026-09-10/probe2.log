@@ -1,0 +1,32 @@
+[pap1865-probe2] corpus=362 anchor=silhouette-walk(rSil=median outermost edge from mask)
+[pap1865-probe2] 25/362 16s
+[pap1865-probe2] 50/362 33s
+[GearCenter] PAP-684 edge-density override: r=100→297 normR=0.148→0.440 purity=0.069 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=86→259 normR=0.127→0.384 purity=0.058 from multi-threshold
+[pap1865-probe2] 75/362 51s
+[pap1865-probe2] 100/362 71s
+[pap1865-probe2] 125/362 88s
+[GearCenter] PAP-684 edge-density override: r=91→279 normR=0.135→0.413 purity=0.052 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=99→263 normR=0.147→0.390 purity=0.063 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=75→245 normR=0.111→0.363 purity=0.058 from multi-threshold
+[pap1865-probe2] 150/362 106s
+[pap1865-probe2] 175/362 122s
+[pap1865-probe2] 200/362 138s
+[pap1865-probe2] 225/362 155s
+[GearCenter] PAP-684 edge-density override: r=60→288 normR=0.089→0.427 purity=0.059 from multi-threshold
+[pap1865-probe2] 250/362 173s
+[GearCenter] PAP-684 edge-density override: r=86→224 normR=0.127→0.332 purity=0.063 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=64→291 normR=0.095→0.431 purity=0.076 from multi-threshold
+[pap1865-probe2] 275/362 193s
+[pap1865-probe2] 300/362 213s
+[pap1865-probe2] 325/362 231s
+[GearCenter] PAP-684 edge-density override: r=54→204 normR=0.080→0.302 purity=0.078 from multi-threshold
+[pap1865-probe2] 350/362 251s
+[GearCenter] PAP-684 edge-density override: r=71→159 normR=0.105→0.236 purity=0.090 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=83→222 normR=0.123→0.329 purity=0.066 from multi-threshold
+[pap1865-probe2] 362/362 260s
+[pap1865-probe2] done rows=362 elapsed=260s
+(node:3955992) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
