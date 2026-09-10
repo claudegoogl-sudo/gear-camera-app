@@ -1,0 +1,60 @@
+[
+ {
+  "eventID": "7d20ca5fbd5447c9828b6a7b00010a03",
+  "dateCreated": "2026-09-10T11:32:58.970000Z",
+  "actual": 20,
+  "detected": 0,
+  "confidence": 0,
+  "method": "pap1534-d3-dense-chainring-abstain",
+  "chainringRegime": false,
+  "aimR": 450,
+  "rOuter": 155,
+  "stageMs": {
+   "detect": 20257,
+   "load": 3657,
+   "methods": 21,
+   "preprocess": 349,
+   "preprocessBackend": "native-cpp",
+   "px": 810000,
+   "total": 24284
+  },
+  "runtimeMs": 24284,
+  "budgetExhausted": false
+ },
+ {
+  "eventID": "61f68519d0ec4d3fb4c4f846cfc7557c",
+  "dateCreated": "2026-09-10T11:31:32.543000Z",
+  "actual": 20,
+  "detected": 0,
+  "confidence": 0,
+  "method": null,
+  "chainringRegime": null,
+  "aimR": null,
+  "rOuter": null,
+  "stageMs": null,
+  "runtimeMs": null,
+  "budgetExhausted": null
+ },
+ {
+  "eventID": "dad332a581454339b055abf385683e81",
+  "dateCreated": "2026-09-10T11:31:31.053000Z",
+  "actual": 20,
+  "detected": 0,
+  "confidence": 0,
+  "method": "pap1534-d3-dense-chainring-abstain",
+  "chainringRegime": false,
+  "aimR": 450,
+  "rOuter": 144,
+  "stageMs": {
+   "detect": 19813,
+   "load": 3804,
+   "methods": 34,
+   "preprocess": 367,
+   "preprocessBackend": "native-cpp",
+   "px": 810000,
+   "total": 24018
+  },
+  "runtimeMs": 24018,
+  "budgetExhausted": false
+ }
+]
