@@ -1,3 +1,17 @@
+# CEO — durable state (updated 2026-09-10 21:45Z)
+
+**PAP-1671 (CEO): operator card v3 `de166b5a` PENDING (human_only, wake_assignee, idempotency `device-validation-capability-gap:2026-09-10-v3`).** Q1 cadence (rec A2 recurring); Q2 dense disposition post-D-track-falsification (PAP-1865/`e3d0575`): go-accept / **go-capture (rec — ME routes existing 1500px retry for dense)** / go-abstain honest-UX / hold (= indefinite, D-track dead). Parked six: 4 done, `4fc16e4a` cancelled, `372d2acf` blocked→`c5c1a62e` (stale — that session ran 09-10). On answer: A→close c5c1a62e done + repoint 372d2acf at next session; B→close both w/ code-evidence note + PAP-1660 out-of-scope. Card v2 `9f68e77a` superseded (hold-option premise died with D-track).
+
+**Paperclip API from agents: base is `http://127.0.0.1:3100`** (config.json `server.port`; public domain is Cloudflare-Access-gated → 302/HTML for agents). Issue LIST route needs `/api/companies/{cid}/issues`; issue GET/comments use `/api/issues/{id}` (short UUID prefixes do NOT resolve — resolve via list). Creating an interaction AUTO-SUPERSEDES the same-issue pending card (`superseded_by_newer_interaction`), no withdraw needed. Always send `X-Paperclip-Run-Id` on writes.
+
+---
+
+# Algorithm Engineer — durable state (updated 2026-09-11)
+
+**PAP-1865 mechanism probe NEGATIVE (e3d0575) — A-as-specified falsified, ticket back with QA (todo+a4117872, comment 7efdb01d).** QA gate-5 probe ran before any implementation: silhouette-anchored rim FFT on dense 40-60T (n=64): vote-correct 10.9/15.6/9.4% (legacy1024/raw2048/two-pass2048), correct-with-agree>=3 = 0/64 every arm; ordinary n=298 all arms ~51-52% (2048 vs 1024 a wash). SavGol-window hypothesis falsified as primary blocker; wall = signal absence at 900px (52T: present 2/22 anywhere; 50T: present 6/7 but production lands 2/7 = selection subclass). Density-argmax rOuter locks inner on dense (p25 0.69 contour) — only outermost-edge-walk anchor doesn't (coherence 0.08 dense). Full facts: memory/AE_PAP1865_probe_negative.md. No implementation started; capture-side levers / dense-abstain route via PAP-1671 operator card (CEO), harvest idea needs QA cross-check (PAP-1480-adjacent).
+
+---
+
 # QA Engineer — durable state (updated 2026-09-10 15:05Z)
 
 **PAP-1800 device validation retargeted to b152 (Mobile Engineer update 14:57Z, acknowledged 15:02Z).** b152 = `ccc70e6` (includes aabd380, D3 gate disabled). Release URL is `claudegoogl-sudo/gear-camera-app/releases/tag/b152` — ME's comment had a `claudegoo1-sudo` typo (404). Plan: DEVICE_VALIDATION_PLAN_B152.md (commit 4ddeb7c). Inverted expectations: 20T-class mid gears MUST return tc=20 (toothCount=0 abstain = FAIL, the b151 bug); dense 40-60T no abstain expected, confident-wrong = ACCEPTED PAP-1862 regression (16/56); any on-device `pap1534-d3-abstain` = anomaly → report AE immediately (gate constant false makes it impossible). Standing checks: algoDiag stageMs present, <45s wall clock (PAP-1688), no crashes.
