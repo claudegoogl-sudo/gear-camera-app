@@ -1,0 +1,62 @@
+[
+  {
+    "capture": "A",
+    "event": "dad332a5",
+    "actual": 20,
+    "device": {
+      "rOuter": 144,
+      "detectMs": 19813,
+      "totalMs": 24018,
+      "method": "pap1534-d3-dense-chainring-abstain"
+    },
+    "host": {
+      "toothCount": 20,
+      "confidence": 1,
+      "methodUsed": "bc-consensus+peak",
+      "gearRadiusNorm": 0.38333333333333336,
+      "rOuter": 407,
+      "innerContourSuspected": false,
+      "budgetExhausted": false,
+      "runtimeMs": 7519,
+      "gate": {
+        "isDense": false,
+        "innerRadius": 144,
+        "fraction": 0.4377,
+        "threshold": 0.5,
+        "contourRadius": 329,
+        "cx": 438,
+        "cy": 474
+      }
+    }
+  },
+  {
+    "capture": "B",
+    "event": "7d20ca5f",
+    "actual": 20,
+    "device": {
+      "rOuter": 155,
+      "detectMs": 20257,
+      "totalMs": 24284,
+      "method": "pap1534-d3-dense-chainring-abstain"
+    },
+    "host": {
+      "toothCount": 20,
+      "confidence": 1,
+      "methodUsed": "bc-consensus+peak",
+      "gearRadiusNorm": 0.4077777777777778,
+      "rOuter": 200,
+      "innerContourSuspected": false,
+      "budgetExhausted": false,
+      "runtimeMs": 7507,
+      "gate": {
+        "isDense": false,
+        "innerRadius": 155,
+        "fraction": 0.4429,
+        "threshold": 0.5,
+        "contourRadius": 350,
+        "cx": 440,
+        "cy": 486
+      }
+    }
+  }
+]
