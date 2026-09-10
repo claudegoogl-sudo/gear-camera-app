@@ -1,0 +1,207 @@
+[pap1862-audit] corpus=362 + anchors=2 at aabd380 (gate off)
+[low-conf-consensus] final=10 fftConf=0.290 bcPeaks=10 fft90=10 peak=10 op=16 agree=3/4 contourR=121
+[mid-op-override] low-conf-consensus=>16 peak=10 fft90=10 bc=14(peaks=10) op=16(rel=0.052) gearR=297 contourR=121 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=16 bc=14(peaks=10) op=16(rel=0.052) gearR=297 contourR=121 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=4) op=15(rel=0.057) gearR=282 contourR=114 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=14 bc=14(peaks=14) op=11(rel=0.058) gearR=297 contourR=112 minDim=675
+[pap1862-audit] 25/364 26s
+[pap632-fft-floor-abstain] peak=10 fft90=20 final=13 bc=13(peaks=14) op=13(rel=0.062) gearR=294 contourR=127 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=20 final=11 bc=11(peaks=10) op=14(rel=0.049) gearR=270 contourR=113 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=12(peaks=18) op=24(rel=0.041) gearR=286 contourR=105 minDim=675
+[low-conf-consensus] final=11 fftConf=0.230 bcPeaks=11 fft90=11 peak=12 op=11 agree=4/4 contourR=137
+[pap1862-audit] 50/364 51s
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=11(peaks=13) op=13(rel=0.052) gearR=284 contourR=171 minDim=675
+[GearCenter] PAP-684 edge-density override: r=100→297 normR=0.148→0.440 purity=0.069 from multi-threshold
+[large-op-override] bc-fft=>20 peak=10 fft90=10 bc=10(peaks=4) op=20(rel=0.065) contourR=297 minDim=675
+[GearCenter] PAP-684 edge-density override: r=86→259 normR=0.127→0.384 purity=0.058 from multi-threshold
+[low-conf-consensus+op-up-override] final=11 fftConf=0.300 bcPeaks=4 fft90=10 peak=10 op=11 agree=3/4 contourR=259
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=12(peaks=4) op=11(rel=0.059) gearR=259 contourR=259 minDim=675
+[large-op-override] fft90-fallback=>25 peak=10 fft90=12 bc=11(peaks=4) op=25(rel=0.050) contourR=237 minDim=675
+[large-op-override] bc-fft=>22 peak=10 fft90=11 bc=10(peaks=4) op=22(rel=0.047) contourR=299 minDim=675
+[pap1862-audit] 75/364 79s
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=15(rel=0.049) gearR=299 contourR=299 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=10(peaks=4) op=13(rel=0.049) gearR=297 contourR=116 minDim=675
+[low-conf-consensus] final=10 fftConf=0.282 bcPeaks=11 fft90=10 peak=10 op=19 agree=3/4 contourR=298
+[mid-op-override] low-conf-consensus=>19 peak=10 fft90=10 bc=10(peaks=11) op=19(rel=0.051) gearR=298 contourR=298 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=19 bc=10(peaks=11) op=19(rel=0.051) gearR=298 contourR=298 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=15(rel=0.049) gearR=299 contourR=299 minDim=675
+[low-conf-consensus] final=11 fftConf=0.288 bcPeaks=12 fft90=13 peak=10 op=11 agree=3/4 contourR=125
+[pap632-fft-floor-abstain] peak=10 fft90=13 final=11 bc=10(peaks=12) op=11(rel=0.044) gearR=292 contourR=125 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=19) op=15(rel=0.046) gearR=286 contourR=131 minDim=675
+[large-op-override] fft90-fallback=>28 peak=11 fft90=10 bc=10(peaks=4) op=28(rel=0.048) contourR=298 minDim=675
+[large-op-override] fft-agreement=>22 peak=10 fft90=10 bc=10(peaks=4) op=22(rel=0.053) contourR=298 minDim=675
+[low-conf-consensus] final=10 fftConf=0.280 bcPeaks=4 fft90=10 peak=10 op=10 agree=3/4 contourR=109
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=4) op=10(rel=0.054) gearR=280 contourR=109 minDim=675
+[mid-op-override] bc-fft=>16 peak=10 fft90=10 bc=11(peaks=18) op=16(rel=0.047) gearR=281 contourR=103 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=16 bc=11(peaks=18) op=16(rel=0.047) gearR=281 contourR=103 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=11(peaks=16) op=13(rel=0.051) gearR=297 contourR=103 minDim=675
+[low-conf-consensus] final=11 fftConf=0.254 bcPeaks=11 fft90=10 peak=12 op=14 agree=3/4 contourR=132
+[pap1862-audit] 100/364 106s
+[low-conf-consensus] final=11 fftConf=0.194 bcPeaks=11 fft90=11 peak=12 op=11 agree=4/4 contourR=136
+[large-op-override] fft90-fallback=>20 peak=10 fft90=10 bc=11(peaks=4) op=20(rel=0.054) contourR=299 minDim=675
+[mid-op-override] fft-agreement=>17 peak=10 fft90=10 bc=10(peaks=4) op=17(rel=0.055) gearR=279 contourR=279 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=17 bc=10(peaks=4) op=17(rel=0.055) gearR=279 contourR=279 minDim=675
+[low-conf-consensus] final=11 fftConf=0.159 bcPeaks=11 fft90=11 peak=12 op=22 agree=3/4 contourR=223
+[large-op-override] low-conf-consensus=>22 peak=12 fft90=11 bc=11(peaks=11) op=22(rel=0.054) contourR=223 minDim=675
+[large-op-override] fft90-fallback=>35 peak=10 fft90=10 bc=11(peaks=4) op=35(rel=0.044) contourR=299 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=11 bc=10(peaks=4) op=21(rel=0.068) gearR=204 contourR=112 minDim=675
+[mid-op-override] bc-fft=>16 peak=10 fft90=10 bc=10(peaks=4) op=16(rel=0.057) gearR=310 contourR=310 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=16 bc=10(peaks=4) op=16(rel=0.057) gearR=310 contourR=310 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=20 final=10 bc=10(peaks=4) op=27(rel=0.046) gearR=266 contourR=266 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=2) op=16(rel=0.044) gearR=141 contourR=141 minDim=675
+[low-conf-consensus] final=12 fftConf=0.287 bcPeaks=16 fft90=12 peak=11 op=12 agree=3/4 contourR=304
+[pap1862-audit] 125/364 133s
+[mid-op-override] bc-fft=>17 peak=10 fft90=10 bc=10(peaks=4) op=17(rel=0.061) gearR=172 contourR=311 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=17 bc=10(peaks=4) op=17(rel=0.061) gearR=172 contourR=311 minDim=675
+[mid-op-override] fft90-fallback=>16 peak=10 fft90=10 bc=10(peaks=4) op=16(rel=0.047) gearR=292 contourR=128 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=16 bc=10(peaks=4) op=16(rel=0.047) gearR=292 contourR=128 minDim=675
+[large-op-override] bc-fft=>20 peak=10 fft90=10 bc=10(peaks=4) op=20(rel=0.048) contourR=305 minDim=675
+[low-conf-consensus+op-up-override] final=11 fftConf=0.245 bcPeaks=4 fft90=10 peak=10 op=11 agree=3/4 contourR=191
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=10(peaks=4) op=11(rel=0.046) gearR=249 contourR=191 minDim=675
+[low-conf-consensus] final=11 fftConf=0.323 bcPeaks=13 fft90=11 peak=10 op=12 agree=3/4 contourR=202
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=11 bc=18(peaks=13) op=12(rel=0.060) gearR=230 contourR=202 minDim=675
+[GearCenter] PAP-684 edge-density override: r=91→279 normR=0.135→0.413 purity=0.052 from multi-threshold
+[large-op-override] fft90-fallback=>26 peak=10 fft90=10 bc=10(peaks=4) op=26(rel=0.057) contourR=279 minDim=675
+[large-op-override] fft90-fallback=>22 peak=11 fft90=11 bc=10(peaks=4) op=22(rel=0.050) contourR=181 minDim=675
+[GearCenter] PAP-684 edge-density override: r=99→263 normR=0.147→0.390 purity=0.063 from multi-threshold
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=13(rel=0.071) gearR=263 contourR=263 minDim=675
+[GearCenter] PAP-684 edge-density override: r=75→245 normR=0.111→0.363 purity=0.058 from multi-threshold
+[mid-op-override] fft90-fallback=>19 peak=10 fft90=11 bc=10(peaks=2) op=19(rel=0.040) gearR=245 contourR=245 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=19 bc=10(peaks=2) op=19(rel=0.040) gearR=245 contourR=245 minDim=675
+[low-conf-consensus] final=10 fftConf=0.337 bcPeaks=4 fft90=10 peak=10 op=10 agree=3/4 contourR=109
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=4) op=10(rel=0.043) gearR=285 contourR=109 minDim=675
+[large-op-override] bc-fft=>21 peak=10 fft90=12 bc=10(peaks=4) op=21(rel=0.070) contourR=299 minDim=675
+[low-conf-consensus] final=20 fftConf=0.348 bcPeaks=21 fft90=20 peak=10 op=20 agree=3/4 contourR=129
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=12 bc=10(peaks=4) op=12(rel=0.066) gearR=133 contourR=118 minDim=675
+[pap1862-audit] 150/364 161s
+[low-conf-consensus] final=11 fftConf=0.331 bcPeaks=12 fft90=11 peak=10 op=20 agree=3/4 contourR=303
+[large-op-override] low-conf-consensus=>20 peak=10 fft90=11 bc=43(peaks=12) op=20(rel=0.056) contourR=303 minDim=675
+[low-conf-consensus] final=11 fftConf=0.159 bcPeaks=4 fft90=11 peak=12 op=11 agree=3/4 contourR=112
+[low-conf-consensus] final=15 fftConf=0.354 bcPeaks=4 fft90=15 peak=14 op=16 agree=3/4 contourR=70
+[large-op-override] fft90-fallback=>22 peak=10 fft90=10 bc=11(peaks=4) op=22(rel=0.064) contourR=299 minDim=675
+[low-conf-consensus] final=11 fftConf=0.248 bcPeaks=12 fft90=11 peak=10 op=10 agree=4/4 contourR=75
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=8) op=24(rel=0.043) gearR=285 contourR=121 minDim=675
+[low-conf-consensus] final=11 fftConf=0.263 bcPeaks=11 fft90=10 peak=12 op=16 agree=3/4 contourR=110
+[low-conf-consensus] final=10 fftConf=0.213 bcPeaks=4 fft90=10 peak=10 op=10 agree=3/4 contourR=104
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=4) op=10(rel=0.062) gearR=290 contourR=104 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=16 final=16 bc=14(peaks=15) op=11(rel=0.062) gearR=262 contourR=262 minDim=675
+[large-op-override] bc-fft=>24 peak=10 fft90=12 bc=10(peaks=4) op=24(rel=0.066) contourR=299 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=13(rel=0.060) gearR=299 contourR=299 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=13 final=10 bc=10(peaks=4) op=12(rel=0.056) gearR=299 contourR=299 minDim=675
+[large-op-override] bc-fft=>20 peak=13 fft90=13 bc=10(peaks=4) op=20(rel=0.058) contourR=299 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=5) op=14(rel=0.063) gearR=296 contourR=103 minDim=675
+[pap1862-audit] 175/364 188s
+[low-conf-consensus] final=11 fftConf=0.274 bcPeaks=11 fft90=11 peak=11 op=13 agree=3/4 contourR=113
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=10 bc=10(peaks=4) op=15(rel=0.039) gearR=299 contourR=299 minDim=675
+[mid-op-override] bc-fft=>17 peak=10 fft90=10 bc=10(peaks=4) op=17(rel=0.056) gearR=308 contourR=308 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=17 bc=10(peaks=4) op=17(rel=0.056) gearR=308 contourR=308 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=20 final=10 bc=10(peaks=4) op=18(rel=0.071) gearR=306 contourR=306 minDim=675
+[low-conf-consensus] final=10 fftConf=0.234 bcPeaks=4 fft90=10 peak=10 op=10 agree=3/4 contourR=248
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=4) op=10(rel=0.053) gearR=150 contourR=248 minDim=675
+[low-conf-consensus] final=10 fftConf=0.151 bcPeaks=11 fft90=10 peak=10 op=18 agree=3/4 contourR=98
+[mid-op-override] low-conf-consensus=>18 peak=10 fft90=10 bc=11(peaks=11) op=18(rel=0.043) gearR=285 contourR=98 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=18 bc=18(peaks=18) op=20(rel=0.046) gearR=288 contourR=131 minDim=675
+[low-conf-consensus+op-up-override] final=11 fftConf=0.329 bcPeaks=24 fft90=10 peak=10 op=11 agree=3/4 contourR=112
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=11(peaks=24) op=11(rel=0.070) gearR=297 contourR=112 minDim=675
+[low-conf-consensus] final=11 fftConf=0.276 bcPeaks=21 fft90=11 peak=10 op=12 agree=3/4 contourR=98
+[pap1862-audit] 200/364 212s
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=10(peaks=4) op=14(rel=0.076) gearR=289 contourR=107 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=14(rel=0.054) gearR=299 contourR=299 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=14(rel=0.045) gearR=299 contourR=299 minDim=675
+[low-conf-consensus] final=10 fftConf=0.326 bcPeaks=10 fft90=10 peak=11 op=13 agree=3/4 contourR=112
+[low-conf-consensus] final=13 fftConf=0.350 bcPeaks=13 fft90=11 peak=13 op=12 agree=4/4 contourR=299
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=15(rel=0.054) gearR=299 contourR=299 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=16(peaks=10) op=14(rel=0.063) gearR=291 contourR=230 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=10) op=14(rel=0.057) gearR=272 contourR=254 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=10 bc=10(peaks=4) op=14(rel=0.072) gearR=277 contourR=256 minDim=675
+[large-op-override] fft90-fallback=>22 peak=12 fft90=12 bc=13(peaks=18) op=22(rel=0.045) contourR=299 minDim=675
+[mid-op-override] bc-fft=>16 peak=10 fft90=12 bc=10(peaks=4) op=16(rel=0.045) gearR=305 contourR=305 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=16 bc=10(peaks=4) op=16(rel=0.045) gearR=305 contourR=305 minDim=675
+[low-conf-consensus] final=11 fftConf=0.348 bcPeaks=4 fft90=12 peak=11 op=10 agree=3/4 contourR=298
+[large-op-override] bc-fft=>36 peak=11 fft90=13 bc=10(peaks=4) op=36(rel=0.046) contourR=229 minDim=675
+[low-conf-consensus+op-up-override] final=11 fftConf=0.353 bcPeaks=10 fft90=10 peak=10 op=11 agree=4/4 contourR=102
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=18(peaks=10) op=11(rel=0.054) gearR=282 contourR=102 minDim=675
+[low-conf-consensus] final=11 fftConf=0.278 bcPeaks=12 fft90=11 peak=11 op=14 agree=3/4 contourR=87
+[low-conf-consensus] final=11 fftConf=0.397 bcPeaks=11 fft90=22 peak=10 op=11 agree=3/4 contourR=54
+[pap1862-audit] 225/364 239s
+[mid-op-override] fft90-fallback=>16 peak=10 fft90=10 bc=10(peaks=4) op=16(rel=0.045) gearR=282 contourR=95 minDim=675
+[low-conf-consensus] final=11 fftConf=0.381 bcPeaks=10 fft90=11 peak=11 op=13 agree=3/4 contourR=96
+[low-conf-consensus] final=11 fftConf=0.332 bcPeaks=4 fft90=10 peak=11 op=12 agree=3/4 contourR=102
+[pap632-fft-floor-abstain] peak=10 fft90=13 final=10 bc=10(peaks=4) op=13(rel=0.070) gearR=299 contourR=299 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=11(rel=0.052) gearR=309 contourR=309 minDim=675
+[large-op-override] bc-fft=>23 peak=11 fft90=11 bc=10(peaks=4) op=23(rel=0.050) contourR=306 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=21(peaks=10) op=16(rel=0.038) gearR=299 contourR=299 minDim=675
+[mid-op-override] bc-fft=>19 peak=10 fft90=12 bc=10(peaks=4) op=19(rel=0.063) gearR=294 contourR=256 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=19 bc=10(peaks=4) op=19(rel=0.063) gearR=294 contourR=256 minDim=675
+[GearCenter] PAP-684 edge-density override: r=60→288 normR=0.089→0.427 purity=0.059 from multi-threshold
+[pap632-fft-floor-abstain] peak=10 fft90=20 final=10 bc=10(peaks=4) op=20(rel=0.058) gearR=311 contourR=311 minDim=675
+[large-op-override] fft90-fallback=>21 peak=10 fft90=10 bc=38(peaks=15) op=21(rel=0.058) contourR=304 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=10(peaks=11) op=18(rel=0.051) gearR=286 contourR=103 minDim=675
+[pap1862-audit] 250/364 266s
+[peak-over-fft90-subharmonic] fft90-fallback=>21 peak=21 fft90=11 bc=10(peaks=13) op=11(rel=0.057)
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=3) op=13(rel=0.045) gearR=283 contourR=169 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=18 bc=18(peaks=18) op=18(rel=0.052) gearR=285 contourR=134 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=22 final=10 bc=10(peaks=4) op=20(rel=0.054) gearR=268 contourR=268 minDim=675
+[mid-op-override] fft90-fallback=>16 peak=10 fft90=11 bc=11(peaks=18) op=16(rel=0.043) gearR=286 contourR=124 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=16 bc=11(peaks=18) op=16(rel=0.043) gearR=286 contourR=124 minDim=675
+[low-conf-consensus] final=11 fftConf=0.290 bcPeaks=4 fft90=11 peak=11 op=12 agree=3/4 contourR=141
+[mid-op-override] bc-fft=>17 peak=10 fft90=11 bc=10(peaks=4) op=17(rel=0.046) gearR=298 contourR=298 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=17 bc=10(peaks=4) op=17(rel=0.046) gearR=298 contourR=298 minDim=675
+[GearCenter] PAP-684 edge-density override: r=86→224 normR=0.127→0.332 purity=0.063 from multi-threshold
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=11(rel=0.060) gearR=224 contourR=224 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=10 bc=10(peaks=4) op=15(rel=0.049) gearR=299 contourR=299 minDim=675
+[GearCenter] PAP-684 edge-density override: r=64→291 normR=0.095→0.431 purity=0.076 from multi-threshold
+[large-op-override] fft-agreement=>22 peak=10 fft90=10 bc=11(peaks=12) op=22(rel=0.046) contourR=291 minDim=675
+[large-op-override] fft-agreement=>20 peak=10 fft90=10 bc=10(peaks=12) op=20(rel=0.049) contourR=299 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=13 final=13 bc=11(peaks=4) op=11(rel=0.052) gearR=299 contourR=299 minDim=675
+[pap1862-audit] 275/364 295s
+[low-conf-consensus] final=11 fftConf=0.382 bcPeaks=4 fft90=11 peak=11 op=11 agree=3/4 contourR=299
+[mid-op-override] fft-agreement=>18 peak=10 fft90=10 bc=10(peaks=4) op=18(rel=0.052) gearR=300 contourR=153 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=18 bc=10(peaks=4) op=18(rel=0.052) gearR=300 contourR=153 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=12(peaks=3) op=12(rel=0.058) gearR=194 contourR=194 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=52(peaks=16) op=14(rel=0.044) gearR=288 contourR=162 minDim=675
+[low-conf-consensus+op-up-override] final=11 fftConf=0.353 bcPeaks=4 fft90=10 peak=10 op=11 agree=3/4 contourR=281
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=10(peaks=4) op=11(rel=0.061) gearR=281 contourR=281 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=27(peaks=12) op=34(rel=0.044) gearR=292 contourR=167 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=14(rel=0.066) gearR=178 contourR=148 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=13(peaks=13) op=13(rel=0.048) gearR=305 contourR=305 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=24(rel=0.047) gearR=290 contourR=158 minDim=675
+[pap1862-audit] 300/364 323s
+[low-conf-consensus] final=14 fftConf=0.215 bcPeaks=13 fft90=14 peak=11 op=14 agree=3/4 contourR=159
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=10(peaks=4) op=10(rel=0.072) gearR=251 contourR=148 minDim=675
+[low-conf-consensus] final=11 fftConf=0.374 bcPeaks=2 fft90=11 peak=11 op=11 agree=3/4 contourR=203
+[mid-op-override] bc-fft=>19 peak=10 fft90=10 bc=10(peaks=4) op=19(rel=0.044) gearR=246 contourR=233 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=19 bc=10(peaks=4) op=19(rel=0.044) gearR=246 contourR=233 minDim=675
+[low-conf-consensus] final=11 fftConf=0.263 bcPeaks=4 fft90=12 peak=11 op=11 agree=3/4 contourR=107
+[mid-op-override] fft90-fallback=>17 peak=10 fft90=10 bc=10(peaks=4) op=17(rel=0.056) gearR=277 contourR=149 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=17 bc=10(peaks=4) op=17(rel=0.056) gearR=277 contourR=149 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=10 bc=11(peaks=4) op=12(rel=0.056) gearR=216 contourR=134 minDim=675
+[low-conf-consensus] final=10 fftConf=0.325 bcPeaks=9 fft90=10 peak=10 op=10 agree=3/4 contourR=140
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=9) op=10(rel=0.054) gearR=276 contourR=140 minDim=675
+[low-conf-consensus] final=21 fftConf=0.211 bcPeaks=15 fft90=21 peak=21 op=21 agree=3/4 contourR=131
+[low-conf-consensus] final=11 fftConf=0.364 bcPeaks=11 fft90=11 peak=11 op=16 agree=3/4 contourR=298
+[pap1862-audit] 325/364 349s
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=13(peaks=2) op=14(rel=0.065) gearR=189 contourR=189 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=15 final=14 bc=51(peaks=14) op=10(rel=0.071) gearR=297 contourR=169 minDim=675
+[GearCenter] PAP-684 edge-density override: r=54→204 normR=0.080→0.302 purity=0.078 from multi-threshold
+[large-op-override] fft-agreement=>20 peak=10 fft90=10 bc=11(peaks=2) op=20(rel=0.054) contourR=204 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=13 final=10 bc=10(peaks=4) op=13(rel=0.056) gearR=299 contourR=299 minDim=675
+[large-op-override] fft-agreement=>20 peak=10 fft90=10 bc=10(peaks=2) op=20(rel=0.082) contourR=225 minDim=675
+[low-conf-consensus] final=11 fftConf=0.325 bcPeaks=0 fft90=10 peak=11 op=11 agree=3/4 contourR=76
+[large-op-override] bc-fft=>29 peak=11 fft90=11 bc=10(peaks=4) op=29(rel=0.043) contourR=298 minDim=675
+[low-conf-consensus] final=12 fftConf=0.244 bcPeaks=13 fft90=12 peak=12 op=11 agree=4/4 contourR=157
+[pap1862-audit] 350/364 380s
+[GearCenter] PAP-684 edge-density override: r=71→159 normR=0.105→0.236 purity=0.090 from multi-threshold
+[pap632-fft-floor-abstain] peak=10 fft90=13 final=13 bc=10(peaks=2) op=10(rel=0.067) gearR=159 contourR=159 minDim=675
+[GearCenter] PAP-684 edge-density override: r=83→222 normR=0.123→0.329 purity=0.066 from multi-threshold
+[large-op-override] fft-agreement=>36 peak=10 fft90=10 bc=11(peaks=4) op=36(rel=0.045) contourR=222 minDim=675
+[large-op-override] fft-agreement=>31 peak=10 fft90=10 bc=10(peaks=13) op=31(rel=0.046) contourR=310 minDim=675
+[pap474-abstain] peak=10 fft90=10 bc=13(peaks=12) op=10(rel=0.084) gearR=309 contourR=309 minDim=675
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=12 bc=14(peaks=1) op=15(rel=0.058) gearR=144 contourR=112 minDim=675
+[large-op-override] fft90-fallback=>30 peak=10 fft90=15 bc=10(peaks=11) op=30(rel=0.054) contourR=298 minDim=675
+[pap1862-audit] 364/364 396s
+[pap1862-audit] done rows=364 elapsed=396s
+(node:3415292) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
