@@ -1,0 +1,246 @@
+{
+ "eventId": "dad332a581454339b055abf385683e81",
+ "dateCreated": "2026-09-10T11:31:31.053000Z",
+ "dist": "151",
+ "release": {
+  "id": 131575348,
+  "version": "v1.0.0 (151) \u00b7 2026-09-04 18:20",
+  "status": "open",
+  "shortVersion": "v1.0.0 (151) \u00b7 2026-09-04 18:20",
+  "versionInfo": {
+   "package": null,
+   "version": {
+    "raw": "v1.0.0 (151) \u00b7 2026-09-04 18:20"
+   },
+   "description": "v1.0.0 (151) \u00b7 2026-09-04 18:20",
+   "buildHash": null
+  },
+  "ref": null,
+  "url": null,
+  "dateReleased": null,
+  "dateCreated": "2026-09-10T11:31:32.543000Z",
+  "data": {},
+  "newGroups": 0,
+  "owner": null,
+  "commitCount": 0,
+  "lastCommit": null,
+  "deployCount": 0,
+  "lastDeploy": null,
+  "authors": [],
+  "projects": [
+   {
+    "id": 4511400627142736,
+    "slug": "gear-camera-app",
+    "name": "react-native",
+    "newGroups": 0,
+    "platform": "react-native",
+    "platforms": [],
+    "hasHealthData": false
+   }
+  ],
+  "firstEvent": "2026-09-10T11:31:32Z",
+  "lastEvent": "2026-09-10T11:32:58Z",
+  "currentProjectMeta": {},
+  "userAgent": null
+ },
+ "environment": "production",
+ "tags": {
+  "actualTeethCount": "20",
+  "buildLabel": "v1.0.0 (151) \u00b7 2026-09-04 18:20",
+  "device": "FP5",
+  "device.class": "high",
+  "device.family": "FP5",
+  "dist": "151",
+  "environment": "production",
+  "event.environment": "javascript",
+  "event.origin": "javascript",
+  "fft_backend": "native-cv-dft",
+  "handled": "yes",
+  "hermes": "True",
+  "interface_type": "exception",
+  "kind": "debug_report",
+  "level": "info",
+  "mechanism": "generic",
+  "os": "Android 15",
+  "os.build": "FP5.VT31.C.114.20260804",
+  "os.name": "Android",
+  "os.rooted": "no",
+  "preprocess_backend": "native-cpp",
+  "release": "v1.0.0 (151) \u00b7 2026-09-04 18:20",
+  "toothCount": "0",
+  "user": "id:b0fd948acd754ef6830617682e6a46e4"
+ },
+ "breadcrumbs": [
+  {
+   "ts": "2026-09-10T11:29:48.802000Z",
+   "cat": "device.event",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:48.980000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:49.053000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:49.055000Z",
+   "cat": "app.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:49.056000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:49.583000Z",
+   "cat": "network.event",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:49.786000Z",
+   "cat": "console",
+   "msg": "Loading react-native-worklets-core..."
+  },
+  {
+   "ts": "2026-09-10T11:29:49.788000Z",
+   "cat": "console",
+   "msg": "Worklets loaded successfully"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.144000Z",
+   "cat": "algo.nativeKernels",
+   "msg": "native C++ preprocess kernels installed"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.153000Z",
+   "cat": "console",
+   "msg": "success"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.154000Z",
+   "cat": "algo.nativeFft",
+   "msg": "native cv::dft fft backend installed"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.166000Z",
+   "cat": "console",
+   "msg": "Running \"main\""
+  },
+  {
+   "ts": "2026-09-10T11:29:50.254000Z",
+   "cat": "camera.torch",
+   "msg": "torchState"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.362000Z",
+   "cat": "xhr",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:50.640000Z",
+   "cat": "camera.torch.cycle",
+   "msg": "torchCycleApplied"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.658000Z",
+   "cat": "camera.torch",
+   "msg": "torchState"
+  },
+  {
+   "ts": "2026-09-10T11:29:50.977000Z",
+   "cat": "xhr",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:51.266000Z",
+   "cat": "xhr",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:57.321000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:57.402000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:57.407000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:29:58.023000Z",
+   "cat": "app.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:30:02.369000Z",
+   "cat": "console",
+   "msg": "Camera error: Camera functionality is not available because it has been restricted by the operating system, possibly due to a device policy."
+  },
+  {
+   "ts": "2026-09-10T11:30:02.371000Z",
+   "cat": "console",
+   "msg": "Camera: device-policy restriction detected, will retry on AppState active"
+  },
+  {
+   "ts": "2026-09-10T11:30:02.481000Z",
+   "cat": "camera.torch",
+   "msg": "torchState"
+  },
+  {
+   "ts": "2026-09-10T11:30:05.877000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:30:05.881000Z",
+   "cat": "app.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:30:05.883000Z",
+   "cat": "ui.lifecycle",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:30:06.528000Z",
+   "cat": "camera.torch.cycle",
+   "msg": "torchCycleApplied"
+  },
+  {
+   "ts": "2026-09-10T11:30:06.540000Z",
+   "cat": "camera.torch",
+   "msg": "torchState"
+  },
+  {
+   "ts": "2026-09-10T11:30:10.218000Z",
+   "cat": "camera.capture",
+   "msg": "takePhotoCompleted"
+  },
+  {
+   "ts": "2026-09-10T11:30:14.622000Z",
+   "cat": "network.event",
+   "msg": null
+  },
+  {
+   "ts": "2026-09-10T11:30:35.974000Z",
+   "cat": "console",
+   "msg": "[GearCounter] 900\u00d7900px | load=3804ms preprocess=367ms detect=19813ms methods=34ms total=24018ms\n  center=(438,474) method=multi-threshold\n  contourR=329 gearR=329\n  fft90=0T | multiR=0T(rel=0.000) | outer=0T(rel=0.000) | bc=0T(pur=0.000,peaks=0) | clahe=0T(conf=0.00)\n  \u2192 result=0T conf=0.0% via=pap1534-d3-dense-chainring-abstain"
+  },
+  {
+   "ts": "2026-09-10T11:31:30.302000Z",
+   "cat": "network.event",
+   "msg": null
+  }
+ ],
+ "sdk": "sentry.javascript.react-native"
+}
