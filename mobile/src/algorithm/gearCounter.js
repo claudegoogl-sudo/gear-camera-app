@@ -2442,22 +2442,54 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
   }
 
   // ── D3 Pre-FFT Dense Chainring Detection (PAP-1534) ────────────────
-  // Detect dense chainrings (40+T) BEFORE expensive FFT computation.
-  // Dense gears have small inner hub → FFT locks onto spider/bolts.
-  // Abstain rather than output confident-wrong tooth count.
-  const denseCheck = checkDenseChainringRegime(gray, cx, cy, contourRadius, gearR, width, height);
-  if (denseCheck.isDense) {
-    // Dense chainring detected — skip FFT computation and abstain
-    return {
-      toothCount: 0, confidence: 0,
-      cx, cy, gearR, initialGearR: contourRadius,
-      contourRadius, centerResult,
-      fft90tc: 0, peakTc: 0, peakRel: 0, peakR: 0, opTc: 0, opRel: 0,
-      bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0,
-      claheTc: 0, claheConf: 0,
-      rOuter: denseCheck.innerRadius,
-      methodUsed: 'pap1534-d3-dense-chainring-abstain',
-    };
+  // DISABLED 2026-09-10 (PAP-1862; QA evidence commit 61f968b) — the gate
+  // function is kept (QA probes call it directly) but its abstain is no
+  // longer honored. Flip D3_DENSE_GATE_ENABLED to true to restore.
+  //
+  // Why off: the PAP-1534 discriminator (estimateInnerRadius radius as a
+  // fraction of contourRadius, THRESHOLD 0.50) is not discriminative on the
+  // labeled corpus. QA's 364-photo sweep
+  // (mobile/__tests__/pap1862.d3_threshold_sweep.test.js →
+  // debug-reports/pap1862_fp5_b151_session_2026-09-10/threshold_sweep_rows.json)
+  // measured class fraction-medians S 0.372 / M 0.514 / L 0.389 /
+  // C(29-39T) 0.357 / D(40-60T) 0.349 — the classes interleave (AUC 0.375),
+  // so NO threshold meets the PAP-1855 ship criteria (dense abstain >=90%
+  // with ordinary FP <5%); at the shipped 0.50 the gate abstains
+  // 200/284 = 70.4% of ordinary gears. Live confirmation: the FP5 b151
+  // session (Sentry GEAR-CAMERA-APP-3) abstained 2/2 labeled 20T captures
+  // (fractions 0.4377 / 0.4429), host-exact at HEAD
+  // (pap1862.d3_fp_probe.test.js). The cheap-FFT two-feature rescue is also
+  // ruled out (pap1862.d3_rescue_probe.test.js): gating the abstain on
+  // cheapFFT>=30 keeps only 28.6% of dense photos abstained — the confirming
+  // feature anti-correlates on exactly the population the gate protects.
+  //
+  // End-to-end QA proof: with the gate bypassed, both captured anchors
+  // return toothCount=20 confidence=1.0 — this gate was the sole thing
+  // standing between those photos and a correct answer.
+  //
+  // Accepted regression: dense chainrings (40-60T) return to the pre-D3
+  // confident-wrong small-cassette collapse (FFT reads 10-13T). That
+  // failure mode is the D-track redesign subject; a replacement gate must
+  // be a NEW discriminative feature that passes the same 364-photo QA
+  // sweep BEFORE implementation (PAP-1862 QA recommendation (d)).
+  // Ship disposition of builds carrying this change remains governed by
+  // the operator A1/A2/B card 2b9e1994 on PAP-1671 (human_only).
+  const D3_DENSE_GATE_ENABLED = false;
+  if (D3_DENSE_GATE_ENABLED) {
+    const denseCheck = checkDenseChainringRegime(gray, cx, cy, contourRadius, gearR, width, height);
+    if (denseCheck.isDense) {
+      // Dense chainring detected — skip FFT computation and abstain
+      return {
+        toothCount: 0, confidence: 0,
+        cx, cy, gearR, initialGearR: contourRadius,
+        contourRadius, centerResult,
+        fft90tc: 0, peakTc: 0, peakRel: 0, peakR: 0, opTc: 0, opRel: 0,
+        bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0,
+        claheTc: 0, claheConf: 0,
+        rOuter: denseCheck.innerRadius,
+        methodUsed: 'pap1534-d3-dense-chainring-abstain',
+      };
+    }
   }
 
   // ── Method evaluation (matches Python decision rule from commit 4243213) ──
