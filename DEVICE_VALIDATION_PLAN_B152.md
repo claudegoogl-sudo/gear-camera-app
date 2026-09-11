@@ -81,6 +81,29 @@ The one surviving capture-side idea after the 1500px negative (PAP-1869). Dense 
 - [ ] Record per arm: honest-abstain / confident-wrong / correct + `stageMs`
 - [ ] Does NOT gate the build verdict; results feed the next PAP-1671 card decision only
 
+### Phase 7: Sentry release-build validation (PAP-1665) — needs a RELEASE-variant APK
+PAP-1662 removed the JS-side native re-init in release builds only (`__DEV__` keeps it
+alive in debug by design), so items 1–2 are only observable on a release APK. The next
+session build must include one (`scripts/build-release.sh`), not only `build-debug.sh`
+— b145/b151/b152 were all debug APKs. Install the release APK for at least the first
+cold start of the session.
+
+Host-side items already CLOSED 2026-09-11 — do NOT re-check on device:
+- Asset sanity: shipped b143 (release) and b152 (debug) APKs both package
+  `assets/sentry.options.json` with DSN + `release: "v1.0.0 (N) · <date>"` + `dist: "N"`.
+- Attribution: all Sentry releases `v1.0.0 (125…152) · <date>` are stamped; live
+  JS-origin event `60ec20d9` (b152): release `v1.0.0 (152) · 2026-09-10 14:52`,
+  dist `152`, 33 breadcrumbs preserved; fallback release `com.gearcounter.app@1.0.0+1`
+  does not exist (zero events ever).
+
+On-device (this session, release APK):
+- [ ] Single native init per cold start: exactly one native-origin init/session per
+      launch; no Hub/`AsyncHttpTransport` close+reopen right after the JS bundle loads
+- [ ] JS capture works without the native re-init: a JS-origin event (e.g. a Phase 3
+      dense honest-abstain debug_report) with readable breadcrumbs — camera.*/algo.*
+      categories present, cf. event `60ec20d9` format
+- [ ] Event groups under this build's stamped release/dist — record both values
+
 ## Pass Criteria
 
 ✅ **PASS if ALL of**:
@@ -89,7 +112,12 @@ The one surviving capture-side idea after the 1500px negative (PAP-1869). Dense 
 - `stageMs` present on all captures; all < 45s wall clock; no crash/ANR
 - Phase 6 A/B recorded (non-gating)
 
+Phase 7 is **PAP-1665-scoped and does not gate the PAP-1800 verdict**, but if no
+release-variant APK is available and it is skipped, the session report must say so
+explicitly (PAP-1665 then stays blocked with items 1–2 open).
+
 ## Reporting
 
-Post results to PAP-1800 (session vehicle). Blockers: PAP-1872 (build — Mobile Engineer),
+Post results to PAP-1800 (session vehicle); Phase 7 results also to PAP-1665.
+Blockers: PAP-1872 (build — Mobile Engineer),
 FP5 session scheduling (Operator via PAP-1671 todo list, pids raise first).
