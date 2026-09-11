@@ -52,8 +52,79 @@
 # (confirmed by the probe above); it is not merely a system property.
 GRADLE_CONSTRAINT_JVMARGS="-Xmx2048m -XX:MaxMetaspaceSize=512m -XX:ActiveProcessorCount=2"
 
+# Shared cgroup every process on this build host lives in (cgroup v2).
+# Overridable so the guards below are testable off-host.
+GRADLE_PID_CGROUP_DIR="${GRADLE_PID_CGROUP_DIR:-/sys/fs/cgroup/system.slice/paperclip.service}"
+
+# Minimum free pids in that cgroup before a Gradle build may start.
+# Calibrated 2026-09-11 on the b154 build attempts (PAP-1886 infra note, SC
+# run 856006d5; full evidence PAP-1845 comment 714feb9a): a constrained build
+# that started at 434/600 (166 free) died at dexBuilderDebug AND drove the
+# cgroup to its hard 600-pid cap — 58 denied forks, the embedded PostgreSQL
+# died, the board restarted. Starts at 269/600 (331 free) and 392/600 (208
+# free) completed cleanly, with the identical constraint set. One build
+# therefore needs roughly 170-210 free pids; 200 keeps it out of the regime
+# where it both fails and takes the co-tenants down with it.
+GRADLE_PID_MIN_FREE=200
+
 # Populated by gradle_constraint_flags; expand as "${GRADLE_CONSTRAINT_FLAGS[@]}".
 GRADLE_CONSTRAINT_FLAGS=()
+
+# Fail fast when the shared cgroup cannot fit a Gradle build, or another
+# Gradle build is already running. Called early by build-debug.sh and
+# build-release.sh (before anything is stamped, so a refusal leaves the tree
+# clean) and again from gradle_constraint_flags; idempotent, reporting once.
+# Set BUILD_IGNORE_PID_HEADROOM=1 to override — you own the blast radius.
+assert_pid_headroom() {
+  local cur max free others
+  if [[ -n "${BUILD_IGNORE_PID_HEADROOM:-}" ]]; then
+    echo "[build] PID headroom guard DISABLED (BUILD_IGNORE_PID_HEADROOM is set)."
+    return 0
+  fi
+  if [[ -n "${PID_HEADROOM_CHECKED:-}" ]]; then
+    return 0
+  fi
+
+  if [[ -r "$GRADLE_PID_CGROUP_DIR/pids.max" ]]; then
+    cur=$(cat "$GRADLE_PID_CGROUP_DIR/pids.current" 2>/dev/null || echo 0)
+    max=$(cat "$GRADLE_PID_CGROUP_DIR/pids.max" 2>/dev/null || echo 0)
+    if [[ "$max" =~ ^[0-9]+$ ]]; then
+      free=$(( max - cur ))
+      if (( free < GRADLE_PID_MIN_FREE )); then
+        echo "[build] ERROR: shared cgroup has only $free free pids ($cur/$max in" >&2
+        echo "[build] $GRADLE_PID_CGROUP_DIR) — a Gradle build here needs" >&2
+        echo "[build] ≥${GRADLE_PID_MIN_FREE}. Starting below that is what killed the board" >&2
+        echo "[build] on 2026-09-11 (denied forks → PostgreSQL exit → service restart)." >&2
+        echo "[build] Wait for co-tenant load to drop, or coordinate a build window." >&2
+        echo "[build] Override at your own risk with BUILD_IGNORE_PID_HEADROOM=1." >&2
+        return 1
+      fi
+    else
+      # pids.max reads "max" on an uncapped host: no guard needed.
+      free="uncapped"
+    fi
+  else
+    # Not a thread-capped cgroup layout (foreign host): nothing to guard.
+    cur=""; max=""; free="?"
+  fi
+
+  # Never overlap Gradle builds on this host. Even under --no-daemon Gradle
+  # forks one single-use daemon; its cmdline is distinctive enough to match.
+  if command -v pgrep >/dev/null 2>&1; then
+    others=$(pgrep -fc 'org.gradle.launcher.daemon.bootstrap.GradleDaemon' || true)
+    if [[ "$others" =~ ^[0-9]+$ ]] && (( others > 0 )); then
+      echo "[build] ERROR: a Gradle build daemon is already running ($others process(es))." >&2
+      echo "[build] Overlapping builds saturate the shared cgroup; it should have exited" >&2
+      echo "[build] (--no-daemon). Wait for it, or clear the stale process, then retry." >&2
+      echo "[build] Override at your own risk with BUILD_IGNORE_PID_HEADROOM=1." >&2
+      return 1
+    fi
+  fi
+
+  PID_HEADROOM_CHECKED=1
+  echo "[build] cgroup pids: ${cur:-n/a}/${max:-n/a} in use at build start ($free free, ≥${GRADLE_PID_MIN_FREE} required)"
+  return 0
+}
 
 # Fill GRADLE_CONSTRAINT_FLAGS and echo a one-line summary.
 gradle_constraint_flags() {
@@ -83,7 +154,7 @@ gradle_constraint_flags() {
   )
 
   echo "[build] Gradle thread constraints: --no-daemon --no-parallel --max-workers=1 --no-watch-fs, jvmargs='$GRADLE_CONSTRAINT_JVMARGS', kotlin in-process (PAP-1661)"
-  if [[ -r /sys/fs/cgroup/system.slice/paperclip.service/pids.current ]]; then
-    echo "[build] cgroup pids: $(cat /sys/fs/cgroup/system.slice/paperclip.service/pids.current)/$(cat /sys/fs/cgroup/system.slice/paperclip.service/pids.max 2>/dev/null || echo '?') in use at build start"
-  fi
+  # Belt-and-braces for callers that only source this lib: also refuse to
+  # emit flags for a build that must not start (see assert_pid_headroom).
+  assert_pid_headroom
 }

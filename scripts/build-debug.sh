@@ -47,6 +47,13 @@ assert_clean_tree
 # on-device upload path moved to Sentry in PAP-1543.
 gh_preflight_auth
 
+# Refuse to start into a shared cgroup too full to fit a Gradle build, or
+# while another Gradle build is running (infra note on PAP-1886, 2026-09-11:
+# a build started at 434/600 pids died at dexBuilderDebug AND took the board
+# down with it). Runs BEFORE the buildInfo.js stamp so a refusal leaves the
+# tree clean for an immediate retry.
+assert_pid_headroom
+
 # ── Derive version + build number ────────────────────────────────────────────
 VERSION=$(node -p "require('$MOBILE_DIR/package.json').version")
 BUILD_DATE=$(date +"%Y-%m-%d %H:%M")
