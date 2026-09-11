@@ -1,0 +1,47 @@
+{
+  "prereg": "PAP-1873 comment 43b25c09; T2 wording correction disclosed (implemented as intended-in-motivation T2')",
+  "rule": {
+    "gapSeconds": 180,
+    "minCluster": 2,
+    "perFrame": "prod.peakTc",
+    "vote": "strict majority else abstain(0)"
+  },
+  "dense": {
+    "tag": "dense",
+    "clusters": 15,
+    "frames": 38,
+    "beforeExact": 7,
+    "afterExact": 3,
+    "rescues": 0,
+    "regressions": 4,
+    "net": -4,
+    "abstainFrames": 18
+  },
+  "ordinary": {
+    "tag": "ordinary",
+    "clusters": 64,
+    "frames": 165,
+    "beforeExact": 100,
+    "afterExact": 75,
+    "rescues": 2,
+    "regressions": 27,
+    "net": -25,
+    "abstainFrames": 69
+  },
+  "t2prime_correctMajorityRescuingWrongMemberClusters": 0,
+  "criteria": {
+    "T1_dense_net_ge_3": {
+      "pass": false,
+      "got": -4
+    },
+    "T2prime_ge_1_independence_cluster": {
+      "pass": false,
+      "got": 0
+    },
+    "T3_ordinary_net_ge_0": {
+      "pass": false,
+      "got": -25
+    }
+  },
+  "verdict": "NEGATIVE (close temporal-consensus lever on this corpus basis)"
+}

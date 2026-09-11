@@ -1,0 +1,3190 @@
+{
+ "all": [
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_08-29-38-474Z",
+    "2026-04-05_08-30-34-676Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-34-16-932Z",
+    "2026-04-05_14-35-16-858Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-08_19-57-06-684Z",
+    "2026-04-08_19-57-29-323Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_11-41-53-620Z",
+    "2026-04-19_11-44-00-352Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_19-52-28-596Z",
+    "2026-04-19_19-55-01-676Z",
+    "2026-04-19_19-57-22-929Z"
+   ],
+   "perFrameTc": [
+    10,
+    15,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_06-16-35-545Z",
+    "2026-04-21_06-18-32-006Z"
+   ],
+   "perFrameTc": [
+    15,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-08-20-758Z",
+    "2026-04-21_19-09-54-643Z"
+   ],
+   "perFrameTc": [
+    10,
+    15
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-15-50-554Z",
+    "2026-04-22_07-18-18-409Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-05-59-553Z",
+    "2026-04-22_19-07-26-398Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 3,
+   "stamps": [
+    "2026-04-04_16-15-39-652Z",
+    "2026-04-04_16-16-09-444Z",
+    "2026-04-04_16-16-44-639Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 5,
+   "stamps": [
+    "2026-04-04_18-49-40-768Z",
+    "2026-04-04_18-50-11-106Z",
+    "2026-04-04_18-52-30-549Z",
+    "2026-04-04_18-53-44-084Z",
+    "2026-04-04_18-54-21-451Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 5,
+   "clusterBeforeExact": 5,
+   "clusterAfterExact": 5,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 6,
+   "stamps": [
+    "2026-04-05_08-24-37-589Z",
+    "2026-04-05_08-25-08-743Z",
+    "2026-04-05_08-25-39-887Z",
+    "2026-04-05_08-26-06-796Z",
+    "2026-04-05_08-27-08-187Z",
+    "2026-04-05_08-27-44-023Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14,
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 6,
+   "clusterBeforeExact": 6,
+   "clusterAfterExact": 6,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-36-18-288Z",
+    "2026-04-05_14-37-17-240Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_17-42-01-194Z",
+    "2026-04-05_17-42-25-166Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_11-35-13-002Z",
+    "2026-04-19_11-36-35-964Z",
+    "2026-04-19_11-38-11-646Z",
+    "2026-04-19_11-39-50-191Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 4,
+   "clusterBeforeExact": 4,
+   "clusterAfterExact": 4,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_20-07-45-725Z",
+    "2026-04-19_20-10-05-159Z",
+    "2026-04-19_20-12-01-564Z",
+    "2026-04-19_20-14-09-805Z"
+   ],
+   "perFrameTc": [
+    12,
+    14,
+    14,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 2,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_06-20-54-220Z",
+    "2026-04-21_06-23-13-341Z"
+   ],
+   "perFrameTc": [
+    15,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-03-45-218Z",
+    "2026-04-21_19-06-43-980Z"
+   ],
+   "perFrameTc": [
+    14,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-19-57-602Z",
+    "2026-04-22_07-21-28-608Z"
+   ],
+   "perFrameTc": [
+    10,
+    14
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-02-53-014Z",
+    "2026-04-22_19-04-18-312Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_07-07-20-597Z",
+    "2026-04-24_07-09-14-763Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 13,
+   "n": 3,
+   "stamps": [
+    "2026-04-05_08-31-06-222Z",
+    "2026-04-05_08-31-34-725Z",
+    "2026-04-05_08-32-16-126Z"
+   ],
+   "perFrameTc": [
+    13,
+    13,
+    13
+   ],
+   "voted": 13,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 13,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-38-39-916Z",
+    "2026-04-05_14-39-43-491Z"
+   ],
+   "perFrameTc": [
+    13,
+    13
+   ],
+   "voted": 13,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 13,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_20-11-19-230Z",
+    "2026-04-05_20-12-48-480Z"
+   ],
+   "perFrameTc": [
+    13,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 3,
+   "stamps": [
+    "2026-04-05_08-32-48-875Z",
+    "2026-04-05_08-33-27-869Z",
+    "2026-04-05_08-34-06-051Z"
+   ],
+   "perFrameTc": [
+    11,
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-40-38-072Z",
+    "2026-04-05_14-41-38-021Z"
+   ],
+   "perFrameTc": [
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_11-29-33-819Z",
+    "2026-04-19_11-30-52-252Z",
+    "2026-04-19_11-32-11-962Z",
+    "2026-04-19_11-33-29-608Z"
+   ],
+   "perFrameTc": [
+    11,
+    11,
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 4,
+   "clusterBeforeExact": 4,
+   "clusterAfterExact": 4,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_20-30-12-936Z",
+    "2026-04-19_20-32-41-522Z",
+    "2026-04-19_20-35-09-838Z"
+   ],
+   "perFrameTc": [
+    10,
+    11,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 4,
+   "stamps": [
+    "2026-04-20_18-17-44-209Z",
+    "2026-04-20_18-19-35-364Z",
+    "2026-04-20_18-22-07-461Z",
+    "2026-04-20_18-24-43-234Z"
+   ],
+   "perFrameTc": [
+    11,
+    10,
+    12,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 2,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-00-40-900Z",
+    "2026-04-21_19-02-17-555Z"
+   ],
+   "perFrameTc": [
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 2,
+   "stamps": [
+    "2026-04-29_05-15-43-455Z",
+    "2026-04-29_05-17-07-868Z"
+   ],
+   "perFrameTc": [
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 5,
+   "stamps": [
+    "2026-04-19_14-49-48-616Z",
+    "2026-04-19_14-52-42-470Z",
+    "2026-04-19_14-53-55-150Z",
+    "2026-04-19_14-55-07-474Z",
+    "2026-04-19_14-56-58-230Z"
+   ],
+   "perFrameTc": [
+    13,
+    18,
+    18,
+    18,
+    13
+   ],
+   "voted": 18,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 5,
+   "rescuesInCluster": 2,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": true
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_19-24-04-821Z",
+    "2026-04-19_19-26-17-731Z"
+   ],
+   "perFrameTc": [
+    18,
+    13
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 5,
+   "stamps": [
+    "2026-04-19_19-32-49-661Z",
+    "2026-04-19_19-34-56-274Z",
+    "2026-04-19_19-37-22-257Z",
+    "2026-04-19_19-39-54-752Z",
+    "2026-04-19_19-42-17-872Z"
+   ],
+   "perFrameTc": [
+    10,
+    11,
+    18,
+    10,
+    18
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 2,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-20_15-53-34-450Z",
+    "2026-04-20_15-56-17-709Z"
+   ],
+   "perFrameTc": [
+    18,
+    18
+   ],
+   "voted": 18,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_06-12-45-465Z",
+    "2026-04-21_06-14-34-553Z"
+   ],
+   "perFrameTc": [
+    18,
+    18
+   ],
+   "voted": 18,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-12-08-731Z",
+    "2026-04-22_07-13-50-403Z"
+   ],
+   "perFrameTc": [
+    18,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-08-58-873Z",
+    "2026-04-22_19-10-24-880Z"
+   ],
+   "perFrameTc": [
+    12,
+    18
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-23_07-28-28-784Z",
+    "2026-04-23_07-30-31-621Z"
+   ],
+   "perFrameTc": [
+    18,
+    18
+   ],
+   "voted": 18,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_15-25-39-158Z",
+    "2026-04-19_15-28-14-823Z",
+    "2026-04-19_15-30-17-488Z"
+   ],
+   "perFrameTc": [
+    11,
+    14,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_19-16-13-389Z",
+    "2026-04-19_19-18-34-054Z",
+    "2026-04-19_19-21-03-594Z"
+   ],
+   "perFrameTc": [
+    10,
+    10,
+    21
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-26-08-385Z",
+    "2026-04-21_19-28-49-137Z"
+   ],
+   "perFrameTc": [
+    10,
+    21
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-08-17-422Z",
+    "2026-04-22_07-10-07-868Z"
+   ],
+   "perFrameTc": [
+    21,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-12-17-955Z",
+    "2026-04-22_19-14-01-206Z"
+   ],
+   "perFrameTc": [
+    11,
+    21
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_07-02-48-626Z",
+    "2026-04-24_07-05-25-396Z"
+   ],
+   "perFrameTc": [
+    21,
+    21
+   ],
+   "voted": 21,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_14-59-13-044Z",
+    "2026-04-19_15-00-49-192Z"
+   ],
+   "perFrameTc": [
+    24,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_18-54-04-915Z",
+    "2026-04-19_18-56-13-322Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-30-41-277Z",
+    "2026-04-21_19-32-34-507Z"
+   ],
+   "perFrameTc": [
+    13,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-04-52-734Z",
+    "2026-04-22_07-06-35-244Z"
+   ],
+   "perFrameTc": [
+    10,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 3,
+   "stamps": [
+    "2026-04-23_07-13-06-829Z",
+    "2026-04-23_07-15-00-335Z",
+    "2026-04-23_07-16-38-914Z"
+   ],
+   "perFrameTc": [
+    23,
+    10,
+    24
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_06-58-18-724Z",
+    "2026-04-24_07-00-14-707Z"
+   ],
+   "perFrameTc": [
+    24,
+    24
+   ],
+   "voted": 24,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-13_09-38-00-648Z",
+    "2026-04-13_09-39-28-736Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 7,
+   "stamps": [
+    "2026-04-19_15-36-36-632Z",
+    "2026-04-19_15-38-37-106Z",
+    "2026-04-19_15-40-54-450Z",
+    "2026-04-19_15-42-38-634Z",
+    "2026-04-19_15-44-52-340Z",
+    "2026-04-19_15-47-20-296Z",
+    "2026-04-19_15-49-28-586Z"
+   ],
+   "perFrameTc": [
+    11,
+    10,
+    10,
+    10,
+    10,
+    11,
+    28
+   ],
+   "voted": 10,
+   "majorityN": 4,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_18-38-33-566Z",
+    "2026-04-19_18-40-16-373Z",
+    "2026-04-19_18-42-36-869Z",
+    "2026-04-19_18-44-38-938Z"
+   ],
+   "perFrameTc": [
+    10,
+    28,
+    10,
+    27
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_05-22-00-958Z",
+    "2026-04-21_05-23-42-208Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-35-44-770Z",
+    "2026-04-21_19-37-24-880Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-01-01-985Z",
+    "2026-04-22_07-03-12-059Z"
+   ],
+   "perFrameTc": [
+    10,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-23-01-893Z",
+    "2026-04-22_19-24-58-121Z"
+   ],
+   "perFrameTc": [
+    10,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 3,
+   "stamps": [
+    "2026-04-23_07-06-21-245Z",
+    "2026-04-23_07-08-27-801Z",
+    "2026-04-23_07-10-59-824Z"
+   ],
+   "perFrameTc": [
+    10,
+    10,
+    28
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_06-54-08-266Z",
+    "2026-04-24_06-56-14-137Z"
+   ],
+   "perFrameTc": [
+    28,
+    28
+   ],
+   "voted": 28,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 3,
+   "stamps": [
+    "2026-04-28_06-50-20-391Z",
+    "2026-04-28_06-52-14-899Z",
+    "2026-04-28_06-54-24-694Z"
+   ],
+   "perFrameTc": [
+    12,
+    11,
+    42
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 2,
+   "stamps": [
+    "2026-04-28_18-32-08-432Z",
+    "2026-04-28_18-34-58-887Z"
+   ],
+   "perFrameTc": [
+    43,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 2,
+   "stamps": [
+    "2026-04-29_05-29-10-169Z",
+    "2026-04-29_05-31-31-338Z"
+   ],
+   "perFrameTc": [
+    41,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 4,
+   "stamps": [
+    "2026-04-30_05-32-57-251Z",
+    "2026-04-30_05-34-26-023Z",
+    "2026-04-30_05-36-04-910Z",
+    "2026-04-30_05-37-41-094Z"
+   ],
+   "perFrameTc": [
+    42,
+    11,
+    10,
+    14
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 3,
+   "stamps": [
+    "2026-05-01_14-52-11-873Z",
+    "2026-05-01_14-53-42-651Z",
+    "2026-05-01_14-55-07-717Z"
+   ],
+   "perFrameTc": [
+    42,
+    42,
+    42
+   ],
+   "voted": 42,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 36,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_15-28-13-082Z",
+    "2026-05-01_15-30-10-941Z"
+   ],
+   "perFrameTc": [
+    37,
+    36
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 36,
+   "n": 2,
+   "stamps": [
+    "2026-05-04_11-44-37-757Z",
+    "2026-05-04_11-46-43-304Z"
+   ],
+   "perFrameTc": [
+    10,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 3,
+   "stamps": [
+    "2026-04-28_06-56-36-143Z",
+    "2026-04-28_06-58-55-390Z",
+    "2026-04-28_07-01-23-211Z"
+   ],
+   "perFrameTc": [
+    10,
+    12,
+    12
+   ],
+   "voted": 12,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-04-28_18-27-23-983Z",
+    "2026-04-28_18-29-55-917Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 3,
+   "stamps": [
+    "2026-04-29_05-33-41-732Z",
+    "2026-04-29_05-35-39-053Z",
+    "2026-04-29_05-37-44-380Z"
+   ],
+   "perFrameTc": [
+    10,
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_05-29-59-315Z",
+    "2026-04-30_05-31-33-683Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 3,
+   "stamps": [
+    "2026-05-01_08-22-17-365Z",
+    "2026-05-01_08-24-07-480Z",
+    "2026-05-01_08-26-39-688Z"
+   ],
+   "perFrameTc": [
+    10,
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 3,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_15-12-33-142Z",
+    "2026-05-01_15-14-13-835Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_15-20-31-778Z",
+    "2026-05-01_15-22-03-978Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 34,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_10-14-55-670Z",
+    "2026-04-30_10-17-13-321Z"
+   ],
+   "perFrameTc": [
+    10,
+    34
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 32,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_11-41-12-489Z",
+    "2026-04-30_11-42-53-294Z"
+   ],
+   "perFrameTc": [
+    32,
+    32
+   ],
+   "voted": 32,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 50,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_08-28-38-224Z",
+    "2026-05-01_08-31-05-858Z"
+   ],
+   "perFrameTc": [
+    50,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 50,
+   "n": 3,
+   "stamps": [
+    "2026-05-01_15-06-20-161Z",
+    "2026-05-01_15-08-23-136Z",
+    "2026-05-01_15-10-32-571Z"
+   ],
+   "perFrameTc": [
+    49,
+    50,
+    51
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 48,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_12-33-17-234Z",
+    "2026-04-30_12-35-25-332Z"
+   ],
+   "perFrameTc": [
+    12,
+    12
+   ],
+   "voted": 12,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  }
+ ],
+ "dense": [
+  {
+   "actual": 42,
+   "n": 3,
+   "stamps": [
+    "2026-04-28_06-50-20-391Z",
+    "2026-04-28_06-52-14-899Z",
+    "2026-04-28_06-54-24-694Z"
+   ],
+   "perFrameTc": [
+    12,
+    11,
+    42
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 2,
+   "stamps": [
+    "2026-04-28_18-32-08-432Z",
+    "2026-04-28_18-34-58-887Z"
+   ],
+   "perFrameTc": [
+    43,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 2,
+   "stamps": [
+    "2026-04-29_05-29-10-169Z",
+    "2026-04-29_05-31-31-338Z"
+   ],
+   "perFrameTc": [
+    41,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 4,
+   "stamps": [
+    "2026-04-30_05-32-57-251Z",
+    "2026-04-30_05-34-26-023Z",
+    "2026-04-30_05-36-04-910Z",
+    "2026-04-30_05-37-41-094Z"
+   ],
+   "perFrameTc": [
+    42,
+    11,
+    10,
+    14
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 42,
+   "n": 3,
+   "stamps": [
+    "2026-05-01_14-52-11-873Z",
+    "2026-05-01_14-53-42-651Z",
+    "2026-05-01_14-55-07-717Z"
+   ],
+   "perFrameTc": [
+    42,
+    42,
+    42
+   ],
+   "voted": 42,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 3,
+   "stamps": [
+    "2026-04-28_06-56-36-143Z",
+    "2026-04-28_06-58-55-390Z",
+    "2026-04-28_07-01-23-211Z"
+   ],
+   "perFrameTc": [
+    10,
+    12,
+    12
+   ],
+   "voted": 12,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-04-28_18-27-23-983Z",
+    "2026-04-28_18-29-55-917Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 3,
+   "stamps": [
+    "2026-04-29_05-33-41-732Z",
+    "2026-04-29_05-35-39-053Z",
+    "2026-04-29_05-37-44-380Z"
+   ],
+   "perFrameTc": [
+    10,
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_05-29-59-315Z",
+    "2026-04-30_05-31-33-683Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 3,
+   "stamps": [
+    "2026-05-01_08-22-17-365Z",
+    "2026-05-01_08-24-07-480Z",
+    "2026-05-01_08-26-39-688Z"
+   ],
+   "perFrameTc": [
+    10,
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 3,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_15-12-33-142Z",
+    "2026-05-01_15-14-13-835Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 52,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_15-20-31-778Z",
+    "2026-05-01_15-22-03-978Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 50,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_08-28-38-224Z",
+    "2026-05-01_08-31-05-858Z"
+   ],
+   "perFrameTc": [
+    50,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 50,
+   "n": 3,
+   "stamps": [
+    "2026-05-01_15-06-20-161Z",
+    "2026-05-01_15-08-23-136Z",
+    "2026-05-01_15-10-32-571Z"
+   ],
+   "perFrameTc": [
+    49,
+    50,
+    51
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 48,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_12-33-17-234Z",
+    "2026-04-30_12-35-25-332Z"
+   ],
+   "perFrameTc": [
+    12,
+    12
+   ],
+   "voted": 12,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  }
+ ],
+ "ordinary": [
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_08-29-38-474Z",
+    "2026-04-05_08-30-34-676Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-34-16-932Z",
+    "2026-04-05_14-35-16-858Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-08_19-57-06-684Z",
+    "2026-04-08_19-57-29-323Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_11-41-53-620Z",
+    "2026-04-19_11-44-00-352Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_19-52-28-596Z",
+    "2026-04-19_19-55-01-676Z",
+    "2026-04-19_19-57-22-929Z"
+   ],
+   "perFrameTc": [
+    10,
+    15,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_06-16-35-545Z",
+    "2026-04-21_06-18-32-006Z"
+   ],
+   "perFrameTc": [
+    15,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-08-20-758Z",
+    "2026-04-21_19-09-54-643Z"
+   ],
+   "perFrameTc": [
+    10,
+    15
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-15-50-554Z",
+    "2026-04-22_07-18-18-409Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 15,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-05-59-553Z",
+    "2026-04-22_19-07-26-398Z"
+   ],
+   "perFrameTc": [
+    15,
+    15
+   ],
+   "voted": 15,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 3,
+   "stamps": [
+    "2026-04-04_16-15-39-652Z",
+    "2026-04-04_16-16-09-444Z",
+    "2026-04-04_16-16-44-639Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 5,
+   "stamps": [
+    "2026-04-04_18-49-40-768Z",
+    "2026-04-04_18-50-11-106Z",
+    "2026-04-04_18-52-30-549Z",
+    "2026-04-04_18-53-44-084Z",
+    "2026-04-04_18-54-21-451Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 5,
+   "clusterBeforeExact": 5,
+   "clusterAfterExact": 5,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 6,
+   "stamps": [
+    "2026-04-05_08-24-37-589Z",
+    "2026-04-05_08-25-08-743Z",
+    "2026-04-05_08-25-39-887Z",
+    "2026-04-05_08-26-06-796Z",
+    "2026-04-05_08-27-08-187Z",
+    "2026-04-05_08-27-44-023Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14,
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 6,
+   "clusterBeforeExact": 6,
+   "clusterAfterExact": 6,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-36-18-288Z",
+    "2026-04-05_14-37-17-240Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_17-42-01-194Z",
+    "2026-04-05_17-42-25-166Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_11-35-13-002Z",
+    "2026-04-19_11-36-35-964Z",
+    "2026-04-19_11-38-11-646Z",
+    "2026-04-19_11-39-50-191Z"
+   ],
+   "perFrameTc": [
+    14,
+    14,
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 4,
+   "clusterBeforeExact": 4,
+   "clusterAfterExact": 4,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_20-07-45-725Z",
+    "2026-04-19_20-10-05-159Z",
+    "2026-04-19_20-12-01-564Z",
+    "2026-04-19_20-14-09-805Z"
+   ],
+   "perFrameTc": [
+    12,
+    14,
+    14,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 2,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_06-20-54-220Z",
+    "2026-04-21_06-23-13-341Z"
+   ],
+   "perFrameTc": [
+    15,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-03-45-218Z",
+    "2026-04-21_19-06-43-980Z"
+   ],
+   "perFrameTc": [
+    14,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-19-57-602Z",
+    "2026-04-22_07-21-28-608Z"
+   ],
+   "perFrameTc": [
+    10,
+    14
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-02-53-014Z",
+    "2026-04-22_19-04-18-312Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 14,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_07-07-20-597Z",
+    "2026-04-24_07-09-14-763Z"
+   ],
+   "perFrameTc": [
+    14,
+    14
+   ],
+   "voted": 14,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 13,
+   "n": 3,
+   "stamps": [
+    "2026-04-05_08-31-06-222Z",
+    "2026-04-05_08-31-34-725Z",
+    "2026-04-05_08-32-16-126Z"
+   ],
+   "perFrameTc": [
+    13,
+    13,
+    13
+   ],
+   "voted": 13,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 13,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-38-39-916Z",
+    "2026-04-05_14-39-43-491Z"
+   ],
+   "perFrameTc": [
+    13,
+    13
+   ],
+   "voted": 13,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 13,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_20-11-19-230Z",
+    "2026-04-05_20-12-48-480Z"
+   ],
+   "perFrameTc": [
+    13,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 3,
+   "stamps": [
+    "2026-04-05_08-32-48-875Z",
+    "2026-04-05_08-33-27-869Z",
+    "2026-04-05_08-34-06-051Z"
+   ],
+   "perFrameTc": [
+    11,
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 3,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 2,
+   "stamps": [
+    "2026-04-05_14-40-38-072Z",
+    "2026-04-05_14-41-38-021Z"
+   ],
+   "perFrameTc": [
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_11-29-33-819Z",
+    "2026-04-19_11-30-52-252Z",
+    "2026-04-19_11-32-11-962Z",
+    "2026-04-19_11-33-29-608Z"
+   ],
+   "perFrameTc": [
+    11,
+    11,
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 4,
+   "clusterBeforeExact": 4,
+   "clusterAfterExact": 4,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_20-30-12-936Z",
+    "2026-04-19_20-32-41-522Z",
+    "2026-04-19_20-35-09-838Z"
+   ],
+   "perFrameTc": [
+    10,
+    11,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 4,
+   "stamps": [
+    "2026-04-20_18-17-44-209Z",
+    "2026-04-20_18-19-35-364Z",
+    "2026-04-20_18-22-07-461Z",
+    "2026-04-20_18-24-43-234Z"
+   ],
+   "perFrameTc": [
+    11,
+    10,
+    12,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 2,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-00-40-900Z",
+    "2026-04-21_19-02-17-555Z"
+   ],
+   "perFrameTc": [
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 11,
+   "n": 2,
+   "stamps": [
+    "2026-04-29_05-15-43-455Z",
+    "2026-04-29_05-17-07-868Z"
+   ],
+   "perFrameTc": [
+    11,
+    11
+   ],
+   "voted": 11,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 5,
+   "stamps": [
+    "2026-04-19_14-49-48-616Z",
+    "2026-04-19_14-52-42-470Z",
+    "2026-04-19_14-53-55-150Z",
+    "2026-04-19_14-55-07-474Z",
+    "2026-04-19_14-56-58-230Z"
+   ],
+   "perFrameTc": [
+    13,
+    18,
+    18,
+    18,
+    13
+   ],
+   "voted": 18,
+   "majorityN": 3,
+   "clusterBeforeExact": 3,
+   "clusterAfterExact": 5,
+   "rescuesInCluster": 2,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": true
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_19-24-04-821Z",
+    "2026-04-19_19-26-17-731Z"
+   ],
+   "perFrameTc": [
+    18,
+    13
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 5,
+   "stamps": [
+    "2026-04-19_19-32-49-661Z",
+    "2026-04-19_19-34-56-274Z",
+    "2026-04-19_19-37-22-257Z",
+    "2026-04-19_19-39-54-752Z",
+    "2026-04-19_19-42-17-872Z"
+   ],
+   "perFrameTc": [
+    10,
+    11,
+    18,
+    10,
+    18
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 2,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-20_15-53-34-450Z",
+    "2026-04-20_15-56-17-709Z"
+   ],
+   "perFrameTc": [
+    18,
+    18
+   ],
+   "voted": 18,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_06-12-45-465Z",
+    "2026-04-21_06-14-34-553Z"
+   ],
+   "perFrameTc": [
+    18,
+    18
+   ],
+   "voted": 18,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-12-08-731Z",
+    "2026-04-22_07-13-50-403Z"
+   ],
+   "perFrameTc": [
+    18,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-08-58-873Z",
+    "2026-04-22_19-10-24-880Z"
+   ],
+   "perFrameTc": [
+    12,
+    18
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 18,
+   "n": 2,
+   "stamps": [
+    "2026-04-23_07-28-28-784Z",
+    "2026-04-23_07-30-31-621Z"
+   ],
+   "perFrameTc": [
+    18,
+    18
+   ],
+   "voted": 18,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_15-25-39-158Z",
+    "2026-04-19_15-28-14-823Z",
+    "2026-04-19_15-30-17-488Z"
+   ],
+   "perFrameTc": [
+    11,
+    14,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 3,
+   "stamps": [
+    "2026-04-19_19-16-13-389Z",
+    "2026-04-19_19-18-34-054Z",
+    "2026-04-19_19-21-03-594Z"
+   ],
+   "perFrameTc": [
+    10,
+    10,
+    21
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-26-08-385Z",
+    "2026-04-21_19-28-49-137Z"
+   ],
+   "perFrameTc": [
+    10,
+    21
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-08-17-422Z",
+    "2026-04-22_07-10-07-868Z"
+   ],
+   "perFrameTc": [
+    21,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-12-17-955Z",
+    "2026-04-22_19-14-01-206Z"
+   ],
+   "perFrameTc": [
+    11,
+    21
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 21,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_07-02-48-626Z",
+    "2026-04-24_07-05-25-396Z"
+   ],
+   "perFrameTc": [
+    21,
+    21
+   ],
+   "voted": 21,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_14-59-13-044Z",
+    "2026-04-19_15-00-49-192Z"
+   ],
+   "perFrameTc": [
+    24,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-19_18-54-04-915Z",
+    "2026-04-19_18-56-13-322Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-30-41-277Z",
+    "2026-04-21_19-32-34-507Z"
+   ],
+   "perFrameTc": [
+    13,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-04-52-734Z",
+    "2026-04-22_07-06-35-244Z"
+   ],
+   "perFrameTc": [
+    10,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 3,
+   "stamps": [
+    "2026-04-23_07-13-06-829Z",
+    "2026-04-23_07-15-00-335Z",
+    "2026-04-23_07-16-38-914Z"
+   ],
+   "perFrameTc": [
+    23,
+    10,
+    24
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 24,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_06-58-18-724Z",
+    "2026-04-24_07-00-14-707Z"
+   ],
+   "perFrameTc": [
+    24,
+    24
+   ],
+   "voted": 24,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-13_09-38-00-648Z",
+    "2026-04-13_09-39-28-736Z"
+   ],
+   "perFrameTc": [
+    10,
+    10
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 7,
+   "stamps": [
+    "2026-04-19_15-36-36-632Z",
+    "2026-04-19_15-38-37-106Z",
+    "2026-04-19_15-40-54-450Z",
+    "2026-04-19_15-42-38-634Z",
+    "2026-04-19_15-44-52-340Z",
+    "2026-04-19_15-47-20-296Z",
+    "2026-04-19_15-49-28-586Z"
+   ],
+   "perFrameTc": [
+    11,
+    10,
+    10,
+    10,
+    10,
+    11,
+    28
+   ],
+   "voted": 10,
+   "majorityN": 4,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 4,
+   "stamps": [
+    "2026-04-19_18-38-33-566Z",
+    "2026-04-19_18-40-16-373Z",
+    "2026-04-19_18-42-36-869Z",
+    "2026-04-19_18-44-38-938Z"
+   ],
+   "perFrameTc": [
+    10,
+    28,
+    10,
+    27
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_05-22-00-958Z",
+    "2026-04-21_05-23-42-208Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-21_19-35-44-770Z",
+    "2026-04-21_19-37-24-880Z"
+   ],
+   "perFrameTc": [
+    11,
+    10
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_07-01-01-985Z",
+    "2026-04-22_07-03-12-059Z"
+   ],
+   "perFrameTc": [
+    10,
+    12
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-22_19-23-01-893Z",
+    "2026-04-22_19-24-58-121Z"
+   ],
+   "perFrameTc": [
+    10,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 3,
+   "stamps": [
+    "2026-04-23_07-06-21-245Z",
+    "2026-04-23_07-08-27-801Z",
+    "2026-04-23_07-10-59-824Z"
+   ],
+   "perFrameTc": [
+    10,
+    10,
+    28
+   ],
+   "voted": 10,
+   "majorityN": 2,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 28,
+   "n": 2,
+   "stamps": [
+    "2026-04-24_06-54-08-266Z",
+    "2026-04-24_06-56-14-137Z"
+   ],
+   "perFrameTc": [
+    28,
+    28
+   ],
+   "voted": 28,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 36,
+   "n": 2,
+   "stamps": [
+    "2026-05-01_15-28-13-082Z",
+    "2026-05-01_15-30-10-941Z"
+   ],
+   "perFrameTc": [
+    37,
+    36
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 36,
+   "n": 2,
+   "stamps": [
+    "2026-05-04_11-44-37-757Z",
+    "2026-05-04_11-46-43-304Z"
+   ],
+   "perFrameTc": [
+    10,
+    11
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 0,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 34,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_10-14-55-670Z",
+    "2026-04-30_10-17-13-321Z"
+   ],
+   "perFrameTc": [
+    10,
+    34
+   ],
+   "voted": 0,
+   "majorityN": 0,
+   "clusterBeforeExact": 1,
+   "clusterAfterExact": 0,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 1,
+   "correctMajorityRescuesWrongMember": false
+  },
+  {
+   "actual": 32,
+   "n": 2,
+   "stamps": [
+    "2026-04-30_11-41-12-489Z",
+    "2026-04-30_11-42-53-294Z"
+   ],
+   "perFrameTc": [
+    32,
+    32
+   ],
+   "voted": 32,
+   "majorityN": 2,
+   "clusterBeforeExact": 2,
+   "clusterAfterExact": 2,
+   "rescuesInCluster": 0,
+   "regressionsInCluster": 0,
+   "correctMajorityRescuesWrongMember": false
+  }
+ ]
+}
