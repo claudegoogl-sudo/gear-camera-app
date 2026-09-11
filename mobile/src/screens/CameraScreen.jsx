@@ -698,7 +698,13 @@ export default function CameraScreen({ navigation }) {
     }
   // PAP-1881: `device` + `flashMode` added to deps so the capture closure
   // cannot act on a stale lens/flash selection (see captureFlashProp above).
-  }, [isProcessing, downloading, isFocused, navigation, device, flashMode, setError, setProcessing, setResult]);
+  // QA PAP-1883 required fix: `torchEngaged` added so capture telemetry's
+  // torchProp cannot be stale — in the default no-toggle flow the closure
+  // formed before the PAP-1596 50ms cycle engaged the torch, so it recorded
+  // torchProp:'off' while the live prop (and the LED) were 'on' (probe-
+  // verified by QA; self-healed after any toggle).  Identity churn is free:
+  // useMotionDetection reads onStable through onStableRef.
+  }, [isProcessing, downloading, isFocused, navigation, device, flashMode, torchEngaged, setError, setProcessing, setResult]);
 
   const handleCancel = useCallback(() => {
     captureGenRef.current++;

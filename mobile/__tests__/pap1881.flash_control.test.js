@@ -190,11 +190,16 @@ describe('PAP-1881 flash control', () => {
 
     // The capture event records the user-selected mode next to the resolved
     // prop (flashMode 'off' vs flash 'off' vs torchProp) — the fields QA
-    // correlates on b154 debug shares.
+    // correlates on b154 debug shares.  captures[0] is the no-toggle first
+    // capture: its torchProp must be 'on'.  QA PAP-1883 probe found the
+    // telemetry recorded a stale 'off' there — handleCapture's dep array
+    // lacked torchEngaged, so the closure formed before the PAP-1596 50ms
+    // cycle engaged the torch.  This assertion fails without the dep fix.
     const events = await sharedCameraEvents(getByText);
     const captures = events.filter((e) => e.type === 'capture');
     expect(captures.length).toBe(2);
     expect(captures[0].flashMode).toBe('on');
+    expect(captures[0].torchProp).toBe('on');
     expect(captures[1].flashMode).toBe('off');
     expect(captures[1].torchProp).toBe('off');
   });
