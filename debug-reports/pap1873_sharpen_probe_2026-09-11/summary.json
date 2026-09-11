@@ -1,0 +1,91 @@
+{
+  "prereg": "db997652 + amendment 4e209859",
+  "primaryArm": "A2b_lucy_s4_PRIMARY",
+  "skipped": [
+    "pap1865_captureA_cropped",
+    "pap1865_captureB_cropped"
+  ],
+  "base": {
+    "n": 362,
+    "denseCensus": 22,
+    "denseVote": 18,
+    "denseN": 64,
+    "fiftyCensus": 6,
+    "fiftyN": 7,
+    "ordCensus": 209,
+    "ordVote": 191,
+    "ordN": 298
+  },
+  "arms": {
+    "A0_production": {
+      "n": 362,
+      "denseCensus": 22,
+      "denseVote": 18,
+      "denseN": 64,
+      "fiftyCensus": 6,
+      "fiftyN": 7,
+      "ordCensus": 209,
+      "ordVote": 191,
+      "ordN": 298,
+      "ordVoteRegressionsVsA0": 0,
+      "ordCensusNetVsA0": 0
+    },
+    "A1a_unsharp_s1.5": {
+      "n": 362,
+      "denseCensus": 22,
+      "denseVote": 19,
+      "denseN": 64,
+      "fiftyCensus": 6,
+      "fiftyN": 7,
+      "ordCensus": 210,
+      "ordVote": 192,
+      "ordN": 298,
+      "ordVoteRegressionsVsA0": 0,
+      "ordCensusNetVsA0": 1
+    },
+    "A1b_unsharp_s3": {
+      "n": 362,
+      "denseCensus": 22,
+      "denseVote": 19,
+      "denseN": 64,
+      "fiftyCensus": 6,
+      "fiftyN": 7,
+      "ordCensus": 211,
+      "ordVote": 192,
+      "ordN": 298,
+      "ordVoteRegressionsVsA0": 1,
+      "ordCensusNetVsA0": 2
+    },
+    "A2a_lucy_s2": {
+      "n": 362,
+      "denseCensus": 22,
+      "denseVote": 19,
+      "denseN": 64,
+      "fiftyCensus": 6,
+      "fiftyN": 7,
+      "ordCensus": 210,
+      "ordVote": 192,
+      "ordN": 298,
+      "ordVoteRegressionsVsA0": 0,
+      "ordCensusNetVsA0": 1
+    },
+    "A2b_lucy_s4_PRIMARY": {
+      "n": 362,
+      "denseCensus": 23,
+      "denseVote": 19,
+      "denseN": 64,
+      "fiftyCensus": 6,
+      "fiftyN": 7,
+      "ordCensus": 213,
+      "ordVote": 191,
+      "ordN": 298,
+      "ordVoteRegressionsVsA0": 1,
+      "ordCensusNetVsA0": 4
+    }
+  },
+  "void": false,
+  "p1_denseCensus_ge17": true,
+  "p2_ordNetGeMinus5_and_voteRegLe5": true,
+  "p3_fiftyCensus_ge5of7": true,
+  "verdict": "POSITIVE (route to AC2 QA cross-check)"
+}
