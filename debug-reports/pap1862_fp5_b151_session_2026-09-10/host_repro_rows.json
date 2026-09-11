@@ -17,7 +17,7 @@
       "rOuter": 407,
       "innerContourSuspected": false,
       "budgetExhausted": false,
-      "runtimeMs": 11607,
+      "runtimeMs": 17339,
       "gate": {
         "isDense": true,
         "innerRadius": 144,
@@ -47,7 +47,7 @@
       "rOuter": 200,
       "innerContourSuspected": false,
       "budgetExhausted": false,
-      "runtimeMs": 10284,
+      "runtimeMs": 19285,
       "gate": {
         "isDense": true,
         "innerRadius": 155,
