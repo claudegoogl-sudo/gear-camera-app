@@ -9,6 +9,50 @@
 
 ---
 
+
+## Device support matrix & known limitations
+
+**Status 2026-09-11 (PAP-1880).** Every prior field report, validation session and corpus
+gate implicitly assumed the operator FP5 ("Hardware required: FP5"). First non-FP5 field
+evidence, recorded here:
+
+| Device | Class | OS | Cores / panel | Locale | Build | First seen | Frame processor | Support verdict |
+|---|---|---|---|---|---|---|---|---|
+| Xiaomi 25113PN0EC | low | Android 16 (BP2A.250605.031.A3) | 4-core, 720x1280 | zh_CN | b152 | 2026-09-11T02:37Z (4 debug_reports `b0819c451eae`/`243decb70dee`/`ea0d1c984d46`/`60ec20d97449`, session `844c2fcf`, user `107c063b`) | ZERO frames — worklet never activates within the 10s window → IMU-only mode → CRES blocked → no capture ever | **UNSUPPORTED — known limitation** (evidence: ME ticket eeafa15d, Sentry group 120360803) |
+
+Failure mode is **pre-algorithm**: the frame processor worklet never receives a frame, so
+no photo is captured, the debug_reports carry an empty `contexts.gear`, and there is no
+image for the operator to label — **never send label requests for these 4 reports**
+(PAP-1880 ask 3). Camera init, torch and the native kernels (preprocess native-cpp, fft
+native-cv-dft) all came up clean; the failure is worklet/frame delivery, under
+investigation by the Mobile Engineer (eeafa15d). Not a b152 regression: fresh install,
+first session ever on this device.
+
+### Decision (QA, explicit — PAP-1880 ask 2): NO device-class dimension in corpus or session gates today
+
+- **Corpus gates stay FP5-anchored.** The 364-photo audits, desktop pre-flights and the
+  session phase gates all measure accuracy on captured frames. A device that delivers
+  zero frames contributes zero rows to any corpus, so a device-class gate dimension would
+  be unfalsifiable noise, not a gate. Outcome type: **documented limitation** (this
+  section), not a gate.
+- **`device.class=low` is out of declared support scope** until the eeafa15d
+  investigation produces a build where a low-class device delivers frames end-to-end.
+- **Re-evaluation trigger (binding):** the moment a build delivers frames on a
+  `device.class=low` device, this plan MUST gain a minimal device-class smoke gate before
+  any support claim for low-class devices:
+  1. frame processor activates (no `No frames processed — IMU-only mode` breadcrumb
+     within the activation window; the `frameProcessorTimeout` diagnostic ME is adding
+     makes this observable),
+  2. one ordinary-gear capture returns tc>0 or an honest abstain,
+  3. `algoDiag stageMs` present.
+  Minimum hardware for that gate: the Xiaomi unit or an Android-16 low-RAM emulator
+  profile (ME's repro path in eeafa15d).
+- **Triage routing:** field reports with `device.class=low` and an empty `contexts.gear`
+  route to an ME compatibility ticket, not to the label/corpus flow (no label request —
+  no frame exists to label).
+- **Session reports:** any session on a non-FP5 device records the device class in the
+  report header (one line). FP5 remains the only validated reference device.
+
 ## Why expectations changed (b152 → abstain build)
 
 - PAP-1862 disabled the PAP-1534 D3 gate because it abstained 70.4% of ordinary 20T-class
