@@ -75,6 +75,7 @@ Device session only proceeds if the host audit passes.
 
 ### Phase 6: Focus/exposure capture A/B — NON-GATING experiment block
 The one surviving capture-side idea after the 1500px negative (PAP-1869). Dense targets only.
+- **Method (pre-registered)**: `docs/pap1873-focus-exposure-ab-protocol-2026-09-11.md` (`6ec8c1a`) — paired A/B, G1 sharpness void gate, G2 census-flip primary (net ≥ +2), G3 confident-wrong guard. QA review 2026-09-11: ENDORSED; capture path pinned to the **system camera app for BOTH arms** (app ships no AF/AE-lock UX — verified in CameraScreen.jsx); abstain tag in flight is `pap1872-dense-chainring-abstain`.
 - [ ] Arm A (default): 3-5 captures per dense size, stock focus/exposure
 - [ ] Arm B (assisted): same targets, manual focus-lock + exposure-lock (tap-to-focus on
       rim, locked exposure) — cadence sessions are where photon-level levers get answered
