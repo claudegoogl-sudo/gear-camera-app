@@ -1,6 +1,6 @@
 # Device Validation Plan — dense-abstain build (b153+; supersedes the b152 gate-off plan)
 
-**Build**: **b153** — release https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b153 (main code @ `3d7770b`, build-info `06befc3`); calibrated pap1872 G1-G4 dense-abstain gate + cannot-count panel
+**Build**: **b155** (QA composition call 2026-09-11 ~22:4xZ, supersedes b153 as session build) — main HEAD incl. flash control `114a496` + `torchEngaged` telemetry fix `6d26228` + PAP-1879 camera diagnostics; build request = PAP-1890 (ME). Rationale: operator's 17:40Z b153 attempt failed ALL captures in the dark (no flash control) — b155 adds the illumination lever so a dark burst can't void the booking. `gearCounter.js` identical to b153's `3d7770b` (empty diff) → corpus pre-flight carries unchanged. Fallback if b155 slips: b153 `06befc3` (https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b153); original b153 header text below for provenance. --- **b153 (superseded session target)**: release tag/b153 (main code @ `3d7770b`, build-info `06befc3`); calibrated pap1872 G1-G4 dense-abstain gate + cannot-count panel
 **Decision source**: operator card v4 `cefe13ee` (2026-09-11 11:05Z): Q1 = A2 short recurring cadence, Q2 = **go-abstain (dense-abstain honest-UX)**
 **Supersedes**: the b152 gate-off framing previously in this file (PAP-1862 "confident-wrong accepted" stance is superseded by go-abstain)
 **Session vehicle**: PAP-1800 (this issue). One session also clears PAP-1662 release-build validation (`372d2acf`).
