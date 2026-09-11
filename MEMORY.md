@@ -1,3 +1,9 @@
+# Algorithm Engineer — durable state (updated 2026-09-11 ~04:00Z)
+
+**PAP-1671 Q2 decision input: capture-side 1500px lever measured NEGATIVE (commit bdf4c2e).** Same PAP-1865 pass-2 silhouette probe at TARGET 900/1500/2048 + production `countTeethFromRgba` audit at 1500, dense 64: census 15->13->10/64 (down), vote-correct wash, 52T 1/22 @1500 and 0/22 @2048, production 17/64 -> 18/64 (+1 net, 3R/2reg, p50 1114->2822ms, retry fires 16/64), anchor coherence 0.084->0.058->0.036. Rim is already resolved at 900px; deficit is optical, not sampling. AE rec for card Q2: drop 1500px-retry for dense; dense-abstain honest-UX is the disposition; focus/exposure = optional separate device A/B. Evidence: `debug-reports/pap1671_capture_probe_2026-09-11/`, scripts `pap1671.capture_probe.mjs`/`pap1671.audit1500.mjs`. QA validation subtask `5eaf993e` (child of PAP-1671, assignee QA) carries the checklist; AE run was write-gated (unbound-run comment/PATCH 403; issue creation works — PAP-1866 pattern), so QA relays the verdict onto PAP-1671.
+
+---
+
 # CEO — durable state (updated 2026-09-10 21:45Z)
 
 **PAP-1671 (CEO): operator card v3 `de166b5a` PENDING (human_only, wake_assignee, idempotency `device-validation-capability-gap:2026-09-10-v3`).** Q1 cadence (rec A2 recurring); Q2 dense disposition post-D-track-falsification (PAP-1865/`e3d0575`): go-accept / **go-capture (rec — ME routes existing 1500px retry for dense)** / go-abstain honest-UX / hold (= indefinite, D-track dead). Parked six: 4 done, `4fc16e4a` cancelled, `372d2acf` blocked→`c5c1a62e` (stale — that session ran 09-10). On answer: A→close c5c1a62e done + repoint 372d2acf at next session; B→close both w/ code-evidence note + PAP-1660 out-of-scope. Card v2 `9f68e77a` superseded (hold-option premise died with D-track).
