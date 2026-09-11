@@ -1,0 +1,18 @@
+[pap1671-capture-probe] target=1500 corpus=139 (dense=64 ordSample=75) anchor=silhouette-walk
+[GearCenter] PAP-684 edge-density override: r=158→480 normR=0.140→0.427 purity=0.076 from multi-threshold
+[pap1671-capture-probe] 25/139 79s
+[pap1671-capture-probe] 50/139 149s
+[GearCenter] PAP-684 edge-density override: r=139→392 normR=0.124→0.348 purity=0.059 from multi-threshold
+[pap1671-capture-probe] 75/139 216s
+[GearCenter] PAP-684 edge-density override: r=105→228 normR=0.093→0.203 purity=0.095 from multi-threshold
+[GearCenter] PAP-1766 Approach A hub-lock fix: rejected r=148 (hub-sized), selected r=497 (ring-sized)
+[GearCenter] PAP-684 edge-density override: r=149→499 normR=0.132→0.444 purity=0.055 from multi-threshold
+[pap1671-capture-probe] 100/139 285s
+[GearCenter] PAP-684 edge-density override: r=158→482 normR=0.140→0.428 purity=0.057 from multi-threshold
+[pap1671-capture-probe] 125/139 350s
+[pap1671-capture-probe] 139/139 386s
+[pap1671-capture-probe] done rows=139 elapsed=386s
+(node:259712) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

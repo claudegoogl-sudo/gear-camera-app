@@ -1,0 +1,49 @@
+[pap1671-audit1500] corpus=64 + anchors=2 at aabd380 (gate off)
+[low-conf-consensus] final=11 fftConf=0.343 bcPeaks=11 fft90=11 peak=11 op=14 agree=3/4 contourR=235
+[low-conf-consensus+op-up-override] final=11 fftConf=0.372 bcPeaks=18 fft90=10 peak=10 op=11 agree=3/4 contourR=183
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=11 bc=11(peaks=18) op=11(rel=0.050) gearR=491 contourR=183 minDim=1125
+[large-op-override] bc-fft=>20 peak=12 fft90=10 bc=10(peaks=4) op=20(rel=0.060) contourR=497 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=10 bc=10(peaks=4) op=15(rel=0.065) gearR=497 contourR=497 minDim=1125
+[GearCenter] PAP-684 edge-density override: r=158→480 normR=0.140→0.427 purity=0.076 from multi-threshold
+[mid-op-override] fft-agreement=>17 peak=10 fft90=10 bc=10(peaks=10) op=17(rel=0.059) gearR=480 contourR=480 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=17 bc=10(peaks=10) op=17(rel=0.059) gearR=480 contourR=480 minDim=1125
+[large-op-override] bc-fft=>24 peak=10 fft90=13 bc=10(peaks=2) op=24(rel=0.047) contourR=497 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=26(rel=0.051) gearR=496 contourR=256 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=12(peaks=3) op=12(rel=0.061) gearR=323 contourR=323 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=20 final=10 bc=10(peaks=4) op=18(rel=0.058) gearR=497 contourR=497 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=15(rel=0.057) gearR=495 contourR=469 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=14(rel=0.070) gearR=338 contourR=247 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=12(rel=0.056) gearR=504 contourR=504 minDim=1125
+[mid-op-override] bc-fft=>17 peak=10 fft90=12 bc=10(peaks=4) op=17(rel=0.051) gearR=500 contourR=500 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=17 bc=10(peaks=4) op=17(rel=0.051) gearR=500 contourR=500 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=22 final=10 bc=10(peaks=4) op=17(rel=0.054) gearR=497 contourR=497 minDim=1125
+[pap1671-audit1500] 25/66 92s
+[low-conf-consensus] final=10 fftConf=0.295 bcPeaks=1 fft90=11 peak=10 op=10 agree=3/4 contourR=202
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=15(peaks=1) op=10(rel=0.065) gearR=202 contourR=202 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=10(peaks=1) op=10(rel=0.080) gearR=423 contourR=231 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=17(peaks=10) op=13(rel=0.067) gearR=508 contourR=508 minDim=1125
+[low-conf-consensus] final=11 fftConf=0.330 bcPeaks=4 fft90=10 peak=11 op=12 agree=3/4 contourR=388
+[low-conf-consensus] final=13 fftConf=0.285 bcPeaks=1 fft90=13 peak=12 op=14 agree=3/4 contourR=97
+[low-conf-consensus] final=10 fftConf=0.259 bcPeaks=4 fft90=10 peak=10 op=10 agree=3/4 contourR=249
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=10(rel=0.052) gearR=470 contourR=249 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=14(rel=0.055) gearR=369 contourR=230 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=11(rel=0.045) gearR=488 contourR=488 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=12 final=10 bc=10(peaks=4) op=14(rel=0.054) gearR=515 contourR=515 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=26) op=12(rel=0.039) gearR=497 contourR=497 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=11 final=10 bc=13(peaks=2) op=15(rel=0.063) gearR=314 contourR=314 minDim=1125
+[low-conf-consensus] final=11 fftConf=0.332 bcPeaks=4 fft90=10 peak=11 op=12 agree=3/4 contourR=186
+[low-conf-consensus] final=11 fftConf=0.356 bcPeaks=47 fft90=10 peak=11 op=11 agree=3/4 contourR=186
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=14(rel=0.053) gearR=497 contourR=497 minDim=1125
+[pap1671-audit1500] 50/66 182s
+[low-conf-consensus] final=10 fftConf=0.378 bcPeaks=4 fft90=10 peak=10 op=10 agree=3/4 contourR=504
+[pap474-abstain] peak=10 fft90=10 bc=10(peaks=4) op=10(rel=0.080) gearR=504 contourR=504 minDim=1125
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=13(rel=0.047) gearR=497 contourR=497 minDim=1125
+[low-conf-consensus] final=13 fftConf=0.343 bcPeaks=4 fft90=14 peak=13 op=13 agree=3/4 contourR=497
+[GearCenter] PAP-684 edge-density override: r=139→392 normR=0.124→0.348 purity=0.059 from multi-threshold
+[pap474-abstain] peak=10 fft90=10 bc=11(peaks=4) op=15(rel=0.054) gearR=392 contourR=392 minDim=1125
+[pap632-fft-floor-abstain] peak=10 fft90=10 final=12 bc=12(peaks=10) op=10(rel=0.088) gearR=511 contourR=511 minDim=1125
+[pap1671-audit1500] done rows=64 elapsed=228s
+(node:268306) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

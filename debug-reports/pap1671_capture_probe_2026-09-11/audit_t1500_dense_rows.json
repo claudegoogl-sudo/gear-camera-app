@@ -1,0 +1,642 @@
+[
+ {
+  "source": "training-data",
+  "stamp": "2026-04-24_10-54-55-930Z",
+  "actual": 42,
+  "tc": 11,
+  "conf": 0,
+  "method": "low-conf-consensus+pap961-aim-circle-prior-abstain",
+  "budgetExhausted": false,
+  "runtime": 4190
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-25_07-58-59-154Z",
+  "actual": 42,
+  "tc": 42,
+  "conf": 0.591,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 3262
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-25_08-05-45-433Z",
+  "actual": 42,
+  "tc": 42,
+  "conf": 0.254,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 3195
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-25_09-03-13-830Z",
+  "actual": 51,
+  "tc": 11,
+  "conf": 0,
+  "method": "fft-agreement",
+  "budgetExhausted": false,
+  "runtime": 2367
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-26_08-54-51-262Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "low-conf-consensus+op-up-override+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 3086
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-27_07-56-37-377Z",
+  "actual": 42,
+  "tc": 20,
+  "conf": 0.401,
+  "method": "bc-fft+large-op-override",
+  "budgetExhausted": false,
+  "runtime": 2566
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-27_07-59-59-093Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-fft+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2727
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-27_13-21-00-705Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+mid-op-override+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2822
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-27_13-24-12-798Z",
+  "actual": 52,
+  "tc": 11,
+  "conf": 0,
+  "method": "bc-consensus",
+  "budgetExhausted": false,
+  "runtime": 2069
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-27_13-27-43-775Z",
+  "actual": 52,
+  "tc": 24,
+  "conf": 0.415,
+  "method": "bc-fft+large-op-override",
+  "budgetExhausted": false,
+  "runtime": 2695
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_06-50-20-391Z",
+  "actual": 42,
+  "tc": 10,
+  "conf": 0.551,
+  "method": "bc-fft",
+  "budgetExhausted": false,
+  "runtime": 2673
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_06-52-14-899Z",
+  "actual": 42,
+  "tc": 10,
+  "conf": 0.389,
+  "method": "bc-fft",
+  "budgetExhausted": false,
+  "runtime": 4029
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_06-54-24-694Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 3499
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_06-56-36-143Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 3304
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_06-58-55-390Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-fft+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2605
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_07-01-23-211Z",
+  "actual": 52,
+  "tc": 53,
+  "conf": 0,
+  "method": "bc-consensus",
+  "budgetExhausted": false,
+  "runtime": 3396
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_07-03-25-120Z",
+  "actual": 42,
+  "tc": 42,
+  "conf": 0.362,
+  "method": "bc-peaks",
+  "budgetExhausted": false,
+  "runtime": 3263
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_11-25-03-709Z",
+  "actual": 42,
+  "tc": 42,
+  "conf": 1,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2484
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_11-42-46-509Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2772
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_14-00-29-906Z",
+  "actual": 42,
+  "tc": 10,
+  "conf": 0,
+  "method": "fft90-fallback",
+  "budgetExhausted": false,
+  "runtime": 3167
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_18-27-23-983Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2967
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_18-29-55-917Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-fft+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2476
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_18-32-08-432Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-fft+mid-op-override+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2558
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-28_18-34-58-887Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-fft+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2445
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-29_05-29-10-169Z",
+  "actual": 42,
+  "tc": 14,
+  "conf": 0.28,
+  "method": "fft90-fallback",
+  "budgetExhausted": false,
+  "runtime": 3446
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-29_05-31-31-338Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "low-conf-consensus+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2983
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-29_05-33-41-732Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 3230
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-29_05-35-39-053Z",
+  "actual": 52,
+  "tc": 10,
+  "conf": 0.53,
+  "method": "bc-fft",
+  "budgetExhausted": false,
+  "runtime": 2833
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-29_05-37-44-380Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2585
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_05-29-59-315Z",
+  "actual": 52,
+  "tc": 11,
+  "conf": 0.33,
+  "method": "low-conf-consensus",
+  "budgetExhausted": false,
+  "runtime": 2302
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_05-31-33-683Z",
+  "actual": 52,
+  "tc": 13,
+  "conf": 0,
+  "method": "low-conf-consensus",
+  "budgetExhausted": false,
+  "runtime": 2734
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_05-32-57-251Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "low-conf-consensus+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 3132
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_05-34-26-023Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft90-fallback+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 3057
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_05-36-04-910Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 3596
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_05-37-41-094Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-fft+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2169
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_11-31-00-084Z",
+  "actual": 42,
+  "tc": 10,
+  "conf": 0.495,
+  "method": "bc-fft",
+  "budgetExhausted": false,
+  "runtime": 2425
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_11-35-41-631Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2607
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_12-31-00-766Z",
+  "actual": 50,
+  "tc": 50,
+  "conf": 0.61,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 3481
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_12-33-17-234Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 1,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2088
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_12-35-25-332Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 0.561,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2927
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_20-03-52-567Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 3164
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_20-09-43-249Z",
+  "actual": 50,
+  "tc": 50,
+  "conf": 0.533,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 3492
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-04-30_20-31-06-904Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 0.845,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2246
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_08-22-17-365Z",
+  "actual": 52,
+  "tc": 11,
+  "conf": 0,
+  "method": "low-conf-consensus",
+  "budgetExhausted": false,
+  "runtime": 2212
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_08-24-07-480Z",
+  "actual": 52,
+  "tc": 11,
+  "conf": 0,
+  "method": "low-conf-consensus",
+  "budgetExhausted": false,
+  "runtime": 4143
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_08-26-39-688Z",
+  "actual": 52,
+  "tc": 11,
+  "conf": 0.464,
+  "method": "fft-agreement",
+  "budgetExhausted": false,
+  "runtime": 3265
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_08-28-38-224Z",
+  "actual": 50,
+  "tc": 50,
+  "conf": 1,
+  "method": "bc-consensus+peak+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2299
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_08-31-05-858Z",
+  "actual": 50,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft90-fallback+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2583
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_09-04-04-917Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 1,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2074
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_09-07-12-086Z",
+  "actual": 42,
+  "tc": 41,
+  "conf": 0,
+  "method": "bc-peaks+pap961-aim-circle-prior-abstain",
+  "budgetExhausted": false,
+  "runtime": 3324
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_14-52-11-873Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "low-conf-consensus+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2433
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_14-53-42-651Z",
+  "actual": 42,
+  "tc": 42,
+  "conf": 1,
+  "method": "bc-consensus+peak+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2045
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_14-55-07-717Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft90-fallback+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 2831
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_14-56-43-693Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 1,
+  "method": "bc-consensus+peak+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2367
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-00-55-239Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 1,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2234
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-04-02-875Z",
+  "actual": 48,
+  "tc": 48,
+  "conf": 0.883,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2037
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-06-20-161Z",
+  "actual": 50,
+  "tc": 50,
+  "conf": 0.511,
+  "method": "bc-consensus+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 3265
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-08-23-136Z",
+  "actual": 50,
+  "tc": 50,
+  "conf": 1,
+  "method": "bc-consensus+fft-agree+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2388
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-10-32-571Z",
+  "actual": 50,
+  "tc": 50,
+  "conf": 1,
+  "method": "bc-consensus+fft-agree+pap1059-chainring-tc-confirmed",
+  "budgetExhausted": false,
+  "runtime": 2315
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-12-33-142Z",
+  "actual": 52,
+  "tc": 14,
+  "conf": 0.428,
+  "method": "fft90-fallback",
+  "budgetExhausted": false,
+  "runtime": 3016
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-14-13-835Z",
+  "actual": 52,
+  "tc": 13,
+  "conf": 0.343,
+  "method": "low-conf-consensus",
+  "budgetExhausted": false,
+  "runtime": 2334
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-20-31-778Z",
+  "actual": 52,
+  "tc": 0,
+  "conf": 0,
+  "method": "fft-agreement+pap474-abstain",
+  "budgetExhausted": false,
+  "runtime": 3350
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-01_15-22-03-978Z",
+  "actual": 52,
+  "tc": 10,
+  "conf": 0.528,
+  "method": "bc-fft",
+  "budgetExhausted": false,
+  "runtime": 3441
+ },
+ {
+  "source": "training-data",
+  "stamp": "2026-05-04_11-33-56-211Z",
+  "actual": 42,
+  "tc": 0,
+  "conf": 0,
+  "method": "bc-consensus+pap632-fft-floor-abstain",
+  "budgetExhausted": false,
+  "runtime": 2857
+ }
+]

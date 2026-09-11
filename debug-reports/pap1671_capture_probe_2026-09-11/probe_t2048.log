@@ -1,0 +1,12 @@
+[pap1671-capture-probe] target=2048 corpus=64 (dense=64 ordSample=0) anchor=silhouette-walk
+[GearCenter] PAP-684 edge-density override: r=145→687 normR=0.094→0.447 purity=0.080 from multi-threshold
+[pap1671-capture-probe] 25/64 118s
+[pap1671-capture-probe] 50/64 225s
+[GearCenter] PAP-684 edge-density override: r=229→548 normR=0.149→0.357 purity=0.069 from multi-threshold
+[GearCenter] PAP-684 edge-density override: r=189→518 normR=0.123→0.337 purity=0.059 from multi-threshold
+[pap1671-capture-probe] 64/64 284s
+[pap1671-capture-probe] done rows=64 elapsed=284s
+(node:259713) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
