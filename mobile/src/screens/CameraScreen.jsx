@@ -1052,6 +1052,14 @@ export default function CameraScreen({ navigation }) {
             aimFormatVideo: aimFormat ? `${aimFormat.videoWidth}x${aimFormat.videoHeight}` : null,
             aimFormatVideoAspect: aimFormatVideoLabel,
             aimFormatAspectParity: !!aimFormat && aimFormatPhotoLabel === aimFormatVideoLabel,
+            // PAP-1885 verdict item 6 (QA-suggested): expose the analysis-stream
+            // coupling. With a format present the analyzer targets format.videoSize
+            // (Configuration.kt §4 — up to ~9x the pixels of CameraX's ~640x480
+            // no-format default); without one CameraX picks that default. The
+            // ACTUAL negotiated size lands in frameProcessorFirstFrame {width,height}.
+            analysisWidth: aimFormat ? aimFormat.videoWidth : null,
+            analysisHeight: aimFormat ? aimFormat.videoHeight : null,
+            analysisTarget: aimFormat ? 'format.videoSize' : 'camerax-default(~640x480)',
           });
           // Guard against spurious duplicate onInitialized from VisionCamera.
           // All state updates are inside the guard to avoid re-renders that
