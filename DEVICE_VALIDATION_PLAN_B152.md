@@ -1,11 +1,11 @@
 # Device Validation Plan — dense-abstain build (b153+; supersedes the b152 gate-off plan)
 
-**Build**: dense-abstain build from PAP-1872 (Mobile Engineer, todo, high) — release tag TBD (b153+)
+**Build**: **b153** — release https://github.com/claudegoogl-sudo/gear-camera-app/releases/tag/b153 (main code @ `3d7770b`, build-info `06befc3`); calibrated pap1872 G1-G4 dense-abstain gate + cannot-count panel
 **Decision source**: operator card v4 `cefe13ee` (2026-09-11 11:05Z): Q1 = A2 short recurring cadence, Q2 = **go-abstain (dense-abstain honest-UX)**
 **Supersedes**: the b152 gate-off framing previously in this file (PAP-1862 "confident-wrong accepted" stance is superseded by go-abstain)
 **Session vehicle**: PAP-1800 (this issue). One session also clears PAP-1662 release-build validation (`372d2acf`).
 **Hardware required**: FP5 with Sentry access
-**Status**: plan final on desktop; execution waits on (1) PAP-1872 build, (2) FP5 session (operator todo list on PAP-1671, pids raise first)
+**Status**: **corpus pre-flight PASSED** — QA independent rerun at `3d7770b` (2026-09-11T14:53Z): dense 58/64 abstain = 90.63% ≥ 90%; ordinary 9-28T new-abstain 10/284 = 3.52% < 5%; 0 correctness regressions; 20T anchors tc=20; identical to ME's PAP-1874 crosscheck on every key (deterministic). Execution waits ONLY on the FP5 session (operator todo list on PAP-1671, pids raise first).
 
 ---
 
@@ -16,7 +16,7 @@
 - Operator decision `cefe13ee` supersedes that acceptance: dense 40-60T goes from
   wrong-answers to honest-abstain ("cannot count"). PAP-1872 recalibrates the existing
   `checkDenseChainringRegime()` + `estimateInnerRadius()` path (method tag
-  `pap1534-d3-dense-chainring-abstain` or its successor).
+  `pap1534-d3-dense-chainring-abstain` or its successor — shipped as `pap1872-dense-chainring`).
 - Capture-side rescue is dead: 1500/2048px probe NEGATIVE (PAP-1869, QA-validated at
   `bdf4c2e` — deficit is optical, not sampling). Focus/exposure is the only surviving
   capture-side idea → Phase 6 below, NON-GATING.
@@ -34,7 +34,16 @@
    - Dense: 40T, 42T, 45T, 50T, 52T, 60T (42/50/52 priority per subclass evidence)
    - Lighting: bright, dim, shadows; rotated/misaligned; over/under-exposed
 
-## Pre-flight desktop check (QA, before the device session)
+## Pre-flight desktop check (QA, before the device session) — PASSED 2026-09-11
+
+Verdict at `3d7770b` (b153): AC1 dense 58/64 = 90.63% abstain PASS / AC2 ordinary 10/284 =
+3.52% + 0 regressions + anchors tc=20 PASS / C_29_39 1/16 (small class, monitor on-device).
+Artifacts: `debug-reports/pap1872_dense_abstain_2026-09-11/qa_pre_flight_2026-09-11/`.
+Identical to ME's committed PAP-1874 crosscheck on every key. Device session CLEARED once
+FP5 access lands. Original procedure below.
+
+---
+
 
 Once PAP-1872 lands on main, run the 364-photo plain-node corpus audit at that commit
 (PAP-1862/PAP-1869 methodology) BEFORE booking device time:
@@ -57,7 +66,7 @@ Device session only proceeds if the host audit passes.
 ### Phase 3: Dense chainrings (40-60T) — INVERTED (go-abstain)
 - [ ] 3-5 captures each of 40 / 42 / 45 / 50 / 52 / 60T
 - [ ] MUST abstain honestly: confidence = 0 / "cannot count" result
-      (`pap1534-d3-dense-chainring-abstain` or successor tag)
+      (`pap1872-dense-chainring`; telemetry carries `abstainGateRule`/`contourRadius`/`bcPeaks` for G3-margin monitoring)
 - [ ] **Target: abstain on ≥ 90% of dense captures** (report per-size rate)
 - [ ] **Confident-wrong toothCount on dense = FAIL** (supersedes the PAP-1862
       accepted-regression stance; operator decision `cefe13ee`)
@@ -120,5 +129,5 @@ explicitly (PAP-1665 then stays blocked with items 1–2 open).
 ## Reporting
 
 Post results to PAP-1800 (session vehicle); Phase 7 results also to PAP-1665.
-Blockers: PAP-1872 (build — Mobile Engineer),
-FP5 session scheduling (Operator via PAP-1671 todo list, pids raise first).
+Sole remaining blocker: FP5 session scheduling (Operator via PAP-1671 todo list,
+pids raise first). Build b153 is published and pre-flight PASSED.
