@@ -17,9 +17,9 @@
       "rOuter": 407,
       "innerContourSuspected": false,
       "budgetExhausted": false,
-      "runtimeMs": 7519,
+      "runtimeMs": 11607,
       "gate": {
-        "isDense": false,
+        "isDense": true,
         "innerRadius": 144,
         "fraction": 0.4377,
         "threshold": 0.5,
@@ -47,9 +47,9 @@
       "rOuter": 200,
       "innerContourSuspected": false,
       "budgetExhausted": false,
-      "runtimeMs": 7507,
+      "runtimeMs": 10284,
       "gate": {
-        "isDense": false,
+        "isDense": true,
         "innerRadius": 155,
         "fraction": 0.4429,
         "threshold": 0.5,
