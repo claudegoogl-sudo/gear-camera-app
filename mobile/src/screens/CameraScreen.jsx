@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useIsFocused } from '@react-navigation/native';
 import { useCameraDevice, Camera, useCameraPermission } from 'react-native-vision-camera';
+// PAP-1882: WYSIWYG aim format selection (preview aspect pinned to photo aspect).
+import { resolveAimFormat, aspectLabel } from '../camera/aimFormat';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -187,6 +189,15 @@ export default function CameraScreen({ navigation }) {
   const mainHasTorch = mainDevice?.hasTorch === true;
   const wideAngleUsable = !wideAngleFailed && wideAngleDevice && (wideAngleHasTorch || !mainHasTorch);
   const device = wideAngleUsable ? wideAngleDevice : mainDevice;
+  // PAP-1882: pin the preview stream to the photo's 4:3 aspect so the on-screen
+  // aim circle corresponds 1:1 with the region cropToAimCircle analyzes. Without
+  // an explicit format, CameraX/HAL may pick a 16:9 preview against the 4:3
+  // photo — the FP5 b153 operator report ("aiming cam != capture cam, aim is
+  // guesswork") is exactly that divergence. See mobile/src/camera/aimFormat.js.
+  // undefined (device without formats) ⇒ previous default behavior.
+  const aimFormat = useMemo(() => resolveAimFormat(device), [device]);
+  const aimFormatPhotoLabel = aspectLabel(aimFormat?.photoWidth, aimFormat?.photoHeight);
+  const aimFormatVideoLabel = aspectLabel(aimFormat?.videoWidth, aimFormat?.videoHeight);
   // PAP-1592: torch prop is the literal value passed to the <Camera> reactive
   // `torch` prop.  Computed into a local so the same value can be (a) bound
   // on the JSX below and (b) recorded into the cameraEvents telemetry stream
@@ -500,6 +511,20 @@ export default function CameraScreen({ navigation }) {
       const photo = await camera.current.takePhoto({
         flash: captureFlashProp,
         qualityPrioritization: 'quality',
+      });
+
+      // PAP-1882: verify WYSIWYG end-to-end — the saved photo's aspect must
+      // match the format's photo aspect (and the preview's video aspect). Any
+      // drift shows up here as an explicit cameraEvent in the debug share.
+      cameraEventsRef.current.push({
+        type: 'captureResult',
+        ts: new Date().toISOString(),
+        photoWidth: photo.width,
+        photoHeight: photo.height,
+        photoAspect: aspectLabel(photo.width, photo.height),
+        aimFormatPhoto: aimFormat ? `${aimFormat.photoWidth}x${aimFormat.photoHeight}` : null,
+        aimFormatVideoAspect: aimFormatVideoLabel,
+        aspectParity: aspectLabel(photo.width, photo.height) === aimFormatVideoLabel,
       });
 
       // PAP-1592: post-takePhoto breadcrumb so a Sentry error event after
@@ -991,6 +1016,7 @@ export default function CameraScreen({ navigation }) {
         ref={camera}
         style={StyleSheet.absoluteFill}
         device={device}
+        format={aimFormat}
         isActive={isFocused && !previewPaused}
         photo={true}
         video={true}
@@ -1019,6 +1045,13 @@ export default function CameraScreen({ navigation }) {
             wideAngleHasTorch: !!wideAngleDevice?.hasTorch,
             mainHasTorch: !!mainDevice?.hasTorch,
             selectedWideAngle: !!(wideAngleUsable && wideAngleDevice && device?.id === wideAngleDevice.id),
+            // PAP-1882: record the resolved aim format so a debug share proves
+            // preview↔photo aspect parity on-device (numeric, no screenshot needed).
+            aimFormatPhoto: aimFormat ? `${aimFormat.photoWidth}x${aimFormat.photoHeight}` : null,
+            aimFormatPhotoAspect: aimFormatPhotoLabel,
+            aimFormatVideo: aimFormat ? `${aimFormat.videoWidth}x${aimFormat.videoHeight}` : null,
+            aimFormatVideoAspect: aimFormatVideoLabel,
+            aimFormatAspectParity: !!aimFormat && aimFormatPhotoLabel === aimFormatVideoLabel,
           });
           // Guard against spurious duplicate onInitialized from VisionCamera.
           // All state updates are inside the guard to avoid re-renders that
