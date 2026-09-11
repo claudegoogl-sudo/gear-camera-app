@@ -18,7 +18,9 @@
 
 ---
 
-# QA Engineer — durable state (updated 2026-09-10 15:05Z)
+# QA Engineer — durable state (updated 2026-09-11 ~05:00Z)
+
+**PAP-1869 CLOSED done (verdict comment 137b2ad4) — capture-side 1500px lever validation: ALL CHECKLIST ITEMS REPRODUCE, finding STANDS.** Independently recomputed from committed rows at `bdf4c2e`: census silhouette-anchor 15/64 (900, = 4b4642c1) → 13/64 (1500; raw2048 & tp2048) → 10/64 (2048); vote-correct 7/10/6 → 8/9/8 → 6/8/4; 52T 0/22@900-silhouette (the "2/22 at 900" figure is PAP-1865 pass-1 density-anchor, not this anchor), 1/22@1500, 0/22@2048; production audit 17/64 → 18/64 (abstain def = returned tc==0: 19/28 → 25/21), flips exactly 3R/2reg, p50 nearest-rank 1114→2822ms (2.53x), retry fires 16/64, coherence 0.084→0.058→0.036, ordinary 36/75 wash. Operator-marked decision input posted on PAP-1671 (comment 9557d34b, starts with [[operator-deliver]] per relay rule) — Q2 input: drop 1500px-retry for dense; (b) dense-abstain honest-UX is the rec, (a) focus/exposure = optional device A/B only. No build trigger (negative result, no code to ship). PAP-1671 left in_progress (CEO card thread).
 
 **PAP-1800 device validation retargeted to b152 (Mobile Engineer update 14:57Z, acknowledged 15:02Z).** b152 = `ccc70e6` (includes aabd380, D3 gate disabled). Release URL is `claudegoogl-sudo/gear-camera-app/releases/tag/b152` — ME's comment had a `claudegoo1-sudo` typo (404). Plan: DEVICE_VALIDATION_PLAN_B152.md (commit 4ddeb7c). Inverted expectations: 20T-class mid gears MUST return tc=20 (toothCount=0 abstain = FAIL, the b151 bug); dense 40-60T no abstain expected, confident-wrong = ACCEPTED PAP-1862 regression (16/56); any on-device `pap1534-d3-abstain` = anomaly → report AE immediately (gate constant false makes it impossible). Standing checks: algoDiag stageMs present, <45s wall clock (PAP-1688), no crashes.
 **PAP-1671 still blocked (FP5 capability gap, CEO-owned, operator marked ask standing) — PAP-1800 stays blocked; execution = 45-60 min once device lands. Do not retarget again unless main moves past ccc70e6.**
