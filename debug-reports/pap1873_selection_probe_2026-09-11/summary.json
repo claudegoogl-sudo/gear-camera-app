@@ -1,0 +1,78 @@
+{
+  "prereg": "PAP-1873 comment 487bd571 (2026-09-11T11:28Z)",
+  "rule": {
+    "band": [
+      1,
+      1.1
+    ],
+    "relFloor": 0.04,
+    "tieBreak": "larger radius",
+    "fallback": "production peakTc"
+  },
+  "dense": {
+    "n": 64,
+    "prodExact": 14,
+    "probeExact": 15,
+    "rescues": 2,
+    "regressions": 1
+  },
+  "ordinary": {
+    "n": 300,
+    "prodExact": 179,
+    "probeExact": 177,
+    "rescues": 2,
+    "regressions": 4
+  },
+  "byLabel": {
+    "42": {
+      "n": 27,
+      "prodExact": 10,
+      "probeExact": 9,
+      "rescues": 0,
+      "regressions": 1
+    },
+    "48": {
+      "n": 7,
+      "prodExact": 2,
+      "probeExact": 2,
+      "rescues": 0,
+      "regressions": 0
+    },
+    "50": {
+      "n": 7,
+      "prodExact": 2,
+      "probeExact": 4,
+      "rescues": 2,
+      "regressions": 0
+    },
+    "51": {
+      "n": 1,
+      "prodExact": 0,
+      "probeExact": 0,
+      "rescues": 0,
+      "regressions": 0
+    },
+    "52": {
+      "n": 22,
+      "prodExact": 0,
+      "probeExact": 0,
+      "rescues": 0,
+      "regressions": 0
+    }
+  },
+  "criteria": {
+    "P1_dense_ge_17_of_64": {
+      "pass": false,
+      "got": 15
+    },
+    "P2_50T_ge_4_of_7": {
+      "pass": true,
+      "got": 4
+    },
+    "P3_ordinary_ge_177_of_300": {
+      "pass": true,
+      "got": 177
+    }
+  },
+  "verdict": "NEGATIVE (record and close this lever)"
+}
