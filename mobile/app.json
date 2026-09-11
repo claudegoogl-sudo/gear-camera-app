@@ -46,6 +46,7 @@
       ],
       "./plugins/withExtractYPlanePlugin",
       "./plugins/withBuildHostGradleProps",
+      "./plugins/withStandaloneDebugBundlePlugin",
       "./plugins/withGearKernelsPlugin"
     ],
     "extra": {
