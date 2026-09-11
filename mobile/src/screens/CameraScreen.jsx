@@ -212,7 +212,22 @@ export default function CameraScreen({ navigation }) {
   // b126) the only observable difference is a ~50ms delay before the LED
   // lights — imperceptible during aim.
   const [torchEngaged, setTorchEngaged] = useState(false);
-  const torchProp = device?.hasTorch && torchEngaged ? 'on' : 'off';
+  // PAP-1881: user-facing flash control (FP5 operator, b153: "the app still
+  // lacks a working button to control the flash").  'on' | 'off', default
+  // 'on' — identical to the pre-PAP-1881 behavior (aim torch lit + capture
+  // flash fires) unless the user turns it off, so the PAP-1551 low-light
+  // aiming aid and the PAP-1800 session protocol stay intact.  One switch
+  // drives BOTH light paths:
+  //   - aim-time continuous torch (the `torch` prop bound on <Camera>);
+  //   - capture-time photo flash (takePhoto `flash`, resolved in
+  //     handleCapture).
+  // With the switch ON, capture illumination is doubly covered on devices
+  // whose photo-flash HAL ignores FLASH_MODE_ON: the aim torch is still lit
+  // straight through the takePhoto await (the preview is only paused after
+  // the photo is in hand), so the LED state cannot regress mid-capture.
+  const [flashMode, setFlashMode] = useState('on');
+  const flashOn = flashMode === 'on';
+  const torchProp = device?.hasTorch && flashOn && torchEngaged ? 'on' : 'off';
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -376,6 +391,7 @@ export default function CameraScreen({ navigation }) {
       hasTorch: !!device?.hasTorch,
       hasFlash: !!device?.hasFlash,
       torchProp,
+      flashMode,
       wideAngleHasTorch: !!wideAngleDevice?.hasTorch,
       mainHasTorch: !!mainDevice?.hasTorch,
       selectedWideAngle: !!(wideAngleUsable && wideAngleDevice && device?.id === wideAngleDevice.id),
@@ -396,6 +412,7 @@ export default function CameraScreen({ navigation }) {
     }
   }, [
     torchProp,
+    flashMode,
     device?.id,
     device?.hasTorch,
     device?.hasFlash,
@@ -406,6 +423,39 @@ export default function CameraScreen({ navigation }) {
     wideAngleFailed,
     wideAngleUsable,
   ]);
+
+  // ── PAP-1881: flash control toggle ─────────────────────────────────────
+  // The single user entry point for both flash paths (see flashMode above).
+  // Toggling off→on while the session is live produces exactly the off→on
+  // `torch` prop transition that PAP-1596 established as the reliable way
+  // to engage the CameraX torch on OEM HALs — so a user-visible double-tap
+  // is also a manual recovery for any silent torch-drop (b151 FP5 evidence
+  // shows torchProp resolved 'off' at capture time; with the old hard-wired
+  // auto behavior there was no way for the operator to re-light it).
+  const handleFlashToggle = useCallback(() => {
+    const next = flashOn ? 'off' : 'on';
+    setFlashMode(next);
+    cameraEventsRef.current.push({
+      type: 'flashControlToggled',
+      ts: new Date().toISOString(),
+      mode: next,
+      deviceId: device?.id ?? null,
+      hasTorch: !!device?.hasTorch,
+      hasFlash: !!device?.hasFlash,
+    });
+    if (SENTRY_ENABLED) {
+      try {
+        Sentry.addBreadcrumb({
+          category: 'camera.flash',
+          level: 'info',
+          message: 'flashControlToggled',
+          data: { mode: next, deviceId: device?.id ?? null },
+        });
+      } catch (e) {
+        // Telemetry must never break the camera screen.
+      }
+    }
+  }, [flashOn, device?.id, device?.hasTorch, device?.hasFlash]);
 
   // ── Capture handler ────────────────────────────────────────────────────
   const handleCapture = useCallback(async () => {
@@ -426,12 +476,21 @@ export default function CameraScreen({ navigation }) {
       // aim-time torchState event for correlation.  Captured BEFORE the
       // takePhoto await so the event is on the stream even if takePhoto
       // throws — capture-time flash failures are exactly what we want to see.
-      const captureFlashProp = device?.hasFlash ? 'on' : 'off';
+      // PAP-1881: honor the user's flash selection.  Previously this was
+      // hard-wired `device?.hasFlash ? 'on' : 'off'` — there was no way to
+      // turn the flash OFF, and no user path to turn it ON.  `flashOn`
+      // comes from state; `flashMode`/`device` are in the dep array below
+      // so the toggle and the wide→main PAP-1551 selector flip are both
+      // seen by this closure (a stale device once risked passing
+      // flash:'on' to a lens without a flash unit → FlashUnavailableError
+      // → dead capture).
+      const captureFlashProp = flashOn && device?.hasFlash ? 'on' : 'off';
       const captureTelemetry = {
         type: 'capture',
         ts: new Date().toISOString(),
         deviceId: device?.id ?? null,
         flash: captureFlashProp,
+        flashMode,
         hasFlash: !!device?.hasFlash,
         hasTorch: !!device?.hasTorch,
         torchProp,
@@ -612,7 +671,9 @@ export default function CameraScreen({ navigation }) {
       setProcessedThumbUri(null);
       motionResetRef.current?.();
     }
-  }, [isProcessing, downloading, isFocused, navigation, setError, setProcessing, setResult]);
+  // PAP-1881: `device` + `flashMode` added to deps so the capture closure
+  // cannot act on a stale lens/flash selection (see captureFlashProp above).
+  }, [isProcessing, downloading, isFocused, navigation, device, flashMode, setError, setProcessing, setResult]);
 
   const handleCancel = useCallback(() => {
     captureGenRef.current++;
@@ -1061,6 +1122,21 @@ export default function CameraScreen({ navigation }) {
             ? <MotionIndicator stable={isStable} gearDetected={gearDetected} />
             : <Text style={styles.initText}>{cameraHasError ? (isPolicyRestricted ? 'Camera disabled by OS' : 'Camera error') : 'Starting camera…'}</Text>
           }
+          {/* PAP-1881: flash control.  Visible once a camera device exists
+              and the hardware has any light unit; amber when ON.  Drives
+              both the aim torch and the capture flash (see flashMode). */}
+          {device && (device.hasTorch || device.hasFlash) ? (
+            <TouchableOpacity
+              style={[styles.flashIcon, flashOn && styles.flashIconActive]}
+              testID="flash-toggle"
+              onPress={handleFlashToggle}
+              activeOpacity={0.7}
+              accessibilityLabel={flashOn ? 'Flash on. Tap to turn off.' : 'Flash off. Tap to turn on.'}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.flashIconText, flashOn && styles.flashIconTextActive]}>⚡</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             style={styles.debugIcon}
             onPress={handleDebugReport}
@@ -1235,6 +1311,7 @@ export default function CameraScreen({ navigation }) {
 
           <TouchableOpacity
             style={[styles.captureButton, captureDisabled && styles.captureButtonDisabled]}
+            testID="capture-button"
             onPress={handleCapture}
             disabled={captureDisabled}
             activeOpacity={0.8}
@@ -1315,6 +1392,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 12,
     paddingHorizontal: 16,
+  },
+
+  // PAP-1881: flash control icon (matches debug/update icon geometry,
+  // third slot from the right).
+  flashIcon: {
+    position: 'absolute',
+    right: 96,
+    top: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  flashIconActive: {
+    backgroundColor: 'rgba(245,197,66,0.35)',
+  },
+
+  flashIconText: {
+    fontSize: 16,
+  },
+
+  flashIconTextActive: {
+    color: '#f5c542',
   },
 
   debugIcon: {
