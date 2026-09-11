@@ -640,12 +640,36 @@ export default function CameraScreen({ navigation }) {
     setTorchEngaged(false);
   }, [setProcessing]);
 
+  // ── PAP-1879 frame-processor diagnostics → cameraEvents ────────────────
+  // The frame processor's activation timeout used to leave only a
+  // console.warn breadcrumb (invisible after an app reload).  These surface
+  // liveness and death in the debug-report cameraEvents stream instead.
+  const handleFrameProcessorTimeout = useCallback((info) => {
+    cameraEventsRef.current.push({
+      type: 'frameProcessorTimeout',
+      ts: new Date().toISOString(),
+      retryKey,
+      ...info,
+    });
+  }, [retryKey]);
+
+  const handleFrameProcessorFirstFrame = useCallback((info) => {
+    cameraEventsRef.current.push({
+      type: 'frameProcessorFirstFrame',
+      ts: new Date().toISOString(),
+      retryKey,
+      ...info,
+    });
+  }, [retryKey]);
+
   // ── Motion detection ───────────────────────────────────────────────────
   // Disabled during download to prevent auto-trigger from navigating away
   // mid-flight and interrupting the in-progress FileSystem.downloadAsync.
   const { isStable, gearDetected, frameProcessor, reset: motionReset, usingFallback } = useMotionDetection({
     onStable: handleCapture,
     enabled: isFocused && isCameraReady && !isProcessing && !downloading && hasPermission,
+    onFrameProcessorTimeout: handleFrameProcessorTimeout,
+    onFirstFrame: handleFrameProcessorFirstFrame,
   });
 
   useEffect(() => { motionResetRef.current = motionReset; }, [motionReset]);
@@ -1063,6 +1087,41 @@ export default function CameraScreen({ navigation }) {
           />
         </View>
 
+        {/* PAP-1879: honest IMU-only notice — the frame processor never came
+            alive on this device, so auto-capture (CRES / pixel-diff) cannot
+            fire.  Manual capture still works (the photo path is independent
+            of the frame processor): say so instead of leaving the user
+            staring at a silent reticle.  Hides itself again if frames start
+            arriving (the hook flips usingFallback back off). */}
+        {usingFallback && isCameraReady && isFocused && !isProcessing && !downloading && !cameraHasError && (
+          <View style={styles.imuOnlyPanel} testID="imu-only-panel">
+            <Text style={styles.imuOnlyTitle}>Auto-capture unavailable</Text>
+            <Text style={styles.imuOnlyBody}>
+              This device isn&apos;t sending camera frames, so capture can&apos;t trigger automatically.
+            </Text>
+            <Text style={styles.imuOnlyHint}>
+              You can still count a gear: center it in the circle and tap the capture button below.
+            </Text>
+            <TouchableOpacity
+              style={styles.imuOnlyRetryBtn}
+              testID="imu-only-retry"
+              onPress={() => {
+                cameraEventsRef.current.push({
+                  type: 'imuOnlyRetry',
+                  ts: new Date().toISOString(),
+                  retryKey,
+                });
+                isCameraReadyRef.current = false;
+                setIsCameraReady(false);
+                setRetryKey((k) => k + 1);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.imuOnlyRetryText}>Retry camera</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Processing overlay */}
         {isProcessing && (
           <View style={styles.processingOverlay}>
@@ -1135,6 +1194,8 @@ export default function CameraScreen({ navigation }) {
               ? 'Starting camera…'
               : recoveryGuidance
               ? 'Camera recovered — fit the gear inside the circle'
+              : usingFallback
+              ? 'Auto-capture unavailable — tap the capture button manually'
               : isProcessing
               ? 'Processing…'
               : isStable
@@ -1326,6 +1387,31 @@ const styles = StyleSheet.create({
     gap: 16,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
+
+  // PAP-1879: IMU-only honest notice (auto-capture dead, manual capture alive)
+  imuOnlyPanel: {
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 24,
+    marginBottom: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  imuOnlyTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  imuOnlyBody: { color: 'rgba(255,255,255,0.85)', fontSize: 13, textAlign: 'center' },
+  imuOnlyHint: { color: 'rgba(255,255,255,0.65)', fontSize: 12, textAlign: 'center' },
+  imuOnlyRetryBtn: {
+    marginTop: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  imuOnlyRetryText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 
   hint: {
     color: 'rgba(255,255,255,0.9)',

@@ -63,7 +63,7 @@ const IMU_STILLNESS_FALLBACK_MS = 2000; // longer period for IMU-only mode (no C
  * Gear detection also produces approximate center/radius hints that
  * can speed up the main tooth-counting algorithm.
  */
-export function useMotionDetection({ onStable, enabled = true }) {
+export function useMotionDetection({ onStable, enabled = true, onFrameProcessorTimeout, onFirstFrame }) {
   const [isStable, setIsStable] = useState(false);
   const [gearDetected, setGearDetected] = useState(false);
   const [gearHints, setGearHints] = useState(null);
@@ -90,6 +90,21 @@ export function useMotionDetection({ onStable, enabled = true }) {
   const enabledSV = useSharedValue(enabled);
   useEffect(() => { enabledSV.value = enabled; }, [enabled, enabledSV]);
 
+  // ── PAP-1879 diagnostics ────────────────────────────────────────────────
+  // Worklet-writable counters read by the JS-side activation timeout, so a
+  // dead frame processor reports WHY it is dead (never invoked vs invoked-
+  // but-bufferless) instead of only that it is dead.
+  const workletRunCount = useSharedValue(0);    // worklet invocations (any outcome)
+  const bufferFailCount = useSharedValue(0);    // invocations where buffer extraction failed
+  const lastPixelFormatSV = useSharedValue(''); // pixelFormat seen on the last delivered frame
+  const lastFailureSV = useSharedValue('');     // classification of the last buffer failure
+  const enabledAtRef = useRef(0);               // when the current activation window opened
+  const frameProcessorBuiltRef = useRef(false); // whether useFrameProcessor() built a processor
+  const onFrameProcessorTimeoutRef = useRef(onFrameProcessorTimeout);
+  const onFirstFrameRef = useRef(onFirstFrame);
+  useEffect(() => { onFrameProcessorTimeoutRef.current = onFrameProcessorTimeout; }, [onFrameProcessorTimeout]);
+  useEffect(() => { onFirstFrameRef.current = onFirstFrame; }, [onFirstFrame]);
+
   // Tracks whether the worklet has ever successfully read pixel data.
   const frameProcessorActiveRef = useRef(false);
   const usingFallbackRef = useRef(false);
@@ -100,9 +115,13 @@ export function useMotionDetection({ onStable, enabled = true }) {
   // 10 s on some sessions; no threshold eliminates the false-alarm tail, and
   // capture requires CRES detection anyway (which requires a live processor),
   // so a truly-dead processor already produces a loud regression (no capture).
-  // The timer here only flips `usingFallback` for the IMU-only UI signal and
-  // the longer `IMU_STILLNESS_FALLBACK_MS` stillness window — no diagnostic
-  // event is emitted (PAP-409 Option B, QA-approved on PAP-481).
+  // The timer here flips `usingFallback` for the IMU-only UI signal and the
+  // longer `IMU_STILLNESS_FALLBACK_MS` stillness window.  PAP-1879 supersedes
+  // the PAP-409 Option B decision (no diagnostic event, QA-approved on
+  // PAP-481): the Xiaomi 25113PN0EC field triage had ONLY the console.warn
+  // breadcrumb, which dies with the app reload — so the timeout now also
+  // emits a frameProcessorTimeout cameraEvent carrying worklet-side
+  // diagnostic counters (see the enabled effect below).
   const FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS = 10000;
 
   const clearTimer = useCallback(() => {
@@ -136,11 +155,19 @@ export function useMotionDetection({ onStable, enabled = true }) {
   );
 
   // Called from worklet once with first-frame diagnostics
-  const handleFrameDiag = useCallback((w, h, bytesPerRow, bufLen) => {
+  const handleFrameDiag = useCallback((w, h, bytesPerRow, bufLen, pixelFormat) => {
     console.log(
       `[FrameDiag] width=${w} height=${h} bytesPerRow=${bytesPerRow} ` +
-      `bufLen=${bufLen} computedBpp=${(bufLen / (w * h)).toFixed(2)}`
+      `bufLen=${bufLen} computedBpp=${(bufLen / (w * h)).toFixed(2)} ` +
+      `pixelFormat=${pixelFormat}`
     );
+    // PAP-1879: first successful buffer read is positive proof the frame
+    // processor is alive — surface it as a cameraEvent so debug reports
+    // carry liveness and the negotiated format, not console crumbs.
+    onFirstFrameRef.current?.({
+      width: w, height: h, bytesPerRow, bufferLength: bufLen,
+      pixelFormat: pixelFormat ?? null,
+    });
   }, []);
   const handleFrameDiagJS = useRunOnJS(handleFrameDiag, [handleFrameDiag]);
   const diagLogged = useSharedValue(false);
@@ -241,18 +268,30 @@ export function useMotionDetection({ onStable, enabled = true }) {
     frameProcessorActiveRef.current = false;
     usingFallbackRef.current = !useFrameProcessor;
     setUsingFallback(!useFrameProcessor);
+    enabledAtRef.current = Date.now();
 
     // Give the frame processor a generous window to prove it works.  If no
-    // buffer has arrived by the timeout, fall back to IMU-only mode.  No
-    // diagnostic event is emitted — see FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS
-    // note above.  A truly-dead processor would block CRES and thus block
-    // capture entirely, which is a louder and more actionable regression than
-    // a one-off event nobody triaged.
+    // buffer has arrived by the timeout, fall back to IMU-only mode.
+    // PAP-1879: also emit a frameProcessorTimeout cameraEvent with the
+    // worklet-side diagnostics — never-invoked (workletRuns=0) vs invoked-
+    // but-bufferless (bufferFailures>0, lastFailure classifies the path),
+    // native plugin presence, and the negotiated pixelFormat.
     const check = setTimeout(() => {
       if (!frameProcessorActiveRef.current) {
         console.warn('[MotionDetection] No frames processed — IMU-only mode');
         usingFallbackRef.current = true;
         setUsingFallback(true);
+        onFrameProcessorTimeoutRef.current?.({
+          waitedMs: Date.now() - enabledAtRef.current,
+          frameProcessorAvailable: !!useFrameProcessor,
+          frameProcessorBuilt: frameProcessorBuiltRef.current,
+          nativePluginInstalled: extractYPlanePlugin != null,
+          workletRuns: workletRunCount.value,
+          processedFrames: frameCounter.value,
+          bufferFailures: bufferFailCount.value,
+          lastPixelFormat: lastPixelFormatSV.value || null,
+          lastFailure: lastFailureSV.value || null,
+        });
       }
     }, FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS);
 
@@ -336,6 +375,11 @@ export function useMotionDetection({ onStable, enabled = true }) {
           // Gate via shared value so the Camera always receives a stable
           // frameProcessor reference (no undefined↔defined toggling that
           // would trigger VisionCamera session reconfiguration).
+          // PAP-1879: count every delivered frame BEFORE the enabled gate —
+          // distinguishes "VisionCamera never invoked the worklet" (0 here)
+          // from "invoked but unusable" (progresses to bufferFailCount).
+          workletRunCount.value += 1;
+          lastPixelFormatSV.value = frame.pixelFormat ?? 'unknown';
           if (!enabledSV.value) return;
 
           frameCounter.value += 1;
@@ -351,17 +395,28 @@ export function useMotionDetection({ onStable, enabled = true }) {
           // "processor dead" signal: it fires the frame-error event only if
           // no buffer ever lands within FRAME_PROCESSOR_ACTIVATION_TIMEOUT_MS.
           let buffer;
+          let path = '';
           try {
             if (extractYPlanePlugin != null && frame.pixelFormat === 'yuv') {
+              path = 'plugin';
               buffer = extractYPlanePlugin.call(frame);
             } else {
+              // PAP-1879: classify WHY the plugin path was skipped so the
+              // timeout event can name it ('fallback-no-plugin' on a yuv
+              // frame means the native extractYPlane plugin never registered;
+              // 'fallback-non-yuv' means format negotiation deviated).
+              path = extractYPlanePlugin == null ? 'fallback-no-plugin' : 'fallback-non-yuv';
               buffer = frame.toArrayBuffer();
             }
           } catch (_e) {
+            bufferFailCount.value += 1;
+            lastFailureSV.value = path + ':throw';
             return;
           }
 
           if (!buffer) {
+            bufferFailCount.value += 1;
+            lastFailureSV.value = path + ':null';
             return;
           }
 
@@ -375,7 +430,7 @@ export function useMotionDetection({ onStable, enabled = true }) {
           // Log first-frame diagnostics (once) to aid on-device debugging.
           if (!diagLogged.value) {
             diagLogged.value = true;
-            handleFrameDiagJS(frame.width, frame.height, frame.bytesPerRow, total);
+            handleFrameDiagJS(frame.width, frame.height, frame.bytesPerRow, total, frame.pixelFormat);
           }
 
           // ── Pixel-diff motion detection ─────────────────────────────────
@@ -436,6 +491,10 @@ export function useMotionDetection({ onStable, enabled = true }) {
       frameProcessor = undefined;
     }
   }
+  // PAP-1879: mirror of the render output — distinguishes "useFrameProcessor
+  // exists but building the processor threw" from "no processor at all" in
+  // the frameProcessorTimeout event payload.
+  frameProcessorBuiltRef.current = frameProcessor != null;
 
   const reset = useCallback(() => {
     clearTimer();
