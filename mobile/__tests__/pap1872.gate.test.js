@@ -44,6 +44,13 @@ describe('PAP-1872 dense-chainring abstain gate', () => {
     expect(checkDenseChainringAbstain(11, 0.4, { ...baseR, bcTc: 10, bcPeaks: 4, peakTc: 11, fft90tc: 11, opTc: 12, contourRadius: 170 }).fires).toBe(true);
     // true 11T at contourRadius 166 stays (corpus row: correct conf 1.0)
     expect(checkDenseChainringAbstain(11, 1.0, { ...baseR, bcTc: 10, bcPeaks: 4, peakTc: 11, fft90tc: 11, opTc: 11, contourRadius: 166 }).fires).toBe(false);
+    // QA PAP-1874 flag 1 hardening: conf <= 0.7 required — a high-confidence
+    // correct small-cog commit survives even when contourR crosses 170
+    // (device framing variance / the "move closer" retry hint).
+    expect(checkDenseChainringAbstain(11, 1.0, { ...baseR, bcTc: 10, bcPeaks: 4, peakTc: 11, fft90tc: 11, opTc: 11, contourRadius: 175 }).fires).toBe(false);
+    // boundary: conf exactly 0.7 still fires; 0.71 does not
+    expect(checkDenseChainringAbstain(11, 0.7, { ...baseR, bcTc: 10, bcPeaks: 4, peakTc: 11, fft90tc: 11, opTc: 12, contourRadius: 170 }).fires).toBe(true);
+    expect(checkDenseChainringAbstain(11, 0.71, { ...baseR, bcTc: 10, bcPeaks: 4, peakTc: 11, fft90tc: 11, opTc: 12, contourRadius: 170 }).fires).toBe(false);
   });
 
   test('G4: full FFT collapse with op-only >= 20T commit at conf >= 0.35 abstains', () => {

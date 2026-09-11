@@ -2372,10 +2372,17 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
  *       The binary-contour method resolved a chainring-scale blob ring.
  *       0 ordinary false-fires on the corpus.
  *
- *   G3  bcPeaks <= 6 && tc <= 16 && contourRadius >= 170
+ *   G3  bcPeaks <= 6 && tc <= 16 && contourRadius >= 170 && conf <= 0.7
  *       Spider-lock collapse: bc saw only the ~4-arm crank spider while
- *       the commit claims a small cog on a physically large gear. True
- *       9-16T cogs have bcPeaks ~ tc (their teeth dominate the contour).
+ *       the commit claims a small cog on a physically large gear at low
+ *       confidence. (QA PAP-1874 hardening + premise correction: bcPeaks
+ *       alone does NOT discriminate — 22/42 true 9-16T corpus rows also
+ *       show bcPeaks=4 spider arms; the discriminators are contourRadius
+ *       and the conf profile. `conf <= 0.7` keeps a high-confidence
+ *       correct small-cog commit alive when device framing pushes
+ *       contourR past 170 — e.g. after the abstain panel's "move closer"
+ *       retry hint. Corpus-neutral: all 16 committed G3 fires measure
+ *       conf <= 0.653, so AC1/AC2 totals are unchanged (QA-verified).)
  *
  *   G4  peakTc <= 10 && fft90tc <= 10 && tc >= 20 && opTc === tc && conf >= 0.35
  *       Full FFT collapse with an op-only commit: both FFT channels read
@@ -2394,7 +2401,7 @@ function checkDenseChainringAbstain(tc, conf, r) {
   if (tc <= 0) return { fires: false, rule: null }; // already abstained upstream
   if (tc >= 40) return { fires: true, rule: 'G1-tc40' };
   if (r.bcTc >= 40 || r.bcPeaks >= 40) return { fires: true, rule: 'G2-bc40' };
-  if ((r.contourRadius || 0) >= 170 && (r.bcPeaks || 99) <= 6 && tc <= 16) {
+  if ((r.contourRadius || 0) >= 170 && (r.bcPeaks || 99) <= 6 && tc <= 16 && conf <= 0.7) {
     return { fires: true, rule: 'G3-spider-lock' };
   }
   if ((r.peakTc || 0) <= 10 && (r.fft90tc || 0) <= 10
@@ -3936,6 +3943,13 @@ export async function countTeeth(photoUri, signal, opts) {
     // PAP-1872: first-class abstain outcome for the honest-UX surface.
     abstained,
     abstainReason,
+    // PAP-1872 / QA PAP-1874 flag 2: abstain observability — which gate
+    // rule fired and the geometry it decided on (gateRule + contourRadius
+    // + bcPeaks), so the FP5 device session can monitor the G3 margin
+    // on-device. Telemetry-only; no decision change.
+    abstainGateRule: denseAbstain.rule,
+    contourRadius: r.contourRadius ?? null,
+    bcPeaks: r.bcPeaks ?? null,
     budgetExhausted: budgetState.hit,
     algorithmRuntimeMs: t4 - t0,
     // PAP-1636: the four stage marks already computed for the console
@@ -4265,6 +4279,9 @@ export function countTeethFromRgba(rgba, width, height) {
     // PAP-1872: first-class abstain outcome for the honest-UX surface.
     abstained,
     abstainReason,
+    // PAP-1872 / QA PAP-1874 flag 2: abstain observability (see countTeeth).
+    abstainGateRule: denseAbstain.rule,
+    contourRadius: r.contourRadius ?? null,
     budgetExhausted: budgetState.hit,
     methodUsed,
     bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,

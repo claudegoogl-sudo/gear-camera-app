@@ -92,6 +92,10 @@ for (const item of [...ANCHORS, ...labeled]) {
     peakTc: r.peakTc || 0, peakRel: Number((r.peakRel || 0).toFixed(4)), peakR: r.peakR || 0,
     fft90tc: r.fft90tc || 0, opTc: r.opTc || 0, opRel: Number((r.opRel || 0).toFixed(4)),
     bcTc: r.bcTc || 0, bcPurity: Number((r.bcPurity || 0).toFixed(4)), bcPeaks: r.bcPeaks || 0,
+    // QA PAP-1874 flag 4: the G3 field — without it a recalibration cannot
+    // re-derive the gate from the dump alone.
+    contourRadius: r.contourRadius || 0,
+    abstainGateRule: r.abstainGateRule || null,
     rOuter: Number((r.rOuter || 0).toFixed(4)),
     gearRadius: Number((r.gearRadius || 0).toFixed(4)),
     innerContourSuspected: !!r.innerContourSuspected,

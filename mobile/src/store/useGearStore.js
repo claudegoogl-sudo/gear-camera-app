@@ -16,6 +16,11 @@ const useGearStore = create((set) => ({
   // the "cannot count" guidance panel instead of a tooth number.
   abstained: false,
   abstainReason: null,
+  // PAP-1872 / QA PAP-1874 flag 2: abstain observability (telemetry-only) —
+  // which pap1872 gate rule fired + the geometry it decided on.
+  abstainGateRule: null,
+  contourRadius: null,
+  bcPeaks: null,
   // PAP-1591 (revokes PAP-1536 UX descope): chainring-scale signal flag from
   // the algorithm (any of peakTc/fft90tc/opTc/bcTc/bcPeaks >= 30).  No
   // longer gates UX — v1 surfaces the tooth count across the full 11–60T
@@ -38,7 +43,7 @@ const useGearStore = create((set) => ({
   // Actions
   setProcessing: (value) => set({ isProcessing: value, error: null }),
 
-  setResult: ({ toothCount, confidence, gearContour, algorithmRuntimeMs, innerContourSuspected, chainringRegime, aimR, peakR, methodUsed, abstained, abstainReason }) =>
+  setResult: ({ toothCount, confidence, gearContour, algorithmRuntimeMs, innerContourSuspected, chainringRegime, aimR, peakR, methodUsed, abstained, abstainReason, abstainGateRule, contourRadius, bcPeaks }) =>
     set({
       toothCount,
       confidence,
@@ -47,6 +52,9 @@ const useGearStore = create((set) => ({
       innerContourSuspected: innerContourSuspected ?? false,
       abstained: abstained ?? false,
       abstainReason: abstainReason ?? null,
+      abstainGateRule: abstainGateRule ?? null,
+      contourRadius: contourRadius ?? null,
+      bcPeaks: bcPeaks ?? null,
       chainringRegime: chainringRegime ?? false,
       aimR: aimR ?? null,
       peakR: peakR ?? null,
@@ -59,7 +67,7 @@ const useGearStore = create((set) => ({
     set({ error: message, isProcessing: false }),
 
   reset: () =>
-    set({ toothCount: null, confidence: null, gearContour: null, algorithmRuntimeMs: null, innerContourSuspected: false, abstained: false, abstainReason: null, chainringRegime: false, aimR: null, peakR: null, methodUsed: null, isProcessing: false, error: null }),
+    set({ toothCount: null, confidence: null, gearContour: null, algorithmRuntimeMs: null, innerContourSuspected: false, abstained: false, abstainReason: null, abstainGateRule: null, contourRadius: null, bcPeaks: null, chainringRegime: false, aimR: null, peakR: null, methodUsed: null, isProcessing: false, error: null }),
 }));
 
 export default useGearStore;

@@ -510,6 +510,10 @@ export default function CameraScreen({ navigation }) {
         // when this is true instead of a tooth number.
         abstained: result.abstained ?? false,
         abstainReason: result.abstainReason ?? null,
+        // PAP-1872 / QA PAP-1874 flag 2: abstain observability passthrough.
+        abstainGateRule: result.abstainGateRule ?? null,
+        contourRadius: result.contourRadius ?? null,
+        bcPeaks: result.bcPeaks ?? null,
         // PAP-1536: chainring (30–60T) abstain inputs.
         chainringRegime: result.chainringRegime ?? false,
         aimR: result.aimR ?? null,
@@ -542,6 +546,12 @@ export default function CameraScreen({ navigation }) {
         // telemetry can count dense-abstain fires in the field.
         abstained: result.abstained ?? false,
         abstainReason: result.abstainReason ?? null,
+        // PAP-1872 / QA PAP-1874 flag 2: abstain observability — which
+        // pap1872 gate rule fired + contourRadius + bcPeaks, so the FP5
+        // device session can monitor the G3 margin on-device.
+        abstainGateRule: result.abstainGateRule ?? null,
+        contourRadius: result.contourRadius ?? null,
+        bcPeaks: result.bcPeaks ?? null,
         // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
         // says a count was slow, never which stage was slow.
         stageMs: result.stageMs ?? null,
