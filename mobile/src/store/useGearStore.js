@@ -11,6 +11,11 @@ const useGearStore = create((set) => ({
   gearContour: null,      // array of {x,y} points for SVG overlay | null
   algorithmRuntimeMs: null, // number | null — total algorithm execution time
   innerContourSuspected: false, // PAP-553: radius-sanity abstain flag
+  // PAP-1872: dense-chainring honest-abstain outcome. true means the
+  // algorithm refused to answer (dense 40-60T) — the result screen shows
+  // the "cannot count" guidance panel instead of a tooth number.
+  abstained: false,
+  abstainReason: null,
   // PAP-1591 (revokes PAP-1536 UX descope): chainring-scale signal flag from
   // the algorithm (any of peakTc/fft90tc/opTc/bcTc/bcPeaks >= 30).  No
   // longer gates UX — v1 surfaces the tooth count across the full 11–60T
@@ -33,13 +38,15 @@ const useGearStore = create((set) => ({
   // Actions
   setProcessing: (value) => set({ isProcessing: value, error: null }),
 
-  setResult: ({ toothCount, confidence, gearContour, algorithmRuntimeMs, innerContourSuspected, chainringRegime, aimR, peakR, methodUsed }) =>
+  setResult: ({ toothCount, confidence, gearContour, algorithmRuntimeMs, innerContourSuspected, chainringRegime, aimR, peakR, methodUsed, abstained, abstainReason }) =>
     set({
       toothCount,
       confidence,
       gearContour,
       algorithmRuntimeMs,
       innerContourSuspected: innerContourSuspected ?? false,
+      abstained: abstained ?? false,
+      abstainReason: abstainReason ?? null,
       chainringRegime: chainringRegime ?? false,
       aimR: aimR ?? null,
       peakR: peakR ?? null,
@@ -52,7 +59,7 @@ const useGearStore = create((set) => ({
     set({ error: message, isProcessing: false }),
 
   reset: () =>
-    set({ toothCount: null, confidence: null, gearContour: null, algorithmRuntimeMs: null, innerContourSuspected: false, chainringRegime: false, aimR: null, peakR: null, methodUsed: null, isProcessing: false, error: null }),
+    set({ toothCount: null, confidence: null, gearContour: null, algorithmRuntimeMs: null, innerContourSuspected: false, abstained: false, abstainReason: null, chainringRegime: false, aimR: null, peakR: null, methodUsed: null, isProcessing: false, error: null }),
 }));
 
 export default useGearStore;

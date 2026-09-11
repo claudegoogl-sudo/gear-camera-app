@@ -14,12 +14,7 @@
     "testMatch": [
       "**/__tests__/**/*.test.js"
     ],
-    "transform": {
-      "\\.[jt]sx?$": "babel-jest"
-    },
-    "transformIgnorePatterns": [
-      "node_modules/"
-    ]
+    "preset": "jest-expo"
   },
   "dependencies": {
     "@react-navigation/native": "^7.2.2",

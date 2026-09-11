@@ -2346,6 +2346,65 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
 }
 
 /**
+ * PAP-1872 — dense-chainring honest-abstain gate (product decision, operator
+ * card v4 `cefe13ee` on PAP-1671: Q2 = go-abstain).
+ *
+ * Post-methods gate: decides from the assembled per-method result whether
+ * the photo behaves as a dense 40-60T chainring whose answer must not be
+ * trusted. Calibrated on the committed 364-photo corpus
+ * (debug-reports/pap1872_dense_abstain_2026-09-11/feature_rows.json,
+ * plain-node dump at HEAD via pap1872.feature_dump.mjs; threshold search in
+ * the PAP-1872 QA review subtask). Corpus result at the chosen rule set:
+ *
+ *   AC1  dense 40-60T abstain 58/64 = 90.6%  (>= 90%)
+ *   AC2  ordinary 9-28T newly abstained 10/284 = 3.52% (< 5%),
+ *        0 of them were correct before (correctness unchanged);
+ *        the two 20T capture anchors still return 20T conf=1.0.
+ *
+ * Rules (r = result of analyzeImage as assembled at the end of countTeeth /
+ * countTeethFromRgba, finalToothCount / finalConfidence applied):
+ *
+ *   G1  tc >= 40
+ *       A chainring-scale commit is dense by class definition — the
+ *       ordinary corpus never commits >= 40 (0/284 rows).
+ *
+ *   G2  bcTc >= 40 || bcPeaks >= 40
+ *       The binary-contour method resolved a chainring-scale blob ring.
+ *       0 ordinary false-fires on the corpus.
+ *
+ *   G3  bcPeaks <= 6 && tc <= 16 && contourRadius >= 170
+ *       Spider-lock collapse: bc saw only the ~4-arm crank spider while
+ *       the commit claims a small cog on a physically large gear. True
+ *       9-16T cogs have bcPeaks ~ tc (their teeth dominate the contour).
+ *
+ *   G4  peakTc <= 10 && fft90tc <= 10 && tc >= 20 && opTc === tc && conf >= 0.35
+ *       Full FFT collapse with an op-only commit: both FFT channels read
+ *       the MIN_TEETH floor while outerProfileScan alone produced the
+ *       answer at >= 20T. conf >= 0.35 spares the collapsed low-conf
+ *       ordinary rows that other gates already force to conf 0.
+ *
+ * The remaining 6/64 dense photos (collapsed commits that pixel-match true
+ * 10-16T cogs — the PAP-1865 "signal-absent" subclass) are NOT separable
+ * and stay answering; abstaining them would eat matching correct ordinary
+ * rows (twins documented in the QA subtask).
+ *
+ * Returns { fires: bool, rule: string|null }.
+ */
+function checkDenseChainringAbstain(tc, conf, r) {
+  if (tc <= 0) return { fires: false, rule: null }; // already abstained upstream
+  if (tc >= 40) return { fires: true, rule: 'G1-tc40' };
+  if (r.bcTc >= 40 || r.bcPeaks >= 40) return { fires: true, rule: 'G2-bc40' };
+  if ((r.contourRadius || 0) >= 170 && (r.bcPeaks || 99) <= 6 && tc <= 16) {
+    return { fires: true, rule: 'G3-spider-lock' };
+  }
+  if ((r.peakTc || 0) <= 10 && (r.fft90tc || 0) <= 10
+      && tc >= 20 && r.opTc === tc && conf >= 0.35) {
+    return { fires: true, rule: 'G4-fft-collapse-op-commit' };
+  }
+  return { fires: false, rule: null };
+}
+
+/**
  * PAP-1534: Check if image shows a dense chainring (40+T) before FFT computation.
  * 
  * Dense chainrings have a small inner hub relative to the overall gear size,
@@ -3847,11 +3906,36 @@ export async function countTeeth(photoUri, signal, opts) {
     methodUsed = `${methodUsed}+pap1659-budget-exhausted`;
   }
 
+  // PAP-1872: dense-chainring honest-abstain (post-methods, last decision) —
+  // mirror of the countTeethFromRgba() block. Operator card v4 cefe13ee
+  // (PAP-1671 Q2 = go-abstain): dense 40-60T says "cannot count" instead of
+  // answering confidently wrong. See checkDenseChainringAbstain() for the
+  // calibrated rule set and corpus-measured AC numbers.
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
+  let abstained = false;
+  let abstainReason = null;
+  if (denseAbstain.fires) {
+    console.log(
+      `[GearCounter] pap1872-dense-chainring-abstain (${denseAbstain.rule}): ` +
+      `tc=${finalToothCount} conf=${finalConfidence.toFixed(3)} ` +
+      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+      `bc=${r.bcTc}(pk=${r.bcPeaks}) contourR=${r.contourRadius} — abstaining.`
+    );
+    finalToothCount = 0;
+    finalConfidence = 0;
+    abstained = true;
+    abstainReason = 'pap1872-dense-chainring';
+    methodUsed = `${methodUsed}+pap1872-dense-chainring-abstain`;
+  }
+
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter,
     gearRadius,
+    // PAP-1872: first-class abstain outcome for the honest-UX surface.
+    abstained,
+    abstainReason,
     budgetExhausted: budgetState.hit,
     algorithmRuntimeMs: t4 - t0,
     // PAP-1636: the four stage marks already computed for the console
@@ -3928,6 +4012,8 @@ export const __test = {
   // PAP-1782: D3 pre-FFT dense chainring detection
   estimateInnerRadius,
   checkDenseChainringRegime,
+  // PAP-1872: post-methods dense-chainring honest-abstain gate
+  checkDenseChainringAbstain,
 };
 
 export function countTeethFromRgba(rgba, width, height) {
@@ -4146,12 +4232,39 @@ export function countTeethFromRgba(rgba, width, height) {
   if (budgetState.hit && !methodUsed.includes('pap1659-budget-exhausted')) {
     methodUsed = `${methodUsed}+pap1659-budget-exhausted`;
   }
+
+  // PAP-1872: dense-chainring honest-abstain (post-methods, last decision).
+  // Operator card v4 cefe13ee (PAP-1671 Q2 = go-abstain): on dense 40-60T
+  // chainrings the app admits it cannot count instead of answering
+  // confidently wrong. Calibrated on the 364-photo corpus — see
+  // checkDenseChainringAbstain() for the rule set and measured AC numbers.
+  // Runs LAST so it never preempts an ordinary-gear rescue above; only
+  // fires on committed answers (finalToothCount > 0).
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
+  let abstained = false;
+  let abstainReason = null;
+  if (denseAbstain.fires) {
+    console.log(
+      `[GearCounter] pap1872-dense-chainring-abstain (${denseAbstain.rule}): ` +
+      `tc=${finalToothCount} conf=${finalConfidence.toFixed(3)} ` +
+      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+      `bc=${r.bcTc}(pk=${r.bcPeaks}) contourR=${r.contourRadius} — abstaining.`
+    );
+    finalToothCount = 0;
+    finalConfidence = 0;
+    abstained = true;
+    abstainReason = 'pap1872-dense-chainring';
+    methodUsed = `${methodUsed}+pap1872-dense-chainring-abstain`;
+  }
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
     gearCenter: { x: r.cx / width, y: r.cy / height },
     gearRadius: r.gearR / width,
     innerContourSuspected,
+    // PAP-1872: first-class abstain outcome for the honest-UX surface.
+    abstained,
+    abstainReason,
     budgetExhausted: budgetState.hit,
     methodUsed,
     bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,

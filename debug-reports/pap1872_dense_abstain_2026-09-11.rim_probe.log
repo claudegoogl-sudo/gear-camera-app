@@ -1,0 +1,13 @@
+[pap1872-rim] corpus=362 + anchors=2
+[pap1872-rim] 50/364 6s
+[pap1872-rim] 100/364 10s
+[pap1872-rim] 150/364 15s
+[pap1872-rim] 200/364 19s
+[pap1872-rim] 250/364 24s
+[pap1872-rim] 300/364 28s
+[pap1872-rim] 350/364 32s
+[pap1872-rim] done rows=364 elapsed=34s
+(node:881160) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/src/algorithm/gearCounter.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/mobile/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

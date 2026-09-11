@@ -505,6 +505,11 @@ export default function CameraScreen({ navigation }) {
         },
         algorithmRuntimeMs: result.algorithmRuntimeMs,
         innerContourSuspected: result.innerContourSuspected ?? false,
+        // PAP-1872: dense-chainring honest-abstain outcome (go-abstain card
+        // cefe13ee). ResultScreen renders the "cannot count" guidance panel
+        // when this is true instead of a tooth number.
+        abstained: result.abstained ?? false,
+        abstainReason: result.abstainReason ?? null,
         // PAP-1536: chainring (30–60T) abstain inputs.
         chainringRegime: result.chainringRegime ?? false,
         aimR: result.aimR ?? null,
@@ -533,6 +538,10 @@ export default function CameraScreen({ navigation }) {
         // PAP-1538: methodUsed tag carried into algoDiag for downstream
         // telemetry / debug JSON consumers that don't read the store.
         methodUsed: result.methodUsed ?? null,
+        // PAP-1872: honest-abstain outcome carried into debug JSON so
+        // telemetry can count dense-abstain fires in the field.
+        abstained: result.abstained ?? false,
+        abstainReason: result.abstainReason ?? null,
         // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
         // says a count was slow, never which stage was slow.
         stageMs: result.stageMs ?? null,

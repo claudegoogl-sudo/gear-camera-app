@@ -77,7 +77,10 @@ export default function ResultScreen({ navigation, route }) {
   const { photoPath, originalPhotoPath, aimCrop, cameraErrors, cameraEvents, innerContourSuspected, algoDiag } = route.params ?? {};
   // PAP-1742: chainringRegime/aimR/peakR were only consumed by the removed
   // chainring-abstain telemetry effect — dropped from this selector.
-  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, reset } = useGearStore();
+  // PAP-1872: abstained=true means the algorithm refused to answer (dense
+  // 40-60T chainring, operator go-abstain card cefe13ee) — the honest-UX
+  // panel below replaces the tooth number entirely.
+  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, abstained, reset } = useGearStore();
 
   // PAP-622: Transform algorithm coordinates (relative to original uncropped
   // photo) into aim-circle-crop space for the overlay.  The displayed photo is
@@ -94,8 +97,10 @@ export default function ResultScreen({ navigation, route }) {
   const displayedCount = useCountUp(toothCount);
 
   const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
-  const lowConf       = confidence != null && confidence < 0.90;
-  const outOfRange    = toothCount != null && (toothCount < 10 || toothCount > 65);
+  // PAP-1872: an abstain never carries a count or confidence — the panel IS
+  // the outcome, so the low-confidence / out-of-range toasts stay silent.
+  const lowConf       = !abstained && confidence != null && confidence < 0.90;
+  const outOfRange    = !abstained && toothCount != null && (toothCount < 10 || toothCount > 65);
 
   // Mount animations
   const panelY    = useSharedValue(60);
@@ -203,7 +208,7 @@ export default function ResultScreen({ navigation, route }) {
             </View>
           )}
 
-          {toothCount != null && overlayContour && (
+          {!abstained && toothCount != null && overlayContour && (
             <GearContourOverlay
               width={width}
               height={imageHeight}
@@ -231,6 +236,27 @@ export default function ResultScreen({ navigation, route }) {
             <Text style={styles.errorTitle}>Detection failed</Text>
             <Text style={styles.errorBody}>{error}</Text>
             <Text style={styles.errorHint}>Centre the gear and try again in good lighting.</Text>
+          </View>
+
+        ) : abstained ? (
+          // PAP-1872 honest-abstain outcome (dense 40-60T): the app admits
+          // it cannot count this photo instead of showing a wrong number.
+          // Not an error — a first-class result with practical retry help.
+          <View style={styles.abstainBox} testID="abstain-panel">
+            <Text style={styles.abstainTitle}>Can&apos;t count this gear</Text>
+            <Text style={styles.abstainBody}>
+              This looks like a dense chainring. Too many fine teeth for the
+              camera to count reliably in this photo.
+            </Text>
+            <Text style={styles.abstainHintTitle}>For a small gear (cassette / single cog):</Text>
+            <Text style={styles.abstainHint}>
+              Fill the circle with the gear alone — move closer so the gear
+              fills the frame, hold steady, and shoot in good light.
+            </Text>
+
+            <TouchableOpacity style={styles.abstainRetryBtn} testID="abstain-retry" onPress={handleReset} activeOpacity={0.8}>
+              <Text style={styles.abstainRetryText}>Try again</Text>
+            </TouchableOpacity>
           </View>
 
         ) : toothCount != null ? (
@@ -438,6 +464,21 @@ const styles = StyleSheet.create({
   errorTitle:{ fontSize: 17, fontWeight: '700', color: '#f44336' },
   errorBody: { fontSize: 14, color: '#bbb', textAlign: 'center' },
   errorHint: { fontSize: 12, color: '#666', textAlign: 'center' },
+
+  // PAP-1872 honest-abstain panel (dense-chainring "cannot count" outcome)
+  abstainBox: { alignItems: 'center', gap: 10, paddingHorizontal: 8 },
+  abstainTitle: { fontSize: 20, fontWeight: '700', color: '#FF9800' },
+  abstainBody: { fontSize: 14, color: '#bbb', textAlign: 'center', lineHeight: 20 },
+  abstainHintTitle: { fontSize: 13, fontWeight: '600', color: '#888', marginTop: 6 },
+  abstainHint: { fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 19 },
+  abstainRetryBtn: {
+    marginTop: 10,
+    backgroundColor: '#fff',
+    paddingHorizontal: 36,
+    paddingVertical: 14,
+    borderRadius: 34,
+  },
+  abstainRetryText: { fontSize: 16, fontWeight: '700', color: '#0e0e0e' },
 
   waiting: { fontSize: 16, color: '#555' },
 
