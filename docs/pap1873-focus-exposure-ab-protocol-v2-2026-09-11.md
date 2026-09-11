@@ -39,3 +39,18 @@ Supersedes v1 (`6ec8c1a`, `docs/pap1873-focus-exposure-ab-protocol-2026-09-11.md
 | 4 | Artifact naming `{target}T_p{pair:02d}_{arm}_{order}.jpg` + MANIFEST.csv | QA clarification 3 |
 
 Power honesty (unchanged): 12–20 pairs is a direction check, not a proof; +2 net census flips is the minimum interesting effect given corpus 52T present-rate 2/22. Negatives are recorded, not dropped (PAP-1873 AC1).
+
+## Post-session communication map (added 2026-09-11, commit follow-up to `1fcf780`)
+
+Makes the reporting mechanical too: run `pap1873.focus_ab_analyze.mjs <sessionDir>`, read the verdict, send exactly the mapped message. No improvised wording under time pressure. Internal handoffs are never operator-marked; at most ONE operator-marked message exists in this whole flow (the NEGATIVE end-state, if it happens).
+
+| Analyzer verdict | First action | Operator-marked? | Message target + content |
+|---|---|---|---|
+| **VOID** (G1 fail) | Post `ab_summary.json` + void reason on PAP-1873; log procedure fix needed | No | None. Retry once at next cadence session per decision rule; second void = lever closed → then use the NEGATIVE row. |
+| **NEGATIVE** (G1 pass, G2 fail) | Post `ab_summary.json` on PAP-1873; record lever closed in the canonical falsified list (#8) | **Yes** | PAP-1873, marked: "Focus/exposure A/B verdict: NEGATIVE (G1 pass, G2 net < +2). Dense 40-60T remains not precisely countable at 900px after all 8 levers tested; dense-abstain (PAP-1872) is the product answer. Standing research on this directive is complete unless a new lever class is identified." (Final disposition of the operator directive — this is the only operator decision point.) |
+| **POSITIVE** (G1+G2+G3 pass) | Queue AC2: child issue assigned to QA with session dir + `ab_summary.json` (PAP-1877 pattern) | No | None yet. Operator card only AFTER QA independently confirms the verdict AND an implementation plan exists (in-app focus/AE-lock assist proposal). Premature operator messaging is exactly what the AC2 gate exists to prevent. |
+
+Interpretation notes (recorded 2026-09-11, no prereg change):
+- G2's +2 threshold sits ~1 pair-noise sigma above zero at n=9-12 pairs (each pair contributes −1/0/+1; synthetic cross-photo sessions can reach +2 by chance). A real session landing at exactly +2 must get full AC2 scrutiny, not a rubber stamp.
+- Abstains (tc=0) never count as confident-wrong in G3 (PAP-1872 convention).
+- Analyzer mechanics verified at full session shape (9 pairs × 3 targets, 36 artifacts) on synthetic corpus data — numbers from that check are not measurements.
