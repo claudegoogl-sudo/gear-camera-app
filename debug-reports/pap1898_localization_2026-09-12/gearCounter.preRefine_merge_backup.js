@@ -50,6 +50,10 @@ const SMALL_GEAR_CONF        = 0.65;
 // resolution at 900px, the high-res retry at 1500px gives large gears
 // ~67% more pixels for FFT analysis.
 const RETRY_MAX_DIM          = 1500;
+
+// PAP-1898: silhouette-anchored localization rescue (see findGearCenter).
+// Env-toggled so corpus A/B (baseline vs rescue) uses the same binary.
+const PAP1898_SILHOUETTE_RESCUE = process.env.PAP1898_RESCUE_OFF !== '1';
 // PAP-1659 (CEO ruling, supersedes the PAP-1647 hi-res-only budget): PAP-758's
 // <=5s wall-clock speed target is a hard bound on the WHOLE count, not a
 // figure to optimise toward. PAP-1647 found the FP5 70-93s freezes were NOT
@@ -1008,9 +1012,6 @@ function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
 // checkpoint below actually cuts work short — a real stop, not just "ran
 // long" — so callers can tell a budget-triggered outcome apart from a normal
 // abstain (PAP-1659 AC2).
-// Env-toggled so corpus A/B (baseline vs rescue) uses the same binary.
-const PAP1898_SILHOUETTE_RESCUE = process.env.PAP1898_RESCUE_OFF !== '1';
-
 function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinity, budgetState = null) {
   const h = height, w = width;
   const n = w * h;
@@ -1256,6 +1257,12 @@ function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinit
         const margin = 5;
         if (!(margin < hc.cx && hc.cx < w - margin
               && margin < hc.cy && hc.cy < h - margin)) continue;
+        // PAP-1898/QA PAP-1901: excluding the PAP-476 mask boundary here was
+        // evaluated and REJECTED on corpus data — it changed exactly one
+        // corpus photo's pick (the 24T b153 anchor) and flipped its honest
+        // abstain into a conf-0 wrong count, while the silhouette rescue's
+        // support gate already refuses to fire on the high-support mask ring.
+        // Keep the candidate; the gates above/downstream handle it safely.
         const edgeDist = Math.min(hc.cx, w - hc.cx, hc.cy, h - hc.cy);
         if (edgeDist < hc.r * 0.92) continue;
         if (maxContourR > 0 && hc.r > maxContourR * 2) continue;
@@ -1391,7 +1398,7 @@ function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinit
     // Refine center by maximizing rotational symmetry
     const refined = refineCenterBySymmetry(enhanced, winner.cx, winner.cy, winner.r, w, h);
     result = { cx: refined.cx, cy: refined.cy, radius: winner.r, method: 'multi-threshold' };
-// PAP-1898 diagnostic (temporary, env-guarded): dump the candidate set +
+    // PAP-1898 diagnostic (temporary, env-guarded): dump the candidate set +
     // purities so offline probes can tell selection failures from detection
     // failures. No production behavior change (global write only when the
     // env var is set; device Hermes has no process.env hit on this path).
@@ -1611,38 +1618,49 @@ function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinit
   //     and the silhouette is better supported by ≥0.30;
   //   fit quality: silhouette coverage ≥ 0.90, plausible radius, center near
   //     frame center; otherwise keep the production pick.
-  // Corpus A/B at the SHIPPED shape (pap1898.corpus.mjs, 367 photos = 364
-  // pap1862 + 3 pap1900 session, 2026-09-12, merged base incl. PAP-1900
-  // G5/G6 in both arms): gate fires on 49 photos (fix:harm 12:4); strict
-  // 97→101, wrong-nonzero(>±1) 29→24, dense 40-60T wrong-nonzero 4→1, 0
-  // regressions; audited b153 set: zero wrong numeric answers (52T 13 and
-  // 36T 11 become honest abstains via the rescue + G5). Toggle:
-  // PAP1898_RESCUE_OFF=1 for A/B.
+  // Corpus A/B (pap1898.corpus.mjs, 367 photos, 2026-09-12): gate fires on
+  // 92 photos; strict 126→137, wrong-nonzero 86→78, dense wrong-nonzero
+  // 14→9; audited b153 set: 52→13 becomes honest abstain, 24 abstain becomes
+  // correct 24, 36→11 becomes 35. Toggle: PAP1898_RESCUE_OFF=1 for A/B.
   if (PAP1898_SILHOUETTE_RESCUE
       && result.method !== 'deadline-fallback'
       && Date.now() < deadline) {
     const sil = pap1898SilhouetteFit(edges, w, h);
-    const verdict = pap1898ShouldRescue(edges, w, h, result, sil);
-    if (verdict.fire) {
-      console.log(`[GearCenter] pap1898-silhouette rescue: ` +
-        `(${result.cx},${result.cy},r${result.radius},${result.method}) -> ` +
-        `(${sil.fit.cx.toFixed(0)},${sil.fit.cy.toFixed(0)},r${sil.fit.r.toFixed(0)},` +
-        `cov=${sil.coverage.toFixed(2)},dSup=${verdict.dSup.toFixed(2)},` +
-        `${verdict.arm})`);
-      result = {
-        cx: Math.round(sil.fit.cx),
-        cy: Math.round(sil.fit.cy),
-        radius: Math.round(sil.fit.r),
-        method: 'pap1898-silhouette',
-      };
+    if (sil && sil.coverage >= 0.90 && sil.fit) {
+      const fit = sil.fit;
+      const minDim = Math.min(h, w);
+      const plausible = fit.r >= 0.15 * minDim && fit.r <= 0.48 * minDim;
+      const nearCenter = Math.hypot(fit.cx - w / 2, fit.cy - h / 2) <= 0.40 * minDim;
+      const supportSil = pap1898RimSupport(edges, w, h, fit.cx, fit.cy, fit.r);
+      const supportPicked = result.radius > 4
+        ? pap1898RimSupport(edges, w, h, result.cx, result.cy, result.radius)
+        : 0;
+      const dSup = supportSil - supportPicked;
+      const smallLock = result.radius > 0 && result.radius < 0.85 * fit.r && dSup >= 0.20;
+      const overLock = result.radius > 1.15 * fit.r && dSup >= 0.30;
+      if (plausible && nearCenter && (smallLock || overLock)) {
+        console.log(`[GearCenter] pap1898-silhouette rescue: ` +
+          `(${result.cx},${result.cy},r${result.radius},${result.method}) -> ` +
+          `(${fit.cx.toFixed(0)},${fit.cy.toFixed(0)},r${fit.r.toFixed(0)},` +
+          `cov=${sil.coverage.toFixed(2)},dSup=${dSup.toFixed(2)},` +
+          `${smallLock ? 'small-lock' : 'over-lock'})`);
+        result = {
+          cx: Math.round(fit.cx),
+          cy: Math.round(fit.cy),
+          radius: Math.round(fit.r),
+          method: 'pap1898-silhouette',
+        };
+      }
     }
   }
 
-    return result;
+  return result;
 }
 
-// ── 11. Radial edge-density → gear radius ─────���─────────────────────────────
-
+// ── 10b. PAP-1898 silhouette-anchored circle fit ───────────────────────────
+// 720-angle inward walk from the mask boundary + trimmed Kasa circle fit.
+// Returns { coverage, fit } (fit null when too few points / degenerate).
+// See the rescue block in findGearCenter above.
 const PAP1898_N_ANG = 720;
 // Each point carries its walk depth (how far inward from the mask boundary
 // the first edge was found). Inner features (bolt circles, spider arms,
@@ -1755,48 +1773,7 @@ function pap1898RimSupport(edges, w, h, cx, cy, r) {
   return hits / 360;
 }
 
-// PAP-1898 rescue fire decision (extracted for unit testing; the production
-// call site is the small block in findGearCenter above). Pure predicate:
-// should the silhouette circle REPLACE the picked circle?
-//   fit quality: silhouette coverage >= 0.90, plausible radius, center near
-//     frame center — otherwise keep the production pick;
-//   small-lock arm: picked r < 0.85·silR and the silhouette circle is
-//     better supported by >= 0.20 (rivet/spider/plate patches span only part
-//     of their circle; the true rim spans all of it);
-//   over-lock arm: picked r > 1.15·silR (mask-boundary / Hough overlock)
-//     and the silhouette is better supported by >= 0.30.
-// Mask-proximity refusal (anchor-B fix, 2026-09-12): a "silhouette" circle
-// hugging the PAP-476 mask boundary is the vignette/mask-edge latch, not a
-// gear rim — the per-angle walk hits near the top of its scan range on every
-// angle and manufactures a coverage-1.0 fake circle with strong circular
-// support. Measured: silR/maskR max 0.894 over the 367-photo corpus (364
-// pap1862 + 3 pap1900 session); the FP5-b151 20T anchor B latch sits at
-// 0.943 and fired small-lock, shifting a conf-1.0 exact-20 count to 19
-// @conf 0.54. Ceiling 0.90 blocks it and changes zero corpus fires; the two
-// load-bearing audited b153 silhouette fits sit at 0.855 (52T) and 0.816
-// (36T).
-function pap1898ShouldRescue(edges, w, h, picked, sil) {
-  if (!sil || sil.coverage < 0.90 || !sil.fit) return { fire: false, reason: 'fit-quality' };
-  const fit = sil.fit;
-  const minDim = Math.min(h, w);
-  const plausible = fit.r >= 0.15 * minDim && fit.r <= 0.48 * minDim;
-  if (!plausible) return { fire: false, reason: 'implausible-radius' };
-  const nearCenter = Math.hypot(fit.cx - w / 2, fit.cy - h / 2) <= 0.40 * minDim;
-  if (!nearCenter) return { fire: false, reason: 'off-center' };
-  if (fit.r > 0.90 * 0.49 * minDim) {
-    return { fire: false, reason: 'mask-boundary-latch' };
-  }
-  const supportSil = pap1898RimSupport(edges, w, h, fit.cx, fit.cy, fit.r);
-  const supportPicked = picked && picked.radius > 4
-    ? pap1898RimSupport(edges, w, h, picked.cx, picked.cy, picked.radius)
-    : 0;
-  const dSup = supportSil - supportPicked;
-  const smallLock = picked && picked.radius > 0 && picked.radius < 0.85 * fit.r && dSup >= 0.20;
-  const overLock = picked && picked.radius > 1.15 * fit.r && dSup >= 0.30;
-  if (smallLock) return { fire: true, arm: 'small-lock', dSup, supportSil, supportPicked };
-  if (overLock) return { fire: true, arm: 'over-lock', dSup, supportSil, supportPicked };
-  return { fire: false, reason: 'no-arm', dSup, supportSil, supportPicked };
-}
+// ── 11. Radial edge-density → gear radius ─────���─────────────────────────────
 
 function findGearRadius(edges, cx, cy, width, height) {
   const maxR = Math.floor(Math.min(cx, width - cx, cy, height - cy)) - 1;
@@ -2623,44 +2600,26 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
  * and stay answering; abstaining them would eat matching correct ordinary
  * rows (twins documented in the QA subtask).
  *
- * PAP-1900 rules (path-independent collapse guards; APPROVED by QA
- * cross-check PAP-1902, comment c0d6c446 2026-09-12: Option A choke point,
- * G5 carve-out binding, G6 ics-gated mandatory). The b153
+ * PAP-1900 rules (path-independent collapse guards, QA cross-check PAP-1902
+ * PENDING — do not treat thresholds as final until QA signs off). The b153
  * operator session (pap1897_fp5_b153_session_2026-09-11/audit-verdicts.json)
  * showed 3 dense/large wrong counts that slip between G1–G4 because the
  * contour localized wrong (PAP-1898) and the committed count inherits the
- * radius error (52·169/794≈11, 50·357/767≈23 — approximate through the FFT
- * scan; the committed 13/24 land in the same collapse class):
+ * radius error (52·169/794≈13, 50·357/767≈24):
  *
- *   G5  radial-anchor disagreement at low confidence (bypass-carve-out-aware)
- *       rr >= 0.18 && conf <= 0.35
- *         && !(fft90OuterRescue || fiveWayChainringAgree || chainringTcConfirmed)
+ *   G5  radial-anchor disagreement at low confidence
+ *       |peakR - rOuter| / rOuter >= 0.18 && conf <= 0.35
  *       The FFT peak radius and the outermost radial-gradient peak disagree
  *       beyond the PAP-815 threshold while confidence is low — the radial
- *       anchor is unstable, so the commit is an aliasing artifact. The
- *       carve-out (QA binding refinement, PAP-1902 §5) keeps G5 off the
- *       deliberate rescue/confirmed commit families: fft90OuterRescue rows
- *       sit at rr>=0.18 BY CONSTRUCTION and pap1059-confirmed rows share
- *       the radialChainringFires seed — either would otherwise be vetoed.
- *       Measured free: 0/12 corpus G5 fires are bypass-confirmed (QA
- *       bypasscheck.mjs); all 3 session catches keep.
+ *       anchor is unstable, so the commit is an aliasing artifact.
  *       364-row corpus: +12 abstains, 0 previously-correct rows flipped
  *       (9 ordinary wrong, 3 dense wrong); zero correct commits exist in
  *       the whole neighborhood rr>=0.15 && conf<=0.40. The 20T capture
  *       anchors are safe (conf=1; captureB rr=0.835 — the conf cap is
- *       load-bearing; both arms mandatory AND, never ship rr-only).
- *       Catches the 50T→24T session event (rr=0.212, conf=0.328).
- *       NOTE: ordinary newly-abstained rises 10→19/284 (6.69% vs the <5%
- *       calibration target) with 0 correctness regressions. QA AC2 ruling
- *       (PAP-1902 §3): 0-regressions is the binding invariant; the <5%
- *       target is breached for cause (all 12 abstained rows were wrong
- *       counts; tighter thresholds miss the live 50T) — operator-card item
- *       filed on PAP-1671; card acknowledgment gates the RELEASE, not
- *       this commit.
- *       Calibration provenance: thresholds calibrated on the 364-photo
- *       corpus at PRE-PAP-1898 failure geometry (main 1eabd14 family).
- *       Re-run the gate once PAP-1898 (center/radius estimation) lands —
- *       the (rr, conf) distribution shifts with the new geometry.
+ *       load-bearing). Catches the 50T→24T session event (rr=0.212,
+ *       conf=0.328). NOTE: ordinary newly-abstained rises 10→19/284
+ *       (6.69% vs the <5% calibration target) with 0 correctness
+ *       regressions — AC2 ruling requested in QA subtask PAP-1902.
  *
  *   G6  inner-contour numeric commit
  *       innerContourSuspected && conf <= 0 && tc > 0
@@ -2672,15 +2631,11 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
  *       measured corpus outcome; it aligns the device result object with
  *       that convention. fiveWayChainringAgree / fft90OuterRescue /
  *       pap1059-confirmed rows have ics=false by formula → untouched.
- *       Catches the 52T→13T and 36T→11T session events. QA ruling
- *       (PAP-1902 §4): the ics-gated form is MANDATORY — a plain `conf<=0`
- *       arm is corpus-identical (all 95 conf-0 commits are ics=true) but
- *       would silently re-abstain future pap1059-confirmed conf-0 commits
- *       (the PAP-1052 win class). Do not ship the plain form.
+ *       Catches the 52T→13T and 36T→11T session events.
  *
  * Returns { fires: bool, rule: string|null }.
  */
-function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false, rescueActive = false) {
+function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false) {
   if (tc <= 0) return { fires: false, rule: null }; // already abstained upstream
   if (tc >= 40) return { fires: true, rule: 'G1-tc40' };
   if (r.bcTc >= 40 || r.bcPeaks >= 40) return { fires: true, rule: 'G2-bc40' };
@@ -2690,21 +2645,6 @@ function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false, 
   if ((r.peakTc || 0) <= 10 && (r.fft90tc || 0) <= 10
       && tc >= 20 && r.opTc === tc && conf >= 0.35) {
     return { fires: true, rule: 'G4-fft-collapse-op-commit' };
-  }
-  // PAP-1900 G5: radial-anchor disagreement at low confidence. rescueActive
-  // (= fft90OuterRescue || fiveWayChainringAgree || chainringTcConfirmed)
-  // exempts the deliberate rescue/confirmed commit families (QA binding
-  // carve-out, PAP-1902 §5; measured free on the 364-row corpus).
-  const radialRel = (r.peakR > 0 && r.rOuter > 0)
-    ? Math.abs(r.peakR - r.rOuter) / r.rOuter
-    : null;
-  if (!rescueActive && radialRel !== null && radialRel >= 0.18 && conf <= 0.35) {
-    return { fires: true, rule: 'G5-radial-anchor-conf' };
-  }
-  // PAP-1900 G6: suspected-inner-contour numeric commit (ics-gated form
-  // mandatory per QA, PAP-1902 §4).
-  if (innerContourSuspected && conf <= 0) {
-    return { fires: true, rule: 'G6-inner-contour-commit' };
   }
   return { fires: false, rule: null };
 }
@@ -4237,14 +4177,8 @@ export async function countTeeth(photoUri, signal, opts) {
   // mirror of the countTeethFromRgba() block. Operator card v4 cefe13ee
   // (PAP-1671 Q2 = go-abstain): dense 40-60T says "cannot count" instead of
   // answering confidently wrong. See checkDenseChainringAbstain() for the
-  // calibrated rule set and corpus-measured AC numbers. innerContourSuspected
-  // feeds PAP-1900 G6; pap1900BypassConfirmed is the G5 carve-out. MIRROR
-  // CONTRACT (QA condition 1, PAP-1902 §6): both choke points must thread
-  // the same 5-tuple — guarded by the wiring-mirror test in
-  // pap1872.gate.test.js.
-  const pap1900BypassConfirmed = fft90OuterRescue || fiveWayChainringAgree
-    || chainringTcConfirmed;
-  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected, pap1900BypassConfirmed);
+  // calibrated rule set and corpus-measured AC numbers.
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
   // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
   // candidate the gate evaluated, so abstain exports can row-join
   // rule + deciding inputs + candidate. Telemetry-only; no decision change.
@@ -4277,11 +4211,7 @@ export async function countTeeth(photoUri, signal, opts) {
     // PAP-1872 / QA PAP-1874 flag 2: abstain observability — which gate
     // rule fired and the geometry it decided on (gateRule + contourRadius
     // + bcPeaks), so the FP5 device session can monitor the G3 margin
-    // on-device. Telemetry-only; no decision change. PAP-1900 precedence
-    // (QA, PAP-1902 §6.5): ics-forced rows have conf zeroed BEFORE this
-    // gate runs, so an ics row that fires reports G5/G6 here even though
-    // the inner-contour suspicion is the proximate cause — attribute via
-    // innerContourSuspected + abstainPreGate*, not via the rule name.
+    // on-device. Telemetry-only; no decision change.
     abstainGateRule: denseAbstain.rule,
     // PAP-1800 export lane: what the gate evaluated pre-abstain (QA spec
     // d3e31587 — abstain exports must not destroy the candidate).
@@ -4371,7 +4301,6 @@ export const __test = {
   pap1898SilhouetteFit,
   pap1898SilhouettePoints,
   pap1898RimSupport,
-  pap1898ShouldRescue,
 };
 
 export function countTeethFromRgba(rgba, width, height) {
@@ -4597,14 +4526,8 @@ export function countTeethFromRgba(rgba, width, height) {
   // confidently wrong. Calibrated on the 364-photo corpus — see
   // checkDenseChainringAbstain() for the rule set and measured AC numbers.
   // Runs LAST so it never preempts an ordinary-gear rescue above; only
-  // fires on committed answers (finalToothCount > 0). innerContourSuspected
-  // feeds PAP-1900 G6; pap1900BypassConfirmed is the G5 carve-out. MIRROR
-  // CONTRACT (QA condition 1, PAP-1902 §6): both choke points must thread
-  // the same 5-tuple — guarded by the wiring-mirror test in
-  // pap1872.gate.test.js.
-  const pap1900BypassConfirmed = fft90OuterRescue || fiveWayChainringAgree
-    || chainringTcConfirmed;
-  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected, pap1900BypassConfirmed);
+  // fires on committed answers (finalToothCount > 0).
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
   // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
   // candidate the gate evaluated — mirror of the countTeeth() block.
   // Telemetry-only; no decision change.

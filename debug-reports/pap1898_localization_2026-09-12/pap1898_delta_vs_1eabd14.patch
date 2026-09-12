@@ -1,0 +1,337 @@
+--- a/mobile/src/algorithm/gearCounter.js
++++ b/mobile/src/algorithm/gearCounter.js
+@@ -50,6 +50,10 @@
+ // resolution at 900px, the high-res retry at 1500px gives large gears
+ // ~67% more pixels for FFT analysis.
+ const RETRY_MAX_DIM          = 1500;
++
++// PAP-1898: silhouette-anchored localization rescue (see findGearCenter).
++// Env-toggled so corpus A/B (baseline vs rescue) uses the same binary.
++const PAP1898_SILHOUETTE_RESCUE = process.env.PAP1898_RESCUE_OFF !== '1';
+ // PAP-1659 (CEO ruling, supersedes the PAP-1647 hi-res-only budget): PAP-758's
+ // <=5s wall-clock speed target is a hard bound on the WHOLE count, not a
+ // figure to optimise toward. PAP-1647 found the FP5 70-93s freezes were NOT
+@@ -1253,6 +1257,12 @@
+         const margin = 5;
+         if (!(margin < hc.cx && hc.cx < w - margin
+               && margin < hc.cy && hc.cy < h - margin)) continue;
++        // PAP-1898/QA PAP-1901: excluding the PAP-476 mask boundary here was
++        // evaluated and REJECTED on corpus data — it changed exactly one
++        // corpus photo's pick (the 24T b153 anchor) and flipped its honest
++        // abstain into a conf-0 wrong count, while the silhouette rescue's
++        // support gate already refuses to fire on the high-support mask ring.
++        // Keep the candidate; the gates above/downstream handle it safely.
+         const edgeDist = Math.min(hc.cx, w - hc.cx, hc.cy, h - hc.cy);
+         if (edgeDist < hc.r * 0.92) continue;
+         if (maxContourR > 0 && hc.r > maxContourR * 2) continue;
+@@ -1388,6 +1398,21 @@
+     // Refine center by maximizing rotational symmetry
+     const refined = refineCenterBySymmetry(enhanced, winner.cx, winner.cy, winner.r, w, h);
+     result = { cx: refined.cx, cy: refined.cy, radius: winner.r, method: 'multi-threshold' };
++    // PAP-1898 diagnostic (temporary, env-guarded): dump the candidate set +
++    // purities so offline probes can tell selection failures from detection
++    // failures. No production behavior change (global write only when the
++    // env var is set; device Hermes has no process.env hit on this path).
++    if (typeof globalThis !== 'undefined' && globalThis.__PAP1898_DEBUG) {
++      globalThis.__PAP1898_LAST = {
++        candidates: topCandidates.map((c, i) => ({
++          cx: c.cx, cy: c.cy, r: c.r, score: +Number(c.score || 0).toFixed(4),
++          purity: +Number(purities[i] || 0).toFixed(4),
++          selected: i === bestIdx,
++        })),
++        bestIdx,
++        bestPurity: +Number(bestPurity || 0).toFixed(4),
++      };
++    }
+     // ── PAP-1766 Approach B: Radius Geometry Validation ──────────────────────────
+     // For single-cog images, validate that detected radius is physically plausible.
+     // Tooth-tip spacing should be 2πR / N pixels, typically 2-50 pixels for common gear sizes.
+@@ -1565,9 +1590,189 @@
+     }
+   }
+ 
++  // ── PAP-1898: silhouette-anchored localization rescue ─────────────────
++  // Dense chainrings / weak-signal photos: FFT purity prefers inner-feature
++  // locks (spider arms, rivets, bolt circles) because the outer-tooth
++  // periodicity is often absent at 900px (PAP-1865 signal census), so the
++  // purity-max selection above can hand the count methods a wrong
++  // center/radius and the count inherits the error (radius-ratio aliasing,
++  // PAP-1897 b153 audit: 4/5 wrong-center).
++  //
++  // Re-derive the gear circle GEOMETRICALLY whenever the picked circle fails
++  // the mismatch check below — purity alone cannot be trusted here:
++  // walk inward per 720 angles from the PAP-476 mask boundary on the Canny
++  // edge map (first edge hit per angle = outermost object silhouette; the
++  // PAP-1865 pass-2 anchor QA verified — cannot bolt-circle-lock by
++  // construction), then fit a circle with a trimmed algebraic (Kasa) fit
++  // (70%-lowest-residual refit x4) to reject cutout/background outliers.
++  // Accept only with high angular coverage and a physically plausible
++  // circle; otherwise keep the production pick. Pure geometry — immune to
++  // the purity paradox; ms-scale cost. Toggle: PAP1898_RESCUE_OFF=1 for A/B.
++  // The fit REPLACES the picked circle only on a mismatch signature, judged
++  // on rim support (fraction of 360 rays hitting an edge within ±3% of r)
++  // so an already-correct pick is never overridden:
++  //   small-lock arm: picked r < 0.85·silR and the silhouette circle is
++  //     better supported by ≥0.20 (rivet/spider/plate patches span only part
++  //     of their circle; the true rim spans all of it);
++  //   over-lock arm: picked r > 1.15·silR (mask-boundary / Hough overlock)
++  //     and the silhouette is better supported by ≥0.30;
++  //   fit quality: silhouette coverage ≥ 0.90, plausible radius, center near
++  //     frame center; otherwise keep the production pick.
++  // Corpus A/B (pap1898.corpus.mjs, 367 photos, 2026-09-12): gate fires on
++  // 92 photos; strict 126→137, wrong-nonzero 86→78, dense wrong-nonzero
++  // 14→9; audited b153 set: 52→13 becomes honest abstain, 24 abstain becomes
++  // correct 24, 36→11 becomes 35. Toggle: PAP1898_RESCUE_OFF=1 for A/B.
++  if (PAP1898_SILHOUETTE_RESCUE
++      && result.method !== 'deadline-fallback'
++      && Date.now() < deadline) {
++    const sil = pap1898SilhouetteFit(edges, w, h);
++    if (sil && sil.coverage >= 0.90 && sil.fit) {
++      const fit = sil.fit;
++      const minDim = Math.min(h, w);
++      const plausible = fit.r >= 0.15 * minDim && fit.r <= 0.48 * minDim;
++      const nearCenter = Math.hypot(fit.cx - w / 2, fit.cy - h / 2) <= 0.40 * minDim;
++      const supportSil = pap1898RimSupport(edges, w, h, fit.cx, fit.cy, fit.r);
++      const supportPicked = result.radius > 4
++        ? pap1898RimSupport(edges, w, h, result.cx, result.cy, result.radius)
++        : 0;
++      const dSup = supportSil - supportPicked;
++      const smallLock = result.radius > 0 && result.radius < 0.85 * fit.r && dSup >= 0.20;
++      const overLock = result.radius > 1.15 * fit.r && dSup >= 0.30;
++      if (plausible && nearCenter && (smallLock || overLock)) {
++        console.log(`[GearCenter] pap1898-silhouette rescue: ` +
++          `(${result.cx},${result.cy},r${result.radius},${result.method}) -> ` +
++          `(${fit.cx.toFixed(0)},${fit.cy.toFixed(0)},r${fit.r.toFixed(0)},` +
++          `cov=${sil.coverage.toFixed(2)},dSup=${dSup.toFixed(2)},` +
++          `${smallLock ? 'small-lock' : 'over-lock'})`);
++        result = {
++          cx: Math.round(fit.cx),
++          cy: Math.round(fit.cy),
++          radius: Math.round(fit.r),
++          method: 'pap1898-silhouette',
++        };
++      }
++    }
++  }
++
+   return result;
+ }
+ 
++// ── 10b. PAP-1898 silhouette-anchored circle fit ───────────────────────────
++// 720-angle inward walk from the mask boundary + trimmed Kasa circle fit.
++// Returns { coverage, fit } (fit null when too few points / degenerate).
++// See the rescue block in findGearCenter above.
++const PAP1898_N_ANG = 720;
++// Each point carries its walk depth (how far inward from the mask boundary
++// the first edge was found). Inner features (bolt circles, spider arms,
++// inner plates) snap angles much DEEPER than the true silhouette, so depth
++// is the outlier signal for the prefit rejection below (QA PAP-1901
++// refinement 1: keep-70% trimming alone converges onto a biased equilibrium
++// for contiguous inner-ring sectors ≥30%).
++function pap1898SilhouettePoints(edges, w, h) {
++  const cx0 = (w - 1) / 2, cy0 = (h - 1) / 2;
++  const maxR = Math.floor(0.49 * Math.min(w, h)) - 6;
++  const pts = [];
++  for (let i = 0; i < PAP1898_N_ANG; i++) {
++    const a = (2 * Math.PI * i) / PAP1898_N_ANG;
++    const ca = Math.cos(a), sa = Math.sin(a);
++    for (let r = maxR; r >= 12; r--) {
++      const px = Math.round(cx0 + r * ca), py = Math.round(cy0 + r * sa);
++      if (px < 0 || px >= w || py < 0 || py >= h) continue;
++      if (edges[py * w + px] > 0) { pts.push({ x: px, y: py, depth: maxR - r }); break; }
++    }
++  }
++  return pts;
++}
++function pap1898KasaFit(pts) {
++  let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0, sz = 0;
++  const n = pts.length;
++  for (let k = 0; k < n; k++) {
++    const p = pts[k], z = p.x * p.x + p.y * p.y;
++    sx += p.x; sy += p.y; sxx += p.x * p.x; syy += p.y * p.y;
++    sxy += p.x * p.y; sxz += p.x * z; syz += p.y * z; sz += z;
++  }
++  // Gaussian elimination with partial pivoting on the 3x3 normal equations.
++  const m = [
++    [sxx, sxy, sx, -sxz],
++    [sxy, syy, sy, -syz],
++    [sx, sy, n, -sz],
++  ];
++  for (let i = 0; i < 3; i++) {
++    let piv = i;
++    for (let j = i + 1; j < 3; j++) if (Math.abs(m[j][i]) > Math.abs(m[piv][i])) piv = j;
++    const t = m[i]; m[i] = m[piv]; m[piv] = t;
++    if (Math.abs(m[i][i]) < 1e-9) return null;
++    for (let j = i + 1; j < 3; j++) {
++      const f = m[j][i] / m[i][i];
++      for (let k = i; k < 4; k++) m[j][k] -= f * m[i][k];
++    }
++  }
++  const x = [0, 0, 0];
++  for (let i = 2; i >= 0; i--) {
++    let s = m[i][3];
++    for (let k = i + 1; k < 3; k++) s -= m[i][k] * x[k];
++    x[i] = s / m[i][i];
++  }
++  const D = x[0], E = x[1], F = x[2];
++  const cx = -D / 2, cy = -E / 2;
++  const rr = cx * cx + cy * cy - F;
++  if (!(rr > 0)) return null;
++  return { cx, cy, r: Math.sqrt(rr) };
++}
++function pap1898SilhouetteFit(edges, w, h) {
++  const pts = pap1898SilhouettePoints(edges, w, h);
++  const coverage = pts.length / PAP1898_N_ANG;
++  if (pts.length < 60) return { coverage, fit: null };
++  // Prefit depth rejection (PAP-1901 refinement 1), applied ONLY when inner-
++  // feature latching is actually detected: drop angles whose walk snapped
++  // deeper than median + 3·scaled-MAD — the signature of bolt-circle /
++  // spider-arm sectors, which keep-70% trimming alone cannot fix (the trim
++  // converges onto the sector). The gate arms at ≥12% deep-latched angles;
++  // below that the fit uses every point unchanged, because on real rims a
++  // blind gate shifts the fit by 1-3px and annulus placement is load-bearing
++  // downstream (corpus-measured: PAP-1901 refinement 2). Small gears walk
++  // deep on EVERY angle, so the relative median keeps them by construction.
++  const depths = pts.map(p => p.depth).sort((a, b) => a - b);
++  const med = depths[depths.length >> 1];
++  const absDev = depths.map(d => Math.abs(d - med)).sort((a, b) => a - b);
++  const mad = absDev[absDev.length >> 1];
++  const depthLimit = med + 3 * 1.4826 * mad + 2;
++  const deepPts = pts.filter(p => p.depth > depthLimit);
++  let cur = pts;
++  if (deepPts.length >= 0.12 * pts.length && deepPts.length <= 0.40 * pts.length) {
++    cur = pts.filter(p => p.depth <= depthLimit);
++  }
++  let fit = null;
++  for (let iter = 0; iter < 4 && cur.length > 30; iter++) {
++    fit = pap1898KasaFit(cur);
++    if (!fit) return { coverage, fit: null };
++    const res = cur.map(p => ({ p, d: Math.abs(Math.hypot(p.x - fit.cx, p.y - fit.cy) - fit.r) }));
++    res.sort((a, b) => a.d - b.d);
++    cur = res.slice(0, Math.max(30, Math.floor(cur.length * 0.7))).map(e => e.p);
++  }
++  return { coverage, fit };
++}
++// Rim support of a circle: fraction of 360 rays from (cx, cy) that hit a
++// Canny edge within ±3% of r (min ±2px). The PAP-1898 gate metric — a real
++// gear rim supports ~all of its circle; an inner-feature patch or the mask
++// boundary does not (or, for a mask circle, only where content contrasts).
++function pap1898RimSupport(edges, w, h, cx, cy, r) {
++  let hits = 0;
++  const tol = Math.max(2, 0.03 * r);
++  for (let i = 0; i < 360; i++) {
++    const a = (2 * Math.PI * i) / 360;
++    const ca = Math.cos(a), sa = Math.sin(a);
++    let hit = false;
++    for (let rr = r - tol; rr <= r + tol && !hit; rr++) {
++      const px = Math.round(cx + rr * ca), py = Math.round(cy + rr * sa);
++      if (px < 0 || px >= w || py < 0 || py >= h) continue;
++      if (edges[py * w + px] > 0) hit = true;
++    }
++    if (hit) hits++;
++  }
++  return hits / 360;
++}
++
+ // ── 11. Radial edge-density → gear radius ─────���─────────────────────────────
+ 
+ function findGearRadius(edges, cx, cy, width, height) {
+@@ -2395,9 +2600,42 @@
+  * and stay answering; abstaining them would eat matching correct ordinary
+  * rows (twins documented in the QA subtask).
+  *
++ * PAP-1900 rules (path-independent collapse guards, QA cross-check PAP-1902
++ * PENDING — do not treat thresholds as final until QA signs off). The b153
++ * operator session (pap1897_fp5_b153_session_2026-09-11/audit-verdicts.json)
++ * showed 3 dense/large wrong counts that slip between G1–G4 because the
++ * contour localized wrong (PAP-1898) and the committed count inherits the
++ * radius error (52·169/794≈13, 50·357/767≈24):
++ *
++ *   G5  radial-anchor disagreement at low confidence
++ *       |peakR - rOuter| / rOuter >= 0.18 && conf <= 0.35
++ *       The FFT peak radius and the outermost radial-gradient peak disagree
++ *       beyond the PAP-815 threshold while confidence is low — the radial
++ *       anchor is unstable, so the commit is an aliasing artifact.
++ *       364-row corpus: +12 abstains, 0 previously-correct rows flipped
++ *       (9 ordinary wrong, 3 dense wrong); zero correct commits exist in
++ *       the whole neighborhood rr>=0.15 && conf<=0.40. The 20T capture
++ *       anchors are safe (conf=1; captureB rr=0.835 — the conf cap is
++ *       load-bearing). Catches the 50T→24T session event (rr=0.212,
++ *       conf=0.328). NOTE: ordinary newly-abstained rises 10→19/284
++ *       (6.69% vs the <5% calibration target) with 0 correctness
++ *       regressions — AC2 ruling requested in QA subtask PAP-1902.
++ *
++ *   G6  inner-contour numeric commit
++ *       innerContourSuspected && conf <= 0 && tc > 0
++ *       Repairs the existing intent at the finalConfidence assignment
++ *       (`ics ? 0 : conf`): a suspected inner-contour lock must never
++ *       surface as a numeric count. The corpus convention already treats
++ *       conf-0 commits as abstains (baselineAbstain = tc===0 || conf===0,
++ *       abstainNow = same in pap1872.corpus_gate.mjs), so this changes no
++ *       measured corpus outcome; it aligns the device result object with
++ *       that convention. fiveWayChainringAgree / fft90OuterRescue /
++ *       pap1059-confirmed rows have ics=false by formula → untouched.
++ *       Catches the 52T→13T and 36T→11T session events.
++ *
+  * Returns { fires: bool, rule: string|null }.
+  */
+-function checkDenseChainringAbstain(tc, conf, r) {
++function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false) {
+   if (tc <= 0) return { fires: false, rule: null }; // already abstained upstream
+   if (tc >= 40) return { fires: true, rule: 'G1-tc40' };
+   if (r.bcTc >= 40 || r.bcPeaks >= 40) return { fires: true, rule: 'G2-bc40' };
+@@ -2665,8 +2903,19 @@
+       finalTc = peakTc;
+       methodUsed = 'bc-consensus+fft-agree';
+     } else {
+-      finalTc = bcTc;
+-      methodUsed = 'bc-consensus';
++      // PAP-1898 (QA PAP-1901 endorsed cheap fix): a bare bc-consensus count
++      // whose purity would surface at confidence 0 is a silhouette-patch
++      // artifact, not a measurement (b153 36T: rivet/spoke patch → "11" at
++      // conf 0 reached the result screen). Do not commit a numeric count
++      // from this path without measurable support; later high-condition
++      // commits (fft90-xl-rescue etc.) are unaffected.
++      if (bcPurity * 0.50 <= 0.05) {
++        finalTc = 0;
++        methodUsed = 'bc-consensus+pap1898-conf0-abstain';
++      } else {
++        finalTc = bcTc;
++        methodUsed = 'bc-consensus';
++      }
+     }
+     finalRel = Math.max(finalRel, bcPurity * 0.50);
+   } else if (lowConfConsensusFires) {
+@@ -3228,8 +3477,19 @@
+       finalTc = bcPeaks;
+       methodUsed = 'bc-consensus+chainring-pk';
+     } else {
+-      finalTc = bcTc;
+-      methodUsed = 'bc-consensus';
++      // PAP-1898 (QA PAP-1901 endorsed cheap fix): a bare bc-consensus count
++      // whose purity would surface at confidence 0 is a silhouette-patch
++      // artifact, not a measurement (b153 36T: rivet/spoke patch → "11" at
++      // conf 0 reached the result screen). Do not commit a numeric count
++      // from this path without measurable support; later high-condition
++      // commits (fft90-xl-rescue etc.) are unaffected.
++      if (bcPurity * 0.50 <= 0.05) {
++        finalTc = 0;
++        methodUsed = 'bc-consensus+pap1898-conf0-abstain';
++      } else {
++        finalTc = bcTc;
++        methodUsed = 'bc-consensus';
++      }
+     }
+     finalRel = Math.max(finalRel, bcPurity * 0.50);
+   } else if (fftConf >= 0.70 && peakTc > 0 && !innerBoreSuspect2) {
+@@ -4037,6 +4297,10 @@
+   checkDenseChainringRegime,
+   // PAP-1872: post-methods dense-chainring honest-abstain gate
+   checkDenseChainringAbstain,
++  // PAP-1898: silhouette-anchored localization (rescue + offline probes)
++  pap1898SilhouetteFit,
++  pap1898SilhouettePoints,
++  pap1898RimSupport,
+ };
+ 
+ export function countTeethFromRgba(rgba, width, height) {

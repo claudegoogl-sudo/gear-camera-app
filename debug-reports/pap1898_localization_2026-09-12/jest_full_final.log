@@ -1,0 +1,631 @@
+(node:3644718) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3644732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3644805) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mnativeFft.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [fftMagnitude] backend "native-cv-dft" failed, falling back to JS for the rest of this session: jsi blew up[39m
+[2m[22m
+[2m      74 |     return backend.magnitude(signal);[22m
+[2m      75 |   } catch (err) {[22m
+[2m    > 76 |     console.warn([22m
+[2m         |             ^[22m
+[2m      77 |       `[fftMagnitude] backend "${backend.name}" failed, falling back to JS ` +[22m
+[2m      78 |       `for the rest of this session: ${err && err.message}`);[22m
+[2m      79 |     activeBackend = JS_BACKEND;[22m
+[2m[22m
+[2m      [2mat Object.warn [as fftMagnitude] ([22m[2msrc/algorithm/fft.js[2m:76:13)[22m[2m[22m
+[2m      [2mat Object.fftMagnitude ([22m[2m[0m[36m__tests__/nativeFft.test.js[39m[0m[2m:211:21)[22m[2m[22m
+
+(node:3644792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1872.gate.test.js[22m
+(node:3644793) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mgearCounter.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1742.chainringAbstain.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1879.motion_diag.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:90:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:90:8)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [FrameDiag] width=8 height=8 bytesPerRow=8 bufLen=4 computedBpp=0.06 pixelFormat=yuv
+[2m[22m
+[2m      [2mat log ([22m[2msrc/hooks/useMotionDetection.js[2m:159:13)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:145:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:145:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:164:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:164:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:176:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:176:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:182:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:182:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:194:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:194:8)[22m[2m[22m
+
+(node:3644799) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mgearDetector.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mnativeKernels.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [preprocess] backend "native-cpp" failed, falling back to JS for the rest of this session: jsi blew up[39m
+[2m[22m
+[2m      69 |     return { ...out, backend: backend.name };[22m
+[2m      70 |   } catch (err) {[22m
+[2m    > 71 |     console.warn([22m
+[2m         |             ^[22m
+[2m      72 |       `[preprocess] backend "${backend.name}" failed, falling back to JS for ` +[22m
+[2m      73 |       `the rest of this session: ${err && err.message}`);[22m
+[2m      74 |     activeBackend = JS_BACKEND;[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/algorithm/preprocess.js[2m:71:13)[22m[2m[22m
+[2m      [2mat Object.preprocess ([22m[2m[0m[36m__tests__/nativeKernels.test.js[39m[0m[2m:143:17)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1882.aim_format.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1879.camera_screen_fallback.test.js[22m
+  [1m● [22mConsole
+
+    [2m[31mconsole.error[39m[22m
+[31m      An update to CameraScreen inside a test was not wrapped in act(...).[39m
+[31m      [39m
+[31m      When testing, code that causes React state updates should be wrapped into act(...):[39m
+[31m      [39m
+[31m      act(() => {[39m
+[31m        /* fire events that update state */[39m
+[31m      });[39m
+[31m      /* assert on the output */[39m
+[31m      [39m
+[31m      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act[39m
+[2m[22m
+[2m      886 |   useEffect(() => {[22m
+[2m      887 |     checkForUpdate()[22m
+[2m    > 888 |       .then((info) => setUpdateInfo(info))[22m
+[2m          |                       ^[22m
+[2m      889 |       .catch(() => { /* silent — no error toasts */ });[22m
+[2m      890 |   }, []);[22m
+[2m      891 |[22m
+[2m[22m
+[2m      [2mat [22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11801:19[22m[2m[22m
+[2m      [2mat runWithFiberInDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m[2m[22m
+[2m      [2mat warnIfUpdatesNotWrappedWithActDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11800:9)[22m[2m[22m
+[2m      [2mat scheduleUpdateOnFiber ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10326:9)[22m[2m[22m
+[2m      [2mat dispatchSetStateInternal ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4148:13)[22m[2m[22m
+[2m      [2mat dispatchSetState ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4107:7)[22m[2m[22m
+[2m      [2mat setUpdateInfo ([22m[2msrc/screens/CameraScreen.jsx[2m:888:23)[22m[2m[22m
+
+    [2m[31mconsole.error[39m[22m
+[31m      An update to CameraScreen inside a test was not wrapped in act(...).[39m
+[31m      [39m
+[31m      When testing, code that causes React state updates should be wrapped into act(...):[39m
+[31m      [39m
+[31m      act(() => {[39m
+[31m        /* fire events that update state */[39m
+[31m      });[39m
+[31m      /* assert on the output */[39m
+[31m      [39m
+[31m      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act[39m
+[2m[22m
+[2m      886 |   useEffect(() => {[22m
+[2m      887 |     checkForUpdate()[22m
+[2m    > 888 |       .then((info) => setUpdateInfo(info))[22m
+[2m          |                       ^[22m
+[2m      889 |       .catch(() => { /* silent — no error toasts */ });[22m
+[2m      890 |   }, []);[22m
+[2m      891 |[22m
+[2m[22m
+[2m      [2mat [22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11801:19[22m[2m[22m
+[2m      [2mat runWithFiberInDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m[2m[22m
+[2m      [2mat warnIfUpdatesNotWrappedWithActDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11800:9)[22m[2m[22m
+[2m      [2mat scheduleUpdateOnFiber ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10326:9)[22m[2m[22m
+[2m      [2mat dispatchSetStateInternal ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4148:13)[22m[2m[22m
+[2m      [2mat dispatchSetState ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4107:7)[22m[2m[22m
+[2m      [2mat setUpdateInfo ([22m[2msrc/screens/CameraScreen.jsx[2m:888:23)[22m[2m[22m
+
+    [2m[31mconsole.error[39m[22m
+[31m      An update to CameraScreen inside a test was not wrapped in act(...).[39m
+[31m      [39m
+[31m      When testing, code that causes React state updates should be wrapped into act(...):[39m
+[31m      [39m
+[31m      act(() => {[39m
+[31m        /* fire events that update state */[39m
+[31m      });[39m
+[31m      /* assert on the output */[39m
+[31m      [39m
+[31m      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act[39m
+[2m[22m
+[2m      886 |   useEffect(() => {[22m
+[2m      887 |     checkForUpdate()[22m
+[2m    > 888 |       .then((info) => setUpdateInfo(info))[22m
+[2m          |                       ^[22m
+[2m      889 |       .catch(() => { /* silent — no error toasts */ });[22m
+[2m      890 |   }, []);[22m
+[2m      891 |[22m
+[2m[22m
+[2m      [2mat [22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11801:19[22m[2m[22m
+[2m      [2mat runWithFiberInDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m[2m[22m
+[2m      [2mat warnIfUpdatesNotWrappedWithActDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11800:9)[22m[2m[22m
+[2m      [2mat scheduleUpdateOnFiber ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10326:9)[22m[2m[22m
+[2m      [2mat dispatchSetStateInternal ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4148:13)[22m[2m[22m
+[2m      [2mat dispatchSetState ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4107:7)[22m[2m[22m
+[2m      [2mat setUpdateInfo ([22m[2msrc/screens/CameraScreen.jsx[2m:888:23)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpreprocess.test.js[22m
+PAP1862RESCUE band=268
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1782.dense_chainring_detect.test.js[22m
+  [1m● [22mConsole
+
+    [2mconsole.log[22m
+      DENSE fraction: 0.47333333333333333
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1782.dense_chainring_detect.test.js[39m[0m[2m:121:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      SMALL fraction: 0.2633333333333333
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1782.dense_chainring_detect.test.js[39m[0m[2m:131:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      MID fraction: 0.2866666666666667
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1782.dense_chainring_detect.test.js[39m[0m[2m:141:13)[22m[2m[22m
+
+
+[resmeasure dim=900] running on 17 large-gear images
+PAP1862SWEEP 1 {"source":"pap1862-capture","stamp":"pap1862_captureA_cropped","actual":20,"contourRadius":329,"cx":438,"cy":474,"innerRadius":144,"fraction":0.4377,"isDense":true}
+  2026-04-08_18-28-12-142Z actual=18 detected=18 OK 5818ms
+PAP1862ROW {"capture":"A","event":"dad332a5","actual":20,"device":{"rOuter":144,"detectMs":19813,"totalMs":24018,"method":"pap1534-d3-dense-chainring-abstain"},"host":{"toothCount":20,"confidence":1,"methodUsed":"bc-consensus+peak","gearRadiusNorm":0.38333333333333336,"rOuter":407,"innerContourSuspected":false,"budgetExhausted":false,"runtimeMs":7851,"gate":{"isDense":true,"innerRadius":144,"fraction":0.4377,"threshold":0.5,"contourRadius":329,"cx":438,"cy":474}}}
+PAP1862SWEEP 2 {"source":"pap1862-capture","stamp":"pap1862_captureB_cropped","actual":20,"contourRadius":350,"cx":440,"cy":486,"innerRadius":155,"fraction":0.4429,"isDense":true}
+PAP1862SWEEP corpus=362
+  2026-04-19_14-55-07-474Z actual=18 detected=18 OK 5188ms
+  2026-04-19_19-42-17-872Z actual=18 detected=18 OK 5504ms
+PAP1862RESCUE 5/268 32s
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_fp_probe.test.js[22m ([0m[1m[41m33.96 s[49m[22m[0m)
+PAP1862ROW {"capture":"B","event":"7d20ca5f","actual":20,"device":{"rOuter":155,"detectMs":20257,"totalMs":24284,"method":"pap1534-d3-dense-chainring-abstain"},"host":{"toothCount":20,"confidence":1,"methodUsed":"bc-consensus+peak","gearRadiusNorm":0.4077777777777778,"rOuter":200,"innerContourSuspected":false,"budgetExhausted":false,"runtimeMs":8258,"gate":{"isDense":true,"innerRadius":155,"fraction":0.4429,"threshold":0.5,"contourRadius":350,"cx":440,"cy":486}}}
+  2026-04-22_07-13-50-403Z actual=18 detected=0 FAIL 7281ms
+PAP1862SWEEP 5/362 23s
+  2026-04-08_18-30-50-993Z actual=21 detected=21 OK 5983ms
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1872.result_screen.test.js[22m ([0m[1m[41m12.099 s[49m[22m[0m)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1879.motion_diag_noplugin.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag_noplugin.test.js[39m[0m[2m:63:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag_noplugin.test.js[39m[0m[2m:63:8)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mupdateChecker.test.js[22m
+  2026-04-19_15-34-25-108Z actual=21 detected=21 OK 6640ms
+PAP1862RESCUE 10/268 55s
+PAP1862GATEOFF anchorA tc=20 conf=1 method=bc-consensus+peak
+  2026-04-21_06-09-20-021Z actual=21 detected=0 FAIL 6546ms
+PAP1862SWEEP 10/362 46s
+PAP1862GATEOFF anchorB tc=20 conf=1 method=bc-consensus+peak
+  2026-04-23_07-21-34-334Z actual=21 detected=0 FAIL 6524ms
+  2026-05-04_11-40-26-313Z actual=23 detected=23 OK 5626ms
+PAP1862RESCUE 15/268 78s
+  2026-04-08_18-34-56-184Z actual=24 detected=24 OK 7055ms
+PAP1862SWEEP 15/362 70s
+  2026-04-19_15-00-49-192Z actual=24 detected=24 OK 5319ms
+PAP1862GATEOFF 2026-04-04_09-10-20-407Z actual=13 tc=0 conf=0.00 method=bc-consensus+pap1872-dense-chainring-abstain
+PAP1862GATEOFF 2026-04-08_18-44-08-940Z actual=14 tc=14 conf=1.00 method=bc-consensus
+PAP1862RESCUE 20/268 100s
+  2026-04-20_16-26-12-721Z actual=24 detected=0 FAIL 7413ms
+PAP1862GATEOFF 2026-04-19_11-30-52-252Z actual=11 tc=0 conf=0.00 method=low-conf-consensus+pap632-fft-floor-abstain
+PAP1862SWEEP 20/362 90s
+  2026-04-22_07-06-35-244Z actual=24 detected=0 FAIL 7995ms
+PAP1862GATEOFF 2026-04-19_18-54-04-915Z actual=24 tc=24 conf=0.50 method=retry-fft90-fallback
+  2026-04-08_18-38-08-065Z actual=28 detected=28 OK 6849ms
+PAP1862RESCUE 25/268 123s
+PAP1862GATEOFF 2026-04-20_16-26-12-721Z actual=24 tc=24 conf=0.57 method=bc-fft+large-op-override
+  2026-04-19_15-38-37-106Z actual=28 detected=29 OK 7050ms
+PAP1862SWEEP 25/362 113s
+PAP1862GATEOFF 2026-04-21_19-26-08-385Z actual=21 tc=0 conf=0.00 method=bc-fft+pap474-abstain
+  2026-04-20_16-35-00-142Z actual=28 detected=0 FAIL 6871ms
+PAP1862GATEOFF 2026-04-23_07-10-59-824Z actual=28 tc=0 conf=0.32 method=bc-consensus+pap1898-conf0-abstain
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1685.resmeasure.test.js[22m ([0m[1m[41m143.497 s[49m[22m[0m)
+  [1m● [22mConsole
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G5-radial-anchor-conf): tc=18 conf=0.000 peak=18 fft90=36 op=18 bc=18(pk=15) contourR=127 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4616:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G5-radial-anchor-conf): tc=19 conf=0.000 peak=19 fft90=19 op=11 bc=11(pk=11) contourR=98 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4616:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G1-tc40): tc=44 conf=0.000 peak=10 fft90=44 op=15 bc=12(pk=1) contourR=71 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4616:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G6-inner-contour-commit): tc=27 conf=0.000 peak=11 fft90=27 op=27 bc=11(pk=4) contourR=114 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4616:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (313,387,r201,multi-threshold) -> (345,534,r255,cov=0.98,dSup=0.29,small-lock)
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:1627:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [pap632-fft-floor-abstain] peak=10 fft90=12 final=12 bc=11(peaks=4) op=12(rel=0.068) gearR=289 contourR=255 minDim=675
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:3321:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (410,345,r95,multi-threshold) -> (334,383,r127,cov=1.00,dSup=0.38,small-lock)
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:1627:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [pap632-fft-floor-abstain] peak=10 fft90=12 final=12 bc=10(peaks=3) op=11(rel=0.048) gearR=280 contourR=278 minDim=675
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:3321:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] PAP-684 edge-density override: r=77→263 normR=0.114→0.390 purity=0.075 from multi-threshold
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:1578:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [large-op-override] fft90-fallback=>20 peak=10 fft90=10 bc=10(peaks=4) op=20(rel=0.050) contourR=263 minDim=675
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:3208:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G4-fft-collapse-op-commit): tc=20 conf=0.383 peak=10 fft90=10 op=20 bc=10(pk=4) contourR=263 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4616:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      
+      === RESDIM=900 summary ===
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:81:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      accuracy(±1): 10/17 = 58.8%
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:82:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      median runtime: 6640ms
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:83:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      wrong: [
+        {
+          "stamp": "2026-04-22_07-13-50-403Z",
+          "actual": 18,
+          "detected": 0,
+          "runtime": 7281
+        },
+        {
+          "stamp": "2026-04-21_06-09-20-021Z",
+          "actual": 21,
+          "detected": 0,
+          "runtime": 6546
+        },
+        {
+          "stamp": "2026-04-23_07-21-34-334Z",
+          "actual": 21,
+          "detected": 0,
+          "runtime": 6524
+        },
+        {
+          "stamp": "2026-04-20_16-26-12-721Z",
+          "actual": 24,
+          "detected": 0,
+          "runtime": 7413
+        },
+        {
+          "stamp": "2026-04-22_07-06-35-244Z",
+          "actual": 24,
+          "detected": 0,
+          "runtime": 7995
+        },
+        {
+          "stamp": "2026-04-20_16-35-00-142Z",
+          "actual": 28,
+          "detected": 0,
+          "runtime": 6871
+        },
+        {
+          "stamp": "2026-04-22_19-24-58-121Z",
+          "actual": 28,
+          "detected": 0,
+          "runtime": 7011
+        }
+      ]
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:84:13)[22m[2m[22m
+
+  2026-04-22_19-24-58-121Z actual=28 detected=0 FAIL 7011ms
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1881.flash_control.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1898.silhouette.test.js[22m
+PAP1862RESCUE 30/268 149s
+PAP1862GATEOFF 2026-04-29_05-22-34-904Z actual=21 tc=21 conf=0.83 method=bc-consensus+peak
+PAP1862SWEEP 30/362 137s
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_gate_disabled.test.js[22m ([0m[1m[41m114.887 s[49m[22m[0m)
+PAP1862GATEOFF 2026-04-24_10-54-55-930Z actual=42 tc=0 conf=0.00 method=low-conf-consensus+pap1872-dense-chainring-abstain
+PAP1862GATEOFF ordinary-spotcheck exact 4/8 counted 4/8
+PAP1862RESCUE 35/268 175s
+PAP1862SWEEP 35/362 159s
+PAP1862SWEEP 40/362 180s
+PAP1862RESCUE 40/268 204s
+PAP1862SWEEP 45/362 201s
+PAP1862RESCUE 45/268 228s
+PAP1862SWEEP 50/362 226s
+PAP1862RESCUE 50/268 256s
+PAP1862SWEEP 55/362 252s
+PAP1862RESCUE 55/268 281s
+PAP1862SWEEP 60/362 277s
+PAP1862RESCUE 60/268 303s
+PAP1862SWEEP 65/362 300s
+PAP1862RESCUE 65/268 328s
+PAP1862SWEEP 70/362 323s
+PAP1862RESCUE 70/268 355s
+PAP1862SWEEP 75/362 352s
+PAP1862RESCUE 75/268 382s
+PAP1862SWEEP 80/362 376s
+PAP1862RESCUE 80/268 408s
+PAP1862SWEEP 85/362 400s
+PAP1862RESCUE 85/268 437s
+PAP1862SWEEP 90/362 427s
+PAP1862RESCUE 90/268 463s
+PAP1862SWEEP 95/362 450s
+PAP1862RESCUE 95/268 488s
+PAP1862SWEEP 100/362 473s
+PAP1862RESCUE 100/268 510s
+PAP1862SWEEP 105/362 497s
+PAP1862RESCUE 105/268 534s
+PAP1862SWEEP 110/362 522s
+PAP1862RESCUE 110/268 562s
+PAP1862SWEEP 115/362 547s
+PAP1862RESCUE 115/268 584s
+PAP1862SWEEP 120/362 572s
+PAP1862RESCUE 120/268 611s
+PAP1862SWEEP 125/362 598s
+PAP1862RESCUE 125/268 634s
+PAP1862SWEEP 130/362 623s
+PAP1862RESCUE 130/268 658s
+PAP1862SWEEP 135/362 651s
+PAP1862RESCUE 135/268 685s
+PAP1862SWEEP 140/362 677s
+PAP1862RESCUE 140/268 714s
+PAP1862SWEEP 145/362 701s
+PAP1862RESCUE 145/268 738s
+PAP1862SWEEP 150/362 725s
+PAP1862RESCUE 150/268 759s
+PAP1862SWEEP 155/362 748s
+PAP1862RESCUE 155/268 785s
+PAP1862SWEEP 160/362 769s
+PAP1862SWEEP 165/362 792s
+PAP1862RESCUE 160/268 813s
+PAP1862SWEEP 170/362 820s
+PAP1862RESCUE 165/268 840s
+PAP1862SWEEP 175/362 844s
+PAP1862RESCUE 170/268 866s
+PAP1862SWEEP 180/362 869s
+PAP1862RESCUE 175/268 890s
+PAP1862SWEEP 185/362 896s
+PAP1862RESCUE 180/268 919s
+PAP1862SWEEP 190/362 919s
+PAP1862RESCUE 185/268 945s
+PAP1862SWEEP 195/362 942s
+PAP1862RESCUE 190/268 972s
+PAP1862SWEEP 200/362 963s
+PAP1862RESCUE 195/268 998s
+PAP1862SWEEP 205/362 990s
+PAP1862RESCUE 200/268 1025s
+PAP1862SWEEP 210/362 1019s
+PAP1862RESCUE 205/268 1049s
+PAP1862SWEEP 215/362 1044s
+PAP1862RESCUE 210/268 1075s
+PAP1862SWEEP 220/362 1066s
+PAP1862RESCUE 215/268 1099s
+PAP1862SWEEP 225/362 1088s
+PAP1862RESCUE 220/268 1124s
+PAP1862SWEEP 230/362 1110s
+PAP1862RESCUE 225/268 1156s
+PAP1862SWEEP 235/362 1142s
+PAP1862RESCUE 230/268 1183s
+PAP1862SWEEP 240/362 1171s
+PAP1862RESCUE 235/268 1210s
+PAP1862SWEEP 245/362 1196s
+PAP1862RESCUE 240/268 1235s
+PAP1862SWEEP 250/362 1222s
+PAP1862RESCUE 245/268 1261s
+PAP1862SWEEP 255/362 1247s
+PAP1862RESCUE 250/268 1287s
+PAP1862SWEEP 260/362 1273s
+PAP1862RESCUE 255/268 1313s
+PAP1862SWEEP 265/362 1298s
+PAP1862RESCUE 260/268 1341s
+PAP1862SWEEP 270/362 1326s
+PAP1862RESCUE 265/268 1368s
+PAP1862SWEEP 275/362 1354s
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_rescue_probe.test.js[22m ([0m[1m[41m1384.458 s[49m[22m[0m)
+PAP1862RESCUE 268/268 1384s
+PAP1862RESCUE done rows=268
+PAP1862SWEEP 280/362 1380s
+PAP1862SWEEP 285/362 1406s
+PAP1862SWEEP 290/362 1436s
+PAP1862SWEEP 295/362 1461s
+PAP1862SWEEP 300/362 1488s
+PAP1862SWEEP 305/362 1514s
+PAP1862SWEEP 310/362 1540s
+PAP1862SWEEP 315/362 1565s
+PAP1862SWEEP 320/362 1589s
+PAP1862SWEEP 325/362 1616s
+PAP1862SWEEP 330/362 1640s
+PAP1862SWEEP 335/362 1668s
+PAP1862SWEEP 340/362 1694s
+PAP1862SWEEP 345/362 1720s
+PAP1862SWEEP 350/362 1746s
+PAP1862SWEEP 355/362 1775s
+PAP1862SWEEP 360/362 1800s
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_threshold_sweep.test.js[22m ([0m[1m[41m1828.277 s[49m[22m[0m)
+PAP1862SWEEP 362/362 1811s
+PAP1862SWEEP done rows=364
+
+[1mTest Suites: [22m[1m[32m21 passed[39m[22m, 21 total
+[1mTests:       [22m[1m[32m155 passed[39m[22m, 155 total
+[1mSnapshots:   [22m0 total
+[1mTime:[22m        [1m[33m1830.521 s[39m[22m
+[2mRan all test suites[22m[2m.[22m

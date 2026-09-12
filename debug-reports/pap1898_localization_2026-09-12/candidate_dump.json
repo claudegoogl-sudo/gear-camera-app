@@ -1,0 +1,417 @@
+[
+  {
+    "stamp": "f5886a846722",
+    "label": 52,
+    "truth": {
+      "cx": 450,
+      "cy": 450,
+      "r": 405
+    },
+    "picked": {
+      "cx": 199,
+      "cy": 576,
+      "r": 169,
+      "method": "multi-threshold"
+    },
+    "nCandidates": 5,
+    "closestToTruth": {
+      "cx": 488,
+      "cy": 426,
+      "r": 397,
+      "score": 0.5282,
+      "purity": 0.038,
+      "selected": false,
+      "dCenter": 44.9,
+      "dR": -8
+    },
+    "truthAvailable": true,
+    "candidates": [
+      {
+        "cx": 488,
+        "cy": 426,
+        "r": 397,
+        "score": 0.5282,
+        "purity": 0.038,
+        "selected": false,
+        "dCenter": 44.9,
+        "dR": -8
+      },
+      {
+        "cx": 231,
+        "cy": 592,
+        "r": 212,
+        "score": 0.2139,
+        "purity": 0.0553,
+        "selected": false,
+        "dCenter": 261,
+        "dR": -193
+      },
+      {
+        "cx": 229,
+        "cy": 597,
+        "r": 190,
+        "score": 0.1705,
+        "purity": 0.0592,
+        "selected": false,
+        "dCenter": 265.4,
+        "dR": -215
+      },
+      {
+        "cx": 199,
+        "cy": 576,
+        "r": 169,
+        "score": 0.3269,
+        "purity": 0.0696,
+        "selected": true,
+        "dCenter": 280.9,
+        "dR": -236
+      },
+      {
+        "cx": 728,
+        "cy": 584,
+        "r": 135,
+        "score": 1.2335,
+        "purity": 0.0483,
+        "selected": false,
+        "dCenter": 308.6,
+        "dR": -270
+      }
+    ]
+  },
+  {
+    "stamp": "af9294fe87f0",
+    "label": 50,
+    "truth": {
+      "cx": 450,
+      "cy": 441,
+      "r": 392
+    },
+    "picked": {
+      "cx": 470,
+      "cy": 465,
+      "r": 357,
+      "method": "multi-threshold"
+    },
+    "nCandidates": 5,
+    "closestToTruth": {
+      "cx": 454,
+      "cy": 415,
+      "r": 99,
+      "score": 0.5553,
+      "purity": 0.0529,
+      "selected": false,
+      "dCenter": 26.3,
+      "dR": -292
+    },
+    "truthAvailable": true,
+    "candidates": [
+      {
+        "cx": 454,
+        "cy": 415,
+        "r": 99,
+        "score": 0.5553,
+        "purity": 0.0529,
+        "selected": false,
+        "dCenter": 26.3,
+        "dR": -292
+      },
+      {
+        "cx": 470,
+        "cy": 465,
+        "r": 357,
+        "score": 0.5908,
+        "purity": 0.055,
+        "selected": true,
+        "dCenter": 31.2,
+        "dR": -34
+      },
+      {
+        "cx": 488,
+        "cy": 430,
+        "r": 352,
+        "score": 0.1158,
+        "purity": 0.0336,
+        "selected": false,
+        "dCenter": 39.6,
+        "dR": -39
+      },
+      {
+        "cx": 527,
+        "cy": 505,
+        "r": 128,
+        "score": 0.1943,
+        "purity": 0.0573,
+        "selected": false,
+        "dCenter": 100.1,
+        "dR": -263
+      },
+      {
+        "cx": 258,
+        "cy": 486,
+        "r": 86,
+        "score": 0.4042,
+        "purity": 0.0577,
+        "selected": false,
+        "dCenter": 197.2,
+        "dR": -305
+      }
+    ]
+  },
+  {
+    "stamp": "caa1725c6bae",
+    "label": 42,
+    "truth": {
+      "cx": 450,
+      "cy": 441,
+      "r": 405
+    },
+    "picked": {
+      "cx": 550,
+      "cy": 381,
+      "r": 365,
+      "method": "multi-threshold"
+    },
+    "nCandidates": 6,
+    "closestToTruth": {
+      "cx": 450,
+      "cy": 450,
+      "r": 441,
+      "score": 0,
+      "purity": 0.0509,
+      "selected": false,
+      "dCenter": 9,
+      "dR": 36
+    },
+    "truthAvailable": true,
+    "candidates": [
+      {
+        "cx": 450,
+        "cy": 450,
+        "r": 441,
+        "score": 0,
+        "purity": 0.0509,
+        "selected": false,
+        "dCenter": 9,
+        "dR": 36
+      },
+      {
+        "cx": 494,
+        "cy": 437,
+        "r": 398,
+        "score": 1.1887,
+        "purity": 0.0317,
+        "selected": false,
+        "dCenter": 44.2,
+        "dR": -7
+      },
+      {
+        "cx": 550,
+        "cy": 381,
+        "r": 365,
+        "score": 0.2678,
+        "purity": 0.0729,
+        "selected": true,
+        "dCenter": 116.6,
+        "dR": -40
+      },
+      {
+        "cx": 388,
+        "cy": 542,
+        "r": 313,
+        "score": 0.1727,
+        "purity": 0.0363,
+        "selected": false,
+        "dCenter": 118.5,
+        "dR": -92
+      },
+      {
+        "cx": 206,
+        "cy": 347,
+        "r": 108,
+        "score": 0.1173,
+        "purity": 0.0535,
+        "selected": false,
+        "dCenter": 261.5,
+        "dR": -297
+      },
+      {
+        "cx": 226,
+        "cy": 622,
+        "r": 131,
+        "score": 0.0759,
+        "purity": 0.047,
+        "selected": false,
+        "dCenter": 288,
+        "dR": -274
+      }
+    ]
+  },
+  {
+    "stamp": "f3a8e88a13d8",
+    "label": 36,
+    "truth": {
+      "cx": 450,
+      "cy": 441,
+      "r": 360
+    },
+    "picked": {
+      "cx": 193,
+      "cy": 399,
+      "r": 91,
+      "method": "multi-threshold"
+    },
+    "nCandidates": 5,
+    "closestToTruth": {
+      "cx": 447,
+      "cy": 500,
+      "r": 79,
+      "score": 0.3164,
+      "purity": 0.0659,
+      "selected": false,
+      "dCenter": 59.1,
+      "dR": -281
+    },
+    "truthAvailable": false,
+    "candidates": [
+      {
+        "cx": 447,
+        "cy": 500,
+        "r": 79,
+        "score": 0.3164,
+        "purity": 0.0659,
+        "selected": false,
+        "dCenter": 59.1,
+        "dR": -281
+      },
+      {
+        "cx": 515,
+        "cy": 463,
+        "r": 398,
+        "score": 0.3335,
+        "purity": 0.0426,
+        "selected": false,
+        "dCenter": 68.6,
+        "dR": 38
+      },
+      {
+        "cx": 502,
+        "cy": 500,
+        "r": 347,
+        "score": 0.3226,
+        "purity": 0.0325,
+        "selected": false,
+        "dCenter": 78.6,
+        "dR": -13
+      },
+      {
+        "cx": 274,
+        "cy": 431,
+        "r": 72,
+        "score": 0.467,
+        "purity": 0.0503,
+        "selected": false,
+        "dCenter": 176.3,
+        "dR": -288
+      },
+      {
+        "cx": 193,
+        "cy": 399,
+        "r": 91,
+        "score": 0.364,
+        "purity": 0.0863,
+        "selected": true,
+        "dCenter": 260.4,
+        "dR": -269
+      }
+    ]
+  },
+  {
+    "stamp": "92e4b255112c",
+    "label": 24,
+    "truth": {
+      "cx": 396,
+      "cy": 423,
+      "r": 225
+    },
+    "picked": {
+      "cx": 450,
+      "cy": 450,
+      "r": 441,
+      "method": "multi-threshold"
+    },
+    "nCandidates": 6,
+    "closestToTruth": {
+      "cx": 390,
+      "cy": 416,
+      "r": 205,
+      "score": 0.3824,
+      "purity": 0.0478,
+      "selected": false,
+      "dCenter": 9.2,
+      "dR": -20
+    },
+    "truthAvailable": true,
+    "candidates": [
+      {
+        "cx": 390,
+        "cy": 416,
+        "r": 205,
+        "score": 0.3824,
+        "purity": 0.0478,
+        "selected": false,
+        "dCenter": 9.2,
+        "dR": -20
+      },
+      {
+        "cx": 450,
+        "cy": 450,
+        "r": 441,
+        "score": 0,
+        "purity": 0.0661,
+        "selected": true,
+        "dCenter": 60.4,
+        "dR": 216
+      },
+      {
+        "cx": 501,
+        "cy": 456,
+        "r": 398,
+        "score": 1.0651,
+        "purity": 0.051,
+        "selected": false,
+        "dCenter": 110.1,
+        "dR": 173
+      },
+      {
+        "cx": 535,
+        "cy": 285,
+        "r": 181,
+        "score": 0.124,
+        "purity": 0.0526,
+        "selected": false,
+        "dCenter": 195.9,
+        "dR": -44
+      },
+      {
+        "cx": 573,
+        "cy": 217,
+        "r": 253,
+        "score": 0.5485,
+        "purity": 0.0748,
+        "selected": false,
+        "dCenter": 271.6,
+        "dR": 28
+      },
+      {
+        "cx": 685,
+        "cy": 171,
+        "r": 127,
+        "score": 0.1082,
+        "purity": 0.0507,
+        "selected": false,
+        "dCenter": 383.4,
+        "dR": -98
+      }
+    ]
+  }
+]

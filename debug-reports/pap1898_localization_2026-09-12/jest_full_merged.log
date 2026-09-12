@@ -1,0 +1,853 @@
+(node:3590496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3590510) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[resmeasure dim=900] running on 17 large-gear images
+PAP1862RESCUE band=13
+  2026-04-08_18-28-12-142Z actual=18 detected=18 OK 5942ms
+PAP1862SWEEP 1 {"source":"pap1862-capture","stamp":"pap1862_captureA_cropped","actual":20,"contourRadius":416,"cx":450,"cy":465,"innerRadius":151,"fraction":0.363,"isDense":true}
+PAP1862GATEOFF anchorA tc=20 conf=0.5518099317750351 method=bc-consensus
+  2026-04-19_14-55-07-474Z actual=18 detected=18 OK 5577ms
+PAP1862SWEEP 2 {"source":"pap1862-capture","stamp":"pap1862_captureB_cropped","actual":20,"contourRadius":416,"cx":443,"cy":456,"innerRadius":191,"fraction":0.4591,"isDense":true}
+PAP1862SWEEP corpus=362
+PAP1862GATEOFF anchorB tc=19 conf=0.5424289077522897 method=bc-consensus
+  2026-04-19_19-42-17-872Z actual=18 detected=18 OK 5337ms
+  2026-04-22_07-13-50-403Z actual=18 detected=0 FAIL 6986ms
+PAP1862RESCUE 5/13 32s
+  2026-04-08_18-30-50-993Z actual=21 detected=21 OK 5755ms
+PAP1862SWEEP 5/362 23s
+PAP1862GATEOFF 2026-04-04_09-10-20-407Z actual=13 tc=0 conf=0.00 method=bc-consensus+pap1872-dense-chainring-abstain
+  2026-04-19_15-34-25-108Z actual=21 detected=21 OK 6987ms
+PAP1862GATEOFF 2026-04-04_09-10-51-656Z actual=11 tc=0 conf=0.00 method=bc-peaks+pap1872-dense-chainring-abstain
+PAP1862RESCUE 10/13 56s
+  2026-04-21_06-09-20-021Z actual=21 detected=0 FAIL 6401ms
+PAP1862GATEOFF 2026-04-04_16-16-09-444Z actual=14 tc=14 conf=1.00 method=bc-consensus
+  2026-04-23_07-21-34-334Z actual=21 detected=0 FAIL 6479ms
+PAP1862SWEEP 10/362 47s
+PAP1862GATEOFF 2026-04-04_18-54-21-451Z actual=14 tc=14 conf=0.82 method=bc-consensus+peak
+PAP1862RESCUE 13/13 70s
+PAP1862RESCUE done rows=13
+(node:3590589) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_rescue_probe.test.js[22m ([0m[1m[41m72.226 s[49m[22m[0m)
+  2026-05-04_11-40-26-313Z actual=23 detected=23 OK 5535ms
+PAP1862GATEOFF 2026-04-05_08-25-08-743Z actual=14 tc=14 conf=1.00 method=bc-consensus+peak
+  2026-04-08_18-34-56-184Z actual=24 detected=24 OK 6775ms
+PAP1862GATEOFF 2026-04-05_08-26-06-796Z actual=14 tc=0 conf=0.00 method=fft90-fallback+pap632-fft-floor-abstain
+PAP1862ROW {"capture":"A","event":"dad332a5","actual":20,"device":{"rOuter":144,"detectMs":19813,"totalMs":24018,"method":"pap1534-d3-dense-chainring-abstain"},"host":{"toothCount":20,"confidence":0.5518099317750351,"methodUsed":"bc-consensus","gearRadiusNorm":0.37333333333333335,"rOuter":407,"innerContourSuspected":false,"budgetExhausted":false,"runtimeMs":9016,"gate":{"isDense":true,"innerRadius":151,"fraction":0.363,"threshold":0.5,"contourRadius":416,"cx":450,"cy":465}}}
+  2026-04-19_15-00-49-192Z actual=24 detected=24 OK 5192ms
+PAP1862SWEEP 15/362 71s
+PAP1862GATEOFF 2026-04-05_08-31-34-725Z actual=13 tc=0 conf=0.00 method=bc-consensus+pap1872-dense-chainring-abstain
+(node:3590582) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[31m FAIL [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_gate_disabled.test.js[22m ([0m[1m[41m99.766 s[49m[22m[0m)
+[1m[31m  [1m● [22m[1mPAP-1862: D3 gate disabled — ordinary gears are counted again › anchor B (device-labeled 20T): pipeline returns 20, not the D3 abstain[39m[22m
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m20[39m
+    Received: [31m19[39m
+[2m[22m
+[2m      73 |       runner.out(`PAP1862GATEOFF anchor${c.tag} tc=${r.toothCount} conf=${r.confidence} method=${r.methodUsed}`);[22m
+[2m      74 |       expect(r.methodUsed).not.toBe('pap1534-d3-dense-chainring-abstain');[22m
+[2m    > 75 |       expect(r.toothCount).toBe(c.actual);[22m
+[2m         |                            ^[22m
+[2m      76 |       expect(r.confidence).toBeGreaterThan(0);[22m
+[2m      77 |     },[22m
+[2m      78 |     180000,[22m
+[2m[22m
+[2m      [2mat toBe ([22m[2m[0m[36m__tests__/pap1862.d3_gate_disabled.test.js[39m[0m[2m:75:28)[22m[2m[22m
+
+PAP1862GATEOFF 2026-04-05_08-32-16-126Z actual=13 tc=0 conf=0.00 method=bc-consensus+pap1872-dense-chainring-abstain
+PAP1862GATEOFF ordinary-spotcheck exact 3/8 counted 3/8
+  2026-04-20_16-26-12-721Z actual=24 detected=0 FAIL 7330ms
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1782.dense_chainring_detect.test.js[22m
+  [1m● [22mConsole
+
+    [2mconsole.log[22m
+      DENSE fraction: 0.47333333333333333
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1782.dense_chainring_detect.test.js[39m[0m[2m:121:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      SMALL fraction: 0.2633333333333333
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1782.dense_chainring_detect.test.js[39m[0m[2m:131:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      MID fraction: 0.2866666666666667
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1782.dense_chainring_detect.test.js[39m[0m[2m:141:13)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1898.silhouette.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_fp_probe.test.js[22m ([0m[1m[41m36.382 s[49m[22m[0m)
+  [1m● [22mConsole
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (438,474,r329,multi-threshold) -> (450,465,r416,cov=1.00,dSup=0.31,small-lock)
+[2m[22m
+[2m      [2mat findGearCenter ([22m[2msrc/algorithm/gearCounter.js[2m:1290:17)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (438,474,r329,multi-threshold) -> (450,465,r416,cov=1.00,dSup=0.31,small-lock)
+[2m[22m
+[2m      [2mat Object.findGearCenter ([22m[2msrc/algorithm/gearCounter.js[2m:1290:17)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (440,486,r350,multi-threshold) -> (443,456,r416,cov=1.00,dSup=0.28,small-lock)
+[2m[22m
+[2m      [2mat findGearCenter ([22m[2msrc/algorithm/gearCounter.js[2m:1290:17)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (440,486,r350,multi-threshold) -> (443,456,r416,cov=1.00,dSup=0.28,small-lock)
+[2m[22m
+[2m      [2mat Object.findGearCenter ([22m[2msrc/algorithm/gearCounter.js[2m:1290:17)[22m[2m[22m
+
+PAP1862ROW {"capture":"B","event":"7d20ca5f","actual":20,"device":{"rOuter":155,"detectMs":20257,"totalMs":24284,"method":"pap1534-d3-dense-chainring-abstain"},"host":{"toothCount":19,"confidence":0.5424289077522897,"methodUsed":"bc-consensus","gearRadiusNorm":0.4011111111111111,"rOuter":168,"innerContourSuspected":false,"budgetExhausted":false,"runtimeMs":8190,"gate":{"isDense":true,"innerRadius":191,"fraction":0.4591,"threshold":0.5,"contourRadius":416,"cx":443,"cy":456}}}
+  2026-04-22_07-06-35-244Z actual=24 detected=0 FAIL 8348ms
+PAP1862SWEEP 20/362 95s
+[0m[7m[1m[31m FAIL [39m[22m[27m[0m [2m__tests__/[22m[1mpap1881.flash_control.test.js[22m ([0m[1m[41m7.622 s[49m[22m[0m)
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › toggle renders ON by default and the aim torch engages after the cycle[39m[22m
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+[2m[22m
+[2m      148 |[22m
+[2m      149 | describe('PAP-1881 flash control', () => {[22m
+[2m    > 150 |   test('toggle renders ON by default and the aim torch engages after the cycle', async () => {[22m
+[2m          |   ^[22m
+[2m      151 |     const { getByTestId } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m      152 |     await settlePastTorchCycle();[22m
+[2m      153 |     expect(getByTestId('flash-toggle')).toBeTruthy();[22m
+[2m[22m
+[2m      [2mat test ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:150:3)[22m[2m[22m
+[2m      [2mat Object.describe ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:149:1)[22m[2m[22m
+
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › toggle drives the aim torch off and back on, landing flashControlToggled events[39m[22m
+
+    Can't access .root on unmounted test renderer
+[2m[22m
+[2m      156 |[22m
+[2m      157 |   test('toggle drives the aim torch off and back on, landing flashControlToggled events', async () => {[22m
+[2m    > 158 |     const { getByTestId, getByText } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m          |                                              ^[22m
+[2m      159 |     await settlePastTorchCycle();[22m
+[2m      160 |     expect(cameraProps.current.torch).toBe('on');[22m
+[2m      161 |[22m
+[2m[22m
+[2m      [2mat Object.get [as root] ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:14707:19)[22m[2m[22m
+[2m      [2mat root ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:101:29)[22m[2m[22m
+[2m      [2mat buildRenderResult ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:70:10)[22m[2m[22m
+[2m      [2mat renderInternal ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:44:10)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:158:46)[22m[2m[22m
+[2m      [2mat asyncGeneratorStep ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:3:17)[22m[2m[22m
+[2m      [2mat _next ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:17:9)[22m[2m[22m
+[2m      [2mat [22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:22:7[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:14:12)[22m[2m[22m
+
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › capture passes flash per the user selection (on by default, off after toggle)[39m[22m
+
+    Can't access .root on unmounted test renderer
+[2m[22m
+[2m      177 |     // isProcessing and hands control to the Result screen).[22m
+[2m      178 |     countTeeth.mockResolvedValue(null);[22m
+[2m    > 179 |     const { getByTestId, getByText } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m          |                                              ^[22m
+[2m      180 |     await settlePastTorchCycle();[22m
+[2m      181 |[22m
+[2m      182 |     await act(async () => { fireEvent.press(getByTestId('capture-button')); });[22m
+[2m[22m
+[2m      [2mat Object.get [as root] ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:14707:19)[22m[2m[22m
+[2m      [2mat root ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:101:29)[22m[2m[22m
+[2m      [2mat buildRenderResult ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:70:10)[22m[2m[22m
+[2m      [2mat renderInternal ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:44:10)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:179:46)[22m[2m[22m
+[2m      [2mat asyncGeneratorStep ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:3:17)[22m[2m[22m
+[2m      [2mat _next ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:17:9)[22m[2m[22m
+[2m      [2mat [22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:22:7[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:14:12)[22m[2m[22m
+
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › toggle is hidden when the selected device has no light unit at all[39m[22m
+
+    Can't access .root on unmounted test renderer
+[2m[22m
+[2m      207 |   test('toggle is hidden when the selected device has no light unit at all', async () => {[22m
+[2m      208 |     deviceRef.current = { id: 'device-dark', hasTorch: false, hasFlash: false };[22m
+[2m    > 209 |     const { queryByTestId } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m          |                                     ^[22m
+[2m      210 |     await settlePastTorchCycle();[22m
+[2m      211 |     expect(queryByTestId('flash-toggle')).toBeNull();[22m
+[2m      212 |   });[22m
+[2m[22m
+[2m      [2mat Object.get [as root] ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:14707:19)[22m[2m[22m
+[2m      [2mat root ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:101:29)[22m[2m[22m
+[2m      [2mat buildRenderResult ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:70:10)[22m[2m[22m
+[2m      [2mat renderInternal ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:44:10)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:209:37)[22m[2m[22m
+[2m      [2mat asyncGeneratorStep ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:3:17)[22m[2m[22m
+[2m      [2mat _next ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:17:9)[22m[2m[22m
+[2m      [2mat [22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:22:7[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:14:12)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mgearDetector.test.js[22m
+
+ReferenceError: You are trying to `import` a file after the Jest environment has been torn down. From __tests__/pap1881.flash_control.test.js.
+
+      1015 |
+      1016 |   return (
+    > 1017 |     <View style={styles.container}>
+           |      ^
+      1018 |       {/* Full-screen camera preview — frameProcessor always attached; worklet
+      1019 |            self-gates via enabledSV shared value to avoid session reconfiguration */}
+      1020 |       <Camera
+
+      [2mat Object.require [as View] ([22mnode_modules/react-native/index.js[2m:140:12)[22m
+      [2mat View ([22msrc/screens/CameraScreen.jsx[2m:1017:6)[22m
+      [2mat Object.react-stack-bottom-frame ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:13976:20)[22m
+      [2mat renderWithHooks ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:2866:22)[22m
+      [2mat updateFunctionComponent ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:6006:19)[22m
+      [2mat beginWork ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:7474:18)[22m
+      [2mat runWithFiberInDEV ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m
+      [2mat performUnitOfWork ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10972:22)[22m
+      [2mat workLoopSync ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10816:41)[22m
+      [2mat renderRootSync ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10797:11)[22m
+      [2mat performWorkOnRoot ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10349:13)[22m
+      [2mat performWorkOnRootViaSchedulerTask ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:2094:7)[22m
+      [2mat flushActQueue ([22mnode_modules/react/cjs/react.development.js[2m:566:34)[22m
+      [2mat [22mnode_modules/react/cjs/react.development.js[2m:822:21[22m
+
+ReferenceError: You are trying to `import` a file after the Jest environment has been torn down. From __tests__/pap1881.flash_control.test.js.
+
+      1021 |         key={retryKey}
+      1022 |         ref={camera}
+    > 1023 |         style={StyleSheet.absoluteFill}
+           |                ^
+      1024 |         device={device}
+      1025 |         format={aimFormat}
+      1026 |         isActive={isFocused && !previewPaused}
+
+      [2mat Object.require [as StyleSheet] ([22mnode_modules/react-native/index.js[2m:302:12)[22m
+      [2mat StyleSheet ([22msrc/screens/CameraScreen.jsx[2m:1023:16)[22m
+      [2mat Object.react-stack-bottom-frame ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:13976:20)[22m
+      [2mat renderWithHooks ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:2866:22)[22m
+      [2mat updateFunctionComponent ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:6006:19)[22m
+      [2mat beginWork ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:7474:18)[22m
+      [2mat runWithFiberInDEV ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m
+      [2mat performUnitOfWork ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10972:22)[22m
+      [2mat workLoopSync ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10816:41)[22m
+      [2mat renderRootSync ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10797:11)[22m
+      [2mat performWorkOnRoot ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10349:13)[22m
+      [2mat performWorkOnRootViaSchedulerTask ([22mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:2094:7)[22m
+      [2mat flushActQueue ([22mnode_modules/react/cjs/react.development.js[2m:566:34)[22m
+      [2mat [22mnode_modules/react/cjs/react.development.js[2m:822:21[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpreprocess.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1879.camera_screen_fallback.test.js[22m
+  [1m● [22mConsole
+
+    [2m[31mconsole.error[39m[22m
+[31m      An update to CameraScreen inside a test was not wrapped in act(...).[39m
+[31m      [39m
+[31m      When testing, code that causes React state updates should be wrapped into act(...):[39m
+[31m      [39m
+[31m      act(() => {[39m
+[31m        /* fire events that update state */[39m
+[31m      });[39m
+[31m      /* assert on the output */[39m
+[31m      [39m
+[31m      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act[39m
+[2m[22m
+[2m      886 |   useEffect(() => {[22m
+[2m      887 |     checkForUpdate()[22m
+[2m    > 888 |       .then((info) => setUpdateInfo(info))[22m
+[2m          |                       ^[22m
+[2m      889 |       .catch(() => { /* silent — no error toasts */ });[22m
+[2m      890 |   }, []);[22m
+[2m      891 |[22m
+[2m[22m
+[2m      [2mat [22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11801:19[22m[2m[22m
+[2m      [2mat runWithFiberInDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m[2m[22m
+[2m      [2mat warnIfUpdatesNotWrappedWithActDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11800:9)[22m[2m[22m
+[2m      [2mat scheduleUpdateOnFiber ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10326:9)[22m[2m[22m
+[2m      [2mat dispatchSetStateInternal ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4148:13)[22m[2m[22m
+[2m      [2mat dispatchSetState ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4107:7)[22m[2m[22m
+[2m      [2mat setUpdateInfo ([22m[2msrc/screens/CameraScreen.jsx[2m:888:23)[22m[2m[22m
+
+    [2m[31mconsole.error[39m[22m
+[31m      An update to CameraScreen inside a test was not wrapped in act(...).[39m
+[31m      [39m
+[31m      When testing, code that causes React state updates should be wrapped into act(...):[39m
+[31m      [39m
+[31m      act(() => {[39m
+[31m        /* fire events that update state */[39m
+[31m      });[39m
+[31m      /* assert on the output */[39m
+[31m      [39m
+[31m      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act[39m
+[2m[22m
+[2m      886 |   useEffect(() => {[22m
+[2m      887 |     checkForUpdate()[22m
+[2m    > 888 |       .then((info) => setUpdateInfo(info))[22m
+[2m          |                       ^[22m
+[2m      889 |       .catch(() => { /* silent — no error toasts */ });[22m
+[2m      890 |   }, []);[22m
+[2m      891 |[22m
+[2m[22m
+[2m      [2mat [22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11801:19[22m[2m[22m
+[2m      [2mat runWithFiberInDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m[2m[22m
+[2m      [2mat warnIfUpdatesNotWrappedWithActDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11800:9)[22m[2m[22m
+[2m      [2mat scheduleUpdateOnFiber ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10326:9)[22m[2m[22m
+[2m      [2mat dispatchSetStateInternal ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4148:13)[22m[2m[22m
+[2m      [2mat dispatchSetState ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4107:7)[22m[2m[22m
+[2m      [2mat setUpdateInfo ([22m[2msrc/screens/CameraScreen.jsx[2m:888:23)[22m[2m[22m
+
+    [2m[31mconsole.error[39m[22m
+[31m      An update to CameraScreen inside a test was not wrapped in act(...).[39m
+[31m      [39m
+[31m      When testing, code that causes React state updates should be wrapped into act(...):[39m
+[31m      [39m
+[31m      act(() => {[39m
+[31m        /* fire events that update state */[39m
+[31m      });[39m
+[31m      /* assert on the output */[39m
+[31m      [39m
+[31m      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act[39m
+[2m[22m
+[2m      886 |   useEffect(() => {[22m
+[2m      887 |     checkForUpdate()[22m
+[2m    > 888 |       .then((info) => setUpdateInfo(info))[22m
+[2m          |                       ^[22m
+[2m      889 |       .catch(() => { /* silent — no error toasts */ });[22m
+[2m      890 |   }, []);[22m
+[2m      891 |[22m
+[2m[22m
+[2m      [2mat [22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11801:19[22m[2m[22m
+[2m      [2mat runWithFiberInDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:1574:13)[22m[2m[22m
+[2m      [2mat warnIfUpdatesNotWrappedWithActDEV ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:11800:9)[22m[2m[22m
+[2m      [2mat scheduleUpdateOnFiber ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:10326:9)[22m[2m[22m
+[2m      [2mat dispatchSetStateInternal ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4148:13)[22m[2m[22m
+[2m      [2mat dispatchSetState ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:4107:7)[22m[2m[22m
+[2m      [2mat setUpdateInfo ([22m[2msrc/screens/CameraScreen.jsx[2m:888:23)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mgearCounter.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1879.motion_diag.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:90:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:90:8)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [FrameDiag] width=8 height=8 bytesPerRow=8 bufLen=4 computedBpp=0.06 pixelFormat=yuv
+[2m[22m
+[2m      [2mat log ([22m[2msrc/hooks/useMotionDetection.js[2m:159:13)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:145:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:145:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:164:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:164:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:176:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:176:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:182:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:182:8)[22m[2m[22m
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:194:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag.test.js[39m[0m[2m:194:8)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1879.motion_diag_noplugin.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [MotionDetection] No frames processed — IMU-only mode[39m
+[2m[22m
+[2m      279 |     const check = setTimeout(() => {[22m
+[2m      280 |       if (!frameProcessorActiveRef.current) {[22m
+[2m    > 281 |         console.warn('[MotionDetection] No frames processed — IMU-only mode');[22m
+[2m          |                 ^[22m
+[2m      282 |         usingFallbackRef.current = true;[22m
+[2m      283 |         setUsingFallback(true);[22m
+[2m      284 |         onFrameProcessorTimeoutRef.current?.({[22m
+[2m[22m
+[2m      [2mat warn ([22m[2msrc/hooks/useMotionDetection.js[2m:281:17)[22m[2m[22m
+[2m      [2mat callTimer ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:744:24)[22m[2m[22m
+[2m      [2mat doTickInner ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1312:29)[22m[2m[22m
+[2m      [2mat doTick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1393:20)[22m[2m[22m
+[2m      [2mat Object.tick ([22m[2mnode_modules/@sinonjs/fake-timers/src/fake-timers-src.js[2m:1401:20)[22m[2m[22m
+[2m      [2mat FakeTimers.advanceTimersByTime ([22m[2mnode_modules/@jest/fake-timers/build/modernFakeTimers.js[2m:94:19)[22m[2m[22m
+[2m      [2mat advanceTimersByTime ([22m[2m[0m[36m__tests__/pap1879.motion_diag_noplugin.test.js[39m[0m[2m:63:22)[22m[2m[22m
+[2m      [2mat callback ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:31:24)[22m[2m[22m
+[2m      [2mat Object.<anonymous>.process.env.NODE_ENV.exports.act ([22m[2mnode_modules/react/cjs/react.development.js[2m:789:22)[22m[2m[22m
+[2m      [2mat actImplementation ([22m[2mnode_modules/@testing-library/react-native/src/act.ts[2m:30:25)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1879.motion_diag_noplugin.test.js[39m[0m[2m:63:8)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1872.gate.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mnativeFft.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [fftMagnitude] backend "native-cv-dft" failed, falling back to JS for the rest of this session: jsi blew up[39m
+[2m[22m
+[2m      40 | }[22m
+[2m      41 |[22m
+[2m    > 42 | export const JS_BACKEND = { name: 'js', magnitude: fftMagnitudeJs };[22m
+[2m         |             ^[22m
+[2m      43 |[22m
+[2m      44 | let activeBackend = JS_BACKEND;[22m
+[2m      45 |[22m
+[2m[22m
+[2m      [2mat Object.fftMagnitude ([22m[2msrc/algorithm/fft.js[2m:42:13)[22m[2m[22m
+[2m      [2mat Object.fftMagnitude ([22m[2m[0m[36m__tests__/nativeFft.test.js[39m[0m[2m:211:21)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mupdateChecker.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1882.aim_format.test.js[22m
+  2026-04-08_18-38-08-065Z actual=28 detected=28 OK 6652ms
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1742.chainringAbstain.test.js[22m
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mnativeKernels.test.js[22m
+  [1m● [22mConsole
+
+    [2m[33mconsole.warn[39m[22m
+[33m      [preprocess] backend "native-cpp" failed, falling back to JS for the rest of this session: jsi blew up[39m
+[2m[22m
+[2m      44 |  * restore it (harnesses do this between corpus runs).[22m
+[2m      45 |  */[22m
+[2m    > 46 | export function setPreprocessBackend(backend) {[22m
+[2m         |             ^[22m
+[2m      47 |   const prev = activeBackend;[22m
+[2m      48 |   activeBackend = backend || JS_BACKEND;[22m
+[2m      49 |   return prev;[22m
+[2m[22m
+[2m      [2mat preprocess ([22m[2msrc/algorithm/preprocess.js[2m:46:13)[22m[2m[22m
+[2m      [2mat Object.preprocess ([22m[2m[0m[36m__tests__/nativeKernels.test.js[39m[0m[2m:143:17)[22m[2m[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1872.result_screen.test.js[22m ([0m[1m[41m16.123 s[49m[22m[0m)
+  2026-04-19_15-38-37-106Z actual=28 detected=29 OK 6832ms
+  2026-04-20_16-35-00-142Z actual=28 detected=0 FAIL 6270ms
+PAP1862SWEEP 25/362 116s
+(node:3590590) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1685.resmeasure.test.js[22m ([0m[1m[41m144.699 s[49m[22m[0m)
+  [1m● [22mConsole
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G5-radial-anchor-conf): tc=18 conf=0.000 peak=18 fft90=36 op=18 bc=18(pk=15) contourR=127 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4581:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G5-radial-anchor-conf): tc=19 conf=0.000 peak=19 fft90=19 op=11 bc=11(pk=11) contourR=98 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4581:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G1-tc40): tc=44 conf=0.000 peak=10 fft90=44 op=15 bc=12(pk=1) contourR=71 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4581:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G6-inner-contour-commit): tc=27 conf=0.000 peak=11 fft90=27 op=27 bc=11(pk=4) contourR=114 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4581:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (313,387,r201,multi-threshold) -> (345,534,r255,cov=0.98,dSup=0.29,small-lock)
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:1635:17)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [pap632-fft-floor-abstain] peak=10 fft90=12 final=12 bc=11(peaks=4) op=12(rel=0.068) gearR=289 contourR=255 minDim=675
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:3287:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] pap1898-silhouette rescue: (410,345,r95,multi-threshold) -> (334,383,r127,cov=1.00,dSup=0.38,small-lock)
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:1635:17)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [pap632-fft-floor-abstain] peak=10 fft90=12 final=12 bc=10(peaks=3) op=11(rel=0.048) gearR=280 contourR=278 minDim=675
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:3287:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCenter] PAP-684 edge-density override: r=77→263 normR=0.114→0.390 purity=0.075 from multi-threshold
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:1578:15)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [large-op-override] fft90-fallback=>20 peak=10 fft90=10 bc=10(peaks=4) op=20(rel=0.050) contourR=263 minDim=675
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:3174:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      [GearCounter] pap1872-dense-chainring-abstain (G4-fft-collapse-op-commit): tc=20 conf=0.383 peak=10 fft90=10 op=20 bc=10(pk=4) contourR=263 — abstaining.
+[2m[22m
+[2m      [2mat log ([22m[2msrc/algorithm/gearCounter.js[2m:4581:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      
+      === RESDIM=900 summary ===
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:81:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      accuracy(±1): 10/17 = 58.8%
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:82:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      median runtime: 6479ms
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:83:13)[22m[2m[22m
+
+    [2mconsole.log[22m
+      wrong: [
+        {
+          "stamp": "2026-04-22_07-13-50-403Z",
+          "actual": 18,
+          "detected": 0,
+          "runtime": 6986
+        },
+        {
+          "stamp": "2026-04-21_06-09-20-021Z",
+          "actual": 21,
+          "detected": 0,
+          "runtime": 6401
+        },
+        {
+          "stamp": "2026-04-23_07-21-34-334Z",
+          "actual": 21,
+          "detected": 0,
+          "runtime": 6479
+        },
+        {
+          "stamp": "2026-04-20_16-26-12-721Z",
+          "actual": 24,
+          "detected": 0,
+          "runtime": 7330
+        },
+        {
+          "stamp": "2026-04-22_07-06-35-244Z",
+          "actual": 24,
+          "detected": 0,
+          "runtime": 8348
+        },
+        {
+          "stamp": "2026-04-20_16-35-00-142Z",
+          "actual": 28,
+          "detected": 0,
+          "runtime": 6270
+        },
+        {
+          "stamp": "2026-04-22_19-24-58-121Z",
+          "actual": 28,
+          "detected": 0,
+          "runtime": 6935
+        }
+      ]
+[2m[22m
+[2m      [2mat Object.log ([22m[2m[0m[36m__tests__/pap1685.resmeasure.test.js[39m[0m[2m:84:13)[22m[2m[22m
+
+  2026-04-22_19-24-58-121Z actual=28 detected=0 FAIL 6935ms
+PAP1862SWEEP 30/362 140s
+PAP1862SWEEP 35/362 163s
+PAP1862SWEEP 40/362 184s
+PAP1862SWEEP 45/362 207s
+PAP1862SWEEP 50/362 230s
+PAP1862SWEEP 55/362 256s
+PAP1862SWEEP 60/362 285s
+PAP1862SWEEP 65/362 313s
+PAP1862SWEEP 70/362 337s
+PAP1862SWEEP 75/362 366s
+PAP1862SWEEP 80/362 391s
+PAP1862SWEEP 85/362 414s
+PAP1862SWEEP 90/362 440s
+PAP1862SWEEP 95/362 464s
+PAP1862SWEEP 100/362 485s
+PAP1862SWEEP 105/362 510s
+PAP1862SWEEP 110/362 533s
+PAP1862SWEEP 115/362 557s
+PAP1862SWEEP 120/362 584s
+PAP1862SWEEP 125/362 611s
+PAP1862SWEEP 130/362 639s
+PAP1862SWEEP 135/362 666s
+PAP1862SWEEP 140/362 693s
+PAP1862SWEEP 145/362 716s
+PAP1862SWEEP 150/362 741s
+PAP1862SWEEP 155/362 765s
+PAP1862SWEEP 160/362 786s
+PAP1862SWEEP 165/362 809s
+PAP1862SWEEP 170/362 836s
+PAP1862SWEEP 175/362 859s
+PAP1862SWEEP 180/362 886s
+PAP1862SWEEP 185/362 911s
+PAP1862SWEEP 190/362 934s
+PAP1862SWEEP 195/362 956s
+PAP1862SWEEP 200/362 977s
+PAP1862SWEEP 205/362 1006s
+PAP1862SWEEP 210/362 1034s
+PAP1862SWEEP 215/362 1059s
+PAP1862SWEEP 220/362 1080s
+PAP1862SWEEP 225/362 1102s
+PAP1862SWEEP 230/362 1125s
+PAP1862SWEEP 235/362 1151s
+PAP1862SWEEP 240/362 1181s
+PAP1862SWEEP 245/362 1204s
+PAP1862SWEEP 250/362 1231s
+PAP1862SWEEP 255/362 1256s
+PAP1862SWEEP 260/362 1282s
+PAP1862SWEEP 265/362 1309s
+PAP1862SWEEP 270/362 1337s
+PAP1862SWEEP 275/362 1364s
+PAP1862SWEEP 280/362 1389s
+PAP1862SWEEP 285/362 1415s
+PAP1862SWEEP 290/362 1443s
+PAP1862SWEEP 295/362 1467s
+PAP1862SWEEP 300/362 1494s
+PAP1862SWEEP 305/362 1519s
+PAP1862SWEEP 310/362 1544s
+PAP1862SWEEP 315/362 1568s
+PAP1862SWEEP 320/362 1593s
+PAP1862SWEEP 325/362 1618s
+PAP1862SWEEP 330/362 1642s
+PAP1862SWEEP 335/362 1668s
+PAP1862SWEEP 340/362 1694s
+PAP1862SWEEP 345/362 1720s
+PAP1862SWEEP 350/362 1746s
+PAP1862SWEEP 355/362 1775s
+PAP1862SWEEP 360/362 1799s
+(node:3590583) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_threshold_sweep.test.js[22m ([0m[1m[41m1830.577 s[49m[22m[0m)
+PAP1862SWEEP 362/362 1810s
+PAP1862SWEEP done rows=364
+
+[1mSummary of all failing tests[22m
+[0m[7m[1m[31m FAIL [39m[22m[27m[0m [2m__tests__/[22m[1mpap1862.d3_gate_disabled.test.js[22m ([0m[1m[41m99.766 s[49m[22m[0m)
+[1m[31m  [1m● [22m[1mPAP-1862: D3 gate disabled — ordinary gears are counted again › anchor B (device-labeled 20T): pipeline returns 20, not the D3 abstain[39m[22m
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m20[39m
+    Received: [31m19[39m
+[2m[22m
+[2m      73 |       runner.out(`PAP1862GATEOFF anchor${c.tag} tc=${r.toothCount} conf=${r.confidence} method=${r.methodUsed}`);[22m
+[2m      74 |       expect(r.methodUsed).not.toBe('pap1534-d3-dense-chainring-abstain');[22m
+[2m    > 75 |       expect(r.toothCount).toBe(c.actual);[22m
+[2m         |                            ^[22m
+[2m      76 |       expect(r.confidence).toBeGreaterThan(0);[22m
+[2m      77 |     },[22m
+[2m      78 |     180000,[22m
+[2m[22m
+[2m      [2mat toBe ([22m[2m[0m[36m__tests__/pap1862.d3_gate_disabled.test.js[39m[0m[2m:75:28)[22m[2m[22m
+
+[0m[7m[1m[31m FAIL [39m[22m[27m[0m [2m__tests__/[22m[1mpap1881.flash_control.test.js[22m ([0m[1m[41m7.622 s[49m[22m[0m)
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › toggle renders ON by default and the aim torch engages after the cycle[39m[22m
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+[2m[22m
+[2m      148 |[22m
+[2m      149 | describe('PAP-1881 flash control', () => {[22m
+[2m    > 150 |   test('toggle renders ON by default and the aim torch engages after the cycle', async () => {[22m
+[2m          |   ^[22m
+[2m      151 |     const { getByTestId } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m      152 |     await settlePastTorchCycle();[22m
+[2m      153 |     expect(getByTestId('flash-toggle')).toBeTruthy();[22m
+[2m[22m
+[2m      [2mat test ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:150:3)[22m[2m[22m
+[2m      [2mat Object.describe ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:149:1)[22m[2m[22m
+
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › toggle drives the aim torch off and back on, landing flashControlToggled events[39m[22m
+
+    Can't access .root on unmounted test renderer
+[2m[22m
+[2m      156 |[22m
+[2m      157 |   test('toggle drives the aim torch off and back on, landing flashControlToggled events', async () => {[22m
+[2m    > 158 |     const { getByTestId, getByText } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m          |                                              ^[22m
+[2m      159 |     await settlePastTorchCycle();[22m
+[2m      160 |     expect(cameraProps.current.torch).toBe('on');[22m
+[2m      161 |[22m
+[2m[22m
+[2m      [2mat Object.get [as root] ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:14707:19)[22m[2m[22m
+[2m      [2mat root ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:101:29)[22m[2m[22m
+[2m      [2mat buildRenderResult ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:70:10)[22m[2m[22m
+[2m      [2mat renderInternal ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:44:10)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:158:46)[22m[2m[22m
+[2m      [2mat asyncGeneratorStep ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:3:17)[22m[2m[22m
+[2m      [2mat _next ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:17:9)[22m[2m[22m
+[2m      [2mat [22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:22:7[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:14:12)[22m[2m[22m
+
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › capture passes flash per the user selection (on by default, off after toggle)[39m[22m
+
+    Can't access .root on unmounted test renderer
+[2m[22m
+[2m      177 |     // isProcessing and hands control to the Result screen).[22m
+[2m      178 |     countTeeth.mockResolvedValue(null);[22m
+[2m    > 179 |     const { getByTestId, getByText } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m          |                                              ^[22m
+[2m      180 |     await settlePastTorchCycle();[22m
+[2m      181 |[22m
+[2m      182 |     await act(async () => { fireEvent.press(getByTestId('capture-button')); });[22m
+[2m[22m
+[2m      [2mat Object.get [as root] ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:14707:19)[22m[2m[22m
+[2m      [2mat root ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:101:29)[22m[2m[22m
+[2m      [2mat buildRenderResult ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:70:10)[22m[2m[22m
+[2m      [2mat renderInternal ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:44:10)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:179:46)[22m[2m[22m
+[2m      [2mat asyncGeneratorStep ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:3:17)[22m[2m[22m
+[2m      [2mat _next ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:17:9)[22m[2m[22m
+[2m      [2mat [22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:22:7[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:14:12)[22m[2m[22m
+
+[1m[31m  [1m● [22m[1mPAP-1881 flash control › toggle is hidden when the selected device has no light unit at all[39m[22m
+
+    Can't access .root on unmounted test renderer
+[2m[22m
+[2m      207 |   test('toggle is hidden when the selected device has no light unit at all', async () => {[22m
+[2m      208 |     deviceRef.current = { id: 'device-dark', hasTorch: false, hasFlash: false };[22m
+[2m    > 209 |     const { queryByTestId } = render(<CameraScreen navigation={nav} route={{ params: {} }} />);[22m
+[2m          |                                     ^[22m
+[2m      210 |     await settlePastTorchCycle();[22m
+[2m      211 |     expect(queryByTestId('flash-toggle')).toBeNull();[22m
+[2m      212 |   });[22m
+[2m[22m
+[2m      [2mat Object.get [as root] ([22m[2mnode_modules/react-test-renderer/cjs/react-test-renderer.development.js[2m:14707:19)[22m[2m[22m
+[2m      [2mat root ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:101:29)[22m[2m[22m
+[2m      [2mat buildRenderResult ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:70:10)[22m[2m[22m
+[2m      [2mat renderInternal ([22m[2mnode_modules/@testing-library/react-native/src/render.tsx[2m:44:10)[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2m[0m[36m__tests__/pap1881.flash_control.test.js[39m[0m[2m:209:37)[22m[2m[22m
+[2m      [2mat asyncGeneratorStep ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:3:17)[22m[2m[22m
+[2m      [2mat _next ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:17:9)[22m[2m[22m
+[2m      [2mat [22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:22:7[22m[2m[22m
+[2m      [2mat Object.<anonymous> ([22m[2mnode_modules/@babel/runtime/helpers/asyncToGenerator.js[2m:14:12)[22m[2m[22m
+
+
+[1mTest Suites: [22m[1m[31m2 failed[39m[22m, [1m[32m19 passed[39m[22m, 21 total
+[1mTests:       [22m[1m[31m5 failed[39m[22m, [1m[32m125 passed[39m[22m, 130 total
+[1mSnapshots:   [22m0 total
+[1mTime:[22m        1830.946 s, estimated 2108 s
+[2mRan all test suites[22m[2m.[22m
