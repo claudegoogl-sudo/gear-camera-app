@@ -196,3 +196,24 @@ pre-registration, QA-adopted as session law):
 
 Any single lit-ordinary strike flips the b155 session from "clean run" to
 "repro-first"; the controlled A/B (Phase 6) proceeds regardless.
+
+## REPRO-FIRST FLIP (2026-09-12, QA adjudication 16c6ef5e; PAP-1897 photo audit)
+
+The pre-registered rule fired: the 17:33-17:39Z b153 session's photos (Sentry attachments,
+audited in debug-reports/pap1897_fp5_b153_session_2026-09-11/) contain ONE lit-ordinary
+abstain strike — actual 24T abstained by G4 (my tc=20@0.728 event; contour locked ~correct
+radius, so not a void-class dark frame) — plus 3/5 SILENT WRONG COUNTS through un-gated
+result paths (52T->13T fft-agreement w/ chainringRegime=false, 50T->24T fft90-fallback,
+36T->11T bc-consensus w/ budgetExhausted). My earlier "every capture abstained" digest was
+a telemetry-shape misread; corrected (operator informed, 237538cf).
+
+Session retarget: **b156 per PAP-1899** (carries the pre-gate export lane 15d433d so this
+time we keep what the gate saw); b155 remains fallback. Repro-first additions to the shot
+list, before/alongside Phases 1-6:
+- R1: each dense gear shot on EVERY result path (toggle off/on per arm, retry ladder) —
+  gate path coverage is 2/5 live paths today (PAP-1900).
+- R2: a true 16-21T mid-class gear — decides the open G4 tc=20 branch (mid-class ledger 1/3).
+- R3: a deliberate 24-28T-class shot — G4-ordinary repro (corpus-known class, budget strike).
+- R4: aim-frame matching capture FOV per PAP-1882 guidance.
+Phase 6 A/B proceeds regardless, as pre-registered. Expected per-capture report MUST include
+the returned count/conf (mandatory extraction; abstain-line absence = a count was surfaced).
