@@ -2395,26 +2395,44 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
  * and stay answering; abstaining them would eat matching correct ordinary
  * rows (twins documented in the QA subtask).
  *
- * PAP-1900 rules (path-independent collapse guards, QA cross-check PAP-1902
- * PENDING — do not treat thresholds as final until QA signs off). The b153
+ * PAP-1900 rules (path-independent collapse guards; APPROVED by QA
+ * cross-check PAP-1902, comment c0d6c446 2026-09-12: Option A choke point,
+ * G5 carve-out binding, G6 ics-gated mandatory). The b153
  * operator session (pap1897_fp5_b153_session_2026-09-11/audit-verdicts.json)
  * showed 3 dense/large wrong counts that slip between G1–G4 because the
  * contour localized wrong (PAP-1898) and the committed count inherits the
- * radius error (52·169/794≈13, 50·357/767≈24):
+ * radius error (52·169/794≈11, 50·357/767≈23 — approximate through the FFT
+ * scan; the committed 13/24 land in the same collapse class):
  *
- *   G5  radial-anchor disagreement at low confidence
- *       |peakR - rOuter| / rOuter >= 0.18 && conf <= 0.35
+ *   G5  radial-anchor disagreement at low confidence (bypass-carve-out-aware)
+ *       rr >= 0.18 && conf <= 0.35
+ *         && !(fft90OuterRescue || fiveWayChainringAgree || chainringTcConfirmed)
  *       The FFT peak radius and the outermost radial-gradient peak disagree
  *       beyond the PAP-815 threshold while confidence is low — the radial
- *       anchor is unstable, so the commit is an aliasing artifact.
+ *       anchor is unstable, so the commit is an aliasing artifact. The
+ *       carve-out (QA binding refinement, PAP-1902 §5) keeps G5 off the
+ *       deliberate rescue/confirmed commit families: fft90OuterRescue rows
+ *       sit at rr>=0.18 BY CONSTRUCTION and pap1059-confirmed rows share
+ *       the radialChainringFires seed — either would otherwise be vetoed.
+ *       Measured free: 0/12 corpus G5 fires are bypass-confirmed (QA
+ *       bypasscheck.mjs); all 3 session catches keep.
  *       364-row corpus: +12 abstains, 0 previously-correct rows flipped
  *       (9 ordinary wrong, 3 dense wrong); zero correct commits exist in
  *       the whole neighborhood rr>=0.15 && conf<=0.40. The 20T capture
  *       anchors are safe (conf=1; captureB rr=0.835 — the conf cap is
- *       load-bearing). Catches the 50T→24T session event (rr=0.212,
- *       conf=0.328). NOTE: ordinary newly-abstained rises 10→19/284
- *       (6.69% vs the <5% calibration target) with 0 correctness
- *       regressions — AC2 ruling requested in QA subtask PAP-1902.
+ *       load-bearing; both arms mandatory AND, never ship rr-only).
+ *       Catches the 50T→24T session event (rr=0.212, conf=0.328).
+ *       NOTE: ordinary newly-abstained rises 10→19/284 (6.69% vs the <5%
+ *       calibration target) with 0 correctness regressions. QA AC2 ruling
+ *       (PAP-1902 §3): 0-regressions is the binding invariant; the <5%
+ *       target is breached for cause (all 12 abstained rows were wrong
+ *       counts; tighter thresholds miss the live 50T) — operator-card item
+ *       filed on PAP-1671; card acknowledgment gates the RELEASE, not
+ *       this commit.
+ *       Calibration provenance: thresholds calibrated on the 364-photo
+ *       corpus at PRE-PAP-1898 failure geometry (main 1eabd14 family).
+ *       Re-run the gate once PAP-1898 (center/radius estimation) lands —
+ *       the (rr, conf) distribution shifts with the new geometry.
  *
  *   G6  inner-contour numeric commit
  *       innerContourSuspected && conf <= 0 && tc > 0
@@ -2426,11 +2444,15 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
  *       measured corpus outcome; it aligns the device result object with
  *       that convention. fiveWayChainringAgree / fft90OuterRescue /
  *       pap1059-confirmed rows have ics=false by formula → untouched.
- *       Catches the 52T→13T and 36T→11T session events.
+ *       Catches the 52T→13T and 36T→11T session events. QA ruling
+ *       (PAP-1902 §4): the ics-gated form is MANDATORY — a plain `conf<=0`
+ *       arm is corpus-identical (all 95 conf-0 commits are ics=true) but
+ *       would silently re-abstain future pap1059-confirmed conf-0 commits
+ *       (the PAP-1052 win class). Do not ship the plain form.
  *
  * Returns { fires: bool, rule: string|null }.
  */
-function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false) {
+function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false, rescueActive = false) {
   if (tc <= 0) return { fires: false, rule: null }; // already abstained upstream
   if (tc >= 40) return { fires: true, rule: 'G1-tc40' };
   if (r.bcTc >= 40 || r.bcPeaks >= 40) return { fires: true, rule: 'G2-bc40' };
@@ -2441,14 +2463,18 @@ function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false) 
       && tc >= 20 && r.opTc === tc && conf >= 0.35) {
     return { fires: true, rule: 'G4-fft-collapse-op-commit' };
   }
-  // PAP-1900 G5: radial-anchor disagreement at low confidence (PENDING QA).
+  // PAP-1900 G5: radial-anchor disagreement at low confidence. rescueActive
+  // (= fft90OuterRescue || fiveWayChainringAgree || chainringTcConfirmed)
+  // exempts the deliberate rescue/confirmed commit families (QA binding
+  // carve-out, PAP-1902 §5; measured free on the 364-row corpus).
   const radialRel = (r.peakR > 0 && r.rOuter > 0)
     ? Math.abs(r.peakR - r.rOuter) / r.rOuter
     : null;
-  if (radialRel !== null && radialRel >= 0.18 && conf <= 0.35) {
+  if (!rescueActive && radialRel !== null && radialRel >= 0.18 && conf <= 0.35) {
     return { fires: true, rule: 'G5-radial-anchor-conf' };
   }
-  // PAP-1900 G6: suspected-inner-contour numeric commit (PENDING QA).
+  // PAP-1900 G6: suspected-inner-contour numeric commit (ics-gated form
+  // mandatory per QA, PAP-1902 §4).
   if (innerContourSuspected && conf <= 0) {
     return { fires: true, rule: 'G6-inner-contour-commit' };
   }
@@ -3962,8 +3988,13 @@ export async function countTeeth(photoUri, signal, opts) {
   // (PAP-1671 Q2 = go-abstain): dense 40-60T says "cannot count" instead of
   // answering confidently wrong. See checkDenseChainringAbstain() for the
   // calibrated rule set and corpus-measured AC numbers. innerContourSuspected
-  // feeds PAP-1900 G6 (PENDING QA).
-  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected);
+  // feeds PAP-1900 G6; pap1900BypassConfirmed is the G5 carve-out. MIRROR
+  // CONTRACT (QA condition 1, PAP-1902 §6): both choke points must thread
+  // the same 5-tuple — guarded by the wiring-mirror test in
+  // pap1872.gate.test.js.
+  const pap1900BypassConfirmed = fft90OuterRescue || fiveWayChainringAgree
+    || chainringTcConfirmed;
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected, pap1900BypassConfirmed);
   // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
   // candidate the gate evaluated, so abstain exports can row-join
   // rule + deciding inputs + candidate. Telemetry-only; no decision change.
@@ -3996,7 +4027,11 @@ export async function countTeeth(photoUri, signal, opts) {
     // PAP-1872 / QA PAP-1874 flag 2: abstain observability — which gate
     // rule fired and the geometry it decided on (gateRule + contourRadius
     // + bcPeaks), so the FP5 device session can monitor the G3 margin
-    // on-device. Telemetry-only; no decision change.
+    // on-device. Telemetry-only; no decision change. PAP-1900 precedence
+    // (QA, PAP-1902 §6.5): ics-forced rows have conf zeroed BEFORE this
+    // gate runs, so an ics row that fires reports G5/G6 here even though
+    // the inner-contour suspicion is the proximate cause — attribute via
+    // innerContourSuspected + abstainPreGate*, not via the rule name.
     abstainGateRule: denseAbstain.rule,
     // PAP-1800 export lane: what the gate evaluated pre-abstain (QA spec
     // d3e31587 — abstain exports must not destroy the candidate).
@@ -4308,8 +4343,13 @@ export function countTeethFromRgba(rgba, width, height) {
   // checkDenseChainringAbstain() for the rule set and measured AC numbers.
   // Runs LAST so it never preempts an ordinary-gear rescue above; only
   // fires on committed answers (finalToothCount > 0). innerContourSuspected
-  // feeds PAP-1900 G6 (PENDING QA).
-  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected);
+  // feeds PAP-1900 G6; pap1900BypassConfirmed is the G5 carve-out. MIRROR
+  // CONTRACT (QA condition 1, PAP-1902 §6): both choke points must thread
+  // the same 5-tuple — guarded by the wiring-mirror test in
+  // pap1872.gate.test.js.
+  const pap1900BypassConfirmed = fft90OuterRescue || fiveWayChainringAgree
+    || chainringTcConfirmed;
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected, pap1900BypassConfirmed);
   // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
   // candidate the gate evaluated — mirror of the countTeeth() block.
   // Telemetry-only; no decision change.

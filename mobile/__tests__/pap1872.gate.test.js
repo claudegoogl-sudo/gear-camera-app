@@ -158,3 +158,112 @@ describe('PAP-1900 G6 inner-contour numeric commit', () => {
     expect(checkDenseChainringAbstain(20, 1.0, { ...baseR, peakR: 345, rOuter: 407 }, true).fires).toBe(false);
   });
 });
+
+
+describe('PAP-1900 G5 bypass carve-out (QA binding, PAP-1902 §5 c0d6c446)', () => {
+  const rr25 = { ...baseR, peakR: 350, rOuter: 280 }; // rr = 70/280 = 0.25
+
+  test('fiveWay-shape commit at low conf is spared from G5 when rescueActive', () => {
+    const r = { ...rr25, peakTc: 35, fft90tc: 35, opTc: 35, bcTc: 35, bcPeaks: 35 };
+    // control: without the carve-out flag, G5 fires (rr=0.25, conf=0.20)
+    expect(checkDenseChainringAbstain(35, 0.20, r, false, false).rule).toBe('G5-radial-anchor-conf');
+    // carved out: a deliberate 5-way ±1 consensus commit survives
+    expect(checkDenseChainringAbstain(35, 0.20, r, false, true).fires).toBe(false);
+  });
+
+  test('fft90OuterRescue-shape commit at low conf is spared when rescueActive', () => {
+    // rescue rows: peak collapses, fft90 at chainring scale, op its half-alias;
+    // the rescue conf floor is max(raw, 0.10), so raw conf in [0.10, 0.35]
+    // was structurally G5-vetoable before the carve-out (QA §5).
+    const r = { ...rr25, peakTc: 10, fft90tc: 32, opTc: 16, bcTc: 10, bcPeaks: 4 };
+    expect(checkDenseChainringAbstain(32, 0.12, r, false, false).rule).toBe('G5-radial-anchor-conf');
+    expect(checkDenseChainringAbstain(32, 0.12, r, false, true).fires).toBe(false);
+  });
+
+  test('pap1059 chainringTcConfirmed-shape commit at low conf is spared when rescueActive', () => {
+    const r = { ...rr25, peakTc: 39, fft90tc: 39, opTc: 39, bcTc: 39, bcPeaks: 39 };
+    expect(checkDenseChainringAbstain(39, 0.30, r, false, false).rule).toBe('G5-radial-anchor-conf');
+    expect(checkDenseChainringAbstain(39, 0.30, r, false, true).fires).toBe(false);
+  });
+
+  test('carve-out is G5-only: dense product policy (G1) still abstains a 42T rescue commit', () => {
+    // b112 05-35-59 analog (42T fft90OuterRescue win, conf=1.0): the rescue
+    // override still makes its decision upstream; the pap1872 go-abstain
+    // product decision (operator card v4 cefe13ee) abstains 40+ — unchanged
+    // by PAP-1900. Attribution must be G1, never G5.
+    const r = { ...rr25, peakTc: 10, fft90tc: 42, opTc: 20, bcTc: 10, bcPeaks: 4 };
+    expect(checkDenseChainringAbstain(42, 1.0, r, false, true)).toEqual({ fires: true, rule: 'G1-tc40' });
+  });
+
+  test('default rescueActive=false preserves the pre-carve-out G5 behavior', () => {
+    const r = { ...rr25, peakTc: 24, fft90tc: 24, opTc: 24, bcTc: 24, bcPeaks: 24 };
+    expect(checkDenseChainringAbstain(24, 0.3, r, false).fires).toBe(true);
+  });
+});
+
+describe('PAP-1900 QA negative fixtures: real bypass wins still commit (PAP-1902 §6.2)', () => {
+  test('b114 10-19-19 fiveWay win (tc=35, raw conf=0.79) commits', () => {
+    const r = { ...baseR, peakTc: 35, fft90tc: 36, opTc: 35, bcTc: 35, bcPeaks: 35,
+      contourRadius: 200, peakR: 350, rOuter: 280 };
+    expect(checkDenseChainringAbstain(35, 0.79, r, false, true).fires).toBe(false);
+    // conf cap alone spares it too (0.79 > 0.35)
+    expect(checkDenseChainringAbstain(35, 0.79, r, false, false).fires).toBe(false);
+  });
+
+  test('b114 10-23-07 fiveWay win (tc=36, raw conf=1.00) commits', () => {
+    const r = { ...baseR, peakTc: 36, fft90tc: 36, opTc: 36, bcTc: 36, bcPeaks: 36,
+      contourRadius: 200, peakR: 350, rOuter: 280 };
+    expect(checkDenseChainringAbstain(36, 1.0, r, false, true).fires).toBe(false);
+  });
+
+  test('b112 05-35-59 fft90OuterRescue win: attribution is G1 (dense policy), never G5', () => {
+    // The rescue's 42T commit is superseded by the pap1872 go-abstain product
+    // decision (G1, shipped b153) — QA's fixture guards that the rescue is
+    // not VETOED BY G5: attribution must be G1-tc40. A sub-40 rescue commit
+    // (rescue conf floor 0.10) is fully spared.
+    const r42 = { ...baseR, peakTc: 10, fft90tc: 42, opTc: 20, bcTc: 10, bcPeaks: 4,
+      contourRadius: 200, peakR: 350, rOuter: 280 };
+    expect(checkDenseChainringAbstain(42, 1.0, r42, false, true)).toEqual({ fires: true, rule: 'G1-tc40' });
+    const r36 = { ...r42, fft90tc: 36, opTc: 18 };
+    expect(checkDenseChainringAbstain(36, 0.12, r36, false, true).fires).toBe(false);
+  });
+});
+
+describe('PAP-1900 outcome contract + choke-point wiring mirror (QA conditions 1-2, PAP-1902 §6)', () => {
+  test('rule->outcome contract: every firing rule means the device ships abstained, tc=0', () => {
+    // Pipeline contract: denseAbstain.fires => finalToothCount=0, conf=0,
+    // abstained=true at BOTH choke points. Real-photo outcome evidence lives
+    // in the branch corpus re-run session rows
+    // (debug-reports/pap1900_session_rows_2026-09-12.json, abstain-expected).
+    const cases = [
+      ['G1-tc40', 45, 1.0, baseR, false, false],
+      ['G2-bc40', 12, 0.4, { ...baseR, bcTc: 41, bcPeaks: 41 }, false, false],
+      ['G3-spider-lock', 10, 0.5, { ...baseR, bcTc: 10, bcPeaks: 4, contourRadius: 299 }, false, false],
+      ['G4-fft-collapse-op-commit', 20, 0.66, { ...baseR, bcTc: 10, bcPeaks: 12, peakTc: 10, fft90tc: 10, opTc: 20 }, false, false],
+      ['G5-radial-anchor-conf', 24, 0.32, { ...baseR, peakR: 350, rOuter: 280 }, false, false],
+      ['G6-inner-contour-commit', 13, 0, { ...baseR, contourRadius: 160 }, true, false],
+    ];
+    for (const [rule, tc, conf, r, ics, rescue] of cases) {
+      const g = checkDenseChainringAbstain(tc, conf, r, ics, rescue);
+      expect(g.fires).toBe(true);
+      expect(g.rule).toBe(rule);
+    }
+  });
+
+  test('wiring mirror: both choke points pass the identical 5-tuple (drift guard)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(path.join(__dirname, '../src/algorithm/gearCounter.js'), 'utf8');
+    const calls = [...src.matchAll(/const denseAbstain = checkDenseChainringAbstain\(([^)]*)\);/g)]
+      .map((m) => m[1].replace(/\s+/g, ' ').trim());
+    // PAP-1900's original sin was call-site drift: two entry points, one wired.
+    expect(calls.length).toBe(2);
+    expect(calls[0]).toBe(calls[1]);
+    expect(calls[0]).toBe('finalToothCount, finalConfidence, r, innerContourSuspected, pap1900BypassConfirmed');
+    const defs = [...src.matchAll(/const pap1900BypassConfirmed = ([^;]+);/g)]
+      .map((m) => m[1].replace(/\s+/g, ' ').trim());
+    expect(defs.length).toBe(2);
+    expect(defs[0]).toBe(defs[1]);
+    expect(defs[0]).toBe('fft90OuterRescue || fiveWayChainringAgree || chainringTcConfirmed');
+  });
+});

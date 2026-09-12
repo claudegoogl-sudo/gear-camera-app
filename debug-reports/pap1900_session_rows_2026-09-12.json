@@ -1,0 +1,163 @@
+{
+ "branch": "pap1900/guardrail-g5-g6",
+ "session": "pap1897_fp5_b153_session_2026-09-11",
+ "rows": [
+  {
+   "stamp": "f5886a846722",
+   "actual": 52,
+   "b153": {
+    "tc": 13,
+    "conf": 0
+   },
+   "guardrail": {
+    "tc": 13,
+    "conf": 0.423,
+    "abstained": false,
+    "abstainReason": null,
+    "gateRule": null,
+    "innerContourSuspected": false,
+    "preGateTc": 13,
+    "preGateConf": 0.423,
+    "method": "fft-agreement",
+    "peakTc": 13,
+    "fft90tc": 13,
+    "opTc": 10,
+    "bcTc": 11,
+    "bcPeaks": 1,
+    "contourRadius": 169,
+    "peakR": 163,
+    "rOuter": 77
+   },
+   "expect": "ABSTAIN",
+   "pass": true,
+   "runtime": 2401,
+   "note": "silent wrong count (fft-agreement, ics conf-0)",
+   "freshDivergence": true
+  },
+  {
+   "stamp": "af9294fe87f0",
+   "actual": 50,
+   "b153": {
+    "tc": 24,
+    "conf": 0.3281
+   },
+   "guardrail": {
+    "tc": 0,
+    "conf": 0,
+    "abstained": true,
+    "abstainReason": "pap1872-dense-chainring",
+    "gateRule": "G5-radial-anchor-conf",
+    "innerContourSuspected": false,
+    "preGateTc": 24,
+    "preGateConf": 0.328,
+    "method": "fft90-fallback+pap1872-dense-chainring-abstain",
+    "peakTc": 24,
+    "fft90tc": 24,
+    "opTc": 18,
+    "bcTc": 13,
+    "bcPeaks": 15,
+    "contourRadius": 357,
+    "peakR": 335,
+    "rOuter": 425
+   },
+   "expect": "ABSTAIN",
+   "pass": true,
+   "runtime": 1780,
+   "note": "silent wrong count (fft90-fallback, rr=0.212)"
+  },
+  {
+   "stamp": "f3a8e88a13d8",
+   "actual": 36,
+   "b153": {
+    "tc": 11,
+    "conf": 0
+   },
+   "guardrail": {
+    "tc": 0,
+    "conf": 0,
+    "abstained": true,
+    "abstainReason": "pap1872-dense-chainring",
+    "gateRule": "G6-inner-contour-commit",
+    "innerContourSuspected": true,
+    "preGateTc": 11,
+    "preGateConf": 0,
+    "method": "bc-consensus+pap961-aim-circle-prior-abstain+pap1872-dense-chainring-abstain",
+    "peakTc": 10,
+    "fft90tc": 32,
+    "opTc": 15,
+    "bcTc": 11,
+    "bcPeaks": 10,
+    "contourRadius": 91,
+    "peakR": 83,
+    "rOuter": 71
+   },
+   "expect": "ABSTAIN",
+   "pass": true,
+   "runtime": 3045,
+   "note": "silent wrong count (bc-consensus budget-exhausted)"
+  },
+  {
+   "stamp": "caa1725c6bae",
+   "actual": 42,
+   "b153": {
+    "tc": 0,
+    "conf": 0
+   },
+   "guardrail": {
+    "tc": 0,
+    "conf": 0,
+    "abstained": true,
+    "abstainReason": "pap1872-dense-chainring",
+    "gateRule": "G1-tc40",
+    "innerContourSuspected": false,
+    "preGateTc": 40,
+    "preGateConf": 0.452,
+    "method": "retry-fft90-fallback+pap1872-dense-chainring-abstain",
+    "peakTc": 10,
+    "fft90tc": 40,
+    "opTc": 16,
+    "bcTc": 12,
+    "bcPeaks": 4,
+    "contourRadius": 330,
+    "peakR": 306,
+    "rOuter": 399
+   },
+   "expect": "ABSTAIN",
+   "pass": true,
+   "runtime": 2294,
+   "note": "already abstained (retry gate) — must stay"
+  },
+  {
+   "stamp": "92e4b255112c",
+   "actual": 24,
+   "b153": {
+    "tc": 0,
+    "conf": 0
+   },
+   "guardrail": {
+    "tc": 0,
+    "conf": 0,
+    "abstained": true,
+    "abstainReason": "pap1872-dense-chainring",
+    "gateRule": "G4-fft-collapse-op-commit",
+    "innerContourSuspected": false,
+    "preGateTc": 20,
+    "preGateConf": 0.728,
+    "method": "bc-fft+large-op-override+pap1872-dense-chainring-abstain",
+    "peakTc": 10,
+    "fft90tc": 10,
+    "opTc": 20,
+    "bcTc": 12,
+    "bcPeaks": 4,
+    "contourRadius": 441,
+    "peakR": 395,
+    "rOuter": 441
+   },
+   "expect": "ABSTAIN",
+   "pass": true,
+   "runtime": 1500,
+   "note": "already abstained (G4 path) — must stay"
+  }
+ ],
+ "failures": 0
+}
