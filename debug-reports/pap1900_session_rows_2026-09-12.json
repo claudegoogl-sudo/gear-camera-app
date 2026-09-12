@@ -10,29 +10,28 @@
     "conf": 0
    },
    "guardrail": {
-    "tc": 13,
-    "conf": 0.423,
-    "abstained": false,
-    "abstainReason": null,
-    "gateRule": null,
-    "innerContourSuspected": false,
-    "preGateTc": 13,
-    "preGateConf": 0.423,
-    "method": "fft-agreement",
-    "peakTc": 13,
-    "fft90tc": 13,
-    "opTc": 10,
-    "bcTc": 11,
-    "bcPeaks": 1,
-    "contourRadius": 169,
-    "peakR": 163,
-    "rOuter": 77
+    "tc": 0,
+    "conf": 0,
+    "abstained": true,
+    "abstainReason": "pap1872-dense-chainring",
+    "gateRule": "G3-spider-lock",
+    "innerContourSuspected": true,
+    "preGateTc": 10,
+    "preGateConf": 0,
+    "method": "fft90-fallback+pap961-aim-circle-prior-abstain+pap1872-dense-chainring-abstain",
+    "peakTc": 11,
+    "fft90tc": 10,
+    "opTc": 32,
+    "bcTc": 12,
+    "bcPeaks": 4,
+    "contourRadius": 377,
+    "peakR": 245,
+    "rOuter": 350
    },
    "expect": "ABSTAIN",
    "pass": true,
-   "runtime": 2401,
-   "note": "silent wrong count (fft-agreement, ics conf-0)",
-   "freshDivergence": true
+   "runtime": 1526,
+   "note": "silent wrong count (fft-agreement, ics conf-0)"
   },
   {
    "stamp": "af9294fe87f0",
@@ -62,7 +61,7 @@
    },
    "expect": "ABSTAIN",
    "pass": true,
-   "runtime": 1780,
+   "runtime": 1682,
    "note": "silent wrong count (fft90-fallback, rr=0.212)"
   },
   {
@@ -77,23 +76,23 @@
     "conf": 0,
     "abstained": true,
     "abstainReason": "pap1872-dense-chainring",
-    "gateRule": "G6-inner-contour-commit",
+    "gateRule": "G5-radial-anchor-conf",
     "innerContourSuspected": true,
-    "preGateTc": 11,
+    "preGateTc": 35,
     "preGateConf": 0,
-    "method": "bc-consensus+pap961-aim-circle-prior-abstain+pap1872-dense-chainring-abstain",
-    "peakTc": 10,
-    "fft90tc": 32,
-    "opTc": 15,
-    "bcTc": 11,
-    "bcPeaks": 10,
-    "contourRadius": 91,
-    "peakR": 83,
-    "rOuter": 71
+    "method": "fft90-fallback+pap961-aim-circle-prior-abstain+pap1872-dense-chainring-abstain",
+    "peakTc": 12,
+    "fft90tc": 35,
+    "opTc": 36,
+    "bcTc": 12,
+    "bcPeaks": 4,
+    "contourRadius": 360,
+    "peakR": 142,
+    "rOuter": 101
    },
    "expect": "ABSTAIN",
    "pass": true,
-   "runtime": 3045,
+   "runtime": 1864,
    "note": "silent wrong count (bc-consensus budget-exhausted)"
   },
   {
@@ -124,7 +123,7 @@
    },
    "expect": "ABSTAIN",
    "pass": true,
-   "runtime": 2294,
+   "runtime": 2099,
    "note": "already abstained (retry gate) — must stay"
   },
   {
@@ -155,7 +154,7 @@
    },
    "expect": "ABSTAIN",
    "pass": true,
-   "runtime": 1500,
+   "runtime": 1315,
    "note": "already abstained (G4 path) — must stay"
   }
  ],
