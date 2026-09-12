@@ -1,19 +1,19 @@
 {
- "at": "2026-09-11T14:38:17.147Z",
+ "at": "2026-09-12T18:29:04.884Z",
  "corpus": 364,
  "AC1_dense": {
   "n": 64,
-  "abstained": 58,
-  "rate": 0.9063,
+  "abstained": 61,
+  "rate": 0.9531,
   "target": ">=0.90",
   "pass": true
  },
  "AC2_ordinary": {
   "n": 284,
-  "newlyAbstained": 10,
-  "newlyAbstainedRate": 0.0352,
+  "newlyAbstained": 19,
+  "newlyAbstainedRate": 0.0669,
   "target": "<0.05",
-  "pass": true,
+  "pass": false,
   "correctnessRegressions": 0,
   "regressionsPass": true,
   "anchorsReturn20": true
@@ -22,5 +22,14 @@
   "n": 16,
   "newlyAbstained": 1
  },
- "gateFiresTotal": 55
+ "gateFiresTotal": 147,
+ "gateRuleBreakdown": {
+  "G6-inner-contour-commit": 44,
+  "G5-radial-anchor-conf": 48,
+  "G1-tc40": 20,
+  "G4-fft-collapse-op-commit": 7,
+  "G3-spider-lock": 21,
+  "G2-bc40": 7
+ },
+ "exportLane": null
 }
