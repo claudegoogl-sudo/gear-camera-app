@@ -175,3 +175,24 @@ explicitly (PAP-1665 then stays blocked with items 1–2 open).
 Post results to PAP-1800 (session vehicle); Phase 7 results also to PAP-1665.
 Sole remaining blocker: FP5 session scheduling (Operator via PAP-1671 todo list,
 pids raise first). Build b153 is published and pre-flight PASSED.
+
+## Photos-arrival adjudication for the 17:34-17:39Z b153 attempt (pre-registered)
+
+Session context: Sentry shows ~5-6 distinct captures, all abstained (G1 on 42T/40T
+candidates, G4 on tc=20@0.728). AE corpus prior: `debug-reports/pap1800_b153_operator_session_2026-09-12/ae_g4_tc20_corpus_context.md`
+(1768544); QA row-verified the truth-class claims 2026-09-12 (11 newly-abstained
+ordinary = 28x4/24x3/21x3/34x1, zero true-20T; only true-20T rows = 2 synthetic
+anchors conf 1.0 un-fired; all 17 correct-to-abstain conversions are dense D(40-60)).
+
+When the 17:34 photos are pulled, each capture is classified mechanically (AE
+pre-registration, QA-adopted as session law):
+
+1. Unlit -> VOID row (dark-capture hypothesis stands; no gate strike).
+2. Lit + visually dense (40-60T) -> G4/G1 abstain CORRECT (dense alias, by design).
+3. Lit + true ordinary ~18-24T -> ORDINARY FALSE-ABSTAIN strike + NEW failure class
+   (first observed anywhere). File repro ticket with photo + telemetry line; do NOT
+   hot-tune G4 on one frame.
+4. Lit + other ordinary (25-39T) -> ordinary false-abstain strike on the <5% budget.
+
+Any single lit-ordinary strike flips the b155 session from "clean run" to
+"repro-first"; the controlled A/B (Phase 6) proceeds regardless.
