@@ -84,3 +84,77 @@ describe('PAP-1872 dense-chainring abstain gate', () => {
     expect(checkDenseChainringAbstain(14, 1.0, { ...baseR, bcTc: 14, bcPeaks: 14 }).rule).toBeNull();
   });
 });
+
+// ── PAP-1900 collapse guards (G5/G6) — PENDING QA sign-off (subtask PAP-1902)
+// Session vectors are the algoDiag values from
+// debug-reports/pap1897_fp5_b153_session_2026-09-11/ (audit-verdicts.json).
+describe('PAP-1900 G5 radial-anchor disagreement', () => {
+  const rr = (peakR, rOuter) => Math.abs(peakR - rOuter) / rOuter;
+
+  test('fires: 50T→24T fft90-fallback alias (af9294fe: rr=0.212, conf=0.328)', () => {
+    // real 50T, contour locked 10-12% high on a spider arm; count aliased
+    const r = { ...baseR, bcTc: 24, bcPeaks: 15, peakTc: 12, fft90tc: 24, opTc: 12,
+      contourRadius: 357, peakR: 335, rOuter: 425 };
+    expect(checkDenseChainringAbstain(24, 0.3281, r).rule).toBe('G5-radial-anchor-conf');
+  });
+
+  test('conf cap boundary: conf 0.35 fires, conf 0.36 does not', () => {
+    const r = { ...baseR, peakTc: 12, fft90tc: 24, bcTc: 24, bcPeaks: 15,
+      contourRadius: 357, peakR: 335, rOuter: 425 };
+    expect(checkDenseChainringAbstain(24, 0.35, r).fires).toBe(true);
+    expect(checkDenseChainringAbstain(24, 0.36, r).fires).toBe(false);
+  });
+
+  test('rr boundary: just under 0.18 does not fire (corpus a=11 tc=24 conf=0.309 row)', () => {
+    // 76/425 = 0.1788 — nearest under-threshold wrong row keeps its commit
+    // (known residual risk class, documented in the QA subtask)
+    const r = { ...baseR, peakTc: 24, fft90tc: 24, bcTc: 24, bcPeaks: 15,
+      contourRadius: 357, peakR: 349, rOuter: 425 };
+    expect(rr(349, 425)).toBeLessThan(0.18);
+    expect(checkDenseChainringAbstain(24, 0.309, r).fires).toBe(false);
+  });
+
+  test('conf cap is load-bearing: captureB analog (rr=0.835, conf=1.0) does not fire', () => {
+    const r = { ...baseR, bcTc: 20, bcPeaks: 20, peakTc: 20, fft90tc: 20, opTc: 21,
+      contourRadius: 350, peakR: 750, rOuter: 408 };
+    expect(rr(750, 408)).toBeGreaterThan(0.18);
+    expect(checkDenseChainringAbstain(20, 1.0, r).fires).toBe(false);
+  });
+
+  test('missing radial fields (peakR/rOuter absent) never fire G5', () => {
+    expect(checkDenseChainringAbstain(24, 0.3, { ...baseR, bcTc: 24, bcPeaks: 15 }).fires).toBe(false);
+  });
+});
+
+describe('PAP-1900 G6 inner-contour numeric commit', () => {
+  const rrQuiet = { ...baseR, peakTc: 11, fft90tc: 11, bcTc: 11, bcPeaks: 10,
+    contourRadius: 91, peakR: 300, rOuter: 300 }; // rr = 0 → G5 quiet
+
+  test('fires: 52T→13T conf-0 ics commit (f5886a84)', () => {
+    // radial fields disagree wildly (rr=1.117) so G5 also fires — assert
+    // attribution on the rr-quiet vector, then fires on the real one
+    const rrReal = { ...baseR, bcTc: 13, bcPeaks: 1, peakTc: 13, fft90tc: 12,
+      opTc: 12, contourRadius: 169, peakR: 163, rOuter: 77 };
+    expect(checkDenseChainringAbstain(13, 0, rrReal, true).fires).toBe(true);
+    expect(checkDenseChainringAbstain(11, 0, rrQuiet, true).rule).toBe('G6-inner-contour-commit');
+  });
+
+  test('fires: 36T→11T conf-0 budget-exhausted ics commit (f3a8e88a)', () => {
+    expect(checkDenseChainringAbstain(11, 0, rrQuiet, true).fires).toBe(true);
+  });
+
+  test('spares: ics but conf > 0 (upstream did not distrust the commit)', () => {
+    expect(checkDenseChainringAbstain(11, 0.2, rrQuiet, true).fires).toBe(false);
+  });
+
+  test('spares: conf-0 numeric commit with ics=false (fiveWay/fft90OuterRescue class)', () => {
+    // all channels agree at 36 (fiveWayChainringAgree shape), ics=false
+    const fiveWay = { ...baseR, peakTc: 36, fft90tc: 36, opTc: 36, bcTc: 36, bcPeaks: 36,
+      contourRadius: 200, peakR: 300, rOuter: 300 };
+    expect(checkDenseChainringAbstain(36, 0, fiveWay, false).fires).toBe(false);
+  });
+
+  test('spares: 20T anchors with ics=true but conf=1', () => {
+    expect(checkDenseChainringAbstain(20, 1.0, { ...baseR, peakR: 345, rOuter: 407 }, true).fires).toBe(false);
+  });
+});

@@ -2395,9 +2395,42 @@ function estimateInnerRadius(gray, cx, cy, contourRadius, width, height) {
  * and stay answering; abstaining them would eat matching correct ordinary
  * rows (twins documented in the QA subtask).
  *
+ * PAP-1900 rules (path-independent collapse guards, QA cross-check PAP-1902
+ * PENDING — do not treat thresholds as final until QA signs off). The b153
+ * operator session (pap1897_fp5_b153_session_2026-09-11/audit-verdicts.json)
+ * showed 3 dense/large wrong counts that slip between G1–G4 because the
+ * contour localized wrong (PAP-1898) and the committed count inherits the
+ * radius error (52·169/794≈13, 50·357/767≈24):
+ *
+ *   G5  radial-anchor disagreement at low confidence
+ *       |peakR - rOuter| / rOuter >= 0.18 && conf <= 0.35
+ *       The FFT peak radius and the outermost radial-gradient peak disagree
+ *       beyond the PAP-815 threshold while confidence is low — the radial
+ *       anchor is unstable, so the commit is an aliasing artifact.
+ *       364-row corpus: +12 abstains, 0 previously-correct rows flipped
+ *       (9 ordinary wrong, 3 dense wrong); zero correct commits exist in
+ *       the whole neighborhood rr>=0.15 && conf<=0.40. The 20T capture
+ *       anchors are safe (conf=1; captureB rr=0.835 — the conf cap is
+ *       load-bearing). Catches the 50T→24T session event (rr=0.212,
+ *       conf=0.328). NOTE: ordinary newly-abstained rises 10→19/284
+ *       (6.69% vs the <5% calibration target) with 0 correctness
+ *       regressions — AC2 ruling requested in QA subtask PAP-1902.
+ *
+ *   G6  inner-contour numeric commit
+ *       innerContourSuspected && conf <= 0 && tc > 0
+ *       Repairs the existing intent at the finalConfidence assignment
+ *       (`ics ? 0 : conf`): a suspected inner-contour lock must never
+ *       surface as a numeric count. The corpus convention already treats
+ *       conf-0 commits as abstains (baselineAbstain = tc===0 || conf===0,
+ *       abstainNow = same in pap1872.corpus_gate.mjs), so this changes no
+ *       measured corpus outcome; it aligns the device result object with
+ *       that convention. fiveWayChainringAgree / fft90OuterRescue /
+ *       pap1059-confirmed rows have ics=false by formula → untouched.
+ *       Catches the 52T→13T and 36T→11T session events.
+ *
  * Returns { fires: bool, rule: string|null }.
  */
-function checkDenseChainringAbstain(tc, conf, r) {
+function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false) {
   if (tc <= 0) return { fires: false, rule: null }; // already abstained upstream
   if (tc >= 40) return { fires: true, rule: 'G1-tc40' };
   if (r.bcTc >= 40 || r.bcPeaks >= 40) return { fires: true, rule: 'G2-bc40' };
@@ -2407,6 +2440,17 @@ function checkDenseChainringAbstain(tc, conf, r) {
   if ((r.peakTc || 0) <= 10 && (r.fft90tc || 0) <= 10
       && tc >= 20 && r.opTc === tc && conf >= 0.35) {
     return { fires: true, rule: 'G4-fft-collapse-op-commit' };
+  }
+  // PAP-1900 G5: radial-anchor disagreement at low confidence (PENDING QA).
+  const radialRel = (r.peakR > 0 && r.rOuter > 0)
+    ? Math.abs(r.peakR - r.rOuter) / r.rOuter
+    : null;
+  if (radialRel !== null && radialRel >= 0.18 && conf <= 0.35) {
+    return { fires: true, rule: 'G5-radial-anchor-conf' };
+  }
+  // PAP-1900 G6: suspected-inner-contour numeric commit (PENDING QA).
+  if (innerContourSuspected && conf <= 0) {
+    return { fires: true, rule: 'G6-inner-contour-commit' };
   }
   return { fires: false, rule: null };
 }
@@ -3917,8 +3961,9 @@ export async function countTeeth(photoUri, signal, opts) {
   // mirror of the countTeethFromRgba() block. Operator card v4 cefe13ee
   // (PAP-1671 Q2 = go-abstain): dense 40-60T says "cannot count" instead of
   // answering confidently wrong. See checkDenseChainringAbstain() for the
-  // calibrated rule set and corpus-measured AC numbers.
-  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
+  // calibrated rule set and corpus-measured AC numbers. innerContourSuspected
+  // feeds PAP-1900 G6 (PENDING QA).
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected);
   // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
   // candidate the gate evaluated, so abstain exports can row-join
   // rule + deciding inputs + candidate. Telemetry-only; no decision change.
@@ -4262,8 +4307,9 @@ export function countTeethFromRgba(rgba, width, height) {
   // confidently wrong. Calibrated on the 364-photo corpus — see
   // checkDenseChainringAbstain() for the rule set and measured AC numbers.
   // Runs LAST so it never preempts an ordinary-gear rescue above; only
-  // fires on committed answers (finalToothCount > 0).
-  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
+  // fires on committed answers (finalToothCount > 0). innerContourSuspected
+  // feeds PAP-1900 G6 (PENDING QA).
+  const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r, innerContourSuspected);
   // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
   // candidate the gate evaluated — mirror of the countTeeth() block.
   // Telemetry-only; no decision change.
