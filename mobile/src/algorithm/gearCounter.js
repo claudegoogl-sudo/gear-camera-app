@@ -3919,6 +3919,11 @@ export async function countTeeth(photoUri, signal, opts) {
   // answering confidently wrong. See checkDenseChainringAbstain() for the
   // calibrated rule set and corpus-measured AC numbers.
   const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
+  // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
+  // candidate the gate evaluated, so abstain exports can row-join
+  // rule + deciding inputs + candidate. Telemetry-only; no decision change.
+  const pap1872PreGateTc = finalToothCount;
+  const pap1872PreGateConf = finalConfidence;
   let abstained = false;
   let abstainReason = null;
   if (denseAbstain.fires) {
@@ -3948,6 +3953,10 @@ export async function countTeeth(photoUri, signal, opts) {
     // + bcPeaks), so the FP5 device session can monitor the G3 margin
     // on-device. Telemetry-only; no decision change.
     abstainGateRule: denseAbstain.rule,
+    // PAP-1800 export lane: what the gate evaluated pre-abstain (QA spec
+    // d3e31587 — abstain exports must not destroy the candidate).
+    abstainPreGateTc: pap1872PreGateTc,
+    abstainPreGateConf: Number(pap1872PreGateConf.toFixed(3)),
     contourRadius: r.contourRadius ?? null,
     bcPeaks: r.bcPeaks ?? null,
     budgetExhausted: budgetState.hit,
@@ -4255,6 +4264,11 @@ export function countTeethFromRgba(rgba, width, height) {
   // Runs LAST so it never preempts an ordinary-gear rescue above; only
   // fires on committed answers (finalToothCount > 0).
   const denseAbstain = checkDenseChainringAbstain(finalToothCount, finalConfidence, r);
+  // PAP-1800 export lane (QA spec comment d3e31587): snapshot the pre-gate
+  // candidate the gate evaluated — mirror of the countTeeth() block.
+  // Telemetry-only; no decision change.
+  const pap1872PreGateTc = finalToothCount;
+  const pap1872PreGateConf = finalConfidence;
   let abstained = false;
   let abstainReason = null;
   if (denseAbstain.fires) {
@@ -4281,6 +4295,9 @@ export function countTeethFromRgba(rgba, width, height) {
     abstainReason,
     // PAP-1872 / QA PAP-1874 flag 2: abstain observability (see countTeeth).
     abstainGateRule: denseAbstain.rule,
+    // PAP-1800 export lane: what the gate evaluated pre-abstain (see countTeeth).
+    abstainPreGateTc: pap1872PreGateTc,
+    abstainPreGateConf: Number(pap1872PreGateConf.toFixed(3)),
     contourRadius: r.contourRadius ?? null,
     budgetExhausted: budgetState.hit,
     methodUsed,

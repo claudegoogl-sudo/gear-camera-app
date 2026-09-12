@@ -1,0 +1,33 @@
+{
+ "at": "2026-09-12T17:11:41.884Z",
+ "corpus": 364,
+ "AC1_dense": {
+  "n": 64,
+  "abstained": 58,
+  "rate": 0.9063,
+  "target": ">=0.90",
+  "pass": true
+ },
+ "AC2_ordinary": {
+  "n": 284,
+  "newlyAbstained": 10,
+  "newlyAbstainedRate": 0.0352,
+  "target": "<0.05",
+  "pass": true,
+  "correctnessRegressions": 0,
+  "regressionsPass": true,
+  "anchorsReturn20": true
+ },
+ "C_29_39": {
+  "n": 16,
+  "newlyAbstained": 1
+ },
+ "gateFiresTotal": 55,
+ "gateRuleBreakdown": {
+  "G1-tc40": 20,
+  "G4-fft-collapse-op-commit": 7,
+  "G3-spider-lock": 21,
+  "G2-bc40": 7
+ },
+ "exportLane": "pap1800-d3e31587"
+}

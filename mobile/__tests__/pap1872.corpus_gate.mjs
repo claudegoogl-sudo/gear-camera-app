@@ -18,6 +18,14 @@
  * Rows  -> debug-reports/pap1872_dense_abstain_2026-09-11/gate_corpus_rows.json
  * Sum   -> debug-reports/pap1872_dense_abstain_2026-09-11/gate_summary.json
  *
+ * PAP-1800 export lane (QA spec comment d3e31587): PAP1872_EXPORT=1 re-runs
+ * the same gate writing gate_corpus_rows_export.json / gate_summary_export.json
+ * into debug-reports/pap1872_gate_export_2026-09-12/ with the full per-row
+ * join — gateRule name, pre-gate candidate (preGateTc/preGateConf, which the
+ * committed rows zero at export), and each rule's deciding inputs
+ * (peakTc/fft90tc/opTc/bcTc/bcPeaks/contourRadius). Row values on the shared
+ * columns are unchanged; the original committed artifacts stay untouched.
+ *
  * Usage: node --import ./mobile/__tests__/lib/node-esm-stubs.mjs \
  *          mobile/__tests__/pap1872.corpus_gate.mjs
  */
@@ -32,7 +40,12 @@ const { decode: jpegDecode } = require('jpeg-js');
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');
 const TRAINING_DIR = path.join(ROOT, 'training-data');
-const OUT_DIR = path.join(ROOT, 'debug-reports', 'pap1872_dense_abstain_2026-09-11');
+const EXPORT_LANE = process.env.PAP1872_EXPORT === '1';
+const OUT_DIR = EXPORT_LANE
+  ? path.join(ROOT, 'debug-reports', 'pap1872_gate_export_2026-09-12')
+  : path.join(ROOT, 'debug-reports', 'pap1872_dense_abstain_2026-09-11');
+const ROWS_FILE = EXPORT_LANE ? 'gate_corpus_rows_export.json' : 'gate_corpus_rows.json';
+const SUMMARY_FILE = EXPORT_LANE ? 'gate_summary_export.json' : 'gate_summary.json';
 const BASE_DIR = path.join(ROOT, 'debug-reports', 'pap1862_fp5_b151_session_2026-09-10');
 const CACHE_DIR = path.join(ROOT, '.cache', 'training-rgba');
 const TARGET = 900;
@@ -109,9 +122,19 @@ for (const item of [...ANCHORS, ...labeled]) {
     method: r.methodUsed || '?',
     abstained: !!r.abstained,
     abstainReason: r.abstainReason ?? null,
-    gateRule: (r.methodUsed || '').includes('pap1872-dense-chainring-abstain')
-      ? (r.methodUsed.split('+pap1872-dense-chainring-abstain')[0] || '') && null || 'fired'
-      : null,
+    // PAP-1800 export lane (QA spec d3e31587): per-row rule + pre-gate
+    // candidate + deciding inputs, so abstain class questions are answerable
+    // from the committed artifact alone (the committed rows zeroed tc/conf
+    // on fires and carried no rule name).
+    gateRule: r.abstainGateRule ?? null,
+    preGateTc: r.abstainPreGateTc ?? null,
+    preGateConf: r.abstainPreGateConf ?? null,
+    peakTc: r.peakTc ?? null,
+    fft90tc: r.fft90tc ?? null,
+    opTc: r.opTc ?? null,
+    bcTc: r.bcTc ?? null,
+    bcPeaks: r.bcPeaks ?? null,
+    contourRadius: r.contourRadius ?? null,
     baselineTc: base.tc ?? null,
     baselineConf: base.conf ?? null,
     baselineAbstain: base.tc === 0 || base.conf === 0,
@@ -121,7 +144,7 @@ for (const item of [...ANCHORS, ...labeled]) {
     out(`[pap1872-gate] ${rows.length}/${labeled.length + ANCHORS.length} ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   }
   if (rows.length % 100 === 0) {
-    try { fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(path.join(OUT_DIR, 'gate_corpus_rows.json'), JSON.stringify(rows, null, 1)); } catch { }
+    try { fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(path.join(OUT_DIR, ROWS_FILE), JSON.stringify(rows, null, 1)); } catch { }
   }
 }
 
@@ -139,6 +162,11 @@ const anchorsOk = ANCHORS.every((a) => {
   return r && r.tc === 20 && !r.abstained;
 });
 const gateTags = rows.filter((r) => (r.method || '').includes('pap1872-dense-chainring-abstain'));
+// PAP-1800 export lane: per-rule fire counts for the row-join summary.
+const ruleCounts = {};
+for (const r of rows) {
+  if (r.gateRule) ruleCounts[r.gateRule] = (ruleCounts[r.gateRule] || 0) + 1;
+}
 
 const summary = {
   at: new Date().toISOString(),
@@ -165,10 +193,12 @@ const summary = {
     newlyAbstained: camp.filter((r) => !r.baselineAbstain && abstainNow(r)).length,
   },
   gateFiresTotal: gateTags.length,
+  gateRuleBreakdown: ruleCounts,
+  exportLane: EXPORT_LANE ? 'pap1800-d3e31587' : null,
 };
 fs.mkdirSync(OUT_DIR, { recursive: true });
-fs.writeFileSync(path.join(OUT_DIR, 'gate_corpus_rows.json'), JSON.stringify(rows, null, 1));
-fs.writeFileSync(path.join(OUT_DIR, 'gate_summary.json'), JSON.stringify(summary, null, 1));
+fs.writeFileSync(path.join(OUT_DIR, ROWS_FILE), JSON.stringify(rows, null, 1));
+fs.writeFileSync(path.join(OUT_DIR, SUMMARY_FILE), JSON.stringify(summary, null, 1));
 
 out('[pap1872-gate] SUMMARY ' + JSON.stringify(summary, null, 1));
 const allPass = summary.AC1_dense.pass && summary.AC2_ordinary.pass
