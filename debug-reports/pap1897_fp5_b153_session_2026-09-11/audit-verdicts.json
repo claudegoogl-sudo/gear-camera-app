@@ -1,0 +1,46 @@
+{
+  "session": "FP5 b153 operator session 2026-09-11T17:33-17:39Z (5 labeled captures, all wrong)",
+  "source": "PAP-1897 triage 2026-09-12; photos = Sentry attachments; visual audit via vision model on annotated PNGs (red circle = detected contour, red cross = detected center)",
+  "reports": [
+    {
+      "eventID": "f5886a8467224d47aee18ee210e3944f", "actual": 52, "got": 13, "conf": 0,
+      "methodUsed": "fft-agreement", "abstained": false, "chainringRegime": false,
+      "contour": {"cx": 0.34018, "cy": 0.44945, "r": 0.104, "contourRadiusPx": 169},
+      "audit": "WRONG-CENTER + wrong-radius: cross on inner plate near mounting hole (0.33,0.45); true center ~(0.50,0.50); circle r=183px vs ~800px needed; encloses inner plate patch + mounting hole + background through cutout",
+      "aliasingCheck": "52 * (169/794) = 11.1 ~= 13 -> count inherits contour radius error"
+    },
+    {
+      "eventID": "af9294fe87f049e8879943f4c65bbc64", "actual": 50, "got": 24, "conf": 0.3281,
+      "methodUsed": "fft90-fallback", "abstained": false,
+      "contour": {"cx": 0.51309, "cy": 0.39634, "r": 0.21374, "contourRadiusPx": 357},
+      "audit": "WRONG-CENTER + wrong-radius: cross 10-12% above true center on upper spider arm (0.51,0.40 vs true ~0.50,0.49); circle r=377px vs ~800px needed; encloses spider/spokes/mid-cogs",
+      "aliasingCheck": "50 * (357/767) = 23.3 ~= 24 -> matches"
+    },
+    {
+      "eventID": "caa1725c6bae4e3aa933b70542e36e3f", "actual": 42, "got": 0, "conf": 0,
+      "methodUsed": "retry-fft90-fallback+pap1872-dense-chainring-abstain", "abstained": true, "gateRule": "G1-tc40",
+      "contour": {"cx": 0.51947, "cy": 0.40352, "r": 0.19523, "contourRadiusPx": 330},
+      "audit": "WRONG-CENTER + wrong-radius (abstained correctly): cross at (0.51,0.40) in inner opening on cardboard background; circle r=344px vs ~800px; G1 caught it"
+    },
+    {
+      "eventID": "f3a8e88a13d84d9e905a5614df9d8ec9", "actual": 36, "got": 11, "conf": 0,
+      "methodUsed": "bc-consensus+pap961-aim-circle-prior-abstain+pap1659-budget-exhausted", "abstained": false, "budgetExhausted": true, "innerContourSuspected": true,
+      "contour": {"cx": 0.33635, "cy": 0.36476, "r": 0.05296, "contourRadiusPx": 91},
+      "audit": "WRONG-CENTER + grossly wrong radius: cross at (0.33,0.36) on inner cog/spider area; circle r=93px (~1/7 of needed ~700px); encloses rivet/spoke patch - false local feature; conf=0 result surfaced as numeric count 11",
+      "aliasingCheck": "36T not exact ratio match (bc-consensus path) but same tiny-contour signature"
+    },
+    {
+      "eventID": "92e4b255112c4be5b942cec2ed72e22b", "actual": 24, "got": 0, "conf": 0,
+      "methodUsed": "bc-fft+large-op-override+pap1872-dense-chainring-abstain", "abstained": true, "gateRule": "G4-fft-collapse-op-commit",
+      "contour": {"cx": 0.50033, "cy": 0.38916, "r": 0.25202, "contourRadiusPx": 441},
+      "audit": "MODERATE center offset: true hub at (0.42,0.42), cross at (0.50,0.39) ~8% right of hub; radius roughly right but eccentric - clips lower-left arc of gear; G4 caught it"
+    }
+  ],
+  "patterns": [
+    "3/5 detected cy in 0.389-0.404 band vs true 0.48-0.52: systematic upward bias ~10% of frame height",
+    "2/5 latch onto tiny inner-structure features (r=93px, r=183px) - spider arms / inner plate / rivets",
+    "gate coverage: pap1872 gate present in methodUsed on only 2/5 paths (retry-fft90-fallback, bc-fft); fft-agreement, primary fft90-fallback, bc-consensus carry NO gate",
+    "f5886a846722 (52T): chainringRegime=false - regime classifier missed a 52T chainring",
+    "3 companion chainring_abstain events are aim-circle-prior retries (peakR/aimR 0.18/0.68/0.89), not separate gears"
+  ]
+}
