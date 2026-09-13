@@ -1,0 +1,62 @@
+[
+  {
+    "stamp": "c671d3ed1236",
+    "actual": 50,
+    "b152b153": {
+      "tc": 24,
+      "conf": 0.5325,
+      "method": "fft-agreement"
+    },
+    "head": {
+      "tc": 24,
+      "conf": 0.533,
+      "abstained": false,
+      "abstainReason": null,
+      "gateRule": null,
+      "innerContourSuspected": false,
+      "preGateTc": 24,
+      "preGateConf": 0.533,
+      "method": "fft-agreement",
+      "peakTc": 24,
+      "fft90tc": 24,
+      "opTc": 24,
+      "bcTc": 21,
+      "bcPeaks": 18,
+      "contourRadius": 374,
+      "peakR": 370,
+      "rOuter": 172
+    },
+    "runtime": 2952,
+    "note": "CORRECT localization (center ~4px off, radius brackets tips); silent miscount via fft-agreement"
+  },
+  {
+    "stamp": "655a27541335",
+    "actual": 52,
+    "b152b153": {
+      "tc": 20,
+      "conf": 0,
+      "method": "fft90-fallback+large-op-override"
+    },
+    "head": {
+      "tc": 20,
+      "conf": 0.312,
+      "abstained": false,
+      "abstainReason": null,
+      "gateRule": null,
+      "innerContourSuspected": false,
+      "preGateTc": 20,
+      "preGateConf": 0.312,
+      "method": "fft90-fallback+large-op-override",
+      "peakTc": 13,
+      "fft90tc": 10,
+      "opTc": 20,
+      "bcTc": 12,
+      "bcPeaks": 4,
+      "contourRadius": 372,
+      "peakR": 241,
+      "rOuter": 255
+    },
+    "runtime": 1761,
+    "note": "latched contour (0.66x radius, ~155px wrong-center); conf-0 silent via large-op-override"
+  }
+]

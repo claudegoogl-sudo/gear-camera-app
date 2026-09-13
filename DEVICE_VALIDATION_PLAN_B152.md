@@ -215,5 +215,15 @@ list, before/alongside Phases 1-6:
 - R2: a true 16-21T mid-class gear — decides the open G4 tc=20 branch (mid-class ledger 1/3).
 - R3: a deliberate 24-28T-class shot — G4-ordinary repro (corpus-known class, budget strike).
 - R4: aim-frame matching capture FOV per PAP-1882 guidance.
+- R5 (PAP-1905 addendum, 2026-09-13): fold the 2 recovered 17:30/17:32Z captures into the
+  confirmation set — c671d3ed (b152, 50T->24 @0.533 fft-agreement, localization CORRECT)
+  and 655a2754 (b153, 52T->20 @conf-0 via large-op-override, latched contour). HEAD (84a340f+)
+  crop re-run (pap1905.session_confirm, rows pap1905_qa_confirmation_rows_2026-09-13.json):
+  c671d3ed STILL silently 24 @0.533 (exact device repro; correct localization = no rescue, no
+  gate fires — known-open PAP-1865 present-but-misselected class, NOT a b157 regression, record
+  if seen); 655a2754 fresh-crop 20 @0.312 silent (PAP-1599-class input divergence; device conf-0
+  path should ABSTAIN via G6 per the pap1900 device contract — a numeric on-device = repro FAIL).
+  Expectation for b157: closes the localization-latched family; does NOT close the
+  correct-localization fft miscount family.
 Phase 6 A/B proceeds regardless, as pre-registered. Expected per-capture report MUST include
 the returned count/conf (mandatory extraction; abstain-line absence = a count was surfaced).
