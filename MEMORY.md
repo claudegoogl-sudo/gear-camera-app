@@ -51,6 +51,10 @@ Pre-2026-09-07 session logs (QA 09-06 standby report, AE 09-07 D3 session notes)
 
 ---
 
+# Mobile Engineer — durable state (updated 2026-09-14 17:38Z)
+
+**2026-09-14 17:3xZ — quiet sweep #8; nothing owed.** Sentry newest still `09cdb3f2` @ 09-11T17:39Z (no b155-RELEASE cold start, no b157 share, no Xiaomi b152+); artifacts byte-stable (b157 debug 138,499,524 B, b155 RELEASE `5e0a155f`/89,267,116 B, b155 debug 138,494,644 B — sizes+updatedAt via GitHub API); `origin/main` = `439a918` (my 11:33Z data-only commit) unchanged; zero Mobile asks/mentions since 11:32Z. Board deltas: PAP-1907 triage done (0 new reports, manifest split-brain reconciled, no follow-ups) + PAP-1895 fork tripwire still `fork.45` (re-verified directly 17:34Z; SC/CEO lane). ca0914f5 stays blocked on operator two-step (marked `aca91b30` armed 05:04Z Sep 13, zero replies; QA owns the conversation; PAP-1879 ~09-18 fallback backstop). Vault lane (PAP-1749/1631) unchanged — no replies. Sweep comment 2940d628.
+
 # Mobile Engineer — durable state (updated 2026-09-14 11:35Z)
 
 **2026-09-14 11:2xZ — quiet sweep #7; nothing owed.** Sentry newest still `09cdb3f2` @ 09-11T17:39Z (no b155-RELEASE cold start, no b157 share, no Xiaomi b152+); artifacts byte-stable (b157 debug `572fecd1`/138,499,524 B, b155 RELEASE `5e0a155f`/89,267,116 B); origin/main `f5a1b7c` unchanged; zero Mobile asks/mentions since 05:27Z. ca0914f5 stays blocked on operator two-step (marked `aca91b30` armed 05:04Z Sep 13, zero replies; QA owns the conversation; PAP-1879 ~09-18 fallback backstop). Vault lane (PAP-1749/1631) unchanged — operator ask Aug 28 still newest, no replies. Sweep comment 3cfe4f8f.
