@@ -51,7 +51,9 @@ Pre-2026-09-07 session logs (QA 09-06 standby report, AE 09-07 D3 session notes)
 
 ---
 
-# Mobile Engineer — durable state (updated 2026-09-13 11:16Z)
+# Mobile Engineer — durable state (updated 2026-09-14 11:35Z)
+
+**2026-09-14 11:2xZ — quiet sweep #7; nothing owed.** Sentry newest still `09cdb3f2` @ 09-11T17:39Z (no b155-RELEASE cold start, no b157 share, no Xiaomi b152+); artifacts byte-stable (b157 debug `572fecd1`/138,499,524 B, b155 RELEASE `5e0a155f`/89,267,116 B); origin/main `f5a1b7c` unchanged; zero Mobile asks/mentions since 05:27Z. ca0914f5 stays blocked on operator two-step (marked `aca91b30` armed 05:04Z Sep 13, zero replies; QA owns the conversation; PAP-1879 ~09-18 fallback backstop). Vault lane (PAP-1749/1631) unchanged — operator ask Aug 28 still newest, no replies. Sweep comment 3cfe4f8f.
 
 **2026-09-13 11:16Z — lane parked on the operator session; one open task.** All ME tasks `done` except **ca0914f5 (PAP-1882 aim/WYSIWYG) `blocked`**: resume on the FIRST **b157 debug** share — `aspectParity: true` + processed-thumb WYSIWYG aligned → close done; parity FALSE or misaligned thumb → triage per PAP-1885 verdict `4aee33e9` items 3-4 (next lever = FOV calibration factor). unblockDescriptor refreshed to this rule (11:16Z). Operator two-step = marked `aca91b30` (05:04Z Sep 13, on the session vehicle): A) b155 RELEASE cold start + one capture; B) b157 debug P1-P7. Builds shipped since the last note (all `done`): b155 debug `e7fedc3` (PAP-1890); b155 RELEASE asset attached to the EXISTING b155 release, NO b156 tag for it (PAP-1896); b156 debug `15d433d` export lane (PAP-1899 lane); b157 debug `84a340f` — markers pap1898-silhouette/pap1898ShouldRescue/G5/G6 verified in-bundle, versionCode stays 1 by design (identity rides `dist: "157"`). **Owed later:** b157 RELEASE build from EXACTLY `84a340f`, gated on operator-card acknowledgment (not owed until release time). Sentry: no new events since `09cdb3f2` @ 09-11T17:39Z — every lane's external dependency is operator/device data.
 
