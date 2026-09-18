@@ -19,6 +19,7 @@ import {
   isAvmCollecting,
   avmOnAppActive,
   avmOnAppBackground,
+  avmOpenedNewSession,
   avmRecordCapture,
   avmShouldCollect,
   avmGuidanceHint,
@@ -40,12 +41,18 @@ describe('PAP-1920 AVM state machine', () => {
 
   test('AC2: version change (install/update) re-arms a dormant state', () => {
     let s = freshAvmState(V1, 0);
+    // v2: each iteration must start a genuinely NEW session (gap > grace) —
+    // the v1 timestamps were within the grace window, so the loop was one
+    // multi-capture session that only reached dormancy via the v1
+    // increment-per-capture bug.
     for (let i = 0; i < AVM_SESSION_LIMIT; i++) {
-      s = avmOnAppActive(s, i * 10_000);
-      const rec = avmRecordCapture(s, i * 10_000 + 1);
+      const t = i * (AVM_SESSION_RESUME_GRACE_MS + 10_000);
+      s = avmOnAppActive(s, t);
+      const rec = avmRecordCapture(s, t + 1);
       s = rec.state;
-      s = avmOnAppBackground(s, i * 10_000 + 2);
+      s = avmOnAppBackground(s, t + 2);
     }
+    expect(s.sessionIndex).toBe(AVM_SESSION_LIMIT);
     expect(avmCanArm(s)).toBe(false); // N sessions consumed
     const reopened = avmOnAppActive(s, 999_999);
     expect(reopened.sessionOpen).toBe(false);
@@ -192,5 +199,77 @@ describe('PAP-1920 AVM state machine', () => {
     expect(r1.shotIndex).toBe(1);
     const r2 = avmRecordCapture(r1.state, 2);
     expect(r2.shotIndex).toBe(2);
+  });
+
+  test('v2 fix: later captures of the SAME session do not spend another N slot', () => {
+    let s = freshAvmState(V1, 0);
+    s = avmOnAppActive(s, 0); // session 1 opens
+    const r1 = avmRecordCapture(s, 1_000);
+    expect(r1.state.sessionIndex).toBe(1); // first capture consumes slot 1
+    const r2 = avmRecordCapture(r1.state, 2_000);
+    expect(r2.state.sessionIndex).toBe(1); // v1 bug: this was 2
+    const r3 = avmRecordCapture(r2.state, 3_000);
+    expect(r3.state.sessionIndex).toBe(1); // v1 bug: this was 3
+    expect(r3.shotIndex).toBe(3);
+    expect(avmCanArm(r3.state)).toBe(true); // sessions 2 and 3 still owed
+    // resume within grace: still session 1, still not re-spent
+    const bg = avmOnAppBackground(r3.state, 4_000);
+    const resumed = avmOnAppActive(bg, 30_000);
+    const r4 = avmRecordCapture(resumed, 31_000);
+    expect(r4.state.sessionIndex).toBe(1);
+    // a NEW session (past grace) is the one that spends slot 2
+    const bg2 = avmOnAppBackground(r4.state, 32_000);
+    const next = avmOnAppActive(bg2, 32_000 + AVM_SESSION_RESUME_GRACE_MS + 1);
+    const r5 = avmRecordCapture(next, 200_000);
+    expect(r5.state.sessionIndex).toBe(2);
+    expect(r5.shotIndex).toBe(5);
+  });
+
+  // ── avmOpenedNewSession (v2: fixes the dead-code avmSession event) ────
+  describe('avmOpenedNewSession', () => {
+    test('fires on a fresh launch arm', () => {
+      const prev = freshAvmState(V1, 0);
+      const next = avmOnAppActive(prev, 10);
+      expect(avmOpenedNewSession(prev, next)).toBe(true);
+    });
+
+    test('does NOT fire on resume within the grace window', () => {
+      let s = freshAvmState(V1, 0);
+      s = avmOnAppActive(s, 0);
+      const bg = avmOnAppBackground(s, 30_000); // glance at Telegram 30s
+      const next = avmOnAppActive(bg, 60_000);
+      expect(avmOpenedNewSession(bg, next)).toBe(false);
+    });
+
+    test('fires on resume PAST the grace window (open-but-stale session)', () => {
+      // the v1 dead-code path: sessionOpen stayed true across background,
+      // so !prev.sessionOpen never fired again — this must still count
+      let s = freshAvmState(V1, 0);
+      s = avmOnAppActive(s, 0);
+      s = avmRecordCapture(s, 1).state;
+      const bg = avmOnAppBackground(s, 5_000);
+      const next = avmOnAppActive(bg, 5_000 + AVM_SESSION_RESUME_GRACE_MS + 1);
+      expect(next.sessionOpen).toBe(true);       // re-armed as a NEW session
+      expect(avmOpenedNewSession(bg, next)).toBe(true);
+    });
+
+    test('fires after a killed process resumed stale-open past grace', () => {
+      let s = freshAvmState(V1, 0);
+      s = avmOnAppActive(s, 0);
+      // process killed while open; file still says open at t=0
+      const next = avmOnAppActive(s, AVM_SESSION_RESUME_GRACE_MS * 10);
+      expect(avmOpenedNewSession(s, next)).toBe(true);
+    });
+
+    test('never fires when the mode is dormant', () => {
+      let s = freshAvmState(V1, 0);
+      for (let i = 0; i < AVM_CAPTURE_LIMIT; i++) {
+        s = avmOnAppActive(s, i * 1000);
+        s = avmRecordCapture(s, i * 1000 + 1).state;
+      }
+      expect(s.sessionOpen).toBe(false); // capture limit reached mid-session
+      const next = avmOnAppActive(s, 10 * AVM_SESSION_RESUME_GRACE_MS);
+      expect(avmOpenedNewSession(s, next)).toBe(false);
+    });
   });
 });

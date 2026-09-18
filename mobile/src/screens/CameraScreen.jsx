@@ -42,8 +42,8 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Sentry, SENTRY_ENABLED } from '../sentry';
 // PAP-1920: Auto-Validation Mode — first-N-sessions per release self-test.
 // Instrumentation only; the capture/detection path is untouched (spec AC3).
-import { isAvmCollecting, avmGuidanceHint, avmOnAppActive, avmOnAppBackground } from '../utils/avm';
-import { loadAvmState, saveAvmState } from '../utils/avmStore';
+import { isAvmCollecting, avmGuidanceHint, avmOnAppActive, avmOnAppBackground, avmOpenedNewSession } from '../utils/avm';
+import { getAvmState, mutateAvmState } from '../utils/avmStore';
 
 // PAP-476: aim-circle reticle now ≈ full screen width.  Computed from
 // Dimensions at module load (camera screen is portrait-locked elsewhere in
@@ -822,6 +822,10 @@ export default function CameraScreen({ navigation }) {
       policyRetryCountRef.current = 0;
       setRecoveryGuidance(false);
       setPreviewPaused(false); // resume live preview (e.g. Reset from Result)
+      // PAP-1920: read-only refresh of the AVM projection when returning
+      // from Result — the store owns the state; this only re-syncs the
+      // banner so dormancy (last capture of the budget) shows immediately.
+      getAvmState().then((s) => setAvmState(s)).catch(() => {});
     });
     return unsub;
   }, [navigation, resetStore, motionReset]);
@@ -899,17 +903,20 @@ export default function CameraScreen({ navigation }) {
   // lifecycle logic lives in utils/avm.js; this effect only loads/saves.
   // The guidance banner below renders while the session is collecting.
   const [avmState, setAvmState] = useState(null);
-  const avmStateRef = useRef(null);
-  useEffect(() => { avmStateRef.current = avmState; }, [avmState]);
 
+  // QA cross-check fix (PAP-1920 v2): CameraScreen stays mounted under the
+  // Result screen, so it must NOT keep a private copy of AVM state — its
+  // v1 AppState handler re-saved a stale mount-time snapshot over the
+  // persisted counter increments.  All reads/writes now go through the
+  // single in-process owner in avmStore.js; the pure transitions are
+  // applied inside mutateAvmState (load → transform → persist, serialized).
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const loaded = await loadAvmState();
-      const next = avmOnAppActive(loaded);
-      if (!cancelled) {
+    mutateAvmState(avmOnAppActive)
+      .then(({ prev, next }) => {
+        if (cancelled) return;
         setAvmState(next);
-        if (next.sessionOpen && !loaded.sessionOpen) {
+        if (avmOpenedNewSession(prev, next)) {
           cameraEventsRef.current.push({
             type: 'avmSession',
             ts: new Date().toISOString(),
@@ -919,28 +926,28 @@ export default function CameraScreen({ navigation }) {
             reason: 'PAP-1920 validation session opened',
           });
         }
-      }
-      await saveAvmState(next);
-    })().catch(() => { /* AVM must never break the camera screen */ });
+      })
+      .catch(() => { /* AVM must never break the camera screen */ });
     const sub = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState !== 'active' && nextAppState !== 'background') return;
-      const prev = avmStateRef.current;
-      if (!prev) return; // not loaded yet
-      const next = nextAppState === 'active'
-        ? avmOnAppActive(prev)
-        : avmOnAppBackground(prev);
-      setAvmState(next);
-      if (nextAppState === 'active' && next.sessionOpen && !prev.sessionOpen) {
-        cameraEventsRef.current.push({
-          type: 'avmSession',
-          ts: new Date().toISOString(),
-          appVersion: next.version,
-          sessionIndex: next.sessionIndex,
-          captureCount: next.captureCount,
-          reason: 'PAP-1920 validation session resumed-as-new',
-        });
-      }
-      saveAvmState(next).catch(() => {});
+      mutateAvmState(nextAppState === 'active' ? avmOnAppActive : avmOnAppBackground)
+        .then(({ prev, next }) => {
+          setAvmState(next);
+          // Emit on "open or resume-past-grace", not on !prev.sessionOpen —
+          // sessionOpen stays true across background (lazy close), so the
+          // old guard was dead code for every session after the first.
+          if (nextAppState === 'active' && avmOpenedNewSession(prev, next)) {
+            cameraEventsRef.current.push({
+              type: 'avmSession',
+              ts: new Date().toISOString(),
+              appVersion: next.version,
+              sessionIndex: next.sessionIndex,
+              captureCount: next.captureCount,
+              reason: 'PAP-1920 validation session resumed-as-new',
+            });
+          }
+        })
+        .catch(() => {});
     });
     return () => { cancelled = true; sub.remove(); };
   }, []);

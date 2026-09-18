@@ -20,12 +20,21 @@ jest.mock('expo-battery', () => ({ getBatteryLevelAsync: jest.fn() }), { virtual
 jest.mock('../src/utils/debugShare', () => ({ shareDebugReport: jest.fn() }));
 jest.mock('../src/utils/trainingDataUpload', () => ({ uploadTrainingData: jest.fn() }));
 
-const mockLoadAvmState = jest.fn();
-const mockSaveAvmState = jest.fn();
+// Owner-semantics mock (v2 store contract): ONE mutable copy, mutations
+// apply the real pure transition to it — mirroring avmStore's single
+// in-process owner without the disk layer (covered by
+// pap1920.avm_store_race.test.js).
+const mockAvmState = { value: null };
 jest.mock('../src/utils/avmStore', () => ({
-  loadAvmState: (...args) => mockLoadAvmState(...args),
-  saveAvmState: (...args) => mockSaveAvmState(...args),
-  getAvmBatteryLevel: () => mockBattery.value,
+  getAvmState: async () => mockAvmState.value,
+  mutateAvmState: async (transition, now = 0) => {
+    const prev = mockAvmState.value;
+    const out = transition(prev, now);
+    const next = out && 'state' in out ? out.state : out;
+    mockAvmState.value = next;
+    return { prev, next, out };
+  },
+  getAvmBatteryLevel: async () => mockBattery.value,
 }));
 
 import ResultScreen from '../src/screens/ResultScreen';
@@ -71,7 +80,7 @@ function armedOpenState() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockBattery.value = 0.9;
-  mockLoadAvmState.mockResolvedValue(armedOpenState());
+  mockAvmState.value = armedOpenState();
 });
 
 describe('PAP-1920 AVM result-screen flow', () => {
@@ -98,9 +107,8 @@ describe('PAP-1920 AVM result-screen flow', () => {
     });
     expect(call.actualTeethCount).toBe(36);
     expect(uploadTrainingData).toHaveBeenCalledTimes(1);
-    // capture budget consumed + persisted
-    expect(mockSaveAvmState).toHaveBeenCalledTimes(1);
-    expect(mockSaveAvmState.mock.calls[0][0]).toMatchObject({ captureCount: 1, sessionIndex: 1 });
+    // capture budget consumed through the store owner (single copy)
+    expect(mockAvmState.value).toMatchObject({ captureCount: 1, sessionIndex: 1 });
     await waitFor(() => expect(queryByText(/sent ✓/)).toBeTruthy());
   });
 
@@ -123,12 +131,12 @@ describe('PAP-1920 AVM result-screen flow', () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(queryByTestId('avm-label-input')).toBeNull();
     expect(shareDebugReport).not.toHaveBeenCalled();
-    expect(mockSaveAvmState).not.toHaveBeenCalled(); // capture NOT counted
+    expect(mockAvmState.value).toMatchObject({ captureCount: 0 }); // capture NOT counted
     expect(queryByText(/Self-test paused — battery below 25%/)).toBeTruthy();
   });
 
   test('AC2: dormant mode (capture limit) → zero prompts, zero events', async () => {
-    mockLoadAvmState.mockResolvedValue({ ...armedOpenState(), captureCount: 10, sessionOpen: false });
+    mockAvmState.value = { ...armedOpenState(), captureCount: 10, sessionOpen: false };
     const { queryByTestId, queryByText } = renderResult({ toothCount: 36, confidence: 0.75 });
     await new Promise((r) => setTimeout(r, 50));
     expect(queryByTestId('avm-label-input')).toBeNull();

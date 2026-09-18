@@ -48,6 +48,7 @@ export function freshAvmState(version, now = 0) {
     sessionIndex: 0,
     captureCount: 0,
     sessionOpen: false,
+    sessionCounted: false,
     lastSeenTs: now,
   };
 }
@@ -72,6 +73,7 @@ export function normalizeAvmState(persisted, currentVersion, now = 0) {
     sessionIndex: num(persisted.sessionIndex),
     captureCount: num(persisted.captureCount),
     sessionOpen: !!persisted.sessionOpen,
+    sessionCounted: !!persisted.sessionCounted,
     lastSeenTs: num(persisted.lastSeenTs),
   };
 }
@@ -103,12 +105,14 @@ export function isAvmCollecting(state) {
  */
 export function avmOnAppActive(state, now) {
   if (!avmCanArm(state)) {
-    return { ...state, sessionOpen: false, lastSeenTs: now };
+    return { ...state, sessionOpen: false, sessionCounted: false, lastSeenTs: now };
   }
   if (state.sessionOpen && now - state.lastSeenTs <= AVM_SESSION_RESUME_GRACE_MS) {
     return { ...state, lastSeenTs: now };
   }
-  return { ...state, sessionOpen: true, lastSeenTs: now };
+  // A NEW session opens (launch, or return past the grace window): the
+  // session slot is unspent until its FIRST completed capture.
+  return { ...state, sessionOpen: true, sessionCounted: false, lastSeenTs: now };
 }
 
 /**
@@ -120,20 +124,49 @@ export function avmOnAppBackground(state, now) {
 }
 
 /**
+ * Did this active-transition OPEN a session — app launch, or a return to
+ * foreground past the resume grace?  For the avmSession cameraEvent:
+ * `!prev.sessionOpen` alone is dead code after the first open, because
+ * backgrounding only lazily closes (sessionOpen stays true), so this
+ * predicate also fires when an open-but-stale session (gap > grace,
+ * including a killed process) starts a NEW session.
+ * `next.lastSeenTs` is the transition timestamp avmOnAppActive just wrote.
+ */
+export function avmOpenedNewSession(prev, next) {
+  if (!next || !next.sessionOpen) return false;
+  if (!prev || !prev.sessionOpen) return true;
+  return next.lastSeenTs - prev.lastSeenTs > AVM_SESSION_RESUME_GRACE_MS;
+}
+
+/**
  * A capture completed (a result screen is being shown).
  * Increments captureCount; the FIRST capture of an open session also marks
- * the session as consumed (sessionIndex++).  Hitting the capture limit ends
- * the session immediately — the mode is fully dormant from here (AC2).
+ * the session as consumed (sessionIndex++) — later captures of the SAME
+ * session must not spend another of the N slots (v2 fix found by the
+ * store-race regression test: the v1 form incremented on every capture, so
+ * one 3-shot session exhausted the whole N=3 budget).  Hitting the capture
+ * limit ends the session immediately — the mode is fully dormant from
+ * here (AC2).
  *
  * Returns { state, shotIndex } where shotIndex is the 1-based index of this
  * capture within the version (used for the validationSession context tag).
  */
 export function avmRecordCapture(state, now) {
   const captureCount = state.captureCount + 1;
-  const sessionIndex = state.sessionOpen ? Math.max(state.sessionIndex, Math.min(AVM_SESSION_LIMIT, state.sessionIndex + 1)) : state.sessionIndex;
+  const firstOfSession = state.sessionOpen && !state.sessionCounted;
+  const sessionIndex = firstOfSession
+    ? Math.min(AVM_SESSION_LIMIT, state.sessionIndex + 1)
+    : state.sessionIndex;
   const sessionOpen = state.sessionOpen && captureCount < AVM_CAPTURE_LIMIT;
   return {
-    state: { ...state, captureCount, sessionIndex, sessionOpen, lastSeenTs: now },
+    state: {
+      ...state,
+      captureCount,
+      sessionIndex,
+      sessionCounted: state.sessionCounted || firstOfSession,
+      sessionOpen,
+      lastSeenTs: now,
+    },
     shotIndex: captureCount,
   };
 }

@@ -28,8 +28,8 @@ import { uploadTrainingData } from '../utils/trainingDataUpload';
 // PAP-1920: Auto-Validation Mode — label prompt + auto-share while armed.
 // The capture/detection path is untouched (spec AC3); this screen only adds
 // the collection UX the operator asked for ("the app does the test itself").
-import { avmShouldCollect, avmRecordCapture, buildValidationSessionContext, AVM_CAPTURE_LIMIT } from '../utils/avm';
-import { loadAvmState, saveAvmState, getAvmBatteryLevel } from '../utils/avmStore';
+import { avmShouldCollect, avmRecordCapture, buildValidationSessionContext, AVM_CAPTURE_LIMIT, AVM_BATTERY_FLOOR } from '../utils/avm';
+import { getAvmState, mutateAvmState, getAvmBatteryLevel } from '../utils/avmStore';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -210,18 +210,22 @@ export default function ResultScreen({ navigation, route }) {
     avmFiredRef.current = true;
     let cancelled = false;
     (async () => {
-      const state = await loadAvmState();
+      // Single-owner discipline (QA cross-check fix): read and mutate only
+      // through avmStore — never a private copy.  The increment below is a
+      // serialized read → avmRecordCapture → persist inside the store, so a
+      // concurrent CameraScreen AppState save can no longer roll it back.
+      const state = await getAvmState();
       const batteryLevel = await getAvmBatteryLevel();
       if (!avmShouldCollect(state, batteryLevel)) {
         // Dormant — or battery below the floor: zero prompts, zero events.
-        if (state.sessionOpen && batteryLevel != null && batteryLevel < 0.25) {
+        if (state.sessionOpen && batteryLevel != null && batteryLevel < AVM_BATTERY_FLOOR) {
           setAvmStatus({ shotIndex: null, phase: 'battery' });
         }
         return;
       }
-      const { state: nextState, shotIndex } = avmRecordCapture(state);
+      const { out } = await mutateAvmState(avmRecordCapture);
+      const { state: nextState, shotIndex } = out;
       avmStateRef.current = nextState;
-      await saveAvmState(nextState);
       if (cancelled) return;
       // Prefill with the detected count when there is one (one-tap confirm);
       // abstains start empty — the operator types the true count.

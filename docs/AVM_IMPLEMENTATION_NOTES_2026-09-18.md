@@ -82,3 +82,60 @@ files above. algoSha-relevant code is byte-identical.
    label tap → auto-share lands with `validationSession` context + tag; 10th
    capture or 3rd capture-bearing session → mode dormant (no banner/prompt);
    app update (new BUILD_LABEL) → re-armed.
+
+
+## v2 — QA cross-check fixes (2026-09-18, verdict 7f5d1dc7: FAIL → fixed)
+
+**1. BLOCKING race fixed with QA's option (b) — single in-process owner.**
+`avmStore.js` now holds the ONE copy of AVM state. New API:
+- `getAvmState(now)` — read through the owner (loads disk once per process).
+- `mutateAvmState(transition, now)` — serialized read → pure transform →
+  persist; returns `{prev, next, out}`. `loadAvmState`/`saveAvmState` are
+  GONE from the public surface (stale import would fail loudly).
+
+CameraScreen (stack parent, never remounts under Result) no longer keeps a
+private snapshot: mount-arm and AppState transitions go through
+`mutateAvmState`, and its old `avmStateRef` mirror is deleted. ResultScreen
+reads `getAvmState` and increments via `mutateAvmState(avmRecordCapture)`.
+The v1 failure mode (CameraScreen re-saving a stale mount-time copy over
+ResultScreen's persisted counters on every background/active cycle) is
+structurally impossible now — there is no second copy anywhere.
+
+**2. SECOND bug found by the required regression test (spec AC2 conformance):
+session slots were consumed per CAPTURE, not per session.** v1
+`avmRecordCapture` incremented `sessionIndex` on every capture while open,
+so one 3-shot session exhausted the whole N=3 budget — sessions 2 and 3
+would never collect. Fixed with a `sessionCounted` flag on the state
+(spent on the first capture of a session, reset when `avmOnAppActive`
+opens a new session past the grace window; `normalizeAvmState` coerces it,
+so v1 state files parse — worst case one already-counted session counts
+once more; no v1 file can exist in the field since b158 never shipped).
+The v1 pure test "AC2: version change re-arms" only passed because its
+timestamps were within the grace window — it was ONE multi-capture
+session reaching dormancy via this bug; it now uses >grace gaps.
+
+**3. QA non-blocking notes applied:**
+- `avmSession` "resumed-as-new" event was dead code (`!prev.sessionOpen`
+  never fires after the first open because background is a lazy close).
+  New pure predicate `avmOpenedNewSession(prev, next)` fires on open OR
+  resume-past-grace (incl. killed-process relaunch with a stale-open file).
+- ResultScreen imports `AVM_BATTERY_FLOOR` instead of hardcoding 0.25.
+- Counted ≠ shared: `captureCount` increments BEFORE the label prompt
+  resolves — a process kill (or unmount mid-async) leaves the capture
+  counted but the sample unshared. **QA scoring should use SHARED samples
+  as the denominator** (tag `validation=avm`).
+
+**4. One addition beyond the QA ask (flagged for review):** CameraScreen
+re-syncs its banner projection on navigation focus via a read-only
+`getAvmState()` — after the budget's final capture, the banner now hides
+on return to the camera instead of lingering until the next AppState
+event. Read-only; no write path added.
+
+**Tests:** `pap1920.avm_store_race.test.js` (NEW, 6) — real avmStore with
+an in-memory FS: the exact QA failure sequence (record → background →
+active → counters survive, shotIndex monotonic), concurrent-mutation
+serialization, simulated process restart, 3-session dormancy, 10-capture
+mid-session dormancy, corrupt-file fail-safe. `pap1920.avm.test.js` grows
+to 20 (session-slot fix + `avmOpenedNewSession` ×5). Result-screen suite
+(5) now mocks the owner contract. Full suite green at the v2 commit
+(exit 0; pap1862 sweep rows=364).
