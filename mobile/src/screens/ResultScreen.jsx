@@ -25,6 +25,11 @@ import GearContourOverlay from '../components/GearContourOverlay';
 import useGearStore from '../store/useGearStore';
 import { shareDebugReport } from '../utils/debugShare';
 import { uploadTrainingData } from '../utils/trainingDataUpload';
+// PAP-1920: Auto-Validation Mode — label prompt + auto-share while armed.
+// The capture/detection path is untouched (spec AC3); this screen only adds
+// the collection UX the operator asked for ("the app does the test itself").
+import { avmShouldCollect, avmRecordCapture, buildValidationSessionContext, AVM_CAPTURE_LIMIT } from '../utils/avm';
+import { loadAvmState, saveAvmState, getAvmBatteryLevel } from '../utils/avmStore';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -183,6 +188,108 @@ export default function ResultScreen({ navigation, route }) {
     }
   };
 
+  // ── PAP-1920: Auto-Validation Mode collection ─────────────────────────
+  // This screen mounts exactly once per COMPLETED capture (CameraScreen
+  // navigates here only after countTeeth produced a result — cancels,
+  // no-detections and errors stay on the camera screen).  While the AVM
+  // session is collecting and battery is above the floor, we (a) count the
+  // capture against the per-version budget, (b) ask for the one thing
+  // telemetry can never self-supply — the true tooth count — and (c)
+  // auto-share the full debug report with a validationSession context.
+  // Skipped labels still share (sample stored unlabeled); low battery skips
+  // BOTH prompt and share (captures themselves are never blocked).
+  const [avmStatus, setAvmStatus] = useState(null); // {shotIndex, total, phase}
+  const [avmPrompt, setAvmPrompt] = useState(null); // {shotIndex, batteryLevel}
+  const [avmLabel, setAvmLabel] = useState('');
+  const avmLabelNum = parseInt(avmLabel, 10);
+  const avmFiredRef = useRef(false);
+  const avmStateRef = useRef(null);
+
+  useEffect(() => {
+    if (avmFiredRef.current) return;
+    avmFiredRef.current = true;
+    let cancelled = false;
+    (async () => {
+      const state = await loadAvmState();
+      const batteryLevel = await getAvmBatteryLevel();
+      if (!avmShouldCollect(state, batteryLevel)) {
+        // Dormant — or battery below the floor: zero prompts, zero events.
+        if (state.sessionOpen && batteryLevel != null && batteryLevel < 0.25) {
+          setAvmStatus({ shotIndex: null, phase: 'battery' });
+        }
+        return;
+      }
+      const { state: nextState, shotIndex } = avmRecordCapture(state);
+      avmStateRef.current = nextState;
+      await saveAvmState(nextState);
+      if (cancelled) return;
+      // Prefill with the detected count when there is one (one-tap confirm);
+      // abstains start empty — the operator types the true count.
+      setAvmLabel(toothCount != null && toothCount >= 1 ? String(toothCount) : '');
+      setAvmPrompt({ shotIndex, batteryLevel });
+      setAvmStatus({ shotIndex, phase: 'prompt' });
+    })().catch(() => { /* AVM must never break the result screen */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const avmSend = async (label) => {
+    const labelValue = label != null && label >= 1 ? label : null;
+    setAvmPrompt(null);
+    setAvmStatus((s) => ({ ...(s ?? { shotIndex: null }), shotIndex: s?.shotIndex ?? avmPrompt?.shotIndex, phase: 'sending' }));
+    try {
+      await shareDebugReport({
+        photoPath: originalPhotoPath || photoPath,
+        croppedPhotoPath: originalPhotoPath ? photoPath : null,
+        toothCount,
+        confidence,
+        gearContour,
+        // Labeled shots carry the operator-confirmed count (the ground
+        // truth); skipped shots share unlabeled (actualTeethCount null).
+        actualTeethCount: labelValue,
+        algorithmRuntimeMs,
+        aimCrop: aimCrop ?? null,
+        cameraErrors: cameraErrors ?? null,
+        cameraEvents: cameraEvents ?? null,
+        innerContourSuspected: innerContourSuspected ?? false,
+        algoDiag: algoDiag ?? null,
+        validationSession: buildValidationSessionContext({
+          state: avmStateRef.current,
+          shotIndex: avmPrompt?.shotIndex,
+          label: labelValue,
+          batteryLevel: avmPrompt?.batteryLevel ?? null,
+        }),
+      });
+      if (labelValue != null) {
+        // Fire-and-forget training upload (same contract as the manual
+        // share path); Promise.resolve guards a mocked/void return.
+        Promise.resolve(uploadTrainingData({
+          photoPath: originalPhotoPath || photoPath,
+          toothCount,
+          confidence,
+          gearContour,
+          actualTeethCount: labelValue,
+        })).catch(() => {});
+      }
+      setAvmStatus({ shotIndex: avmPrompt?.shotIndex, phase: 'sent' });
+    } catch (e) {
+      setAvmStatus({ shotIndex: avmPrompt?.shotIndex, phase: 'failed' });
+    }
+  };
+
+  // One-line status text for the AVM self-test (null = nothing to show).
+  const avmStatusText = (() => {
+    if (avmStatus == null) return null;
+    const k = avmStatus.shotIndex != null ? `${avmStatus.shotIndex}/${AVM_CAPTURE_LIMIT}` : null;
+    switch (avmStatus.phase) {
+      case 'battery': return 'Self-test paused — battery below 25%';
+      case 'prompt':  return null; // the modal IS the UI
+      case 'sending': return `Self-test ${k ?? ''} · sending…`;
+      case 'sent':    return `Self-test ${k ?? ''} · sent ✓`;
+      case 'failed':  return `Self-test ${k ?? ''} · upload failed — Share Debug can retry`;
+      default:        return null;
+    }
+  })();
+
   const handleReset = () => {
     reset();
     navigation.navigate('Camera');
@@ -302,7 +409,91 @@ export default function ResultScreen({ navigation, route }) {
             <Text style={styles.shareText}>{sharing ? 'Sharing…' : hasShared ? 'Shared' : 'Share Debug'}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* PAP-1920: AVM self-test status line (one line, informational) */}
+        {avmStatusText != null && (
+          <Text style={styles.avmStatusLine} testID="avm-status">{avmStatusText}</Text>
+        )}
       </Animated.View>
+
+      {/* ── PAP-1920: AVM label prompt modal ─────────────────────── */}
+      {/* The one operator input telemetry can never self-supply: the true
+          teeth count.  Skippable — a skipped shot still auto-shares, stored
+          unlabeled (spec design 3). */}
+      <Modal
+        visible={avmPrompt != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { /* skippable */ avmSend(null); }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Self-test: how many teeth?</Text>
+
+            <View style={styles.counterRow}>
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => {
+                  const cur = parseInt(avmLabel, 10);
+                  const next = Math.max(1, (isNaN(cur) ? 1 : cur) - 1);
+                  setAvmLabel(String(next));
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.counterBtnText}>−</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.counterValue}
+                value={avmLabel}
+                onChangeText={(text) => setAvmLabel(text.replace(/[^0-9]/g, '').slice(0, 3))}
+                keyboardType="number-pad"
+                maxLength={3}
+                placeholder={abstained ? '?' : String(toothCount ?? '?')}
+                placeholderTextColor="#555"
+                testID="avm-label-input"
+              />
+
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => {
+                  const cur = parseInt(avmLabel, 10);
+                  setAvmLabel(String(isNaN(cur) ? 1 : cur + 1));
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.counterBtnText}>+</Text>
+              </TouchableOpacity>
+              <Text style={styles.counterUnit}>T</Text>
+            </View>
+
+            <Text style={styles.avmModalHint}>
+              Counted {abstained ? 'nothing (too dense to count)' : `${toothCount ?? '?'}T`} — enter the
+              real number so we can score this shot.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => avmSend(null)}
+                activeOpacity={0.8}
+                testID="avm-skip"
+              >
+                <Text style={styles.modalCancelText}>Skip</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalCommitBtn}
+                onPress={() => avmSend(avmLabelNum)}
+                activeOpacity={0.8}
+                testID="avm-send"
+              >
+                <Text style={styles.modalCommitText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Tooth count confirmation modal ──────────────────────── */}
       <Modal
@@ -552,6 +743,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
   modalCommitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
+  // PAP-1920: AVM status line + label-modal hint
+  avmStatusLine: { marginTop: 14, fontSize: 12.5, color: '#7fb8e8', fontWeight: '600', textAlign: 'center' },
+  avmModalHint: { fontSize: 12, color: '#FF9800', marginTop: 10, textAlign: 'center', lineHeight: 17 },
 
   briefToast: {
     position: 'absolute',

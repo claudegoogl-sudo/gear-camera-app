@@ -40,6 +40,10 @@ import { shareDebugReport } from '../utils/debugShare';
 import { emitChainringAbstainTelemetry } from '../utils/chainringAbstainTelemetry';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Sentry, SENTRY_ENABLED } from '../sentry';
+// PAP-1920: Auto-Validation Mode — first-N-sessions per release self-test.
+// Instrumentation only; the capture/detection path is untouched (spec AC3).
+import { isAvmCollecting, avmGuidanceHint, avmOnAppActive, avmOnAppBackground } from '../utils/avm';
+import { loadAvmState, saveAvmState } from '../utils/avmStore';
 
 // PAP-476: aim-circle reticle now ≈ full screen width.  Computed from
 // Dimensions at module load (camera screen is portrait-locked elsewhere in
@@ -889,6 +893,58 @@ export default function CameraScreen({ navigation }) {
       .catch(() => { /* silent — no error toasts */ });
   }, []);
 
+  // ── PAP-1920: Auto-Validation Mode arming ─────────────────────────────
+  // Loads the persisted per-version counter (BUILD_LABEL is the key — every
+  // install/update re-arms) and opens a session on foreground.  Pure
+  // lifecycle logic lives in utils/avm.js; this effect only loads/saves.
+  // The guidance banner below renders while the session is collecting.
+  const [avmState, setAvmState] = useState(null);
+  const avmStateRef = useRef(null);
+  useEffect(() => { avmStateRef.current = avmState; }, [avmState]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const loaded = await loadAvmState();
+      const next = avmOnAppActive(loaded);
+      if (!cancelled) {
+        setAvmState(next);
+        if (next.sessionOpen && !loaded.sessionOpen) {
+          cameraEventsRef.current.push({
+            type: 'avmSession',
+            ts: new Date().toISOString(),
+            appVersion: next.version,
+            sessionIndex: next.sessionIndex,
+            captureCount: next.captureCount,
+            reason: 'PAP-1920 validation session opened',
+          });
+        }
+      }
+      await saveAvmState(next);
+    })().catch(() => { /* AVM must never break the camera screen */ });
+    const sub = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState !== 'active' && nextAppState !== 'background') return;
+      const prev = avmStateRef.current;
+      if (!prev) return; // not loaded yet
+      const next = nextAppState === 'active'
+        ? avmOnAppActive(prev)
+        : avmOnAppBackground(prev);
+      setAvmState(next);
+      if (nextAppState === 'active' && next.sessionOpen && !prev.sessionOpen) {
+        cameraEventsRef.current.push({
+          type: 'avmSession',
+          ts: new Date().toISOString(),
+          appVersion: next.version,
+          sessionIndex: next.sessionIndex,
+          captureCount: next.captureCount,
+          reason: 'PAP-1920 validation session resumed-as-new',
+        });
+      }
+      saveAvmState(next).catch(() => {});
+    });
+    return () => { cancelled = true; sub.remove(); };
+  }, []);
+
   // ── Download + install a specific build ───────────────────────────────
   const downloadAndInstall = useCallback(async (build) => {
     if (!build.downloadUrl) {
@@ -1012,6 +1068,10 @@ export default function CameraScreen({ navigation }) {
   }
 
   const captureDisabled = isProcessing || !isCameraReady || !isFocused;
+
+  // PAP-1920: derived AVM UI state (banner only — capture path untouched).
+  const avmCollecting = isAvmCollecting(avmState);
+  const avmHint = avmGuidanceHint(avmState);
 
   return (
     <View style={styles.container}>
@@ -1200,6 +1260,15 @@ export default function CameraScreen({ navigation }) {
             <Text style={[styles.updateIconText, updateInfo.available && styles.updateIconTextActive]}>⬇</Text>
           </TouchableOpacity>
         </View>
+
+        {/* PAP-1920: AVM soft guidance banner — one line, cycles through
+            class targets by completed-capture count.  Steers, never gates:
+            ANY capture still counts toward the self-test (spec design 5). */}
+        {avmCollecting && isCameraReady && isFocused && !isProcessing && !cameraHasError && (
+          <View style={styles.avmBanner} pointerEvents="none" testID="avm-banner">
+            <Text style={styles.avmBannerText}>{avmHint}</Text>
+          </View>
+        )}
 
         {/* Aim circle */}
         <View style={styles.aimGuide} pointerEvents="none">
@@ -1432,6 +1501,22 @@ const styles = StyleSheet.create({
   noCameraText: { color: '#fff', fontSize: 16 },
   permButton: { backgroundColor: '#fff', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
   permButtonText: { fontSize: 15, fontWeight: '600', color: '#111' },
+
+  // PAP-1920: AVM guidance banner (soft, one line)
+  avmBanner: {
+    position: 'absolute',
+    top: 64,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+    backgroundColor: 'rgba(33,150,243,0.22)',
+    borderColor: 'rgba(33,150,243,0.55)',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  avmBannerText: { color: '#bde3ff', fontSize: 12.5, fontWeight: '600', textAlign: 'center' },
 
   topBar: {
     flexDirection: 'row',

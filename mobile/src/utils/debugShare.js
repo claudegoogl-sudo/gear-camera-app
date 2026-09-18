@@ -65,6 +65,7 @@ async function readPhotoBytes(localPath, label) {
  *   policyRetryCount: number|null,
  *   innerContourSuspected: boolean|null,
  *   algoDiag: object|null,
+ *   validationSession: object|null,  // PAP-1920 AVM auto-share context (optional)
  * }} params
  * @returns {Promise<string>} Sentry issue-search URL filtered to this event.
  */
@@ -86,6 +87,7 @@ export async function shareDebugReport({
   policyRetryCount,
   innerContourSuspected,
   algoDiag,
+  validationSession,
 }) {
   if (!SENTRY_ENABLED) {
     throw new Error('Sentry DSN not configured — cannot upload debug report.');
@@ -116,7 +118,17 @@ export async function shareDebugReport({
       buildLabel: BUILD_LABEL,
       ...(toothCount != null ? { toothCount: String(toothCount) } : {}),
       ...(actualTeethCount != null ? { actualTeethCount: String(actualTeethCount) } : {}),
+      // PAP-1920: AVM auto-shares carry an explicit tag so QA's triage can
+      // split auto-collected validation shots from manual operator shares
+      // without parsing contexts.
+      ...(validationSession ? { validation: 'avm' } : {}),
     });
+    // PAP-1920 (spec design 4): validation session context — appVersion,
+    // sessionIndex, shotIndex, label, batteryLevel.  Additive; absent on
+    // manual shares so the payload stays byte-backward-compatible (AC5).
+    if (validationSession) {
+      scope.setContext('validationSession', validationSession);
+    }
     scope.setContext('gear', {
       toothCount: toothCount ?? null,
       confidence: confidence != null ? Math.round(confidence * 10000) / 10000 : null,
