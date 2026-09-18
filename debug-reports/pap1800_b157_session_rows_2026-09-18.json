@@ -1,0 +1,41 @@
+{
+  "capture": "ace8f58c (b157, 2026-09-18T09:21Z, FP5, user b0fd948a)",
+  "device": {
+    "tc": 36,
+    "conf": 0.7535,
+    "abstained": false,
+    "method": "peak",
+    "channels": "fft90=36 multiR=36(rel .163) outer=36(rel .071) bc=36(pur .199,peaks 24) clahe=35",
+    "stageMs": {
+      "load": 3537,
+      "preprocess": 283,
+      "detect": 25075,
+      "methods": 51,
+      "total": 28946
+    },
+    "budgetExhausted": false,
+    "preprocessBackend": "native-cpp"
+  },
+  "headFreshCrop": {
+    "tc": 36,
+    "conf": 0.753,
+    "abstained": false,
+    "abstainReason": null,
+    "gateRule": null,
+    "method": "peak",
+    "peakTc": 36,
+    "fft90tc": 36,
+    "opTc": 36,
+    "bcTc": 36,
+    "bcPeaks": 24,
+    "contourRadius": 331,
+    "peakR": 347,
+    "rOuter": 305,
+    "chainringRegime": null,
+    "preGateTc": 36,
+    "preGateConf": 0.753
+  },
+  "runtime": 6041,
+  "labelConfirmed": false,
+  "note": "label 36T unconfirmed (operator/USB or CEO vision audit); b153 same-class event f3a8e88a read 36->11 (bc-consensus budget-exhausted) — same-gear fix data point if label holds"
+}
