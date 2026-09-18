@@ -1,0 +1,84 @@
+{
+  "issue": "PAP-1916 (uuid 864788a8-1257-422c-9742-d9930cd94f66) \u2014 analyzer zero-frames watch item",
+  "investigated_at": "2026-09-18T13:1xZ (Mobile, run 6988ce2e)",
+  "code_head_at_analysis": "c3a9e02 (main; zero code past b157 84a340f)",
+  "b157_occurrence": {
+    "event": "ace8f58cd21748449823837714992ff0 (debug_report, dist 157, FP5, device.class=high, user b0fd948a)",
+    "frameProcessorTimeout_cameraEvent": {
+      "ts": "2026-09-18T09:20:23.976Z",
+      "waitedMs": 10010,
+      "workletRuns": 0,
+      "processedFrames": 0,
+      "bufferFailures": 0,
+      "lastFailure": null,
+      "lastPixelFormat": null,
+      "frameProcessorAvailable": true,
+      "frameProcessorBuilt": true,
+      "nativePluginInstalled": true,
+      "retryKey": 0
+    },
+    "initialized": {
+      "ts": "2026-09-18T09:20:13.883Z",
+      "alreadyReady": false,
+      "retryKey": 0,
+      "analysisWidth": 640,
+      "analysisHeight": 480,
+      "analysisTarget": "format.videoSize",
+      "aimFormatPhoto": "4096x3072",
+      "aimFormatVideo": "640x480",
+      "aimFormatAspectParity": true
+    },
+    "cameraErrors": [],
+    "no_frameProcessorFirstFrame_ever": true,
+    "session_breadcrumbs": {
+      "09:20:02.5": "app cold start",
+      "09:20:05.1": "worklets loaded; 09:20:05.6 native kernels + cv::dft",
+      "09:20:05.76": "torchState (camera session gen-1 ready); torch cycle 06.29",
+      "09:20:12.72-13.18": "activity destroyed+recreated TWICE (device.orientation portrait + CONFIGURATION_CHANGED + LOCALE_CHANGED), 'Running main' x2",
+      "09:20:13.64": "torchState (camera session gen-2, fresh CameraScreen instance)",
+      "09:20:23.97": "[MotionDetection] No frames processed \u2014 IMU-only mode",
+      "09:20:27.5/40.7/50.5": "3 captures OK (flash on), captureResult aspectParity TRUE x3",
+      "09:21:22": "GearCounter 36T conf 75.3% (photo-path detection; unaffected)"
+    }
+  },
+  "b153_precedent_same_device_same_user": {
+    "events": [
+      "92e4b255112c4be5b942cec2ed72e22b",
+      "b48160675b9d4082ad91f7e103b059a5 (09-11, dist 153, FP5, user b0fd948a)"
+    ],
+    "dead_sessions": [
+      {
+        "session_start": "17:32:07.7",
+        "warn": "17:32:17.972 [MotionDetection] No frames processed \u2014 IMU-only mode"
+      },
+      {
+        "session_start": "17:34:53.5",
+        "warn": "17:35:04.292 (same)"
+      },
+      {
+        "session_start": "17:35:51.4",
+        "warn": "17:36:01.537 (same)"
+      }
+    ],
+    "alive_session": {
+      "session_start": "17:38:18.2",
+      "frameDiag": "17:38:18.848 width=640 height=480 bufLen=307200 bpp=1.00 (+0.36s after ready)",
+      "cres": "CRES #1..#7 logged every ~0.5s"
+    },
+    "unobserved_sessions": "5 sessions <10s (capture navigated away before activation window closed)",
+    "caveat": "b153 lacks workletRuns/bufferFailures counters (PAP-1879 instrumentation 3571f78 first shipped b154) so never-invoked vs buffer-null cannot be distinguished on b153; warn condition (no successful buffer read within 10s of enabled) is identical, and the extractYPlane plugin + pixelFormat='yuv' data path predate b153 by ~100 builds (207222b, e2126ff)."
+  },
+  "code_ruling": {
+    "analyzer_membership_independent_of_format": "CameraView.kt update(): config.frameProcessor = Enabled iff enableFrameProcessor (= frameProcessor prop != null, Camera.tsx render). format only feeds ResolutionSelectors (CameraSession+Configuration.kt \u00a71-4).",
+    "forSize_is_soft": "ResolutionSelector+forSize.kt sorts supported sizes by aspect+pixel proximity; never empties the set; cannot unbind.",
+    "bind_accepted": "configureCamera bindToLifecycle includes frameProcessorOutput; onInitialized fired and cameraErrors stayed [] all session \u2014 an unsupported combination would have thrown -> onError.",
+    "size_coupling_not_engaged": "FP5 aimFormat.videoSize = 640x480 == b153 negotiated default (b153 FrameDiag 640x480). initialized.analysisWidth/Height 640/480, analysisTarget format.videoSize. No ~9x raise.",
+    "why_640x480": "AIM_FORMAT_FILTERS = [videoAspectRatio 4/3 (prio 2), photoResolution max (prio 1)] \u2014 no videoResolution filter; among formats tied on (video aspect, photo pixels) the first in device order wins -> smallest 4:3 video. Preview+video+analysis all pinned 640x480 (3 identical-size streams) + photo 4096x3072. Coupling stays armed for devices whose format lists order differently \u2014 analysisTarget telemetry watches it."
+  },
+  "open_hypotheses": {
+    "H1_HAL_delivery": "OEM HAL intermittently delivers zero frames to the ImageAnalysis stream at session start while preview/photo continue. Build-independent; matches b153+b157.",
+    "H2_session_churn_JSI_binding_race": "onViewReady -> VisionCameraProxy.setFrameProcessor posts to UI thread and resolves the view (findCameraViewById); Camera.tsx rebinds only on frameProcessor identity change and our fp identity is stable \u2014 a missed binding at session start never heals in-session and yields exactly workletRuns=0 with zero cameraErrors. 09-18 dead session is the only one preceded by a double activity recreation; b153 dead sessions followed camera-screen remounts (churn in both).",
+    "not_discriminable_now": "workletRunCount is the only probe on the delivery path; no native analyze() counter is exported."
+  },
+  "boardwide_check": "Sentry newest event 34701a5f (09:21:55Z 09-18); zero further frameProcessorTimeout occurrences through 13:00Z 09-18."
+}
