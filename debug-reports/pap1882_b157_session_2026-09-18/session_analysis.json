@@ -1,0 +1,107 @@
+{
+ "issue": "PAP-1882 (uuid ca0914f5-85b3-4c5a-8275-6fb0012dfa19) \u2014 b157 FP5 session 2026-09-18",
+ "events": [
+  {
+   "id": "af1ced14fcf24f858c5d1d3a51b8f0b7",
+   "ts": "2026-09-18T09:21:22Z",
+   "kind": "chainring_abstain",
+   "resultId": "cap-mu6r16pm-10"
+  },
+  {
+   "id": "ace8f58cd21748449823837714992ff0",
+   "ts": "2026-09-18T09:21:54Z",
+   "kind": "debug_report",
+   "attachments": [
+    "photo.jpg 4096x3072 (EXIF orient 6)",
+    "cropped.jpg 1764x1764"
+   ]
+  },
+  {
+   "id": "34701a5f251e42c9977f0b5fe8ab02ec",
+   "ts": "2026-09-18T09:21:55Z",
+   "kind": "training_sample"
+  }
+ ],
+ "session_timeline_utc": {
+  "09:20:02": "app cold start (dist 157, build 84a340f)",
+  "09:20:05": "native-cpp kernels + native cv::dft installed; torch ON, wide-angle deviceId 0",
+  "09:20:12-13": "activity recreated twice (CONFIGURATION/LOCALE_CHANGED)",
+  "09:20:13.883": "camera initialized: analysisTarget=format.videoSize, analysis 640x480, aimFormatVideo 4:3, aimFormatPhoto 4096x3072 4:3, aimFormatAspectParity TRUE",
+  "09:20:23.974": "frameProcessorTimeout waitedMs=10010 workletRuns=0 processedFrames=0; console: '[MotionDetection] No frames processed \u2014 IMU-only mode' (PAP-1879 lane: analyzer zero frames on FP5/high-class)",
+  "09:20:27.491": "capture #1 (flash on)",
+  "09:20:40.657": "capture #2",
+  "09:20:50.547": "capture #3",
+  "09:21:22": "GearCounter: 900x900px load=3537 preprocess=283 detect=25075 methods=51 total=28946; center=(480,503) multi-threshold; contourR=331 gearR=347; fft90=36T multiR=36T(rel=0.163) outer=36T(rel=0.071) bc=36T(pur=0.199,peaks=24) clahe=35T(conf=1.00); result=36T conf=75.3% via=peak; abstained=false",
+  "09:21:54": "debug_report share; battery 16%"
+ },
+ "pap1882_acceptance": {
+  "aspectParity_TRUE": {
+   "initialized_breadcrumb": true,
+   "captureResult": {
+    "photoWidth": 4096,
+    "photoHeight": 3072,
+    "photoAspect": "4:3",
+    "aimFormatVideo": "640x480",
+    "aimFormatVideoAspect": "4:3"
+   }
+  },
+  "wysiwyg_geometric_proof": {
+   "reported_aimCrop": {
+    "originX": 655,
+    "originY": 712,
+    "side": 1764,
+    "aimCircleFrac": 1,
+    "fullW": 3072,
+    "fullH": 4096,
+    "measured": true,
+    "screenCenterX": 204.1666717529297,
+    "screenCenterY": 350.16664123535156
+   },
+   "code_predicted_origin": [
+    655,
+    712
+   ],
+   "independent_template_match": {
+    "method": "cv2.matchTemplate TM_CCOEFF_NORMED on EXIF-transposed photo vs cropped.jpg at 1/8 scale",
+    "ncc": 0.997,
+    "origin": [
+     656,
+     712
+    ],
+    "delta_px": [
+     1,
+     0
+    ]
+   },
+   "coverfit_parity": {
+    "photo_visible_width_fraction": 0.6044,
+    "preview_640x480_coverfit_visible_width_fraction": 0.6044,
+    "note": "identical because preview and photo are both 4:3 (aspect parity)"
+   },
+   "gear_containment": {
+    "detection_center_900": [
+     480,
+     503
+    ],
+    "mapped_to_1764": [
+     940.8,
+     985.9
+    ],
+    "offset_from_crop_center_px": [
+     58.8,
+     103.9
+    ],
+    "gearR_1764": 680,
+    "max_extent": 799.6,
+    "inscribed_mask_radius": 882,
+    "fully_inside_aim_circle": true
+   }
+  },
+  "verdict": "ACCEPTANCE MET \u2014 aspectParity TRUE + crop == measured aim-circle reticle region within 1 px; close done per pre-registered unblockDescriptor"
+ },
+ "notes_for_other_lanes": {
+  "PAP-1800_QA": "first post-b157 labeled device telemetry arrived (resume trigger met); only 1 of shot list landed (36T committed, 4/5 channels 36, clahe 35); Thursday b153 had 36->11 wrong read - if same gear this is a fix data point; battery 16% may have cut session; operator may continue",
+  "PAP-1879_QA": "frameProcessorTimeout fired on FP5 (device.class=high, user b0fd948a) - does NOT match recorded reopen rule (Xiaomi/107c063b/low-class) but analyzer zero-frames is now observed on FP5 too; CRES fell back IMU-only; aiming+capture unaffected",
+  "PAP-1914_AE": "36T is not Mid(16-21T) class; no Mid telemetry yet"
+ }
+}
