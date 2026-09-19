@@ -1,0 +1,47 @@
+[
+ {
+  "eventID": "ace8f58cd21748449823837714992ff0",
+  "ts": "2026-09-18T09:21:54.593000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (157) · 2026-09-12 22:58",
+  "appVersion": null,
+  "sessionIndex": null,
+  "shotIndex": null,
+  "label": null,
+  "batteryLevel": null,
+  "schemaVersion": null,
+  "isAvm": false,
+  "tc": 36,
+  "conf": 0.7535,
+  "committedClass": "large",
+  "labelClass": null,
+  "labelMatchesTc": null,
+  "abstained": false,
+  "algorithmRuntimeMs": 28946,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 24,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-19T07-46/ace8f58c_photo.jpg",
+  "census": {
+   "cx": 480,
+   "cy": 503,
+   "contourRadius": 331,
+   "nCands": 26,
+   "signalPresent": null,
+   "nearCand": null,
+   "bestCand": {
+    "tc": 36,
+    "rel": 0.2115
+   }
+  },
+  "censusMs": 1797
+ }
+]
