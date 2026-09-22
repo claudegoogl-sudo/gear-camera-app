@@ -1,0 +1,164 @@
+{
+ "generatedAt": "2026-09-22T11:28:52Z",
+ "source": "sentry per-group + project events union (22 session events, all dist 158, release v1.0.0 (158) \u00b7 2026-09-18 21:38)",
+ "session": {
+  "user": "b0fd948acd754ef6830617682e6a46e4",
+  "device": "FP5/Android 15",
+  "window": "2026-09-22T10:20:44Z..10:38:10Z",
+  "battery": "54->52%",
+  "build": "b158 (AVM)"
+ },
+ "supersedes": "pap1800_avm_b158_rows_2026-09-22.json (3-payload pre-coverage-fix draft, never committed)",
+ "accuracy": {
+  "labeled": 9,
+  "exact": 3,
+  "exact_of_labeled": "33.3%",
+  "answers_given": 3,
+  "exact_of_answers": "100%",
+  "misses": "all tc=0 abstains: 51x2+48x2 (G1-tc40 dense gate, by design) + 10x2 (pap474 conf-0, small-cog NEW datum)"
+ },
+ "ac_verdicts": {
+  "AC1": "PASS w/ 1 gap \u2014 9/10 captures labeled+auto-shared; s=0 shot0 (a3b7b7dd) unlabeled with NO explicit skip marker (fold into ME ticket)",
+  "AC2": "FAIL \u2014 sessionIndex=3 observed (72a3107f s=3 shot=8, d1940abc s=3 shot=9); limit 0..2; shotIndex version-cumulative reached 9/10; dormancy never engaged",
+  "AC3": "PASS \u2014 buildLabel v1.0.0 (158) on all 22 events; AE build-time algo byte-identity verification stands",
+  "AC4": "PASS \u2014 battery 54->52%, no sub-0.25 share (guard not exercised, not violated)",
+  "AC5": "PASS \u2014 debug_report/training_sample/chainring_abstain shapes parse; label carried as actualTeethCount on non-tagged pair events; validationSession schemaVersion=1 present on AVM-tagged events"
+ },
+ "shots": [
+  {
+   "s": 0,
+   "shot": 0,
+   "labeled": false,
+   "lbl": null,
+   "tc": null,
+   "kind": "chainring_abstain (G1-tc40/pap1872-dense; bcPeaks 51; no label, no skip marker)",
+   "id": "a3b7b7dd",
+   "ts": "10:20:44"
+  },
+  {
+   "s": 1,
+   "shot": 1,
+   "labeled": true,
+   "lbl": 51,
+   "tc": 0,
+   "verdict": "MISS-abstain",
+   "rule": "G1-tc40 (pap1872-dense)",
+   "id": "058f427c",
+   "ts": "10:21:33",
+   "att": {
+    "cropped": "917200553",
+    "photo": "917200552"
+   }
+  },
+  {
+   "s": 1,
+   "shot": 2,
+   "labeled": true,
+   "lbl": 51,
+   "tc": 0,
+   "verdict": "MISS-abstain",
+   "rule": "G1-tc40 (pap1872-dense)",
+   "id": "1e0b5c41",
+   "ts": "10:22:31",
+   "att": {
+    "cropped": "917202535",
+    "photo": "917202533"
+   }
+  },
+  {
+   "s": 1,
+   "shot": 3,
+   "labeled": true,
+   "lbl": 14,
+   "tc": 14,
+   "verdict": "HIT-exact",
+   "rule": null,
+   "id": "92e9fb91",
+   "ts": "10:23:31"
+  },
+  {
+   "s": 1,
+   "shot": 4,
+   "labeled": true,
+   "lbl": 16,
+   "tc": 16,
+   "verdict": "HIT-exact",
+   "rule": null,
+   "id": "1a9f8500",
+   "ts": "10:25:06"
+  },
+  {
+   "s": 1,
+   "shot": 5,
+   "labeled": true,
+   "lbl": 18,
+   "tc": 18,
+   "verdict": "HIT-exact",
+   "rule": null,
+   "id": "a0e2495c",
+   "ts": "10:26:14"
+  },
+  {
+   "s": 2,
+   "shot": 6,
+   "labeled": true,
+   "lbl": 48,
+   "tc": 0,
+   "verdict": "MISS-abstain",
+   "rule": "G1-tc40 (pap1872-dense)",
+   "id": "a730f84f",
+   "ts": "10:31:29",
+   "att": {
+    "cropped": "917216379",
+    "photo": "917216378"
+   }
+  },
+  {
+   "s": 2,
+   "shot": 7,
+   "labeled": true,
+   "lbl": 48,
+   "tc": 0,
+   "verdict": "MISS-abstain",
+   "rule": "G1-tc40 (pap1872-dense)",
+   "id": "8e7b61dd",
+   "ts": "10:32:39",
+   "att": {
+    "cropped": "917222181",
+    "photo": "917222178"
+   }
+  },
+  {
+   "s": 3,
+   "shot": 8,
+   "labeled": true,
+   "lbl": 10,
+   "tc": 0,
+   "verdict": "MISS-abstain",
+   "rule": "pap474-abstain (bc-consensus conf-0)",
+   "ac2": "VIOLATION s=3>limit",
+   "id": "72a3107f",
+   "ts": "10:35:53",
+   "att": {
+    "cropped": "917223622",
+    "photo": "917223621"
+   }
+  },
+  {
+   "s": 3,
+   "shot": 9,
+   "labeled": true,
+   "lbl": 10,
+   "tc": 0,
+   "verdict": "MISS-abstain",
+   "rule": "pap474-abstain (label via actualTeethCount tag)",
+   "ac2": "VIOLATION s=3>limit",
+   "id": "d1940abc",
+   "ts": "10:38:09",
+   "att": {
+    "cropped": "917227013",
+    "photo": "917227010"
+   }
+  }
+ ]
+}
