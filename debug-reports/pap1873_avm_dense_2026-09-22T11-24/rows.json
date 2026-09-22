@@ -1,0 +1,383 @@
+[
+ {
+  "eventID": "72a3107ff0b84c12ae1c27373dacd181",
+  "ts": "2026-09-22T10:35:53.320000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 3,
+  "shotIndex": 8,
+  "label": 10,
+  "batteryLevel": "0.5299999713897705",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 0,
+  "conf": 0,
+  "committedClass": "out-of-range",
+  "labelClass": "small",
+  "labelMatchesTc": false,
+  "abstained": true,
+  "algorithmRuntimeMs": 28615,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 7,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/72a3107f_photo.jpg",
+  "census": {
+   "cx": 465,
+   "cy": 494,
+   "contourRadius": 314,
+   "nCands": 17,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 10,
+    "rel": 0.241
+   },
+   "bestCand": {
+    "tc": 10,
+    "rel": 0.241
+   }
+  },
+  "censusMs": 1844
+ },
+ {
+  "eventID": "8e7b61dd84794aaf82480654e3afd8cb",
+  "ts": "2026-09-22T10:32:39.769000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 2,
+  "shotIndex": 7,
+  "label": 48,
+  "batteryLevel": "0.5299999713897705",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 0,
+  "conf": 0,
+  "committedClass": "out-of-range",
+  "labelClass": "dense",
+  "labelMatchesTc": false,
+  "abstained": true,
+  "algorithmRuntimeMs": 27630,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 7,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/8e7b61dd_photo.jpg",
+  "census": {
+   "cx": 433,
+   "cy": 455,
+   "contourRadius": 351,
+   "nCands": 33,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 47,
+    "rel": 0.1222
+   },
+   "bestCand": {
+    "tc": 12,
+    "rel": 0.1418
+   }
+  },
+  "censusMs": 1513
+ },
+ {
+  "eventID": "a730f84f633a463f8c74ae20d89f56dd",
+  "ts": "2026-09-22T10:31:29.707000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 2,
+  "shotIndex": 6,
+  "label": 48,
+  "batteryLevel": "0.5299999713897705",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 0,
+  "conf": 0,
+  "committedClass": "out-of-range",
+  "labelClass": "dense",
+  "labelMatchesTc": false,
+  "abstained": true,
+  "algorithmRuntimeMs": 26541,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 17,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/a730f84f_photo.jpg",
+  "census": {
+   "cx": 458,
+   "cy": 458,
+   "contourRadius": 352,
+   "nCands": 43,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 47,
+    "rel": 0.1572
+   },
+   "bestCand": {
+    "tc": 47,
+    "rel": 0.1572
+   }
+  },
+  "censusMs": 1456
+ },
+ {
+  "eventID": "a0e2495cc0724cc1817e08811bf47986",
+  "ts": "2026-09-22T10:26:14.600000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 1,
+  "shotIndex": 5,
+  "label": 18,
+  "batteryLevel": "0.5400000214576721",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 18,
+  "conf": 0.8861,
+  "committedClass": "mid",
+  "labelClass": "mid",
+  "labelMatchesTc": true,
+  "abstained": false,
+  "algorithmRuntimeMs": 32238,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 7,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/a0e2495c_photo.jpg",
+  "census": {
+   "cx": 437,
+   "cy": 471,
+   "contourRadius": 307,
+   "nCands": 19,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 18,
+    "rel": 0.0904
+   },
+   "bestCand": {
+    "tc": 12,
+    "rel": 0.1865
+   }
+  },
+  "censusMs": 2170
+ },
+ {
+  "eventID": "1a9f8500493544d6a0dd0c03b611ffc0",
+  "ts": "2026-09-22T10:25:06.212000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 1,
+  "shotIndex": 4,
+  "label": 16,
+  "batteryLevel": "0.5400000214576721",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 16,
+  "conf": 0.7039,
+  "committedClass": "mid",
+  "labelClass": "mid",
+  "labelMatchesTc": true,
+  "abstained": false,
+  "algorithmRuntimeMs": 29027,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 7,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/1a9f8500_photo.jpg",
+  "census": {
+   "cx": 439,
+   "cy": 377,
+   "contourRadius": 313,
+   "nCands": 30,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 16,
+    "rel": 0.2969
+   },
+   "bestCand": {
+    "tc": 16,
+    "rel": 0.2969
+   }
+  },
+  "censusMs": 1915
+ },
+ {
+  "eventID": "92e9fb916d9c4f4584571f93ecf8cd43",
+  "ts": "2026-09-22T10:23:31.560000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 1,
+  "shotIndex": 3,
+  "label": 14,
+  "batteryLevel": "0.5400000214576721",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 14,
+  "conf": 1,
+  "committedClass": "small",
+  "labelClass": "small",
+  "labelMatchesTc": true,
+  "abstained": false,
+  "algorithmRuntimeMs": 34106,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 6,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/92e9fb91_photo.jpg",
+  "census": {
+   "cx": 448,
+   "cy": 481,
+   "contourRadius": 361,
+   "nCands": 22,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 14,
+    "rel": 0.3256
+   },
+   "bestCand": {
+    "tc": 14,
+    "rel": 0.3256
+   }
+  },
+  "censusMs": 1616
+ },
+ {
+  "eventID": "1e0b5c419e574bd28d7b2edf3bc21b6d",
+  "ts": "2026-09-22T10:22:31.341000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 1,
+  "shotIndex": 2,
+  "label": 51,
+  "batteryLevel": "0.5400000214576721",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 0,
+  "conf": 0,
+  "committedClass": "out-of-range",
+  "labelClass": "dense",
+  "labelMatchesTc": false,
+  "abstained": true,
+  "algorithmRuntimeMs": 32495,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 7,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/1e0b5c41_photo.jpg",
+  "census": {
+   "cx": 444,
+   "cy": 452,
+   "contourRadius": 268,
+   "nCands": 35,
+   "signalPresent": false,
+   "nearCand": null,
+   "bestCand": {
+    "tc": 12,
+    "rel": 0.2291
+   }
+  },
+  "censusMs": 1609
+ },
+ {
+  "eventID": "058f427c09834c89ae01ebdb58a6d6af",
+  "ts": "2026-09-22T10:21:33.312000Z",
+  "kind": "debug_report",
+  "buildLabel": "v1.0.0 (158) · 2026-09-18 21:38",
+  "appVersion": "v1.0.0 (158) · 2026-09-18 21:38",
+  "sessionIndex": 1,
+  "shotIndex": 1,
+  "label": 51,
+  "batteryLevel": "0.5400000214576721",
+  "schemaVersion": 1,
+  "isAvm": true,
+  "tc": 0,
+  "conf": 0,
+  "committedClass": "out-of-range",
+  "labelClass": "dense",
+  "labelMatchesTc": false,
+  "abstained": true,
+  "algorithmRuntimeMs": 31337,
+  "policyRetryCount": null,
+  "innerContourSuspected": false,
+  "nCameraEvents": 31,
+  "exif": {
+   "exposureTime": null,
+   "iso": null,
+   "fNumber": null,
+   "subjectDistance": null,
+   "focalLength": null,
+   "exposureBias": null
+  },
+  "photoFile": "/home/paperclip/.paperclip/instances/default/projects/2a07d193-9a49-4cbd-ab0b-486be0ae801b/gear-camera-app/debug-reports/pap1873_avm_dense_2026-09-22T11-24/058f427c_photo.jpg",
+  "census": {
+   "cx": 448,
+   "cy": 486,
+   "contourRadius": 310,
+   "nCands": 37,
+   "signalPresent": true,
+   "nearCand": {
+    "tc": 51,
+    "rel": 0.1744
+   },
+   "bestCand": {
+    "tc": 51,
+    "rel": 0.1744
+   }
+  },
+  "censusMs": 1563
+ }
+]
