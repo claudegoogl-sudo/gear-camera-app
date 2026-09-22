@@ -1,0 +1,57 @@
+{
+ "prereg": "comment 63e65848 (2026-09-22), pass criteria posted before evaluation",
+ "data": "debug-reports/pap1872_gate_export_2026-09-12/gate_corpus_rows_export.json (364 rows, QA 15d433d export lane)",
+ "dense_fires": 33,
+ "ordinary_fires": 22,
+ "voids": 0,
+ "P1_dense_R": {
+  "fires": 16,
+  "exact": 16,
+  "wrong": 0,
+  "net": 16
+ },
+ "P1_dense_Rp": {
+  "fires": 17,
+  "exact": 17,
+  "wrong": 0,
+  "net": 17
+ },
+ "P2_ordinary_R": {
+  "fires": 0,
+  "exact": 0,
+  "wrong": 0,
+  "net": 0
+ },
+ "P2_ordinary_Rp": {
+  "fires": 0,
+  "exact": 0,
+  "wrong": 0,
+  "net": 0
+ },
+ "dense_preGateTc_exact": 18,
+ "G1t40_dense_Rp": {
+  "fires": 17,
+  "exact": 17,
+  "wrong": 0,
+  "net": 17
+ },
+ "R_abstain_dense_bcPeaks": [
+  2,
+  2,
+  4,
+  4,
+  4,
+  4,
+  4,
+  4,
+  4,
+  4,
+  12,
+  12,
+  13,
+  13,
+  36,
+  39
+ ],
+ "verdict": "POSITIVE (P1: net +16 >= +8, wrong 0 <= 2, fires 16 >= 10; P2: wrong 0, net 0)"
+}
