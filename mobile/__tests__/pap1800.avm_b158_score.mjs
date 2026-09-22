@@ -72,10 +72,40 @@ function getJson(url, tok) {
   });
 }
 
-// Single page: the 14-day project window currently holds tens of events
-// (10 at b158 publish time).  Revisit pagination only if volume explodes.
+// ENUMERATION (fixed 2026-09-22 after a real scoring miss):
+// The project latest-events endpoint silently caps responses at 10 rows and
+// ADVANCES ITS INTERNAL CURSOR BY per_page (per_page=100 skips ~90 events),
+// and per-group event lists are also 10-row-capped.  Single-page enumeration
+// therefore missed 6 of 9 shots in the 2026-09-22 b158 session.  Fix: union
+// across BOTH endpoints and multiple cursor windows, dedupe by eventID, and
+// filter client-side.  per_page=10 walks are the empirically stable shape.
 async function fetchEvents({ org, proj, tok }) {
-  return getJson(`${API}/projects/${org}/${proj}/events/?full=true&per_page=100`, tok);
+  const paths = [];
+  for (const cur of ['', '&cursor=0:10:0', '&cursor=10:10:0', '&cursor=20:10:0']) {
+    paths.push(`/projects/${org}/${proj}/events/?full=true&per_page=10${cur}`);
+    paths.push(`/projects/${org}/${proj}/events/?full=true&per_page=10&sort=-ts_event_timestamp${cur}`);
+  }
+  const issues = await getJson(`${API}/projects/${org}/${proj}/issues/?per_page=100`, tok);
+  for (const g of issues) {
+    if (!g || !g.id) continue;
+    for (const cur of ['', '&cursor=0:10:0', '&cursor=10:10:0', '&cursor=20:10:0']) {
+      paths.push(`/organizations/${org}/issues/${g.id}/events/?per_page=10&sort=-ts_event_timestamp&full=true${cur}`);
+    }
+  }
+  const byId = new Map();
+  let fresh = 0, rounds = 0;
+  do {
+    fresh = 0; rounds++;
+    for (const p of paths) {
+      let rows;
+      try { rows = await getJson(`${API}${p}`, tok); } catch (e) { continue; }
+      if (!Array.isArray(rows)) continue;
+      for (const e of rows) {
+        if (e && e.eventID && !byId.has(e.eventID)) { byId.set(e.eventID, e); fresh++; }
+      }
+    }
+  } while (fresh > 0 && rounds < 5); // union converges: stop when a full pass adds nothing
+  return [...byId.values()];
 }
 
 function tagMap(ev) {
