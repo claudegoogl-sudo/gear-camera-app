@@ -99,8 +99,8 @@ describe('PAP-1920 AVM result-screen flow', () => {
     const call = shareDebugReport.mock.calls[0][0];
     expect(call.validationSession).toMatchObject({
       appVersion: 'v1.0.0 (158) · test',
-      sessionIndex: 1, // first capture marks the session as consumed
-      shotIndex: 1,
+      sessionIndex: 0, // PAP-1927: 0-based ordinals (AC2 contract)
+      shotIndex: 0,
       label: 36,
       batteryLevel: 0.9,
       schemaVersion: 1,
@@ -120,7 +120,7 @@ describe('PAP-1920 AVM result-screen flow', () => {
     await waitFor(() => expect(shareDebugReport).toHaveBeenCalledTimes(1));
     const call = shareDebugReport.mock.calls[0][0];
     expect(call.actualTeethCount).toBeNull();
-    expect(call.validationSession).toMatchObject({ label: null, shotIndex: 1 });
+    expect(call.validationSession).toMatchObject({ label: null, shotIndex: 0, sessionIndex: 0 });
     expect(uploadTrainingData).not.toHaveBeenCalled();
   });
 
@@ -135,13 +135,15 @@ describe('PAP-1920 AVM result-screen flow', () => {
     expect(queryByText(/Self-test paused — battery below 25%/)).toBeTruthy();
   });
 
-  test('AC2: dormant mode (capture limit) → zero prompts, zero events', async () => {
+  test('AC2: dormant mode (capture limit) → zero prompts, zero events, dormancy advisory', async () => {
     mockAvmState.value = { ...armedOpenState(), captureCount: 10, sessionOpen: false };
     const { queryByTestId, queryByText } = renderResult({ toothCount: 36, confidence: 0.75 });
     await new Promise((r) => setTimeout(r, 50));
     expect(queryByTestId('avm-label-input')).toBeNull();
     expect(shareDebugReport).not.toHaveBeenCalled();
-    expect(queryByTestId('avm-status')).toBeNull();
+    // PAP-1927 dormancy advisory: one line tells the operator collection
+    // stopped by design (spec AC2), not by breakage
+    expect(queryByText(/Self-test complete/)).toBeTruthy();
   });
 
   test('abstained capture still collects: prompt prefills empty, Send carries the typed label', async () => {

@@ -16,6 +16,7 @@ import {
   freshAvmState,
   normalizeAvmState,
   avmCanArm,
+  avmIsDormant,
   isAvmCollecting,
   avmOnAppActive,
   avmOnAppBackground,
@@ -33,7 +34,12 @@ describe('PAP-1920 AVM state machine', () => {
   test('fresh state is armed and can open a session', () => {
     const s = freshAvmState(V1, 1000);
     expect(avmCanArm(s)).toBe(true);
-    expect(isAvmCollecting(s)).toBe(false); // no session open yet
+    // PAP-1927: an armed-but-not-yet-open state collects (a capture
+    // self-arms) — the b158 10:20:44 shot went uncollected because the
+    // v2 gate required sessionOpen, which the cold-launch arm had not
+    // written before the first capture completed.
+    expect(isAvmCollecting(s)).toBe(true);
+    expect(avmIsDormant(s)).toBe(false);
     const open = avmOnAppActive(s, 1000);
     expect(open.sessionOpen).toBe(true);
     expect(isAvmCollecting(open)).toBe(true);
@@ -109,9 +115,11 @@ describe('PAP-1920 AVM state machine', () => {
     s = avmOnAppActive(s, 500_000); // session 3 opens
     const r1 = avmRecordCapture(s, 500_001);
     expect(r1.state.sessionIndex).toBe(AVM_SESSION_LIMIT); // now "spent"
+    expect(r1.sessionIndex).toBe(AVM_SESSION_LIMIT - 1); // PAP-1927: 0-based ordinal, STILL in bounds
     expect(isAvmCollecting(r1.state)).toBe(true); // but still open
     const r2 = avmRecordCapture(r1.state, 500_002);
-    expect(r2.shotIndex).toBe(4);
+    expect(r2.shotIndex).toBe(3);
+    expect(r2.sessionIndex).toBe(AVM_SESSION_LIMIT - 1);
     expect(isAvmCollecting(r2.state)).toBe(true);
   });
 
@@ -123,7 +131,7 @@ describe('PAP-1920 AVM state machine', () => {
       last = avmRecordCapture(s, i);
       s = last.state;
     }
-    expect(last.shotIndex).toBe(AVM_CAPTURE_LIMIT);
+    expect(last.shotIndex).toBe(AVM_CAPTURE_LIMIT - 1); // PAP-1927: 0-based ordinal, in bounds
     expect(s.captureCount).toBe(AVM_CAPTURE_LIMIT);
     expect(s.sessionOpen).toBe(false); // fully dormant immediately
     expect(isAvmCollecting(s)).toBe(false);
@@ -175,30 +183,37 @@ describe('PAP-1920 AVM state machine', () => {
     expect(avmGuidanceHint(null)).toBeNull();
   });
 
-  test('validationSession context shape (spec design 4)', () => {
+  test('validationSession context shape (spec design 4; PAP-1927 0-based ordinals)', () => {
     const s = { ...freshAvmState(V1, 0), sessionOpen: true };
     const ctx = buildValidationSessionContext({ state: s, shotIndex: 4, label: 36, batteryLevel: 0.87 });
     expect(ctx).toEqual({
       appVersion: V1,
       sessionIndex: 0,
       shotIndex: 4,
-      shotsRemaining: AVM_CAPTURE_LIMIT - 4,
+      // shot 4 is the FIFTH capture — 5 of the 10 remain AFTER it
+      shotsRemaining: AVM_CAPTURE_LIMIT - 5,
       label: 36,
       batteryLevel: 0.87,
       schemaVersion: 1,
     });
-    const skipped = buildValidationSessionContext({ state: s, shotIndex: 1, label: null, batteryLevel: null });
+    // explicit ordinal wins (the ResultScreen path); pre-capture state
+    // fallback yields the same 0-based ordinal
+    const explicit = buildValidationSessionContext({ state: s, sessionIndex: 2, shotIndex: 0, label: 1, batteryLevel: 0.5 });
+    expect(explicit.sessionIndex).toBe(2);
+    expect(explicit.shotsRemaining).toBe(AVM_CAPTURE_LIMIT - 1); // first shot -> 9 (QA scorer model)
+    const skipped = buildValidationSessionContext({ state: s, shotIndex: 0, label: null, batteryLevel: null });
     expect(skipped.label).toBeNull();
     expect(skipped.batteryLevel).toBeNull();
+    expect(skipped.shotsRemaining).toBe(AVM_CAPTURE_LIMIT - 1);
   });
 
-  test('shotIndex is 1-based and monotonic within a version', () => {
+  test('PAP-1927: shotIndex is 0-based and monotonic within a version', () => {
     let s = freshAvmState(V1, 0);
     s = avmOnAppActive(s, 0);
     const r1 = avmRecordCapture(s, 1);
-    expect(r1.shotIndex).toBe(1);
+    expect(r1.shotIndex).toBe(0);
     const r2 = avmRecordCapture(r1.state, 2);
-    expect(r2.shotIndex).toBe(2);
+    expect(r2.shotIndex).toBe(1);
   });
 
   test('v2 fix: later captures of the SAME session do not spend another N slot', () => {
@@ -210,7 +225,8 @@ describe('PAP-1920 AVM state machine', () => {
     expect(r2.state.sessionIndex).toBe(1); // v1 bug: this was 2
     const r3 = avmRecordCapture(r2.state, 3_000);
     expect(r3.state.sessionIndex).toBe(1); // v1 bug: this was 3
-    expect(r3.shotIndex).toBe(3);
+    expect(r3.shotIndex).toBe(2); // 0-based ordinal of the third capture
+    expect(r3.sessionIndex).toBe(0); // still session ordinal 0
     expect(avmCanArm(r3.state)).toBe(true); // sessions 2 and 3 still owed
     // resume within grace: still session 1, still not re-spent
     const bg = avmOnAppBackground(r3.state, 4_000);
@@ -222,7 +238,8 @@ describe('PAP-1920 AVM state machine', () => {
     const next = avmOnAppActive(bg2, 32_000 + AVM_SESSION_RESUME_GRACE_MS + 1);
     const r5 = avmRecordCapture(next, 200_000);
     expect(r5.state.sessionIndex).toBe(2);
-    expect(r5.shotIndex).toBe(5);
+    expect(r5.shotIndex).toBe(4);
+    expect(r5.sessionIndex).toBe(1); // session ordinal 1, 0-based
   });
 
   // ── avmOpenedNewSession (v2: fixes the dead-code avmSession event) ────
@@ -270,6 +287,96 @@ describe('PAP-1920 AVM state machine', () => {
       expect(s.sessionOpen).toBe(false); // capture limit reached mid-session
       const next = avmOnAppActive(s, 10 * AVM_SESSION_RESUME_GRACE_MS);
       expect(avmOpenedNewSession(s, next)).toBe(false);
+    });
+  });
+
+  // ── PAP-1927: AC2 arming defect regression (b158 sessionIndex=3 FAIL) ──
+  describe('PAP-1927 AC2 ordinals + arming bounds', () => {
+    test('three capture-bearing sessions emit ordinals 0,1,2 — never the limit', () => {
+      // replays the 2026-09-22 operator session shape: 3 sessions, 9 shots
+      let s = freshAvmState(V1, 0);
+      const ordinals = [];
+      const shots = [];
+      const perSession = [5, 2, 2]; // b158 shape: 5 + 2 + 2 = 9 captures
+      let t = 0;
+      for (const n of perSession) {
+        t += 2 * AVM_SESSION_RESUME_GRACE_MS + n; // clear past grace from lastSeen
+        s = avmOnAppActive(s, t);
+        for (let i = 0; i < n; i++) {
+          const r = avmRecordCapture(s, t + i + 1);
+          ordinals.push(r.sessionIndex);
+          shots.push(r.shotIndex);
+          s = r.state;
+        }
+        s = avmOnAppBackground(s, t + n + 1);
+      }
+      // session ordinals: 0×5, 1×2, 2×2 — max is LIMIT-1, IN bounds
+      expect(ordinals).toEqual([0, 0, 0, 0, 0, 1, 1, 2, 2]);
+      expect(Math.max(...ordinals)).toBe(AVM_SESSION_LIMIT - 1);
+      expect(shots).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+      expect(s.sessionIndex).toBe(AVM_SESSION_LIMIT);
+      expect(avmCanArm(s)).toBe(false); // no 4th arm possible
+      // background is a lazy close — the NEXT active transition is what
+      // fully retires the open 3rd session
+      const closed = avmOnAppActive(s, t + AVM_SESSION_RESUME_GRACE_MS + 5);
+      expect(closed.sessionOpen).toBe(false);
+      expect(avmIsDormant(closed)).toBe(true);
+    });
+
+    test('a FOURTH session after the limit does not collect (dormancy engages)', () => {
+      let s = freshAvmState(V1, 0);
+      for (let i = 0; i < AVM_SESSION_LIMIT; i++) {
+        const t = i * (AVM_SESSION_RESUME_GRACE_MS + 10_000);
+        s = avmOnAppActive(s, t);
+        s = avmRecordCapture(s, t + 1).state;
+        s = avmOnAppBackground(s, t + 2);
+      }
+      const next = avmOnAppActive(s, 999_999_999); // 4th foreground period
+      expect(next.sessionOpen).toBe(false);
+      expect(isAvmCollecting(next)).toBe(false);
+      expect(avmShouldCollect(next, 0.99)).toBe(false); // no 4th-session payload can exist
+      expect(avmIsDormant(next)).toBe(true);
+    });
+
+    test('over-arm is VISIBLE, not clamped (b158 Math.min masked it)', () => {
+      // fabricate the bug state: a 4th armed session somehow opens
+      const bug = { ...freshAvmState(V1, 0), sessionIndex: AVM_SESSION_LIMIT, sessionOpen: true, sessionCounted: false };
+      const r = avmRecordCapture(bug, 1);
+      expect(r.sessionIndex).toBe(AVM_SESSION_LIMIT); // out-of-bounds ordinal — scorer FAILs loudly
+      expect(r.state.sessionIndex).toBe(AVM_SESSION_LIMIT + 1); // counter not clamped
+    });
+
+    test('self-arm: a capture with NO open session still collects and counts it', () => {
+      // the b158 10:20:44 evidence — first capture after launch, arm not landed
+      const s = freshAvmState(V1, 0); // sessionOpen FALSE
+      expect(avmShouldCollect(s, 0.54)).toBe(true); // collected now, not skipped
+      const r = avmRecordCapture(s, 1);
+      expect(r.state.sessionOpen).toBe(true); // self-armed
+      expect(r.state.sessionIndex).toBe(1); // session slot spent
+      expect(r.state.sessionCounted).toBe(true);
+      expect(r.sessionIndex).toBe(0); // payload ordinal 0
+      expect(r.shotIndex).toBe(0);
+    });
+
+    test('dormancy predicate: limits reached via captures OR sessions', () => {
+      const byCaptures = { ...freshAvmState(V1, 0), captureCount: AVM_CAPTURE_LIMIT, sessionOpen: false };
+      expect(avmIsDormant(byCaptures)).toBe(true);
+      const bySessions = { ...freshAvmState(V1, 0), sessionIndex: AVM_SESSION_LIMIT, sessionOpen: false };
+      expect(avmIsDormant(bySessions)).toBe(true);
+      const armed = freshAvmState(V1, 0);
+      expect(avmIsDormant(armed)).toBe(false);
+    });
+
+    test('mid-limit session collects to its end (3rd session shot 2 still in bounds)', () => {
+      // documented design: the open session keeps collecting after its
+      // first capture spends the last slot — ordinal stays LIMIT-1
+      // 3rd session already counted: 3 slots consumed, still open, 4 shots so far
+      let s = { ...freshAvmState(V1, 0), sessionIndex: AVM_SESSION_LIMIT, sessionOpen: true, sessionCounted: true, captureCount: 4 };
+      expect(isAvmCollecting(s)).toBe(true);
+      const r = avmRecordCapture(s, 1);
+      expect(r.sessionIndex).toBe(AVM_SESSION_LIMIT - 1);
+      expect(r.state.sessionIndex).toBe(AVM_SESSION_LIMIT); // unchanged mid-session
+      expect(avmIsDormant(r.state)).toBe(false); // budget not exhausted yet
     });
   });
 });

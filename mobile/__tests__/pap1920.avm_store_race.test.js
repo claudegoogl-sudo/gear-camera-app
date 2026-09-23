@@ -74,16 +74,16 @@ describe('PAP-1920 v2: single-owner store — no stale-write race', () => {
     await store.mutateAvmState(avmOnAppActive, 1_000);
     // ResultScreen: capture 1 completes (writes {cc:1, si:1} through the store)
     const r1 = await store.mutateAvmState(avmRecordCapture, 2_000);
-    expect(r1.out.shotIndex).toBe(1);
+    expect(r1.out.shotIndex).toBe(0); // PAP-1927: 0-based ordinal
     // operator backgrounds to Telegram and returns (on EITHER screen)
     await store.mutateAvmState(avmOnAppBackground, 3_000);
     await store.mutateAvmState(avmOnAppActive, 30_000); // within grace
     // v1 rolled the file back to the mount-time {cc:0, si:0} here
     expect(await store.getAvmState()).toMatchObject({ captureCount: 1, sessionIndex: 1 });
     expect(readDiskState()).toMatchObject({ captureCount: 1, sessionIndex: 1 });
-    // capture 2 must be shot 2, not shot 1 again
+    // capture 2 must be shot ordinal 1, not 0 again
     const r2 = await store.mutateAvmState(avmRecordCapture, 31_000);
-    expect(r2.out.shotIndex).toBe(2);
+    expect(r2.out.shotIndex).toBe(1);
     expect(readDiskState()).toMatchObject({ captureCount: 2, sessionIndex: 1 });
   });
 
@@ -96,7 +96,7 @@ describe('PAP-1920 v2: single-owner store — no stale-write race', () => {
       store.mutateAvmState(avmOnAppBackground, 2_500),
       store.mutateAvmState(avmOnAppActive, 3_000),
     ]);
-    expect(rec.out.shotIndex).toBe(1);
+    expect(rec.out.shotIndex).toBe(0);
     const s = await store.getAvmState();
     expect(s.captureCount).toBe(1);          // incremented exactly once
     expect(s.sessionIndex).toBe(1);
@@ -118,7 +118,8 @@ describe('PAP-1920 v2: single-owner store — no stale-write race', () => {
     const { next } = await store.mutateAvmState(avmOnAppActive, 10 * AVM_SESSION_RESUME_GRACE_MS + 1);
     expect(next.sessionIndex).toBe(1); // still 1 until this session's first capture
     const r = await store.mutateAvmState(avmRecordCapture, 10 * AVM_SESSION_RESUME_GRACE_MS + 2);
-    expect(r.out.shotIndex).toBe(2);
+    expect(r.out.shotIndex).toBe(1);
+    expect(r.out.sessionIndex).toBe(1); // 0-based ordinal of session 2
     expect(r.next.sessionIndex).toBe(2);
   });
 
@@ -148,10 +149,10 @@ describe('PAP-1920 v2: single-owner store — no stale-write race', () => {
     for (let i = 1; i < AVM_CAPTURE_LIMIT; i++) {
       const r = await store.mutateAvmState(avmRecordCapture, 1_000 + i);
       expect(r.next.sessionOpen).toBe(true);
-      expect(r.out.shotIndex).toBe(i);
+      expect(r.out.shotIndex).toBe(i - 1); // 0-based
     }
     const last = await store.mutateAvmState(avmRecordCapture, 2_000);
-    expect(last.out.shotIndex).toBe(AVM_CAPTURE_LIMIT);
+    expect(last.out.shotIndex).toBe(AVM_CAPTURE_LIMIT - 1);
     expect(last.next.sessionOpen).toBe(false);      // fully dormant from here
     expect(isAvmCollecting(last.next)).toBe(false);
     expect(readDiskState()).toMatchObject({ captureCount: AVM_CAPTURE_LIMIT, sessionIndex: 1 });

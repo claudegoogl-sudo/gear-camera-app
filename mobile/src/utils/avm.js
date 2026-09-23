@@ -89,12 +89,32 @@ export function avmCanArm(state) {
 }
 
 /**
- * The current foreground session is collecting telemetry.
+ * The version is inside its collecting window.  Two cases:
+ *  - an OPEN session collects until its capture budget is spent; and
+ *  - a NOT-open state (cold-launch transient, missed AppState arm, or
+ *    post-crash recovery — PAP-1927: the b158 10:20:44 capture went
+ *    entirely uncollected because the session arm had not landed)
+ *    collects while the version can still arm: avmRecordCapture
+ *    SELF-ARMS on the capture, so the N-session budget can never leak
+ *    through an arming miss.
  * Null-safe for the pre-load render tick.
  */
 export function isAvmCollecting(state) {
-  if (!state || !state.sessionOpen) return false;
-  return state.captureCount < AVM_CAPTURE_LIMIT;
+  if (!state) return false;
+  if (state.sessionOpen) return state.captureCount < AVM_CAPTURE_LIMIT;
+  return avmCanArm(state);
+}
+
+/**
+ * PAP-1927 dormancy predicate (spec AC2: "after N sessions mode is fully
+ * dormant").  True when NOTHING collects and NOTHING can arm — the
+ * currently-open Nth session still collecting (documented design: dormancy
+ * applies to the NEXT arm) is NOT dormant yet.  Used by the on-device
+ * dormancy advisory so the operator is told the self-test is over.
+ */
+export function avmIsDormant(state) {
+  if (!state) return false;
+  return !isAvmCollecting(state) && !avmCanArm(state);
 }
 
 /**
@@ -148,26 +168,42 @@ export function avmOpenedNewSession(prev, next) {
  * limit ends the session immediately — the mode is fully dormant from
  * here (AC2).
  *
- * Returns { state, shotIndex } where shotIndex is the 1-based index of this
- * capture within the version (used for the validationSession context tag).
+ * Returns { state, shotIndex, sessionIndex } — the two ordinals are the
+ * 0-BASED indices of this capture within the version and of its session
+ * (used for the validationSession context tag; see PAP-1927 notes below).
  */
 export function avmRecordCapture(state, now) {
   const captureCount = state.captureCount + 1;
-  const firstOfSession = state.sessionOpen && !state.sessionCounted;
-  const sessionIndex = firstOfSession
-    ? Math.min(AVM_SESSION_LIMIT, state.sessionIndex + 1)
-    : state.sessionIndex;
-  const sessionOpen = state.sessionOpen && captureCount < AVM_CAPTURE_LIMIT;
+  // First completed capture of a session spends one of the N slots.  A
+  // capture arriving with NO open session (missed AppState arm — the
+  // PAP-1927 b158 evidence: the 10:20:44 shot was never collected because
+  // the arm had not landed) SELF-ARMS here: the capture opens AND counts
+  // the session, so arming misses can no longer leak the budget.
+  const firstOfSession = !state.sessionOpen || !state.sessionCounted;
+  // Store counter: sessions CONSUMED (1-based by nature — canArm compares
+  // it against the limit).  PAP-1927: the Math.min clamp is GONE — if a
+  // bug ever arms past the limit the counter must say so, or telemetry
+  // cannot distinguish the Nth session from the (N+1)th (b158's clamp
+  // made a dormancy violation invisible).
+  const sessionIndex = firstOfSession ? state.sessionIndex + 1 : state.sessionIndex;
   return {
     state: {
       ...state,
       captureCount,
       sessionIndex,
-      sessionCounted: state.sessionCounted || firstOfSession,
-      sessionOpen,
+      sessionCounted: true,
+      sessionOpen: captureCount < AVM_CAPTURE_LIMIT,
       lastSeenTs: now,
     },
-    shotIndex: captureCount,
+    // PAP-1927 payload ordinals — 0-based, per the AC2 contract
+    // (sessionIndex 0..AVM_SESSION_LIMIT-1, shotIndex
+    // 0..AVM_CAPTURE_LIMIT-1; QA scorer pap1800.avm_b158_score and the
+    // avmSession cameraEvent both use this convention).  They are the
+    // PRE-transition counters of the capture's own session/shot, with no
+    // clamping: an out-of-bounds ordinal in a payload is a loud dormancy
+    // violation, not a masked one.
+    shotIndex: captureCount - 1,
+    sessionIndex: firstOfSession ? state.sessionIndex : state.sessionIndex - 1,
   };
 }
 
@@ -206,13 +242,20 @@ export function avmGuidanceHint(state) {
 /**
  * Build the `validationSession` context block attached to auto-shared
  * debug reports (spec design 4).  Pure — unit-testable.
+ *
+ * PAP-1927: `sessionIndex` and `shotIndex` are 0-BASED ordinals (AC2
+ * contract: 0..AVM_SESSION_LIMIT-1 / 0..AVM_CAPTURE_LIMIT-1).  Pass the
+ * ordinal avmRecordCapture returned; when omitted, `state.sessionIndex`
+ * of a PRE-capture state is that same ordinal (sessions consumed before
+ * this one).  `shotsRemaining` counts budget left AFTER this shot, so the
+ * first shot of a version reports AVM_CAPTURE_LIMIT-1.
  */
-export function buildValidationSessionContext({ state, shotIndex, label, batteryLevel }) {
+export function buildValidationSessionContext({ state, sessionIndex, shotIndex, label, batteryLevel }) {
   return {
     appVersion: state.version,
-    sessionIndex: state.sessionIndex,
+    sessionIndex: sessionIndex ?? state.sessionIndex,
     shotIndex,
-    shotsRemaining: Math.max(0, AVM_CAPTURE_LIMIT - shotIndex),
+    shotsRemaining: Math.max(0, AVM_CAPTURE_LIMIT - shotIndex - 1),
     label: label ?? null,
     batteryLevel: batteryLevel ?? null,
     schemaVersion: 1,

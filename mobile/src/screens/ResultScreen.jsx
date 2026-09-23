@@ -28,7 +28,7 @@ import { uploadTrainingData } from '../utils/trainingDataUpload';
 // PAP-1920: Auto-Validation Mode — label prompt + auto-share while armed.
 // The capture/detection path is untouched (spec AC3); this screen only adds
 // the collection UX the operator asked for ("the app does the test itself").
-import { avmShouldCollect, avmRecordCapture, buildValidationSessionContext, AVM_CAPTURE_LIMIT, AVM_BATTERY_FLOOR } from '../utils/avm';
+import { avmShouldCollect, avmRecordCapture, avmIsDormant, buildValidationSessionContext, AVM_CAPTURE_LIMIT, AVM_BATTERY_FLOOR } from '../utils/avm';
 import { getAvmState, mutateAvmState, getAvmBatteryLevel } from '../utils/avmStore';
 
 function showToast(message) {
@@ -220,17 +220,23 @@ export default function ResultScreen({ navigation, route }) {
         // Dormant — or battery below the floor: zero prompts, zero events.
         if (state.sessionOpen && batteryLevel != null && batteryLevel < AVM_BATTERY_FLOOR) {
           setAvmStatus({ shotIndex: null, phase: 'battery' });
+        } else if (avmIsDormant(state)) {
+          // PAP-1927 dormancy advisory (AC2): once a version's limits are
+          // spent, say so — the operator must be able to tell collection
+          // stopped by design, not by breakage.
+          setAvmStatus({ shotIndex: null, phase: 'complete' });
         }
         return;
       }
       const { out } = await mutateAvmState(avmRecordCapture);
-      const { state: nextState, shotIndex } = out;
+      // PAP-1927: shotIndex/sessionIndex are 0-based ordinals (AC2 contract).
+      const { state: nextState, shotIndex, sessionIndex } = out;
       avmStateRef.current = nextState;
       if (cancelled) return;
       // Prefill with the detected count when there is one (one-tap confirm);
       // abstains start empty — the operator types the true count.
       setAvmLabel(toothCount != null && toothCount >= 1 ? String(toothCount) : '');
-      setAvmPrompt({ shotIndex, batteryLevel });
+      setAvmPrompt({ shotIndex, sessionIndex, batteryLevel });
       setAvmStatus({ shotIndex, phase: 'prompt' });
     })().catch(() => { /* AVM must never break the result screen */ });
     return () => { cancelled = true; };
@@ -258,7 +264,9 @@ export default function ResultScreen({ navigation, route }) {
         algoDiag: algoDiag ?? null,
         validationSession: buildValidationSessionContext({
           state: avmStateRef.current,
+          // PAP-1927: 0-based ordinals straight from avmRecordCapture.
           shotIndex: avmPrompt?.shotIndex,
+          sessionIndex: avmPrompt?.sessionIndex,
           label: labelValue,
           batteryLevel: avmPrompt?.batteryLevel ?? null,
         }),
@@ -283,9 +291,11 @@ export default function ResultScreen({ navigation, route }) {
   // One-line status text for the AVM self-test (null = nothing to show).
   const avmStatusText = (() => {
     if (avmStatus == null) return null;
-    const k = avmStatus.shotIndex != null ? `${avmStatus.shotIndex}/${AVM_CAPTURE_LIMIT}` : null;
+    // shotIndex is a 0-based ordinal (PAP-1927) — display is human 1-based.
+    const k = avmStatus.shotIndex != null ? `${avmStatus.shotIndex + 1}/${AVM_CAPTURE_LIMIT}` : null;
     switch (avmStatus.phase) {
       case 'battery': return 'Self-test paused — battery below 25%';
+      case 'complete': return 'Self-test complete — thank you! No more auto-shares.';
       case 'prompt':  return null; // the modal IS the UI
       case 'sending': return `Self-test ${k ?? ''} · sending…`;
       case 'sent':    return `Self-test ${k ?? ''} · sent ✓`;
