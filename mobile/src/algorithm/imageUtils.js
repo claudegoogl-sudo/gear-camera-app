@@ -398,6 +398,28 @@ export function savgolSmooth(signal, halfWin, wrap = false) {
 // ── Peak finding ────────────────────────────────────────────────────────────
 
 /**
+ * Prominence of the local maximum at index i — identical walk semantics to
+ * the prominence step inside findPeaks (walk left/right until a higher
+ * value is met, tracking the lowest valley on each side).  Factored out so
+ * callers can REPORT the per-peak prominence findPeaks already used for its
+ * keep/drop decision (PAP-1930 telemetry: bcPeakProm) without re-implementing
+ * the definition.  Pure; no behavioural coupling with findPeaks.
+ */
+export function peakProminence(signal, i) {
+  let leftMin = signal[i];
+  for (let j = i - 1; j >= 0; j--) {
+    if (signal[j] > signal[i]) break;
+    if (signal[j] < leftMin) leftMin = signal[j];
+  }
+  let rightMin = signal[i];
+  for (let j = i + 1; j < signal.length; j++) {
+    if (signal[j] > signal[i]) break;
+    if (signal[j] < rightMin) rightMin = signal[j];
+  }
+  return signal[i] - Math.max(leftMin, rightMin);
+}
+
+/**
  * Find local maxima in a 1-D signal with distance and prominence constraints.
  *
  * @param {Float64Array|Float32Array|number[]} signal

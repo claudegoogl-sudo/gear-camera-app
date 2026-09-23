@@ -640,6 +640,15 @@ export default function CameraScreen({ navigation }) {
         abstainGateRule: result.abstainGateRule ?? null,
         contourRadius: result.contourRadius ?? null,
         bcPeaks: result.bcPeaks ?? null,
+        // PAP-1930 (QA PAP-1929 condition 4): bc-consensus context for the
+        // dense-gate override — bcTc + relative peak prominence were already
+        // computed in-process but never reached the device payload (b158
+        // event 8e7b61dd carried bcPeaks only). denseGateOverride flags the
+        // R′ rescue commits (method tag + sub-1.0 conf carry it too).
+        bcTc: result.bcTc ?? null,
+        bcPurity: result.bcPurity ?? null,
+        bcPeakProm: result.bcPeakProm ?? null,
+        denseGateOverride: result.denseGateOverride ?? false,
         // PAP-1636: per-stage latency breakdown. algorithmRuntimeMs alone
         // says a count was slow, never which stage was slow.
         stageMs: result.stageMs ?? null,

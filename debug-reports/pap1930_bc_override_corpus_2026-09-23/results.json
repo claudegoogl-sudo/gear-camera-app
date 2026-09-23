@@ -1,0 +1,141 @@
+{
+  "task": "PAP-1930",
+  "stamp": "2026-09-23",
+  "input": "debug-reports/pap1872_gate_export_2026-09-12/gate_corpus_rows_export.json (QA lane 15d433d, n=364)",
+  "decisionFn": "mobile/src/algorithm/gearCounter.js __test.decideDenseGateOutcome (production)",
+  "p1_dense": {
+    "universe": 33,
+    "fires": 17,
+    "strictly_exact": 10,
+    "exact_pm1": 17,
+    "wrong_gt1": 0,
+    "net": 17,
+    "bars": {
+      "fires_min_10": true,
+      "net_min_8": true,
+      "wrong_max_2": true
+    },
+    "committed_rows": [
+      {
+        "stamp": "2026-04-25_08-05-45-433Z",
+        "actual": 42,
+        "bcPeaks": 41,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-04-28_07-01-23-211Z",
+        "actual": 52,
+        "bcPeaks": 51,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-04-28_11-25-03-709Z",
+        "actual": 42,
+        "bcPeaks": 41,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-04-30_12-31-00-766Z",
+        "actual": 50,
+        "bcPeaks": 50,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-04-30_12-33-17-234Z",
+        "actual": 48,
+        "bcPeaks": 48,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-04-30_12-35-25-332Z",
+        "actual": 48,
+        "bcPeaks": 47,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-04-30_20-31-06-904Z",
+        "actual": 48,
+        "bcPeaks": 48,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_08-28-38-224Z",
+        "actual": 50,
+        "bcPeaks": 50,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_09-04-04-917Z",
+        "actual": 48,
+        "bcPeaks": 47,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_14-53-42-651Z",
+        "actual": 42,
+        "bcPeaks": 42,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_14-55-07-717Z",
+        "actual": 42,
+        "bcPeaks": 42,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_14-56-43-693Z",
+        "actual": 48,
+        "bcPeaks": 48,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_15-00-55-239Z",
+        "actual": 48,
+        "bcPeaks": 48,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_15-04-02-875Z",
+        "actual": 48,
+        "bcPeaks": 47,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_15-06-20-161Z",
+        "actual": 50,
+        "bcPeaks": 50,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_15-08-23-136Z",
+        "actual": 50,
+        "bcPeaks": 49,
+        "gateRule": "G1-tc40"
+      },
+      {
+        "stamp": "2026-05-01_15-10-32-571Z",
+        "actual": 50,
+        "bcPeaks": 50,
+        "gateRule": "G1-tc40"
+      }
+    ]
+  },
+  "naive_preGateTc_contrast": {
+    "fires": 33,
+    "wrong_gt1": 15
+  },
+  "p2_ordinary": {
+    "universe": 22,
+    "fires": 0,
+    "commits": 0
+  },
+  "honest_abstain_intact": true,
+  "parity_with_qa_9da450d": {
+    "p1_fires_17": true,
+    "p1_exact_pm1_17": true,
+    "p1_wrong_gt1_0": true,
+    "p2_commits_0": true,
+    "naive_preGateTc_wrong_15": true
+  },
+  "parity_all_green": true
+}

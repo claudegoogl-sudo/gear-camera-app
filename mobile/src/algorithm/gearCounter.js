@@ -28,6 +28,7 @@ import {
   smoothSignal,
   savgolSmooth,
   findPeaks,
+  peakProminence,
   applyCircularMask,
 } from './imageUtils';
 // PAP-1694: the preprocess stage is behind a swappable backend so the native
@@ -2370,12 +2371,28 @@ function binaryContourCount(gray, cx, cy, width, height) {
       // Component centroid kept for downstream center-disagreement guard.
       const compCx = comp.sx / comp.area;
       const compCy = comp.sy / comp.area;
-      results.push({ fftTc: bestFreq, fftPurity, nPeaks, compCx, compCy });
+      // PAP-1930 (QA PAP-1929 condition 4): keep the smoothed signal +
+      // amplitude + kept-peak indices so the CHOSEN contour's relative
+      // peak prominence can be reported without re-running the sweep.
+      // Telemetry-only; no decision change.
+      results.push({ fftTc: bestFreq, fftPurity, nPeaks, compCx, compCy, sm, amp, pks });
     }
   }
   }  // end threshold sweep
 
-  if (results.length === 0) return { bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0 };
+  if (results.length === 0) return { bcTc: 0, bcPurity: 0, bcPeaks: 0, bcCx: 0, bcCy: 0, bcPeakProm: null };
+
+  // PAP-1930: relative peak prominence of a contour record — median over
+  // its KEPT peaks of prom/amp (findPeaks' keep threshold is 0.10*amp).
+  // Values are identical to the ones findPeaks already used for its
+  // keep/drop decisions (same walk semantics via peakProminence).
+  const bcProm = (rec) => {
+    if (!rec || !rec.amp || !Array.isArray(rec.pks) || rec.pks.length === 0) return null;
+    const rel = rec.pks.map((i) => peakProminence(rec.sm, i) / rec.amp).sort((a, b) => a - b);
+    const mid = rel.length >> 1;
+    const v = rel.length % 2 ? rel[mid] : (rel[mid - 1] + rel[mid]) / 2;
+    return Number(v.toFixed(4));
+  };
 
   // Prefer results where peak count is in valid tooth range
   const valid = results.filter(r => r.nPeaks >= MIN_TEETH && r.nPeaks <= MAX_TEETH);
@@ -2385,12 +2402,12 @@ function binaryContourCount(gray, cx, cy, width, height) {
     const best = (agreeing.length > 0 ? agreeing : valid)
       .reduce((a, b) => b.fftPurity > a.fftPurity ? b : a);
     return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks,
-             bcCx: best.compCx, bcCy: best.compCy };
+             bcCx: best.compCx, bcCy: best.compCy, bcPeakProm: bcProm(best) };
   }
 
   const best = results.reduce((a, b) => b.fftPurity > a.fftPurity ? b : a);
   return { bcTc: best.fftTc, bcPurity: best.fftPurity, bcPeaks: best.nPeaks,
-           bcCx: best.compCx, bcCy: best.compCy };
+           bcCx: best.compCx, bcCy: best.compCy, bcPeakProm: bcProm(best) };
 }
 
 // ── Public entry point ──────────────────────────────────────────────────────
@@ -2709,6 +2726,67 @@ function checkDenseChainringAbstain(tc, conf, r, innerContourSuspected = false, 
   return { fires: false, rule: null };
 }
 
+// ── PAP-1930: bc-consensus dense-gate override R′ ───────────────────────────
+//
+// QA PAP-1929 verdict 648c12bd (APPROVED with binding conditions 1-5):
+// inside the pap1872 dense-gate abstain branch ONLY, a bcPeaks inside
+// [40,60] commits bcPeaks instead of abstaining. Corpus (fresh re-derivation
+// @ 9da450d): 17/17 exact ±1, 0 wrong — a naive preGateTc-commit would add
+// 15 confident-wrongs; ordinary fires never enter the band (bcPeaks 4-18).
+// b158 field: 0/4 answered → 3/4 exact + 1 honest abstain. Mechanism:
+// bcPeaks (bolt-circle peak count = tooth count when localization is
+// right) is independent of the radial-FFT lock that motivates the dense
+// gate; dense mislocalization collapses bcPeaks DOWNWARD (observed 2-13,
+// one 36/39), never spuriously into the band on n=364.
+//
+// Window edges are LOAD-BEARING (QA re-derivation): nearest collapse is 39
+// (true 42T — a commit would be wrong-by-3); nearest rescue is 41 (exact).
+// Lower edge pinned AT 40 — never widened. Upper edge 60 = class cap,
+// harmless (zero spurious >60 observed) — never tightened (no in-band
+// wrongs to filter; tightening only costs rescues).
+const BC_OVERRIDE_MIN = 40;
+const BC_OVERRIDE_MAX = 60;
+// Binding condition 2: override commits carry a distinct method tag and a
+// sub-1.0 confidence so b159 AVM scoring separates rescues from ordinary
+// answers — and a wrong rescue can never look conf-1.0 sure.
+const BC_CONSENSUS_OVERRIDE_CONF = 0.9;
+
+/**
+ * PAP-1930 R′ — dense-gate outcome decision (pure, unit-tested).
+ *
+ * Called ONLY from the two pap1872 choke points, and only when the gate
+ * actually fired (binding condition 1: never on non-gate paths or
+ * ordinary-class rows — an ordinary fire with out-of-band bcPeaks keeps
+ * the honest abstain). Returns the post-gate { toothCount, confidence,
+ * abstained, abstainReason, override, methodUsed } for the choke point to
+ * apply; null when the gate did not fire (caller leaves values alone).
+ */
+export function decideDenseGateOutcome(denseAbstain, bcPeaks, methodUsed) {
+  if (!denseAbstain || !denseAbstain.fires) return null;
+  const n = Number(bcPeaks);
+  if (Number.isFinite(n) && n >= BC_OVERRIDE_MIN && n <= BC_OVERRIDE_MAX) {
+    return {
+      abstained: false,
+      abstainReason: null,
+      override: true,
+      toothCount: n,
+      confidence: BC_CONSENSUS_OVERRIDE_CONF,
+      methodUsed: `${methodUsed}+bc-consensus-override`,
+    };
+  }
+  // Binding condition 3: out-of-band bcPeaks stays abstain — the
+  // honest-abstain product property (collapsed 21-type rows, pap474-class
+  // 10T abstains) must NOT commit.
+  return {
+    abstained: true,
+    abstainReason: 'pap1872-dense-chainring',
+    override: false,
+    toothCount: 0,
+    confidence: 0,
+    methodUsed: `${methodUsed}+pap1872-dense-chainring-abstain`,
+  };
+}
+
 /**
  * PAP-1534: Check if image shows a dense chainring (40+T) before FFT computation.
  * 
@@ -2871,7 +2949,7 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
   ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height, gearR));
 
   // Binary contour method (commit 4243213 — accuracy 29%→86%)
-  const { bcTc, bcPurity, bcPeaks, bcCx, bcCy } = binaryContourCount(gray, cx, cy, width, height);
+  const { bcTc, bcPurity, bcPeaks, bcCx, bcCy, bcPeakProm } = binaryContourCount(gray, cx, cy, width, height);
 
   // CLAHE peak counting
   let claheTc = 0, claheConf = 0;
@@ -3353,7 +3431,7 @@ function analyzeImage(gray, enhanced, edges, width, height, aimR = 0, deadline =
     contourRadius,
     centerResult,
     fft90tc, peakTc, peakRel, peakR, opTc, opRel,
-    bcTc, bcPurity, bcPeaks, bcCx, bcCy,
+    bcTc, bcPurity, bcPeaks, bcCx, bcCy, bcPeakProm,
     claheTc, claheConf,
     rOuter,
     methodUsed,
@@ -3497,7 +3575,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
   let opTc = 0, opRel = 0;
   ({ opTc, opRel } = outerProfileScan(edges, cx, cy, maxRop, width, height, gearR));
 
-  const { bcTc, bcPurity, bcPeaks, bcCx, bcCy } = binaryContourCount(gray, cx, cy, width, height);
+  const { bcTc, bcPurity, bcPeaks, bcCx, bcCy, bcPeakProm } = binaryContourCount(gray, cx, cy, width, height);
 
   let claheTc = 0, claheConf = 0;
   ({ claheTc, claheConf } = clahePeakCounting(enhanced, cx, cy, gearR, width, height));
@@ -3622,7 +3700,7 @@ function analyzeImageAtCenter(gray, enhanced, edges, width, height, cx, cy, cont
     contourRadius,
     centerResult: { cx, cy, radius: contourRadius, method: 'retry-near-center' },
     fft90tc, peakTc, peakRel, peakR, opTc, opRel,
-    bcTc, bcPurity, bcPeaks, bcCx, bcCy,
+    bcTc, bcPurity, bcPeaks, bcCx, bcCy, bcPeakProm,
     claheTc, claheConf,
     rOuter,
     methodUsed: 'retry-' + methodUsed,
@@ -4252,18 +4330,40 @@ export async function countTeeth(photoUri, signal, opts) {
   const pap1872PreGateConf = finalConfidence;
   let abstained = false;
   let abstainReason = null;
-  if (denseAbstain.fires) {
-    console.log(
-      `[GearCounter] pap1872-dense-chainring-abstain (${denseAbstain.rule}): ` +
-      `tc=${finalToothCount} conf=${finalConfidence.toFixed(3)} ` +
-      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
-      `bc=${r.bcTc}(pk=${r.bcPeaks}) contourR=${r.contourRadius} — abstaining.`
-    );
-    finalToothCount = 0;
-    finalConfidence = 0;
-    abstained = true;
-    abstainReason = 'pap1872-dense-chainring';
-    methodUsed = `${methodUsed}+pap1872-dense-chainring-abstain`;
+  // PAP-1930: bc-consensus dense-gate override R′ (QA PAP-1929 verdict
+  // 648c12bd, APPROVED with binding conditions). The decision is consulted
+  // ONLY when the gate actually fired — never on non-gate paths or
+  // ordinary-class rows (condition 1). Identical call at BOTH choke
+  // points (mirror contract, same pattern as the
+  // checkDenseChainringAbstain 5-tuple) — guarded by the wiring-mirror
+  // test in pap1930.bc_override.test.js.
+  let denseGateOverride = false;
+  const gateOutcome = denseAbstain.fires
+    ? decideDenseGateOutcome(denseAbstain, r.bcPeaks, methodUsed)
+    : null;
+  if (gateOutcome) {
+    if (gateOutcome.override) {
+      console.log(
+        `[GearCounter] pap1872-dense-gate bc-consensus-override (${denseAbstain.rule}): ` +
+        `bcPeaks=${gateOutcome.toothCount} ∈ [${BC_OVERRIDE_MIN},${BC_OVERRIDE_MAX}] — ` +
+        `committing ${gateOutcome.toothCount} conf=${BC_CONSENSUS_OVERRIDE_CONF.toFixed(3)} ` +
+        `(pre-gate tc=${pap1872PreGateTc} conf=${pap1872PreGateConf.toFixed(3)} ` +
+        `bcTc=${r.bcTc} prom=${r.bcPeakProm ?? '-'} contourR=${r.contourRadius}).`
+      );
+      denseGateOverride = true;
+    } else {
+      console.log(
+        `[GearCounter] pap1872-dense-chainring-abstain (${denseAbstain.rule}): ` +
+        `tc=${finalToothCount} conf=${finalConfidence.toFixed(3)} ` +
+        `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+        `bc=${r.bcTc}(pk=${r.bcPeaks}) contourR=${r.contourRadius} — abstaining.`
+      );
+    }
+    finalToothCount = gateOutcome.toothCount;
+    finalConfidence = gateOutcome.confidence;
+    abstained = gateOutcome.abstained;
+    abstainReason = gateOutcome.abstainReason;
+    methodUsed = gateOutcome.methodUsed;
   }
 
   return {
@@ -4289,6 +4389,17 @@ export async function countTeeth(photoUri, signal, opts) {
     abstainPreGateConf: Number(pap1872PreGateConf.toFixed(3)),
     contourRadius: r.contourRadius ?? null,
     bcPeaks: r.bcPeaks ?? null,
+    // PAP-1930 (QA PAP-1929 condition 4): bc-consensus context for future
+    // window/guard analysis. bcTc + relative peak prominence were already
+    // computed in-process but never reached this (production) return — b158
+    // event 8e7b61dd carried bcPeaks only, which is exactly why R (the
+    // |bcTc−bcPeaks|≤1 form) was unimplementable on-device.
+    bcTc: r.bcTc ?? null,
+    bcPurity: r.bcPurity ?? null,
+    bcPeakProm: r.bcPeakProm ?? null,
+    // PAP-1930: true when the dense gate fired AND the R′ override
+    // committed bcPeaks (method tag + sub-1.0 conf carry the same signal).
+    denseGateOverride,
     budgetExhausted: budgetState.hit,
     algorithmRuntimeMs: t4 - t0,
     // PAP-1636: the four stage marks already computed for the console
@@ -4367,6 +4478,8 @@ export const __test = {
   checkDenseChainringRegime,
   // PAP-1872: post-methods dense-chainring honest-abstain gate
   checkDenseChainringAbstain,
+  // PAP-1930: bc-consensus dense-gate override R′ outcome decision
+  decideDenseGateOutcome,
   // PAP-1898: silhouette-anchored localization (rescue + offline probes)
   pap1898SilhouetteFit,
   pap1898SilhouettePoints,
@@ -4612,18 +4725,40 @@ export function countTeethFromRgba(rgba, width, height) {
   const pap1872PreGateConf = finalConfidence;
   let abstained = false;
   let abstainReason = null;
-  if (denseAbstain.fires) {
-    console.log(
-      `[GearCounter] pap1872-dense-chainring-abstain (${denseAbstain.rule}): ` +
-      `tc=${finalToothCount} conf=${finalConfidence.toFixed(3)} ` +
-      `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
-      `bc=${r.bcTc}(pk=${r.bcPeaks}) contourR=${r.contourRadius} — abstaining.`
-    );
-    finalToothCount = 0;
-    finalConfidence = 0;
-    abstained = true;
-    abstainReason = 'pap1872-dense-chainring';
-    methodUsed = `${methodUsed}+pap1872-dense-chainring-abstain`;
+  // PAP-1930: bc-consensus dense-gate override R′ (QA PAP-1929 verdict
+  // 648c12bd, APPROVED with binding conditions). The decision is consulted
+  // ONLY when the gate actually fired — never on non-gate paths or
+  // ordinary-class rows (condition 1). Identical call at BOTH choke
+  // points (mirror contract, same pattern as the
+  // checkDenseChainringAbstain 5-tuple) — guarded by the wiring-mirror
+  // test in pap1930.bc_override.test.js.
+  let denseGateOverride = false;
+  const gateOutcome = denseAbstain.fires
+    ? decideDenseGateOutcome(denseAbstain, r.bcPeaks, methodUsed)
+    : null;
+  if (gateOutcome) {
+    if (gateOutcome.override) {
+      console.log(
+        `[GearCounter] pap1872-dense-gate bc-consensus-override (${denseAbstain.rule}): ` +
+        `bcPeaks=${gateOutcome.toothCount} ∈ [${BC_OVERRIDE_MIN},${BC_OVERRIDE_MAX}] — ` +
+        `committing ${gateOutcome.toothCount} conf=${BC_CONSENSUS_OVERRIDE_CONF.toFixed(3)} ` +
+        `(pre-gate tc=${pap1872PreGateTc} conf=${pap1872PreGateConf.toFixed(3)} ` +
+        `bcTc=${r.bcTc} prom=${r.bcPeakProm ?? '-'} contourR=${r.contourRadius}).`
+      );
+      denseGateOverride = true;
+    } else {
+      console.log(
+        `[GearCounter] pap1872-dense-chainring-abstain (${denseAbstain.rule}): ` +
+        `tc=${finalToothCount} conf=${finalConfidence.toFixed(3)} ` +
+        `peak=${r.peakTc} fft90=${r.fft90tc} op=${r.opTc} ` +
+        `bc=${r.bcTc}(pk=${r.bcPeaks}) contourR=${r.contourRadius} — abstaining.`
+      );
+    }
+    finalToothCount = gateOutcome.toothCount;
+    finalConfidence = gateOutcome.confidence;
+    abstained = gateOutcome.abstained;
+    abstainReason = gateOutcome.abstainReason;
+    methodUsed = gateOutcome.methodUsed;
   }
   return {
     toothCount: finalToothCount,
@@ -4640,9 +4775,12 @@ export function countTeethFromRgba(rgba, width, height) {
     abstainPreGateTc: pap1872PreGateTc,
     abstainPreGateConf: Number(pap1872PreGateConf.toFixed(3)),
     contourRadius: r.contourRadius ?? null,
+    // PAP-1930: override flag + relative peak prominence (QA PAP-1929
+    // condition 4) — mirror of the countTeeth return.
+    denseGateOverride,
     budgetExhausted: budgetState.hit,
     methodUsed,
-    bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks,
+    bcTc: r.bcTc, bcPurity: r.bcPurity, bcPeaks: r.bcPeaks, bcPeakProm: r.bcPeakProm ?? null,
     // PAP-810 / PAP-811: peakR is diagnostic-only (consumed by pap810.preflight).
     // PAP-815: rOuter (outermost radial-grad prom peak) and radialRelDisagree
     // surfaced for harness validation of the chainring abstain predicate.
