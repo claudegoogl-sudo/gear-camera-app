@@ -1,0 +1,22 @@
+{
+  "ticket": "PAP-1929 (AC2 cross-check of PAP-1873 probe 8, bc-consensus dense-gate override)",
+  "qa": "a4117872 (QA Engineer)",
+  "date": "2026-09-22",
+  "data": "debug-reports/pap1872_gate_export_2026-09-12/gate_corpus_rows_export.json (364 rows, independent of AE eval.mjs; re-derived in Python from raw export)",
+  "fire_split": {"gate_fires": 55, "dense_actual_40_60": 33, "ordinary_actual_lt40": 22, "voids_bcPeaks_null": 0},
+  "gate_rule_census": {"G1-tc40": 20, "G3-spider-lock": 21, "G4-fft-collapse-op-commit": 7, "G2-bc40": 7},
+  "P1_dense_R":  {"fires": 16, "exact": 16, "wrong": 0, "net": 16},
+  "P1_dense_Rp": {"fires": 17, "exact": 17, "wrong": 0, "net": 17},
+  "P1_G1tc40_subset_Rp": {"fires": 17, "exact": 17, "wrong": 0},
+  "P2_ordinary_R":  {"fires": 0, "wrong": 0},
+  "P2_ordinary_Rp": {"fires": 0, "wrong": 0},
+  "ordinary_bcPeaks_range": [4, 18],
+  "naive_preGateTc_commit": {"commits": 33, "exact": 18, "wrong": 15},
+  "rescue_bcPeaks_values": [41, 41, 42, 42, 47, 47, 47, 48, 48, 48, 48, 49, 50, 50, 50, 50, 50, 51],
+  "collapse_bcPeaks_range": [2, 39],
+  "spurious_over_60_count": 0,
+  "window_edge_margins": {"nearest_collapse_below_40": 39, "nearest_rescue": 41, "max_rescue": 51},
+  "payload_check": {"event": "8e7b61dd (b158 dense abstain, label 48)", "bcPeaks": 48, "bcTc_present": false},
+  "field_concordance_vs_QA_b158_rows": "matches pap1800_avm_b158_rows_2026-09-22_full.json (bcPeaks 51/48/48 exact on labeled misses; 21 collapsed stays abstain)",
+  "verdict": "APPROVED with binding conditions (see verdict comment on PAP-1929)"
+}
