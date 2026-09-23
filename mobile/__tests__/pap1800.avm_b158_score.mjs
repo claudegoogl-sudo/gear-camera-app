@@ -16,6 +16,13 @@
  *   AC5  shape         — validationSession.schemaVersion === 1, all spec keys
  *                        present, gear context present, dist tag == buildLabel
  *                        digits (legacy debug-report readers keep working).
+ *   RP  dense override — (PAP-1873/PAP-1929; b159 payloads only, check code
+ *                        "RP") override commits must carry denseGateOverride
+ *                        =true AND the +bc-consensus-override tag AND
+ *                        confidence 0.9 AND bcPeaks in [40,60]; wrong
+ *                        override-commits <=1 per session (target 0); labels
+ *                        < 40 must never carry an override commit.  Pre-b159
+ *                        payloads skip this section (fields absent).
  *
  * Plain node (PAP-1672 host rule), zero repo imports, runs from repo root:
  *   node mobile/__tests__/pap1800.avm_b158_score.mjs
@@ -39,6 +46,12 @@ const API = 'https://sentry.io/api/0';
 const AVM_SESSION_LIMIT = 3;
 const AVM_CAPTURE_LIMIT = 10;
 const AVM_BATTERY_FLOOR = 0.25;
+// PAP-1929 binding conditions (QA verdicts 648c12bd/74abb1a2) — mirror
+// mobile/src/algorithm/gearCounter.js BC_OVERRIDE_MIN/MAX/BC_CONSENSUS_OVERRIDE_CONF.
+const BC_OVERRIDE_MIN = 40;
+const BC_OVERRIDE_MAX = 60;
+const BC_OVERRIDE_CONF = 0.9;
+const BC_OVERRIDE_TAG = 'bc-consensus-override';
 const VS_KEYS = ['appVersion', 'sessionIndex', 'shotIndex', 'shotsRemaining', 'label', 'batteryLevel', 'schemaVersion'];
 
 const out = (s) => process.stdout.write(s + '\n');
@@ -138,6 +151,7 @@ function extractRow(ev) {
     hasCameraContext: 'type' in cam,
     cameraEventCount: Array.isArray(cam.cameraEvents) ? cam.cameraEvents.length : 0,
     stageMs: (gear.algoDiag && gear.algoDiag.stageMs) || null,
+    algoDiag: gear.algoDiag || null,
     vs,
   };
 }
@@ -211,6 +225,62 @@ function score(rows) {
   checks.push({ ac: 'AC2', name: 'dormancy advisory', pass: true,
     detail: dormant.length ? `version(s) reached limits in telemetry: ${dormant.join(',')} — any LATER avm-tagged payload for them would be a dormancy FAIL` : 'no version at limits yet' });
 
+  // -- RP: R' dense-gate override (PAP-1873/PAP-1929; b159+ payloads) ------
+  // Scope: rows carrying PAP-1930 telemetry (algoDiag.denseGateOverride /
+  // algoDiag.bcTc keys exist only on b159+) or dist >= 159.  Pre-b159
+  // payloads skip (fields absent = inScope false).
+  const inScope = (r) => r.algoDiag != null &&
+    (Number(r.dist) >= 159 || r.algoDiag.denseGateOverride != null || r.algoDiag.bcTc != null);
+  const isOverride = (r) => r.algoDiag.denseGateOverride === true ||
+    String(r.algoDiag.methodUsed || '').includes(BC_OVERRIDE_TAG);
+  const bcPeaksOf = (r) => r.algoDiag.bcPeaks;
+  const bcInBand = (r) => Number.isFinite(bcPeaksOf(r)) &&
+    bcPeaksOf(r) >= BC_OVERRIDE_MIN && bcPeaksOf(r) <= BC_OVERRIDE_MAX;
+
+  let scoped = 0;
+  const wrongBySession = new Map();
+  const rescue = { commits: 0, exact: 0, wrong: 0, abstainsInBand: 0 };
+  for (const r of rows) {
+    if (!inScope(r)) continue;
+    scoped++;
+    const v = r.vs || {};
+    const id = r.eventID.slice(0, 8);
+    if (isOverride(r)) {
+      const tagged = String(r.algoDiag.methodUsed || '').includes(BC_OVERRIDE_TAG);
+      add('RP', `override separability ${id}`, tagged && r.algoDiag.denseGateOverride === true,
+        `denseGateOverride=${r.algoDiag.denseGateOverride} tag=${r.algoDiag.methodUsed}`);
+      add('RP', `override conf ${id}`, r.confidence === BC_OVERRIDE_CONF,
+        `confidence=${r.confidence} (override commits must carry ${BC_OVERRIDE_CONF})`);
+      add('RP', `override window ${id}`, bcInBand(r),
+        `bcPeaks=${bcPeaksOf(r)} (binding window [${BC_OVERRIDE_MIN},${BC_OVERRIDE_MAX}]; 39/61 out)`);
+      if (v.label != null && r.toothCount != null) {
+        rescue.commits++;
+        if (Math.abs(r.toothCount - v.label) <= 1) rescue.exact++;
+        else {
+          rescue.wrong++;
+          const k = `${v.appVersion}|${v.sessionIndex}`;
+          wrongBySession.set(k, (wrongBySession.get(k) || 0) + 1);
+        }
+      }
+    } else if (bcInBand(r) && r.toothCount == null) {
+      rescue.abstainsInBand++;
+    }
+    if (v.label != null && v.label < BC_OVERRIDE_MIN) {
+      add('RP', `small-gear untouched ${id}`, !isOverride(r),
+        `label=${v.label} denseGateOverride=${r.algoDiag.denseGateOverride} (override must never fire below ${BC_OVERRIDE_MIN}T)`);
+    }
+  }
+  const badSessions = [...wrongBySession.entries()].filter(([, w]) => w > 1);
+  const totalWrongs = [...wrongBySession.values()].reduce((a, b) => a + b, 0);
+  add('RP', 'wrong override-commits <=1 per session (target 0)', badSessions.length === 0,
+    badSessions.length
+      ? badSessions.map(([k, w]) => `${k}: ${w} wrong override commits`).join('; ')
+      : `${wrongBySession.size} override-commit session(s), ${totalWrongs} wrong total`);
+  add('RP', 'rescue yield (informational)', true,
+    scoped === 0
+      ? 'no b159 payloads yet (expected between releases)'
+      : `scope=${scoped} rows; override commits=${rescue.commits} exact+/-1=${rescue.exact} wrong=${rescue.wrong} in-band-still-abstain=${rescue.abstainsInBand} (corpus basis: 17/33 gate-fires +/-1, 0 wrong)`);
+
   return checks;
 }
 
@@ -230,6 +300,39 @@ const SELFTEST_ROWS = [
   { eventID: 'ddd4', ts: '2026-09-19T08:20:00Z', dist: '158', buildLabel: 'v1.0.0 (158)', distMatchesLabel: true, validationTag: 'avm',
     toothCount: 20, confidence: 0.9, hasGearContext: true, hasCameraContext: true, cameraEventCount: 5,
     vs: { appVersion: 'v1.0.0 (158)', sessionIndex: 2, shotIndex: 11, shotsRemaining: 0, label: 20, batteryLevel: null, schemaVersion: 1 } }, // duplicate (session,shot) FAIL expected
+  // -- b159 RP synthetic rows (PAP-1930 payload shape: gear.algoDiag.*) --
+  { eventID: 'eee5', ts: '2026-09-23T09:00:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 51, confidence: 0.9, actualTeethCount: 51, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: true, methodUsed: 'pap1872-dense-chainring-abstain+bc-consensus-override', bcPeaks: 51, bcTc: 51, bcPurity: 0.2, bcPeakProm: 3.1, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 0, shotIndex: 0, shotsRemaining: 9, label: 51, batteryLevel: 0.9, schemaVersion: 1 } }, // override rescue 51=51: all RP PASS
+  { eventID: 'fff6', ts: '2026-09-23T09:05:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: null, confidence: null, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: false, methodUsed: 'pap1872-dense-chainring-abstain', bcPeaks: 21, bcTc: 18, bcPurity: 0.1, bcPeakProm: 2.0, abstained: true },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 0, shotIndex: 1, shotsRemaining: 8, label: 52, batteryLevel: 0.9, schemaVersion: 1 } }, // collapsed-class abstain intact: no RP fail
+  { eventID: 'ggg7', ts: '2026-09-23T09:10:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 47, confidence: 0.9, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: true, methodUsed: 'x+bc-consensus-override', bcPeaks: 47, bcTc: 47, bcPurity: 0.2, bcPeakProm: 2.5, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 0, shotIndex: 2, shotsRemaining: 7, label: 51, batteryLevel: 0.9, schemaVersion: 1 } }, // override wrong (47 vs 51): 1st wrong in session — allowed (<=1)
+  { eventID: 'hhh8', ts: '2026-09-23T09:15:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 44, confidence: 0.9, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: true, methodUsed: 'x+bc-consensus-override', bcPeaks: 44, bcTc: 44, bcPurity: 0.2, bcPeakProm: 2.5, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 0, shotIndex: 3, shotsRemaining: 6, label: 51, batteryLevel: 0.9, schemaVersion: 1 } }, // 2nd wrong in session 0 -> wrong-commits FAIL expected
+  { eventID: 'iii9', ts: '2026-09-23T09:20:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 39, confidence: 0.9, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: true, methodUsed: 'x+bc-consensus-override', bcPeaks: 39, bcTc: 39, bcPurity: 0.2, bcPeakProm: 2.5, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 1, shotIndex: 0, shotsRemaining: 9, label: 48, batteryLevel: 0.9, schemaVersion: 1 } }, // out-of-band override (39) -> window FAIL expected
+  { eventID: 'jjj10', ts: '2026-09-23T09:25:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 45, confidence: 1.0, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: true, methodUsed: 'x+bc-consensus-override', bcPeaks: 45, bcTc: 45, bcPurity: 0.2, bcPeakProm: 2.5, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 1, shotIndex: 1, shotsRemaining: 8, label: null, batteryLevel: 0.9, schemaVersion: 1 } }, // conf 1.0 -> override conf FAIL expected
+  { eventID: 'kkk11', ts: '2026-09-23T09:30:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 10, confidence: 0.8, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: false, methodUsed: 'fft', bcPeaks: null, bcTc: null, bcPurity: null, bcPeakProm: null, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 1, shotIndex: 2, shotsRemaining: 7, label: 10, batteryLevel: 0.9, schemaVersion: 1 } }, // small gear, no override: small-gear PASS expected
+  { eventID: 'lll12', ts: '2026-09-23T09:35:00Z', dist: '159', buildLabel: 'v1.0.0 (159)', distMatchesLabel: true, validationTag: 'avm',
+    toothCount: 42, confidence: 0.9, hasGearContext: true, hasCameraContext: true, cameraEventCount: 4,
+    algoDiag: { denseGateOverride: true, methodUsed: 'x+bc-consensus-override', bcPeaks: 42, bcTc: 42, bcPurity: 0.2, bcPeakProm: 2.5, abstained: false },
+    vs: { appVersion: 'v1.0.0 (159)', sessionIndex: 1, shotIndex: 3, shotsRemaining: 6, label: 10, batteryLevel: 0.9, schemaVersion: 1 } }, // override on 10T label -> small-gear FAIL expected
 ];
 function runSelftest() {
   const checks = score(SELFTEST_ROWS);
@@ -237,10 +340,17 @@ function runSelftest() {
     (c) => c.ac === 'AC4' && c.name.includes('bbb2'),
     (c) => c.ac === 'AC2' && c.name.includes('bounds') && c.name.includes('ccc3'),
     (c) => c.ac === 'AC1' && c.name.includes('no duplicate'),
+    (c) => c.ac === 'RP' && c.name.includes('wrong override-commits'),
+    (c) => c.ac === 'RP' && c.name.includes('override window') && c.name.includes('iii9'),
+    (c) => c.ac === 'RP' && c.name.includes('override conf') && c.name.includes('jjj10'),
+    (c) => c.ac === 'RP' && c.name.includes('small-gear untouched') && c.name.includes('lll12'),
   ];
   const mustPass = [
     (c) => c.ac === 'AC5' && c.name.includes('aaa1'),
     (c) => c.ac === 'AC1' && c.name.includes('label aaa1'),
+    (c) => c.ac === 'RP' && c.name.includes('override separability') && c.name.includes('eee5'),
+    (c) => c.ac === 'RP' && c.name.includes('override window') && c.name.includes('eee5'),
+    (c) => c.ac === 'RP' && c.name.includes('small-gear untouched') && c.name.includes('kkk11'),
     // shot-order monotonicity is asserted via the clean-rows case below:
     // the duplicate row here intentionally ALSO breaks monotonicity, so it
     // cannot carry a mustPass expectation of its own.
@@ -282,7 +392,8 @@ out('\n=== per-shot rows ===');
 for (const r of avmRows) {
   const v = r.vs;
   const acc = v.label != null ? (v.label === r.toothCount ? 'CORRECT' : 'WRONG') : 'UNLABELED';
-  out(`${r.eventID.slice(0, 8)} ${r.ts} v=${v.appVersion} s=${v.sessionIndex} shot=${v.shotIndex} label=${v.label} tc=${r.toothCount} conf=${r.confidence} batt=${v.batteryLevel} ${acc}`);
+  const ov = r.algoDiag ? `ovr=${r.algoDiag.denseGateOverride} bc=${r.algoDiag.bcPeaks}` : 'no-algodiag';
+  out(`${r.eventID.slice(0, 8)} ${r.ts} v=${v.appVersion} s=${v.sessionIndex} shot=${v.shotIndex} label=${v.label} tc=${r.toothCount} conf=${r.confidence} batt=${v.batteryLevel} ${acc} ${ov}`);
 }
 
 out('\n=== checks ===');
