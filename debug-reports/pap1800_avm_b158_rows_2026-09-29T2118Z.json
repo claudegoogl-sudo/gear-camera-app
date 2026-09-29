@@ -1,0 +1,875 @@
+{
+  "generatedAt": "2026-09-29T21:18:51.595Z",
+  "source": "sentry project events (full=true)",
+  "avmPayloads": [
+    {
+      "eventID": "11608bdceca34cd5bb403ccabd3e6415",
+      "ts": "2026-09-29T14:04:12Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 51,
+      "confidence": 0.9,
+      "actualTeethCount": 52,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 6,
+      "stageMs": {
+        "detect": 22383,
+        "load": 3380,
+        "methods": 28,
+        "preprocess": 275,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 26066
+      },
+      "algoDiag": {
+        "abstainGateRule": "G1-tc40",
+        "abstainReason": null,
+        "abstained": false,
+        "aimR": 450,
+        "bcPeakProm": 0.617,
+        "bcPeaks": 51,
+        "bcPurity": "0.5686146760548857",
+        "bcTc": 52,
+        "budgetExhausted": false,
+        "chainringRegime": true,
+        "contourRadius": 146,
+        "denseGateOverride": true,
+        "methodUsed": "bc-consensus+fft-agree+bc-consensus-override",
+        "peakR": 311,
+        "rOuter": 410,
+        "radialRelDisagree": "0.2414634146341463",
+        "resultId": "cap-mumqz4fa-1",
+        "stageMs": {
+          "detect": 22383,
+          "load": 3380,
+          "methods": 28,
+          "preprocess": 275,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 26066
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.7200000286102295",
+        "label": 52,
+        "schemaVersion": 1,
+        "sessionIndex": 0,
+        "shotIndex": 2,
+        "shotsRemaining": 7,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "d1e18f743ce24f7d8dec043dc9f26471",
+      "ts": "2026-09-29T14:05:28Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 42,
+      "confidence": 0.9,
+      "actualTeethCount": 42,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 8,
+      "stageMs": {
+        "detect": 20884,
+        "load": 3445,
+        "methods": 41,
+        "preprocess": 281,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 24651
+      },
+      "algoDiag": {
+        "abstainGateRule": "G1-tc40",
+        "abstainReason": null,
+        "abstained": false,
+        "aimR": 450,
+        "bcPeakProm": 0.39,
+        "bcPeaks": 42,
+        "bcPurity": "0.18912668162228913",
+        "bcTc": 41,
+        "budgetExhausted": false,
+        "chainringRegime": true,
+        "contourRadius": 330,
+        "denseGateOverride": true,
+        "methodUsed": "bc-consensus+bc-consensus-override",
+        "peakR": 326,
+        "rOuter": 436,
+        "radialRelDisagree": "0.25229357798165136",
+        "resultId": "cap-mumr0ebl-1",
+        "stageMs": {
+          "detect": 20884,
+          "load": 3445,
+          "methods": 41,
+          "preprocess": 281,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 24651
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.7099999785423279",
+        "label": 42,
+        "schemaVersion": 1,
+        "sessionIndex": 0,
+        "shotIndex": 3,
+        "shotsRemaining": 6,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "21eb56e3dbcd4056b2f18c798d0770e9",
+      "ts": "2026-09-29T14:13:19.589000Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 28,
+      "confidence": 0.6179,
+      "actualTeethCount": 28,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 7,
+      "stageMs": {
+        "detect": 24071,
+        "load": 3536,
+        "methods": 37,
+        "preprocess": 340,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 27984
+      },
+      "algoDiag": {
+        "abstainGateRule": null,
+        "abstainReason": null,
+        "abstained": false,
+        "aimR": 450,
+        "bcPeakProm": 0.6407,
+        "bcPeaks": 28,
+        "bcPurity": "0.2853672321453706",
+        "bcTc": 28,
+        "budgetExhausted": false,
+        "chainringRegime": false,
+        "contourRadius": 292,
+        "denseGateOverride": false,
+        "methodUsed": "bc-consensus+fft-agree",
+        "peakR": 312,
+        "rOuter": 431,
+        "radialRelDisagree": "0.27610208816705334",
+        "resultId": "cap-mumr1v0x-1",
+        "stageMs": {
+          "detect": 24071,
+          "load": 3536,
+          "methods": 37,
+          "preprocess": 340,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 27984
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.7099999785423279",
+        "label": 28,
+        "schemaVersion": 1,
+        "sessionIndex": 0,
+        "shotIndex": 4,
+        "shotsRemaining": 5,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "23275ba4968a4629b030e5b05d7f2209",
+      "ts": "2026-09-29T14:21:44.167000Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 0,
+      "confidence": 0,
+      "actualTeethCount": 36,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 16,
+      "stageMs": {
+        "detect": 21228,
+        "load": 3577,
+        "methods": 7270,
+        "preprocess": 276,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 32351
+      },
+      "algoDiag": {
+        "abstainGateRule": "G5-radial-anchor-conf",
+        "abstainReason": "pap1872-dense-chainring",
+        "abstained": true,
+        "aimR": 450,
+        "bcPeakProm": 0.1629,
+        "bcPeaks": 11,
+        "bcPurity": "0.06740750964736594",
+        "bcTc": 10,
+        "budgetExhausted": false,
+        "chainringRegime": false,
+        "contourRadius": 74,
+        "denseGateOverride": false,
+        "methodUsed": "fft90-fallback+pap1872-dense-chainring-abstain",
+        "peakR": 166,
+        "rOuter": 112,
+        "radialRelDisagree": "0.4821428571428571",
+        "resultId": "cap-mumrljre-5",
+        "stageMs": {
+          "detect": 21228,
+          "load": 3577,
+          "methods": 7270,
+          "preprocess": 276,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 32351
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.6800000071525574",
+        "label": 36,
+        "schemaVersion": 1,
+        "sessionIndex": 1,
+        "shotIndex": 5,
+        "shotsRemaining": 4,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "f824c11367954bd9aedcb178104a537a",
+      "ts": "2026-09-29T14:22:57.525000Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 0,
+      "confidence": 0,
+      "actualTeethCount": 36,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 7,
+      "stageMs": {
+        "detect": 24813,
+        "load": 3710,
+        "methods": 36,
+        "preprocess": 304,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 28863
+      },
+      "algoDiag": {
+        "abstainGateRule": "G6-inner-contour-commit",
+        "abstainReason": "pap1872-dense-chainring",
+        "abstained": true,
+        "aimR": 450,
+        "bcPeakProm": 0.282,
+        "bcPeaks": 11,
+        "bcPurity": "0.10660335621954248",
+        "bcTc": 10,
+        "budgetExhausted": false,
+        "chainringRegime": true,
+        "contourRadius": 73,
+        "denseGateOverride": false,
+        "methodUsed": "bc-consensus+pap961-aim-circle-prior-abstain+pap1872-dense-chainring-abstain",
+        "peakR": 233,
+        "rOuter": 198,
+        "radialRelDisagree": "0.17676767676767677",
+        "resultId": "cap-mumrmnui-1",
+        "stageMs": {
+          "detect": 24813,
+          "load": 3710,
+          "methods": 36,
+          "preprocess": 304,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 28863
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.6700000166893005",
+        "label": 36,
+        "schemaVersion": 1,
+        "sessionIndex": 1,
+        "shotIndex": 6,
+        "shotsRemaining": 3,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "43e7b8e9bff6418486b19cf928fc82d8",
+      "ts": "2026-09-29T14:24:24.286000Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 0,
+      "confidence": 0,
+      "actualTeethCount": 36,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 14,
+      "stageMs": {
+        "detect": 26066,
+        "load": 4013,
+        "methods": 24,
+        "preprocess": 294,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 30397
+      },
+      "algoDiag": {
+        "abstainGateRule": "G5-radial-anchor-conf",
+        "abstainReason": "pap1872-dense-chainring",
+        "abstained": true,
+        "aimR": 450,
+        "bcPeakProm": 0.1897,
+        "bcPeaks": 10,
+        "bcPurity": "0.1181605515133706",
+        "bcTc": 10,
+        "budgetExhausted": false,
+        "chainringRegime": true,
+        "contourRadius": 384,
+        "denseGateOverride": false,
+        "methodUsed": "bc-consensus+pap1872-dense-chainring-abstain",
+        "peakR": 395,
+        "rOuter": 246,
+        "radialRelDisagree": "0.6056910569105691",
+        "resultId": "cap-mumrp1ga-4",
+        "stageMs": {
+          "detect": 26066,
+          "load": 4013,
+          "methods": 24,
+          "preprocess": 294,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 30397
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.6700000166893005",
+        "label": 36,
+        "schemaVersion": 1,
+        "sessionIndex": 1,
+        "shotIndex": 7,
+        "shotsRemaining": 2,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "4383e63e827947feb946bcf8f721caa6",
+      "ts": "2026-09-29T14:25:21.800000Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 24,
+      "confidence": 0.8346,
+      "actualTeethCount": 24,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 7,
+      "stageMs": {
+        "detect": 24023,
+        "load": 3408,
+        "methods": 35,
+        "preprocess": 275,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 27741
+      },
+      "algoDiag": {
+        "abstainGateRule": null,
+        "abstainReason": null,
+        "abstained": false,
+        "aimR": 450,
+        "bcPeakProm": 0.6494,
+        "bcPeaks": 24,
+        "bcPurity": "0.350377617408545",
+        "bcTc": 24,
+        "budgetExhausted": false,
+        "chainringRegime": false,
+        "contourRadius": 311,
+        "denseGateOverride": false,
+        "methodUsed": "bc-consensus",
+        "peakR": 314,
+        "rOuter": 417,
+        "radialRelDisagree": "0.24700239808153476",
+        "resultId": "cap-mumrqcty-1",
+        "stageMs": {
+          "detect": 24023,
+          "load": 3408,
+          "methods": 35,
+          "preprocess": 275,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 27741
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.6600000262260437",
+        "label": 24,
+        "schemaVersion": 1,
+        "sessionIndex": 1,
+        "shotIndex": 8,
+        "shotsRemaining": 1,
+        "type": "default"
+      }
+    },
+    {
+      "eventID": "c151478061464c959614cf832cc41156",
+      "ts": "2026-09-29T14:26:50.143000Z",
+      "dist": "159",
+      "buildLabel": "v1.0.0 (159) · 2026-09-23 01:48",
+      "distMatchesLabel": true,
+      "device": "FP5",
+      "deviceClass": "high",
+      "validationTag": "avm",
+      "kind": "debug_report",
+      "toothCount": 48,
+      "confidence": 0.9,
+      "actualTeethCount": 48,
+      "hasGearContext": true,
+      "hasCameraContext": true,
+      "cameraEventCount": 7,
+      "stageMs": {
+        "detect": 24954,
+        "load": 3660,
+        "methods": 32,
+        "preprocess": 301,
+        "preprocessBackend": "native-cpp",
+        "px": 810000,
+        "total": 28947
+      },
+      "algoDiag": {
+        "abstainGateRule": "G1-tc40",
+        "abstainReason": null,
+        "abstained": false,
+        "aimR": 450,
+        "bcPeakProm": 0.5381,
+        "bcPeaks": 48,
+        "bcPurity": "0.3996487418943046",
+        "bcTc": 48,
+        "budgetExhausted": false,
+        "chainringRegime": true,
+        "contourRadius": 300,
+        "denseGateOverride": true,
+        "methodUsed": "bc-consensus+pap1059-chainring-tc-confirmed+bc-consensus-override",
+        "peakR": 352,
+        "rOuter": 416,
+        "radialRelDisagree": "0.15384615384615383",
+        "resultId": "cap-mumrruhu-1",
+        "stageMs": {
+          "detect": 24954,
+          "load": 3660,
+          "methods": 32,
+          "preprocess": 301,
+          "preprocessBackend": "native-cpp",
+          "px": 810000,
+          "total": 28947
+        }
+      },
+      "vs": {
+        "appVersion": "v1.0.0 (159) · 2026-09-23 01:48",
+        "batteryLevel": "0.6600000262260437",
+        "label": 48,
+        "schemaVersion": 1,
+        "sessionIndex": 1,
+        "shotIndex": 9,
+        "shotsRemaining": 0,
+        "type": "default"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "ac": "AC5",
+      "name": "shape 11608bdc",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse 11608bdc",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=6)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label 11608bdc",
+      "pass": true,
+      "detail": "label=52 vs tc=51"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds 11608bdc",
+      "pass": true,
+      "detail": "sessionIndex=0 shotIndex=2 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery 11608bdc",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape d1e18f74",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse d1e18f74",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=8)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label d1e18f74",
+      "pass": true,
+      "detail": "label=42 vs tc=42"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds d1e18f74",
+      "pass": true,
+      "detail": "sessionIndex=0 shotIndex=3 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery d1e18f74",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape 21eb56e3",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse 21eb56e3",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=7)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label 21eb56e3",
+      "pass": true,
+      "detail": "label=28 vs tc=28"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds 21eb56e3",
+      "pass": true,
+      "detail": "sessionIndex=0 shotIndex=4 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery 21eb56e3",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape 23275ba4",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse 23275ba4",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=16)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label 23275ba4",
+      "pass": true,
+      "detail": "label=36 vs tc=0"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds 23275ba4",
+      "pass": true,
+      "detail": "sessionIndex=1 shotIndex=5 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery 23275ba4",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape f824c113",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse f824c113",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=7)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label f824c113",
+      "pass": true,
+      "detail": "label=36 vs tc=0"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds f824c113",
+      "pass": true,
+      "detail": "sessionIndex=1 shotIndex=6 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery f824c113",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape 43e7b8e9",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse 43e7b8e9",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=14)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label 43e7b8e9",
+      "pass": true,
+      "detail": "label=36 vs tc=0"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds 43e7b8e9",
+      "pass": true,
+      "detail": "sessionIndex=1 shotIndex=7 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery 43e7b8e9",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape 4383e63e",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse 4383e63e",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=7)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label 4383e63e",
+      "pass": true,
+      "detail": "label=24 vs tc=24"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds 4383e63e",
+      "pass": true,
+      "detail": "sessionIndex=1 shotIndex=8 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery 4383e63e",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC5",
+      "name": "shape c1514780",
+      "pass": true,
+      "detail": "schemaVersion=1"
+    },
+    {
+      "ac": "AC5",
+      "name": "legacy-parse c1514780",
+      "pass": true,
+      "detail": "gear=true camera=true (cameraEvents=7)"
+    },
+    {
+      "ac": "AC1",
+      "name": "label c1514780",
+      "pass": true,
+      "detail": "label=48 vs tc=48"
+    },
+    {
+      "ac": "AC2",
+      "name": "bounds c1514780",
+      "pass": true,
+      "detail": "sessionIndex=1 shotIndex=9 (limits 3/10)"
+    },
+    {
+      "ac": "AC4",
+      "name": "battery c1514780",
+      "pass": true,
+      "detail": "batteryLevel unreadable (fail-open)"
+    },
+    {
+      "ac": "AC1",
+      "name": "no duplicate (version,session,shot)",
+      "pass": true,
+      "detail": "8 unique shots"
+    },
+    {
+      "ac": "AC2",
+      "name": "shot order monotonic per session",
+      "pass": true,
+      "detail": "2 sessions"
+    },
+    {
+      "ac": "AC2",
+      "name": "dormancy advisory",
+      "pass": true,
+      "detail": "no version at limits yet"
+    },
+    {
+      "ac": "RP",
+      "name": "override separability 11608bdc",
+      "pass": true,
+      "detail": "denseGateOverride=true tag=bc-consensus+fft-agree+bc-consensus-override"
+    },
+    {
+      "ac": "RP",
+      "name": "override conf 11608bdc",
+      "pass": true,
+      "detail": "confidence=0.9 (override commits must carry 0.9)"
+    },
+    {
+      "ac": "RP",
+      "name": "override window 11608bdc",
+      "pass": true,
+      "detail": "bcPeaks=51 (binding window [40,60]; 39/61 out)"
+    },
+    {
+      "ac": "RP",
+      "name": "override separability d1e18f74",
+      "pass": true,
+      "detail": "denseGateOverride=true tag=bc-consensus+bc-consensus-override"
+    },
+    {
+      "ac": "RP",
+      "name": "override conf d1e18f74",
+      "pass": true,
+      "detail": "confidence=0.9 (override commits must carry 0.9)"
+    },
+    {
+      "ac": "RP",
+      "name": "override window d1e18f74",
+      "pass": true,
+      "detail": "bcPeaks=42 (binding window [40,60]; 39/61 out)"
+    },
+    {
+      "ac": "RP",
+      "name": "small-gear untouched 21eb56e3",
+      "pass": true,
+      "detail": "label=28 denseGateOverride=false (override must never fire below 40T)"
+    },
+    {
+      "ac": "RP",
+      "name": "small-gear untouched 23275ba4",
+      "pass": true,
+      "detail": "label=36 denseGateOverride=false (override must never fire below 40T)"
+    },
+    {
+      "ac": "RP",
+      "name": "small-gear untouched f824c113",
+      "pass": true,
+      "detail": "label=36 denseGateOverride=false (override must never fire below 40T)"
+    },
+    {
+      "ac": "RP",
+      "name": "small-gear untouched 43e7b8e9",
+      "pass": true,
+      "detail": "label=36 denseGateOverride=false (override must never fire below 40T)"
+    },
+    {
+      "ac": "RP",
+      "name": "small-gear untouched 4383e63e",
+      "pass": true,
+      "detail": "label=24 denseGateOverride=false (override must never fire below 40T)"
+    },
+    {
+      "ac": "RP",
+      "name": "override separability c1514780",
+      "pass": true,
+      "detail": "denseGateOverride=true tag=bc-consensus+pap1059-chainring-tc-confirmed+bc-consensus-override"
+    },
+    {
+      "ac": "RP",
+      "name": "override conf c1514780",
+      "pass": true,
+      "detail": "confidence=0.9 (override commits must carry 0.9)"
+    },
+    {
+      "ac": "RP",
+      "name": "override window c1514780",
+      "pass": true,
+      "detail": "bcPeaks=48 (binding window [40,60]; 39/61 out)"
+    },
+    {
+      "ac": "RP",
+      "name": "wrong override-commits <=1 per session (target 0)",
+      "pass": true,
+      "detail": "0 override-commit session(s), 0 wrong total"
+    },
+    {
+      "ac": "RP",
+      "name": "rescue yield (informational)",
+      "pass": true,
+      "detail": "scope=8 rows; override commits=3 exact+/-1=3 wrong=0 in-band-still-abstain=0 (corpus basis: 17/33 gate-fires +/-1, 0 wrong)"
+    }
+  ],
+  "verdict": "PASS"
+}
