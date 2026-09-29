@@ -14,6 +14,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { Sentry, SENTRY_ENABLED } from '../sentry';
 import { BUILD_LABEL } from '../buildInfo';
+import { getScreenshot } from './postCaptureScreenshot';
 
 const SENTRY_ORG_SLUG = 'paperclip-0l';
 
@@ -95,6 +96,11 @@ export async function shareDebugReport({
 
   const photoBytes = await readPhotoBytes(photoPath, 'photo.jpg');
   const croppedBytes = await readPhotoBytes(croppedPhotoPath, 'cropped.jpg');
+  // PAP-1939: post-capture screen + preview snapshot (best effort).
+  let shot = null;
+  try { shot = await getScreenshot(algoDiag?.resultId); } catch (e) { shot = null; }
+  const screenBytes = shot?.screenPath ? await readPhotoBytes(shot.screenPath, 'screen.jpg') : null;
+  const previewBytes = shot?.previewPath ? await readPhotoBytes(shot.previewPath, 'preview.jpg') : null;
 
   // Use withScope so attachments + contexts are isolated to this event.
   let eventId = '';
@@ -111,6 +117,20 @@ export async function shareDebugReport({
         filename: 'cropped.jpg',
         data: croppedBytes,
         contentType: 'image/jpeg',
+      });
+    }
+    if (screenBytes) {
+      scope.addAttachment({ filename: 'screen.jpg', data: screenBytes, contentType: 'image/jpeg' });
+    }
+    if (previewBytes) {
+      scope.addAttachment({ filename: 'preview.jpg', data: previewBytes, contentType: 'image/jpeg' });
+    }
+    if (shot) {
+      scope.setContext('postCaptureScreenshot', {
+        id: shot.id ?? null,
+        screen: !!screenBytes,
+        preview: !!previewBytes,
+        errors: shot.errors ?? [],
       });
     }
     scope.setTags({

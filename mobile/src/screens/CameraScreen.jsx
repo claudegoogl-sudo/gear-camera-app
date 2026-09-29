@@ -36,6 +36,7 @@ import { countTeeth } from '../algorithm/gearCounter';
 import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
+import { startPostCaptureScreenshot, registerScreenshot } from '../utils/postCaptureScreenshot';
 // PAP-1742: capture-time chainring_abstain telemetry (moved off ResultScreen).
 import { emitChainringAbstainTelemetry } from '../utils/chainringAbstainTelemetry';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -517,6 +518,12 @@ export default function CameraScreen({ navigation }) {
         qualityPrioritization: 'quality',
       });
 
+      // PAP-1939: fire-and-forget screen + preview snapshot for UI/camera
+      // misalignment review. Not awaited here — detection latency unchanged.
+      // Stored on a ref; ResultScreen's debug share awaits it (screen.jpg /
+      // preview.jpg attachments).
+      const screenshotPromise = startPostCaptureScreenshot(camera);
+
       // PAP-1882: verify WYSIWYG end-to-end — the saved photo's aspect must
       // match the format's photo aspect (and the preview's video aspect). Any
       // drift shows up here as an explicit cameraEvent in the debug share.
@@ -618,6 +625,8 @@ export default function CameraScreen({ navigation }) {
       // dedupe per photo and lets emitChainringAbstainTelemetry suppress
       // duplicate emissions for one capture.
       const captureId = `cap-${Date.now().toString(36)}-${gen}`;
+      // PAP-1939: debug share looks the screenshot up by algoDiag.resultId.
+      registerScreenshot(captureId, screenshotPromise);
       const algoDiagBlock = {
         resultId: captureId,
         peakR: result.peakR ?? null,
