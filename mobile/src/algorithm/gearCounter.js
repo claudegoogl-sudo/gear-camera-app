@@ -4365,6 +4365,13 @@ export async function countTeeth(photoUri, signal, opts) {
     abstainReason = gateOutcome.abstainReason;
     methodUsed = gateOutcome.methodUsed;
   }
+  if (pap1948HubStarLocalization(r.peakR, width, height, finalToothCount, abstained)) {
+    abstained = true;
+    abstainReason = 'pap1948-localization-failure';
+    methodUsed = `${methodUsed}+pap1948-hubstar-localization`;
+    gearCenter = null;
+    gearRadius = null;
+  }
 
   return {
     toothCount: finalToothCount,
@@ -4486,6 +4493,19 @@ export const __test = {
   pap1898RimSupport,
   pap1898ShouldRescue,
 };
+
+// PAP-1948 (QA-approved PAP-1949, Option A): hub-star localization tag.
+// On b159 the dense regime abstained on 3 captures whose radial peak (peakR)
+// sat inside the hub star (peakR <= 0.259*min(w,h); every committed capture
+// >= 0.346). The abstain was honest, but the reported gearCenter/gearRadius
+// drew a numerically plausible, off-gear contour. Abstain-only by
+// construction: committed results are never touched, so counts cannot change.
+export const PAP1948_HUBSTAR_PEAKR_FRAC = 0.30;
+export function pap1948HubStarLocalization(peakR, width, height, toothCount, abstained) {
+  if (!(toothCount === 0 || abstained)) return false;
+  if (!(peakR > 0)) return false;
+  return peakR < PAP1948_HUBSTAR_PEAKR_FRAC * Math.min(width, height);
+}
 
 export function countTeethFromRgba(rgba, width, height) {
   // PAP-1659: harness path mirrors countTeeth's wall-clock deadline so
@@ -4760,11 +4780,17 @@ export function countTeethFromRgba(rgba, width, height) {
     abstainReason = gateOutcome.abstainReason;
     methodUsed = gateOutcome.methodUsed;
   }
+  const pap1948Loc = pap1948HubStarLocalization(r.peakR, width, height, finalToothCount, abstained);
+  if (pap1948Loc) {
+    abstained = true;
+    abstainReason = 'pap1948-localization-failure';
+    methodUsed = `${methodUsed}+pap1948-hubstar-localization`;
+  }
   return {
     toothCount: finalToothCount,
     confidence: finalConfidence,
-    gearCenter: { x: r.cx / width, y: r.cy / height },
-    gearRadius: r.gearR / width,
+    gearCenter: pap1948Loc ? null : { x: r.cx / width, y: r.cy / height },
+    gearRadius: pap1948Loc ? null : r.gearR / width,
     innerContourSuspected,
     // PAP-1872: first-class abstain outcome for the honest-UX surface.
     abstained,

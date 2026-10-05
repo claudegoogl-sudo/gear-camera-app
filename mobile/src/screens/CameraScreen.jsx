@@ -593,11 +593,12 @@ export default function CameraScreen({ navigation }) {
       setResult({
         toothCount:  result.toothCount,
         confidence:  result.confidence,
-        gearContour: {
+        // PAP-1948: null on hub-star localization failure (no off-gear overlay).
+        gearContour: result.gearCenter && result.gearRadius != null ? {
           centerX: result.gearCenter.x,
           centerY: result.gearCenter.y,
           radius:  result.gearRadius,
-        },
+        } : null,
         algorithmRuntimeMs: result.algorithmRuntimeMs,
         innerContourSuspected: result.innerContourSuspected ?? false,
         // PAP-1872: dense-chainring honest-abstain outcome (go-abstain card
