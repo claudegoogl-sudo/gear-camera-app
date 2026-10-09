@@ -4372,6 +4372,11 @@ export async function countTeeth(photoUri, signal, opts) {
     gearCenter = null;
     gearRadius = null;
   }
+  if (!abstained && pap1955BudgetHubStar(methodUsed, finalToothCount, r.contourRadius, width)) {
+    abstained = true;
+    abstainReason = 'pap1955-budget-exhausted-hubstar';
+    methodUsed = `${methodUsed}+pap1955-budget-hubstar`;
+  }
 
   return {
     toothCount: finalToothCount,
@@ -4505,6 +4510,21 @@ export function pap1948HubStarLocalization(peakR, width, height, toothCount, abs
   if (!(toothCount === 0 || abstained)) return false;
   if (!(peakR > 0)) return false;
   return peakR < PAP1948_HUBSTAR_PEAKR_FRAC * Math.min(width, height);
+}
+
+
+// PAP-1955: budget-exhausted-on-hub-star audit tag. The PAP-1659 early
+// return reports peakR=0, so pap1948HubStarLocalization can never fire on a
+// budget-exhausted frame; b161 028b3b48 (34T) thrashed 23 methods with
+// gearContour.radius=0.092 and surfaced as an untagged timeout. Tag-only:
+// fires only when toothCount is already 0 (no count can change). Threshold
+// in the same units as the reported gearRadius (contourRadius / width).
+export const PAP1955_BUDGET_HUBSTAR_RADIUS_FRAC = 0.15;
+export function pap1955BudgetHubStar(methodUsed, toothCount, contourRadius, width) {
+  if (toothCount !== 0) return false;
+  if (!String(methodUsed || '').includes('pap1659-budget-exhausted')) return false;
+  if (!(contourRadius > 0) || !(width > 0)) return false;
+  return contourRadius / width < PAP1955_BUDGET_HUBSTAR_RADIUS_FRAC;
 }
 
 export function countTeethFromRgba(rgba, width, height) {
@@ -4785,6 +4805,11 @@ export function countTeethFromRgba(rgba, width, height) {
     abstained = true;
     abstainReason = 'pap1948-localization-failure';
     methodUsed = `${methodUsed}+pap1948-hubstar-localization`;
+  }
+  if (!abstained && pap1955BudgetHubStar(methodUsed, finalToothCount, r.contourRadius, width)) {
+    abstained = true;
+    abstainReason = 'pap1955-budget-exhausted-hubstar';
+    methodUsed = `${methodUsed}+pap1955-budget-hubstar`;
   }
   return {
     toothCount: finalToothCount,
