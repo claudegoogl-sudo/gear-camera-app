@@ -1,0 +1,42 @@
+[
+ {
+  "id": "f4464552",
+  "label": 27,
+  "dev": 12,
+  "devR": 0,
+  "devCx": 0,
+  "devCy": 0,
+  "tc": 12,
+  "cx": 0.001,
+  "cy": 0.001,
+  "r": 0,
+  "contourR": 0.287,
+  "peakR": 0.283,
+  "rOuter": 0.288,
+  "bcPeaks": 10,
+  "bcTc": 12,
+  "abst": null,
+  "method": "bc-consensus+fft-agree",
+  "ms": 4821
+ },
+ {
+  "id": "e5c31f09",
+  "label": 27,
+  "dev": 27,
+  "devR": 0,
+  "devCx": 0,
+  "devCy": 0,
+  "tc": 27,
+  "cx": 0.001,
+  "cy": 0.001,
+  "r": 0,
+  "contourR": 0.16,
+  "peakR": 0.319,
+  "rOuter": 0.457,
+  "bcPeaks": 26,
+  "bcTc": 27,
+  "abst": null,
+  "method": "bc-consensus",
+  "ms": 1932
+ }
+]
