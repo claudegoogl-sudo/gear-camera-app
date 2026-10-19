@@ -234,7 +234,24 @@ function _buildOffsets(radius, width) {
   return offsets;
 }
 
-function morphClose(mask, width, height, radius, _tmp, _out) {
+// PAP-1979: zero-behaviour sub-stage timers (cumulative ms + calls) for detect.
+const subStageMs = {};
+function _timed(name, fn) {
+  return function (...a) {
+    const t = Date.now();
+    try { return fn.apply(this, a); } finally {
+      const e = subStageMs[name] || (subStageMs[name] = { ms: 0, n: 0 });
+      e.ms += Date.now() - t; e.n++;
+    }
+  };
+}
+const morphClose = _timed('morphClose', morphClose_raw);
+const morphOpen = _timed('morphOpen', morphOpen_raw);
+const labelComponents = _timed('labelComponents', labelComponents_raw);
+const fftPurityCheck = _timed('fftPurityCheck', fftPurityCheck_raw);
+const findGearCenter = _timed('findGearCenter', findGearCenter_raw);
+const binaryContourCount = _timed('binaryContourCount', binaryContourCount_raw);
+function morphClose_raw(mask, width, height, radius, _tmp, _out) {
   const n = width * height;
   const tmp = _tmp || new Uint8Array(n);
   const out = _out || new Uint8Array(n);
@@ -309,7 +326,7 @@ function morphClose(mask, width, height, radius, _tmp, _out) {
 
 // ── 4. Morphological open (erode then dilate) ───────────────────────────────
 
-function morphOpen(mask, width, height, radius, _tmp, _out) {
+function morphOpen_raw(mask, width, height, radius, _tmp, _out) {
   const n = width * height;
   const tmp = _tmp || new Uint8Array(n);
   const out = _out || new Uint8Array(n);
@@ -380,7 +397,7 @@ function morphOpen(mask, width, height, radius, _tmp, _out) {
 let _lcQx = null;
 let _lcQy = null;
 
-function labelComponents(mask, width, height, targetVal, _labels) {
+function labelComponents_raw(mask, width, height, targetVal, _labels) {
   const n = width * height;
   const labels = _labels || new Int32Array(n);
   if (_labels) labels.fill(0);
@@ -752,7 +769,7 @@ function fftCountAtRadius(enhanced, cx, cy, r, width, height) {
 
 const PURITY_ANGLES = 1024;  // Must be power of 2 — avoids FFT zero-padding frequency shift
 
-function fftPurityCheck(enhanced, cx, cy, r, width, height, fast = false) {
+function fftPurityCheck_raw(enhanced, cx, cy, r, width, height, fast = false) {
   const lo = Math.floor(r * 0.85);
   const hi = Math.min(Math.floor(r * 1.10), Math.min(cx, width - cx, cy, height - cy) - 1);
   if (lo >= hi || lo < 10) return 0.0;
@@ -1012,7 +1029,7 @@ function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
 // Env-toggled so corpus A/B (baseline vs rescue) uses the same binary.
 const PAP1898_SILHOUETTE_RESCUE = process.env.PAP1898_RESCUE_OFF !== '1';
 
-function findGearCenter(gray, enhanced, edges, width, height, deadline = Infinity, budgetState = null) {
+function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Infinity, budgetState = null) {
   const h = height, w = width;
   const n = w * h;
 
@@ -2240,7 +2257,7 @@ function linearInterp1d(x, xp, fp) {
   return fp[lo] * (1 - t) + fp[hi] * t;
 }
 
-function binaryContourCount(gray, cx, cy, width, height) {
+function binaryContourCount_raw(gray, cx, cy, width, height) {
   const n = width * height;
   const BC_ANGLES = 4096;  // Must be power of 2 — avoids FFT zero-padding frequency shift
   const results = [];
@@ -3763,6 +3780,7 @@ export async function countTeeth(photoUri, signal, opts) {
   // behind the backend seam.  `preprocessBackend` is surfaced on the result so
   // Sentry telemetry can attribute stageMs.preprocess to the backend that
   // produced it.
+  for (const k in subStageMs) delete subStageMs[k];
   const pre = preprocess(rgba, width, height);
   const { gray, enhanced, edges } = pre;
   const preprocessBackend = pre.backend;
@@ -4430,6 +4448,7 @@ export async function countTeeth(photoUri, signal, opts) {
       // means the native backend threw and we degraded mid-run.  AC3 compares
       // stageMs.preprocess across this field, so it has to travel with it.
       preprocessBackend,
+      sub: JSON.parse(JSON.stringify(subStageMs)),
     },
     innerContourSuspected,
     // PAP-815 instrumentation: outer-edge anchor diagnostic surfaced for
