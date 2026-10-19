@@ -25,6 +25,18 @@ since PAP-1052 (181/356 = 50.8% @ `141cffb`) we moved **+7.2pp**, and effectivel
 is one commit's XL gain (PAP-1554). Large + XL are 53% of the corpus at ~41% combined —
 they are the binding constraint, and both trip the harness's own `<50% — likely regression` warning.
 
+## Re-audit — PAP-1970 @ `11bcf6f`, 2026-10-19 (plain node, cropped+900px+0.49 mask, pap1862 harness; NOT same harness as PAP-1658 — compare with care)
+
+| Bucket | Tol | N | Correct | Abstain | Conf-wrong |
+|---|---|---|---|---|---|
+| Small 9–15T | exact | 136 | 58 (42.6%) | 69 | 9 |
+| Mid 16–20T | exact | 33 | 15 (45.5%) | 15 | 3 |
+| Large 21–28T | ±1 | 113 | 24 (21.2%) | 74 | 15 |
+| XL 29–60T | ±1 | 80 | 24 (30.0%) | 53 | 3 |
+| **TOTAL** | | **362** | **121 (33.4%)** | **211** | **30** |
+
+Of answers given: 121/151 = 80.1% correct; answer rate F = 151/362 = 41.7%. Host node p50 1152 ms, p95 1841 ms, no budget exhaustion. On-device Sentry p50/p95 for b158+ NOT re-pulled (last: ~36.7s p50, row 3). Sizes with <4 photos or <50% correct: 11,18,21,24,28,34,36,42,51,52 (+ <4: 12,17,23,32). 33 sizes in 9–60T have zero photos. Rows: `debug-reports/pap1970/pap1970_head_rows.json`.
+
 ## What each target actually means
 
 **1. Range.** "Supported" means we return a correct count, not that we abstain safely.
