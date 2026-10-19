@@ -4395,6 +4395,13 @@ export async function countTeeth(photoUri, signal, opts) {
     abstainReason = 'pap1955-budget-exhausted-hubstar';
     methodUsed = `${methodUsed}+pap1955-budget-hubstar`;
   }
+  if (pap1981ContourRAbstain(abstained, finalToothCount, r.contourRadius)) {
+    console.log(`[GearCounter] pap1981-contourR-abstain: tc=${finalToothCount} contourR=${r.contourRadius} — abstaining.`);
+    abstained = true;
+    finalConfidence = 0;
+    abstainReason = 'pap1981-contourR-abstain';
+    methodUsed = `${methodUsed}+pap1981-contourR-abstain`;
+  }
 
   return {
     toothCount: finalToothCount,
@@ -4538,6 +4545,14 @@ export function pap1948HubStarLocalization(peakR, width, height, toothCount, abs
 // gearContour.radius=0.092 and surfaced as an untagged timeout. Tag-only:
 // fires only when toothCount is already 0 (no count can change). Threshold
 // in the same units as the reported gearRadius (contourRadius / width).
+// PAP-1982 / PAP-1981 (CEO interim lever): answered tc<=13 with a large
+// contour (>=350 on the 900px working image) is overwhelmingly a wrong small count.
+export const PAP1981_CONTOUR_R_MIN = 350;
+export const PAP1981_TC_MAX = 13;
+export function pap1981ContourRAbstain(abstained, toothCount, contourRadius) {
+  return !abstained && toothCount > 0 && toothCount <= PAP1981_TC_MAX
+    && typeof contourRadius === 'number' && contourRadius >= PAP1981_CONTOUR_R_MIN;
+}
 export const PAP1955_BUDGET_HUBSTAR_RADIUS_FRAC = 0.15;
 export function pap1955BudgetHubStar(methodUsed, toothCount, contourRadius, width) {
   if (toothCount !== 0) return false;
@@ -4829,6 +4844,13 @@ export function countTeethFromRgba(rgba, width, height) {
     abstained = true;
     abstainReason = 'pap1955-budget-exhausted-hubstar';
     methodUsed = `${methodUsed}+pap1955-budget-hubstar`;
+  }
+  if (pap1981ContourRAbstain(abstained, finalToothCount, r.contourRadius)) {
+    console.log(`[GearCounter] pap1981-contourR-abstain: tc=${finalToothCount} contourR=${r.contourRadius} — abstaining.`);
+    abstained = true;
+    finalConfidence = 0;
+    abstainReason = 'pap1981-contourR-abstain';
+    methodUsed = `${methodUsed}+pap1981-contourR-abstain`;
   }
   return {
     toothCount: finalToothCount,
