@@ -248,7 +248,18 @@ function _timed(name, fn) {
 const morphClose = _timed('morphClose', morphClose_raw);
 const morphOpen = _timed('morphOpen', morphOpen_raw);
 const labelComponents = _timed('labelComponents', labelComponents_raw);
-const fftPurityCheck = _timed('fftPurityCheck', fftPurityCheck_raw);
+// PAP-1988: fftPurityCheck is a pure function of (enhanced content, cx, cy, r, w, h, fast);
+// `enhanced` is never mutated after creation, so memoise per buffer identity (zero output change).
+const _fftPurityMemo = new WeakMap();
+const _fftPurityTimed = _timed('fftPurityCheck', fftPurityCheck_raw);
+function fftPurityCheck(enhanced, cx, cy, r, width, height, fast = false) {
+  let m = _fftPurityMemo.get(enhanced);
+  if (!m) { m = new Map(); _fftPurityMemo.set(enhanced, m); }
+  const key = cx + ',' + cy + ',' + r + ',' + width + ',' + height + ',' + (fast ? 1 : 0);
+  let v = m.get(key);
+  if (v === undefined) { v = _fftPurityTimed(enhanced, cx, cy, r, width, height, fast); m.set(key, v); }
+  return v;
+}
 const findGearCenter = _timed('findGearCenter', findGearCenter_raw);
 const binaryContourCount = _timed('binaryContourCount', binaryContourCount_raw);
 function morphClose_raw(mask, width, height, radius, _tmp, _out) {
@@ -2257,6 +2268,7 @@ function linearInterp1d(x, xp, fp) {
   return fp[lo] * (1 - t) + fp[hi] * t;
 }
 
+const _bcLabelMemo = new WeakMap();
 function binaryContourCount_raw(gray, cx, cy, width, height) {
   const n = width * height;
   const BC_ANGLES = 4096;  // Must be power of 2 — avoids FFT zero-padding frequency shift
@@ -2284,7 +2296,14 @@ function binaryContourCount_raw(gray, cx, cy, width, height) {
     // useMorph ∈ {true,false} dual-pass doubled pipeline time and the
     // no-morph pass inside it generated the noisy 24T→44 FFT spike QA
     // flagged in b84.
-    const { labels, components } = labelComponents(mask, width, height, 1);
+    // PAP-1988: mask is a pure function of (gray, thresh, invert); binaryContourCount is
+    // called twice per photo on the same gray, so reuse the labelling (read-only consumers).
+    let _lcm = _bcLabelMemo.get(gray);
+    if (!_lcm) { _lcm = new Map(); _bcLabelMemo.set(gray, _lcm); }
+    const _lck = thresh + (invert ? 'i' : 'n') + width + 'x' + height;
+    let _lcr = _lcm.get(_lck);
+    if (!_lcr) { _lcr = labelComponents(mask, width, height, 1); _lcm.set(_lck, _lcr); }
+    const { labels, components } = _lcr;
 
     const nTotal = width * height;
     for (const comp of components) {
@@ -4881,4 +4900,11 @@ export function countTeethFromRgba(rgba, width, height) {
     radialRelDisagree: radialRel,
     fft90tc: r.fft90tc, opTc: r.opTc, opRel: r.opRel,
   };
+}
+
+// PAP-1988: harness accessor for the PAP-1979 sub-stage timers (countTeethFromRgba does not surface stageMs).
+export function __subStageSnapshot(reset = false) {
+  const o = JSON.parse(JSON.stringify(subStageMs));
+  if (reset) for (const k in subStageMs) delete subStageMs[k];
+  return o;
 }
