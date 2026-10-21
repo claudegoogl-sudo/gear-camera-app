@@ -4421,6 +4421,13 @@ export async function countTeeth(photoUri, signal, opts) {
     abstainReason = 'pap1981-contourR-abstain';
     methodUsed = `${methodUsed}+pap1981-contourR-abstain`;
   }
+  if (pap2001PeakMismatchAbstain(abstained, finalToothCount, r.peakTc)) {
+    console.log(`[GearCounter] pap2001-peak-mismatch-abstain: tc=${finalToothCount} peakTc=${r.peakTc} — abstaining.`);
+    abstained = true;
+    finalConfidence = 0;
+    abstainReason = 'pap2001-peak-mismatch-abstain';
+    methodUsed = `${methodUsed}+pap2001-peak-mismatch-abstain`;
+  }
 
   return {
     toothCount: finalToothCount,
@@ -4571,6 +4578,12 @@ export const PAP1981_TC_MAX = 13;
 export function pap1981ContourRAbstain(abstained, toothCount, contourRadius) {
   return !abstained && toothCount > 0 && toothCount <= PAP1981_TC_MAX
     && typeof contourRadius === 'number' && contourRadius >= PAP1981_CONTOUR_R_MIN;
+}
+// PAP-2001 (P2 interim, PAP-1996 scoring): abstain when the committed count differs
+// from the peak-method count. Revert by setting PAP2001_PEAK_MISMATCH_ABSTAIN=false.
+export const PAP2001_PEAK_MISMATCH_ABSTAIN = true;
+export function pap2001PeakMismatchAbstain(abstained, toothCount, peakTc) {
+  return PAP2001_PEAK_MISMATCH_ABSTAIN && !abstained && toothCount > 0 && peakTc !== toothCount;
 }
 export const PAP1955_BUDGET_HUBSTAR_RADIUS_FRAC = 0.15;
 export function pap1955BudgetHubStar(methodUsed, toothCount, contourRadius, width) {
@@ -4870,6 +4883,13 @@ export function countTeethFromRgba(rgba, width, height) {
     finalConfidence = 0;
     abstainReason = 'pap1981-contourR-abstain';
     methodUsed = `${methodUsed}+pap1981-contourR-abstain`;
+  }
+  if (pap2001PeakMismatchAbstain(abstained, finalToothCount, r.peakTc)) {
+    console.log(`[GearCounter] pap2001-peak-mismatch-abstain: tc=${finalToothCount} peakTc=${r.peakTc} — abstaining.`);
+    abstained = true;
+    finalConfidence = 0;
+    abstainReason = 'pap2001-peak-mismatch-abstain';
+    methodUsed = `${methodUsed}+pap2001-peak-mismatch-abstain`;
   }
   return {
     toothCount: finalToothCount,
