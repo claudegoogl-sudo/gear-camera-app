@@ -1040,6 +1040,9 @@ function findHoughCircleCandidates(edges, width, height, minRadius, maxRadius) {
 // Env-toggled so corpus A/B (baseline vs rescue) uses the same binary.
 const PAP1898_SILHOUETTE_RESCUE = process.env.PAP1898_RESCUE_OFF !== '1';
 
+const _GC_SKIP_DUP = typeof process !== 'undefined' && process.env && process.env.GC_SKIP_DUP === '1';
+let _gcSkipCount = 0;
+export function __gcSkipCount() { return _gcSkipCount; }
 function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Infinity, budgetState = null) {
   const h = height, w = width;
   const n = w * h;
@@ -1097,6 +1100,7 @@ function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Inf
   // improve contour candidate coverage for large gears — Python uses
   // step=5 but 10 is a reasonable mobile compromise.  18 iterations vs
   // the previous 12, matching Python more closely without the full 36).
+  let _prevMaskInv = null, _prevMaskNon = null;
   thresholdSweep:
   for (let thresh = 40; thresh < 220; thresh += 10) {
     // PAP-1659: this 36-iteration threshold×invert sweep (with morphology at
@@ -1135,6 +1139,16 @@ function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Inf
       // attempt which was effectively r=4 and over-merged spider arms.
       // halfBufA → halfBufC (close1), halfBufA reused as out for close2,
       // halfBufC reused as out for open — strict ABA→C→A→C ping-pong.
+      // PAP-1995: identical half-res threshold mask as the previous same-polarity
+      // iteration => identical morph/label/candidates; skip (flag-gated).
+      if (_GC_SKIP_DUP) {
+        const pm = invert ? _prevMaskInv : _prevMaskNon;
+        let same = pm !== null && pm.length === halfN;
+        if (same) { for (let i = 0; i < halfN; i++) { if (pm[i] !== halfBufA[i]) { same = false; break; } } }
+        if (same) { _gcSkipCount++; continue; }
+        const cp = halfBufA.slice(0, halfN);
+        if (invert) _prevMaskInv = cp; else _prevMaskNon = cp;
+      }
       const halfClosed1 = morphClose(halfBufA, halfW, halfH, 1, halfBufB, halfBufC);
       const halfClosed = morphClose(halfClosed1, halfW, halfH, 1, halfBufB, halfBufA);
       const halfCleaned = morphOpen(halfClosed, halfW, halfH, 1, halfBufB, halfBufC);
