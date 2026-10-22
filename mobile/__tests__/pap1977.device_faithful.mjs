@@ -69,11 +69,13 @@ for (const f of fs.readdirSync(TD).sort()) {
   const stamp = f.replace('_meta.json', ''); const photo = path.join(TD, stamp + '_photo.jpg');
   if (!fs.existsSync(photo)) continue;
   const raw = jpegDecode(fs.readFileSync(photo), { useTArray: true });
+  const _e0 = (globalThis.__gcEarlyCount ? globalThis.__gcEarlyCount() : 0); const _t0 = Date.now();
   const { r } = run(raw.data, raw.width, raw.height, true);
+  const ms = Date.now() - _t0; const early = (globalThis.__gcEarlyCount ? globalThis.__gcEarlyCount() : 0) > _e0;
   const tc = r.toothCount || 0, conf = r.confidence || 0, b = bucket(actual);
   const abstain = conf === 0 || tc === 0;
-  rows.push({ stamp, actual, b, tc, conf, abstain, correct: !abstain && Math.abs(tc - actual) <= tol(b) });
-  if (rows.length % 50 === 0) console.log(rows.length);
+  rows.push({ stamp, actual, b, tc, conf, abstain, ms, early, correct: !abstain && Math.abs(tc - actual) <= tol(b) });
+  console.log('row', rows.length, stamp, 'ms=' + ms, early ? 'early' : '');
 }
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(rows));

@@ -1042,6 +1042,12 @@ const PAP1898_SILHOUETTE_RESCUE = process.env.PAP1898_RESCUE_OFF !== '1';
 
 const _GC_SKIP_DUP = typeof process !== 'undefined' && process.env && process.env.GC_SKIP_DUP === '1';
 let _gcSkipCount = 0;
+// PAP-2017 (PAP-2009 option B): early-exit the threshold sweep once the top
+// candidate has been stable for several consecutive thresholds. Default OFF.
+const _GC_B_EARLY = typeof process !== 'undefined' && process.env && process.env.GC_B_EARLY === '1';
+let _gcEarlyCount = 0;
+export function __gcEarlyCount() { return _gcEarlyCount; }
+if (typeof globalThis !== 'undefined') globalThis.__gcEarlyCount = __gcEarlyCount;
 export function __gcSkipCount() { return _gcSkipCount; }
 function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Infinity, budgetState = null) {
   const h = height, w = width;
@@ -1101,6 +1107,7 @@ function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Inf
   // step=5 but 10 is a reasonable mobile compromise.  18 iterations vs
   // the previous 12, matching Python more closely without the full 36).
   let _prevMaskInv = null, _prevMaskNon = null;
+  let _bTop = null, _bStable = 0;
   thresholdSweep:
   for (let thresh = 40; thresh < 220; thresh += 10) {
     // PAP-1659: this 36-iteration threshold×invert sweep (with morphology at
@@ -1243,6 +1250,21 @@ function findGearCenter_raw(gray, enhanced, edges, width, height, deadline = Inf
         const r = Math.round(effectiveR);
 
         allCandidates.push({ score, cx, cy, r });
+      }
+    }
+    // PAP-2017 option B (flag GC_B_EARLY, default off): stop once the best
+    // candidate is unchanged (same neighbourhood) for 4 consecutive thresholds.
+    if (_GC_B_EARLY) {
+      let best = null;
+      for (const c of allCandidates) if (best === null || c.score > best.score) best = c;
+      if (best !== null && _bTop !== null && Math.abs(best.cx - _bTop.cx) < 30 &&
+          Math.abs(best.cy - _bTop.cy) < 30 && Math.abs(best.r - _bTop.r) < 20) _bStable++;
+      else _bStable = 0;
+      _bTop = best;
+      if (_bStable >= 4 && thresh >= 100) {
+        _gcEarlyCount++;
+        console.log('[B-early] sweep stopped at thresh=' + thresh);
+        break thresholdSweep;
       }
     }
   }
