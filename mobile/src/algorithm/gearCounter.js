@@ -245,9 +245,46 @@ function _timed(name, fn) {
     }
   };
 }
-const morphClose = _timed('morphClose', morphClose_raw);
-const morphOpen = _timed('morphOpen', morphOpen_raw);
-const labelComponents = _timed('labelComponents', labelComponents_raw);
+// PAP-2022: opt-in native morph/label (default OFF; JS stays the fallback and
+// the reference). Enabled only via setNativeMorphEnabled(true) AND the JSI fns.
+let _nativeMorph = false;
+export function setNativeMorphEnabled(on) { _nativeMorph = !!on; }
+function _nk() {
+  const k = _nativeMorph ? globalThis.__gearKernels : null;
+  return k && typeof k.labelComponents === 'function' ? k : null;
+}
+function morphClose_dispatch(mask, w, h, r, t, o) {
+  const k = _nk();
+  if (!k) return morphClose_raw(mask, w, h, r, t, o);
+  const res = new Uint8Array(k.morphClose(mask.buffer, mask.byteOffset || 0, w, h, r));
+  if (o) { o.set(res); return o; }
+  return res;
+}
+function morphOpen_dispatch(mask, w, h, r, t, o) {
+  const k = _nk();
+  if (!k) return morphOpen_raw(mask, w, h, r, t, o);
+  const res = new Uint8Array(k.morphOpen(mask.buffer, mask.byteOffset || 0, w, h, r));
+  if (o) { o.set(res); return o; }
+  return res;
+}
+function labelComponents_dispatch(mask, w, h, tv, _labels) {
+  const k = _nk();
+  if (!k) return labelComponents_raw(mask, w, h, tv, _labels);
+  const r = k.labelComponents(mask.buffer, mask.byteOffset || 0, w, h, tv);
+  const labels = new Int32Array(r.labels);
+  const c = new Float64Array(r.comps);
+  const components = [];
+  for (let i = 0; i < c.length; i += 9) {
+    components.push({ id: c[i], area: c[i + 1], sx: c[i + 2], sy: c[i + 3], minX: c[i + 4],
+      minY: c[i + 5], maxX: c[i + 6], maxY: c[i + 7], touchesBorder: c[i + 8] === 1 });
+  }
+  if (_labels) { _labels.set(labels); return { labels: _labels, components }; }
+  return { labels, components };
+}
+const morphClose = _timed('morphClose', morphClose_dispatch);
+const morphOpen = _timed('morphOpen', morphOpen_dispatch);
+const labelComponents = _timed('labelComponents', labelComponents_dispatch);
+export const __morphRefs = { morphClose_raw, morphOpen_raw, labelComponents_raw };
 // PAP-1988: fftPurityCheck is a pure function of (enhanced content, cx, cy, r, w, h, fast);
 // `enhanced` is never mutated after creation, so memoise per buffer identity (zero output change).
 const _fftPurityMemo = new WeakMap();

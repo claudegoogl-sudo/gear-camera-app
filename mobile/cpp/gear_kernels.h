@@ -36,6 +36,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 
 namespace gearkernels {
 
@@ -67,5 +68,14 @@ void cannyEdges(const uint8_t* gray, int width, int height, double low,
 // Each of gray/enhanced/blurred/edges must point to a w*h buffer.
 void preprocess(const uint8_t* rgba, int width, int height, uint8_t* gray,
                 uint8_t* enhanced, uint8_t* blurred, uint8_t* edges);
+
+// PAP-2022 (prototype, default OFF in JS): ports of gearCounter.js morphClose /
+// morphOpen / labelComponents.  Outputs are freshly written planes (0/1 bytes).
+void morphClose(const uint8_t* mask, int width, int height, int radius, uint8_t* out);
+void morphOpen(const uint8_t* mask, int width, int height, int radius, uint8_t* out);
+// labels: int32 w*h.  comps: 9 doubles per component
+// [id, area, sx, sy, minX, minY, maxX, maxY, touchesBorder]. Returns count.
+int labelComponents(const uint8_t* mask, int width, int height, int targetVal,
+                    int32_t* labels, std::vector<double>& comps);
 
 }  // namespace gearkernels

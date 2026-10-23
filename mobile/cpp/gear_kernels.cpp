@@ -271,4 +271,99 @@ void preprocess(const uint8_t* rgba, int width, int height, uint8_t* gray,
   cannyEdges(blurred, width, height, 50, 150, edges);
 }
 
+// ── PAP-2022: morphology + connected components (ports of gearCounter.js) ──
+namespace {
+std::vector<int> buildOffsets(int radius, int width) {
+  std::vector<int> o;
+  for (int dy = -radius; dy <= radius; dy++)
+    for (int dx = -radius; dx <= radius; dx++)
+      if (dx * dx + dy * dy <= radius * radius) o.push_back(dy * width + dx);
+  return o;
+}
+// kind: dilate (any) or erode (all) over interior [r, w-r) x [r, h-r); other pixels untouched.
+void morphPass(const uint8_t* in, uint8_t* out, int w, int h, int r,
+               const std::vector<int>& offs, bool dilate) {
+  for (int y = r; y < h - r; y++) {
+    for (int x = r; x < w - r; x++) {
+      const long idx = static_cast<long>(y) * w + x;
+      uint8_t val = dilate ? 0 : 1;
+      for (int o : offs) {
+        if (dilate) { if (in[idx + o]) { val = 1; break; } }
+        else { if (!in[idx + o]) { val = 0; break; } }
+      }
+      out[idx] = val;
+    }
+  }
+}
+}  // namespace
+
+void morphClose(const uint8_t* mask, int w, int h, int r, uint8_t* out) {
+  const size_t n = static_cast<size_t>(w) * h;
+  std::vector<uint8_t> tmp(n, 0);
+  std::fill(out, out + n, 0);
+  auto offs = buildOffsets(r, w);
+  morphPass(mask, tmp.data(), w, h, r, offs, true);
+  for (int y = 0; y < h; y++) {
+    const size_t row = static_cast<size_t>(y) * w;
+    if (y < r || y >= h - r) {
+      for (int x = 0; x < w; x++) tmp[row + x] = mask[row + x];
+    } else {
+      for (int x = 0; x < r && x < w; x++) tmp[row + x] = mask[row + x];
+      for (int x = std::max(r, w - r); x < w; x++) tmp[row + x] = mask[row + x];
+    }
+  }
+  morphPass(tmp.data(), out, w, h, r, offs, false);
+}
+
+void morphOpen(const uint8_t* mask, int w, int h, int r, uint8_t* out) {
+  const size_t n = static_cast<size_t>(w) * h;
+  std::vector<uint8_t> tmp(n, 0);
+  std::fill(out, out + n, 0);
+  auto offs = buildOffsets(r, w);
+  morphPass(mask, tmp.data(), w, h, r, offs, false);
+  morphPass(tmp.data(), out, w, h, r, offs, true);
+}
+
+int labelComponents(const uint8_t* mask, int width, int height, int targetVal,
+                    int32_t* labels, std::vector<double>& comps) {
+  const size_t n = static_cast<size_t>(width) * height;
+  std::fill(labels, labels + n, 0);
+  std::vector<int> qx(n), qy(n);
+  const int lastX = width - 1, lastY = height - 1;
+  const int borderX = width - 2, borderY = height - 2;
+  int nextLabel = 1;
+  comps.clear();
+  for (int y = 0; y < height; y++) {
+    const long rowBase = static_cast<long>(y) * width;
+    for (int x = 0; x < width; x++) {
+      const long idx = rowBase + x;
+      if (mask[idx] != targetVal || labels[idx] != 0) continue;
+      const int id = nextLabel++;
+      labels[idx] = id;
+      qx[0] = x; qy[0] = y;
+      size_t head = 0, tail = 1;
+      double area = 0, sx = 0, sy = 0;
+      int minX = x, minY = y, maxX = x, maxY = y;
+      bool tb = false;
+      while (head < tail) {
+        const int cx = qx[head], cy = qy[head];
+        head++;
+        const long ci = static_cast<long>(cy) * width + cx;
+        area++; sx += cx; sy += cy;
+        if (cx < minX) minX = cx;
+        if (cx > maxX) maxX = cx;
+        if (cy < minY) minY = cy;
+        if (cy > maxY) maxY = cy;
+        if (cx <= 1 || cy <= 1 || cx >= borderX || cy >= borderY) tb = true;
+        if (cx < lastX) { long ni = ci + 1; if (mask[ni] == targetVal && labels[ni] == 0) { labels[ni] = id; qx[tail] = cx + 1; qy[tail] = cy; tail++; } }
+        if (cx > 0) { long ni = ci - 1; if (mask[ni] == targetVal && labels[ni] == 0) { labels[ni] = id; qx[tail] = cx - 1; qy[tail] = cy; tail++; } }
+        if (cy < lastY) { long ni = ci + width; if (mask[ni] == targetVal && labels[ni] == 0) { labels[ni] = id; qx[tail] = cx; qy[tail] = cy + 1; tail++; } }
+        if (cy > 0) { long ni = ci - width; if (mask[ni] == targetVal && labels[ni] == 0) { labels[ni] = id; qx[tail] = cx; qy[tail] = cy - 1; tail++; } }
+      }
+      comps.insert(comps.end(), {double(id), area, sx, sy, double(minX), double(minY), double(maxX), double(maxY), tb ? 1.0 : 0.0});
+    }
+  }
+  return nextLabel - 1;
+}
+
 }  // namespace gearkernels
