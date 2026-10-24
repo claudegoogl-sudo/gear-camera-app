@@ -249,6 +249,16 @@ function _timed(name, fn) {
 // the reference). Enabled only via setNativeMorphEnabled(true) AND the JSI fns.
 let _nativeMorph = false;
 export function setNativeMorphEnabled(on) { _nativeMorph = !!on; }
+// PAP-2025: per-session A/B for device measurement. Default 'off' (no behaviour
+// change for anyone). 'alt' flips native on/off every count; 'on'/'off' force.
+// Each result carries stageMs.morphBackend so JS/native ms compare on one device.
+let _abMode = 'off'; let _abN = 0;
+export function setNativeMorphMode(mode) { _abMode = mode === 'on' || mode === 'alt' ? mode : 'off'; _abN = 0; if (_abMode === 'off') _nativeMorph = false; }
+function _abStep() {
+  if (_abMode === 'off') return;
+  _nativeMorph = _abMode === 'on' ? true : (_abN++ % 2 === 1);
+}
+function _morphBackendTag() { return _nk() ? 'native' : 'js'; }
 function _nk() {
   const k = _nativeMorph ? globalThis.__gearKernels : null;
   return k && typeof k.labelComponents === 'function' ? k : null;
@@ -3873,6 +3883,7 @@ export async function countTeeth(photoUri, signal, opts) {
   // Sentry telemetry can attribute stageMs.preprocess to the backend that
   // produced it.
   for (const k in subStageMs) delete subStageMs[k];
+  _abStep();
   const pre = preprocess(rgba, width, height);
   const { gray, enhanced, edges } = pre;
   const preprocessBackend = pre.backend;
@@ -4554,6 +4565,7 @@ export async function countTeeth(photoUri, signal, opts) {
       // means the native backend threw and we degraded mid-run.  AC3 compares
       // stageMs.preprocess across this field, so it has to travel with it.
       preprocessBackend,
+      morphBackend: _morphBackendTag(),
       sub: JSON.parse(JSON.stringify(subStageMs)),
     },
     innerContourSuspected,
