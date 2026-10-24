@@ -63,7 +63,11 @@ BUILD_TS=$(date +%Y%m%d-%H%M%S)
 PREV_BUILD=$(grep "BUILD_NUMBER" "$BUILD_INFO" | grep -oE '[0-9]+' | head -1)
 BUILD_NUMBER=$(( ${PREV_BUILD:-0} + 1 ))
 
-BUILD_LABEL="v${VERSION} (${BUILD_NUMBER}) · ${BUILD_DATE}"
+# PAP-2025: GC_AB_NATIVE=1 makes a separate A/B build (native morph alternates
+# per count, tagged stageMs.morphBackend). Default builds stamp false.
+NATIVE_MORPH_AB=false; AB_SUFFIX=""
+if [[ "${GC_AB_NATIVE:-}" == "1" ]]; then NATIVE_MORPH_AB=true; AB_SUFFIX="-ab"; fi
+BUILD_LABEL="v${VERSION}${AB_SUFFIX} (${BUILD_NUMBER}) · ${BUILD_DATE}"
 
 echo "[build] Version: $VERSION  Build: $BUILD_NUMBER  Timestamp: $BUILD_DATE"
 
@@ -77,6 +81,7 @@ export const BUILD_VERSION = '$VERSION';
 export const BUILD_NUMBER  = $BUILD_NUMBER;
 export const BUILD_DATE    = '$BUILD_DATE';  // YYYY-MM-DD HH:MM
 export const BUILD_LABEL   = '$BUILD_LABEL';
+export const NATIVE_MORPH_AB = $NATIVE_MORPH_AB;
 EOF
 
 echo "[build] Stamped $BUILD_INFO"

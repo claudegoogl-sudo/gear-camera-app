@@ -6,3 +6,4 @@ export const BUILD_VERSION = '1.0.0';
 export const BUILD_NUMBER  = 165;
 export const BUILD_DATE    = '2026-10-22 13:18';  // YYYY-MM-DD HH:MM
 export const BUILD_LABEL   = 'v1.0.0 (165) · 2026-10-22 13:18';
+export const NATIVE_MORPH_AB = false;

@@ -32,8 +32,10 @@ import Animated, {
 import MotionIndicator from '../components/MotionIndicator';
 import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
-import { countTeeth } from '../algorithm/gearCounter';
-import { BUILD_LABEL, BUILD_NUMBER } from '../buildInfo';
+import { countTeeth, setNativeMorphMode } from '../algorithm/gearCounter';
+// PAP-2025: only a GC_AB_NATIVE=1 build stamps true; default builds stay JS. Mode 'alt' overrides setNativeMorphEnabled.
+if (NATIVE_MORPH_AB) setNativeMorphMode('alt');
+import { BUILD_LABEL, BUILD_NUMBER, NATIVE_MORPH_AB } from '../buildInfo';
 import { checkForUpdate, fetchAllBuilds } from '../utils/updateChecker';
 import { shareDebugReport } from '../utils/debugShare';
 import { startPostCaptureScreenshot, registerScreenshot } from '../utils/postCaptureScreenshot';
