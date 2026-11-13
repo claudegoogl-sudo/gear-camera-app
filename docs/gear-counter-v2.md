@@ -70,6 +70,8 @@ MODE=real ALGO=legacy npm run measure:v2
 npx jest __tests__/v2.resultShape.test.js
 ```
 
+The full jest suite (`npm test`) takes about 28 minutes and does not measure accuracy. On this branch: 28 of 29 files pass; `pap1881.flash_control.test.js` times out under load and passes when run alone (same at `f96fa8d`).
+
 `measure:v2` exits 1 when a set is below its limits (`LIMITS` in `__tests__/v2.corpus.mjs`).
 
 ## Not verified
