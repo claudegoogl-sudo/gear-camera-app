@@ -1,0 +1,32 @@
+{
+ "_comment": "Photos left out of the test corpus because their label is not certain: two label sources disagree. mobile/__tests__/v2.corpus.mjs skips them in every MODE. To put a photo back, the operator confirms the count on the physical gear, the meta file is fixed, and the entry is removed here. Never resolve a doubt by editing a label.",
+ "excluded": [
+  {
+   "photo": "2026-04-05_20-14-33-985Z",
+   "report": "report_2026-04-05_20-14-31-389Z",
+   "labels": {
+    "training-data meta": 15,
+    "operator debug report": 14
+   },
+   "why": "meta label was set by the QA agent (commit 4149446), the operator's debug report says 14"
+  },
+  {
+   "photo": "2026-04-06_09-24-05-913Z",
+   "report": "report_2026-04-06_09-24-03-207Z",
+   "labels": {
+    "training-data meta": 15,
+    "operator debug report": 14
+   },
+   "why": "meta label was set by the QA agent (commit 4149446), the operator's debug report says 14"
+  },
+  {
+   "photo": "2026-04-25_09-03-13-830Z",
+   "report": "report_2026-04-25_09-03-08-982Z",
+   "labels": {
+    "training-data upload": 51,
+    "operator debug report": 52
+   },
+   "why": "the two app uploads of this photo disagree"
+  }
+ ]
+}

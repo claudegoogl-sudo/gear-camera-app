@@ -9,6 +9,7 @@
  *   real  what the app analysed before v2: the cropped.jpg stored in each debug report, 900 px (legacy adds its circular mask)
  * env ALGO: v2 (default) | legacy      env OUT: write one JSON row per photo      env SHARD: i/n
  *
+ * Photos listed in training-data/CORPUS_EXCLUDED.json (label not certain) are skipped in every MODE.
  * Scoring: EXACT tooth count for every gear size. toothCount 0 (v2) or confidence 0 (legacy) = abstain.
  * With ALGO=v2 and no SHARD the script exits 1 when a set misses its limits below.
  */
@@ -30,24 +31,24 @@ const { countTeethFromRgba, bilinearDownsampleRgba } = await import(pathToFileUR
 const { applyCircularMask } = await import(pathToFileURL(path.join(SRC, 'algorithm/imageUtils.js')).href);
 const readJson = (f) => JSON.parse(fs.readFileSync(f, 'utf8').replace(/[^\x00-\x7F]+/g, '?'));
 const decode = (f) => jpegDecode(fs.readFileSync(f), { useTArray: true, maxMemoryUsageInMB: 2048 });
+const EXCLUDED = new Set(readJson(path.join(ROOT, 'training-data', 'CORPUS_EXCLUDED.json')).excluded.flatMap((e) => [e.photo, e.report]));
 
 function items() {
   const out = [];
   if (MODE === 'full') {
     const TD = path.join(ROOT, 'training-data');
-    const fix = readJson(path.join(TD, 'LABEL_CORRECTIONS.json'));
     for (const f of fs.readdirSync(TD).sort()) {
       if (!f.endsWith('_meta.json')) continue;
       const stamp = f.replace('_meta.json', ''), photo = path.join(TD, stamp + '_photo.jpg');
       const m = readJson(path.join(TD, f));
-      const actual = fix[stamp] ? fix[stamp].correct : Number(m.actual_tooth_count || m.actualTeethCount || 0);
-      if (actual && fs.existsSync(photo)) out.push({ id: stamp, actual, photo });
+      const actual = Number(m.actual_tooth_count || m.actualTeethCount || 0);
+      if (actual && fs.existsSync(photo) && !EXCLUDED.has(stamp)) out.push({ id: stamp, actual, photo });
     }
   } else {
     const DR = path.join(ROOT, 'debug-reports');
     for (const d of fs.readdirSync(DR).sort()) {
       const rep = path.join(DR, d, 'report.json');
-      if (!d.startsWith('report_') || !fs.existsSync(rep)) continue;
+      if (!d.startsWith('report_') || !fs.existsSync(rep) || EXCLUDED.has(d)) continue;
       const r = readJson(rep), actual = Number(r.actualTeethCount || 0);
       const photo = path.join(DR, d, 'photo.jpg'), cropped = path.join(DR, d, 'cropped.jpg');
       if (!actual || !r.aimCrop) continue;
