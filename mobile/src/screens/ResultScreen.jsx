@@ -30,6 +30,7 @@ import { uploadTrainingData } from '../utils/trainingDataUpload';
 // the collection UX the operator asked for ("the app does the test itself").
 import { avmShouldCollect, avmRecordCapture, avmIsDormant, buildValidationSessionContext, AVM_CAPTURE_LIMIT, AVM_BATTERY_FLOOR } from '../utils/avm';
 import { getAvmState, mutateAvmState, getAvmBatteryLevel } from '../utils/avmStore';
+import { abstainGuidance } from '../utils/abstainGuidance';
 
 function showToast(message) {
   if (Platform.OS === 'android') {
@@ -85,7 +86,8 @@ export default function ResultScreen({ navigation, route }) {
   // PAP-1872: abstained=true means the algorithm refused to answer (dense
   // 40-60T chainring, operator go-abstain card cefe13ee) — the honest-UX
   // panel below replaces the tooth number entirely.
-  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, abstained, reset } = useGearStore();
+  const { toothCount, confidence, gearContour, algorithmRuntimeMs, isProcessing, error, abstained, abstainReason, reset } = useGearStore();
+  const guidance = abstainGuidance(abstainReason);
 
   // PAP-622: Transform algorithm coordinates (relative to original uncropped
   // photo) into aim-circle-crop space for the overlay.  The displayed photo is
@@ -365,15 +367,24 @@ export default function ResultScreen({ navigation, route }) {
           // Not an error — a first-class result with practical retry help.
           <View style={styles.abstainBox} testID="abstain-panel">
             <Text style={styles.abstainTitle}>Can&apos;t count this gear</Text>
-            <Text style={styles.abstainBody}>
-              This looks like a dense chainring. Too many fine teeth for the
-              camera to count reliably in this photo.
-            </Text>
-            <Text style={styles.abstainHintTitle}>For a small gear (cassette / single cog):</Text>
-            <Text style={styles.abstainHint}>
-              Fill the circle with the gear alone — move closer so the gear
-              fills the frame, hold steady, and shoot in good light.
-            </Text>
+            {guidance ? (
+              <>
+                <Text style={styles.abstainBody}>{guidance.body}</Text>
+                <Text style={styles.abstainHint}>{guidance.hint}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.abstainBody}>
+                  This looks like a dense chainring. Too many fine teeth for the
+                  camera to count reliably in this photo.
+                </Text>
+                <Text style={styles.abstainHintTitle}>For a small gear (cassette / single cog):</Text>
+                <Text style={styles.abstainHint}>
+                  Fill the circle with the gear alone — move closer so the gear
+                  fills the frame, hold steady, and shoot in good light.
+                </Text>
+              </>
+            )}
 
             <TouchableOpacity style={styles.abstainRetryBtn} testID="abstain-retry" onPress={handleReset} activeOpacity={0.8}>
               <Text style={styles.abstainRetryText}>Try again</Text>

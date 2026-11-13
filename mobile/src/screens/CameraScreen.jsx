@@ -33,6 +33,7 @@ import MotionIndicator from '../components/MotionIndicator';
 import { useMotionDetection } from '../hooks/useMotionDetection';
 import useGearStore from '../store/useGearStore';
 import { countTeeth, setNativeMorphMode } from '../algorithm/gearCounter';
+import { countTeethV2FromPhoto, V2_INPUT_SIDE } from '../algorithm/gearCounterV2Photo';
 // PAP-2025: only a GC_AB_NATIVE=1 build stamps true; default builds stay JS. Mode 'alt' overrides setNativeMorphEnabled.
 if (NATIVE_MORPH_AB) setNativeMorphMode('alt');
 import { BUILD_LABEL, BUILD_NUMBER, NATIVE_MORPH_AB } from '../buildInfo';
@@ -68,6 +69,12 @@ const AIM_CIRCLE_FRAC = 0.95;
 // confident-wrong window for [9, 13]-tooth chainring inner-feature hits.
 // QA b94–b106 corpus check: zero regressions on the paired change.
 const CROP_PAD_FRAC = 0;
+// Gear counter v2 (docs/gear-counter-v2.md). Set to false to go back to the legacy counter and crop.
+const USE_COUNTER_V2 = true;
+// v2 needs the whole gear with margin in the frame. Users fill the aim circle with the gear
+// (measured: gear diameter = 0.95-1.03 x circle), so the crop is the aim square plus 50 %.
+// The crop is resized natively to V2_INPUT_SIDE, so the JS JPEG decode handles about 1 MP.
+const V2_CROP_PAD_FRAC = 0.5;
 // On-screen processed-frame thumbnail size (shown in the processing card).
 const PROCESSED_THUMB_SIZE = 160;
 
@@ -119,7 +126,7 @@ async function cropToAimCircle(photoPath, screenCenter) {
   // PAP-672: padded crop side — adds CROP_PAD_FRAC margin so off-center
   // gears are not clipped at the crop boundary.
   const side = Math.min(
-    Math.round(aimSide * (1 + CROP_PAD_FRAC)),
+    Math.round(aimSide * (1 + (USE_COUNTER_V2 ? V2_CROP_PAD_FRAC : CROP_PAD_FRAC))),
     info.width,
     info.height,
   );
@@ -148,9 +155,11 @@ async function cropToAimCircle(photoPath, screenCenter) {
     0,
     Math.min(info.height - side, Math.round(photoCY - side / 2)),
   );
+  const actions = [{ crop: { originX, originY, width: side, height: side } }];
+  if (USE_COUNTER_V2 && side > V2_INPUT_SIDE) actions.push({ resize: { width: V2_INPUT_SIDE } });
   const cropped = await manipulateAsync(
     photoUri,
-    [{ crop: { originX, originY, width: side, height: side } }],
+    actions,
     { compress: 0.92, format: SaveFormat.JPEG },
   );
   return {
@@ -576,7 +585,7 @@ export default function CameraScreen({ navigation }) {
       // fixed to the on-screen reticle boundary).  Previous code used
       // cropToPreview which showed the full visible region plus a
       // content-dependent gearTransform — the board wants a fixed crop.
-      const result = await countTeeth(`file://${aim.path}`, ac.signal, { aimCrop: aim.aimCrop });
+      const result = await (USE_COUNTER_V2 ? countTeethV2FromPhoto : countTeeth)(`file://${aim.path}`, ac.signal, { aimCrop: aim.aimCrop });
 
       if (gen !== captureGenRef.current) return; // cancelled or superseded
 
