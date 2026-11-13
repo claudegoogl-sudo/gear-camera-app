@@ -7,7 +7,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest"
+    "test": "jest",
+    "test:v2": "node --import ./__tests__/lib/node-esm-stubs.mjs --test __tests__/v2.synthetic.test.mjs",
+    "measure:v2": "node --import ./__tests__/lib/node-esm-stubs.mjs __tests__/v2.corpus.mjs"
   },
   "jest": {
     "testEnvironment": "node",
